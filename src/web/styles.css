@@ -15,6 +15,9 @@
 	--type-body: 14px;
 	--type-heading: 16px;
 	--type-brand: 20px;
+	--weight-medium: 500;
+	--weight-semibold: 600;
+	--weight-bold: 700;
 	--line-caption: 16px;
 	--line-body: 24px;
 	--line-heading: 32px;
@@ -29,13 +32,13 @@
 	--accent-tint: #eeeffb;
 	--ink: #242a38;
 	--ink-secondary: #5c6474;
-	--ink-muted: #727b8c;
+	--ink-muted: #687386;
 	--canvas: #f4f6f9;
 	--surface: #ffffff;
 	--surface-muted: #f0f2f6;
 	--surface-hover: #e9edf4;
 	--border: #dce1ea;
-	--border-strong: #b7bfce;
+	--border-strong: #8994a6;
 	--success: #28714e;
 	--warning: #986a18;
 	--danger: #b83535;
@@ -44,7 +47,7 @@
 	--shadow-panel: 0 2px 8px #24304a08, 0 8px 24px #24304a06;
 	--shadow-popover: 0 8px 32px #24304a14;
 	--motion-fast: 120ms;
-	--panel-width: 288px;
+	--panel-width: 320px;
 	--status-width: 112px;
 	--board-name-width: 128px;
 	font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -98,6 +101,18 @@ svg {
 	--icon-size: var(--icon-standard);
 	--text-ui: var(--type-body);
 	--frame-inset: var(--space-3);
+	--frame-inline-end: calc(
+		100% -
+		round(down, 100%, var(--space-1)) +
+		var(--frame-inset) +
+		env(safe-area-inset-right, 0px)
+	);
+	--frame-block-end: calc(
+		100% -
+		round(down, 100%, var(--space-1)) +
+		var(--frame-inset) +
+		env(safe-area-inset-bottom, 0px)
+	);
 	position: relative;
 	width: 100%;
 	height: 100%;
@@ -124,8 +139,7 @@ svg {
 }
 .topbar {
 	position: absolute;
-	inset: calc(var(--frame-inset) + env(safe-area-inset-top, 0px))
-		calc(var(--frame-inset) + env(safe-area-inset-right, 0px)) auto
+	inset: calc(var(--frame-inset) + env(safe-area-inset-top, 0px)) var(--frame-inline-end) auto
 		calc(var(--frame-inset) + env(safe-area-inset-left, 0px));
 	z-index: 20;
 	display: flex;
@@ -161,7 +175,7 @@ svg {
 .brand strong {
 	width: var(--space-6);
 	font-size: var(--type-brand);
-	font-weight: 750;
+	font-weight: var(--weight-bold);
 	line-height: var(--line-heading);
 	letter-spacing: -0.04em;
 }
@@ -276,7 +290,7 @@ svg {
 	padding: 0;
 	font-variant-numeric: tabular-nums;
 	color: var(--ink);
-	font-weight: 550;
+	font-weight: var(--weight-medium);
 }
 .control-tooltip {
 	position: absolute;
@@ -292,7 +306,7 @@ svg {
 	background: var(--tooltip-surface);
 	color: var(--tooltip-ink);
 	font-size: var(--type-caption);
-	font-weight: 500;
+	font-weight: var(--weight-medium);
 	line-height: var(--line-caption);
 	white-space: nowrap;
 	pointer-events: none;
@@ -323,7 +337,7 @@ svg {
 	position: absolute;
 	z-index: 20;
 	left: round(nearest, 50%, var(--space-1));
-	bottom: calc(var(--frame-inset) + env(safe-area-inset-bottom, 0px));
+	bottom: var(--frame-block-end);
 	width: max-content;
 	max-width: round(down, calc(100% - var(--space-4)), var(--space-2));
 	transform: translateX(-50%);
@@ -351,7 +365,7 @@ svg {
 	right: calc(-1 * var(--space-1));
 	z-index: 40;
 	width: var(--panel-width);
-	padding: var(--space-2);
+	padding: calc(var(--space-2) - var(--hairline));
 	box-shadow: var(--shadow-popover);
 }
 .panel-heading {
@@ -363,7 +377,7 @@ svg {
 }
 .panel-heading strong {
 	color: var(--ink);
-	font-weight: 650;
+	font-weight: var(--weight-semibold);
 }
 .panel-heading > span {
 	font-size: var(--type-caption);
@@ -382,7 +396,7 @@ svg {
 	margin-bottom: var(--space-1);
 	color: var(--ink-secondary);
 	font-size: var(--type-caption);
-	font-weight: 550;
+	font-weight: var(--weight-medium);
 	line-height: var(--line-caption);
 }
 .segmented-control {
@@ -430,7 +444,7 @@ svg {
 .inspector {
 	position: absolute;
 	z-index: 15;
-	right: calc(var(--frame-inset) + env(safe-area-inset-right, 0px));
+	right: var(--frame-inline-end);
 	top: calc(
 		var(--frame-inset) +
 		var(--control-size) +
@@ -440,7 +454,7 @@ svg {
 	width: var(--panel-width);
 	max-height: calc(100dvh - var(--control-size) * 2 - var(--space-8) * 2);
 	overflow-y: auto;
-	padding: var(--space-2);
+	padding: calc(var(--space-2) - var(--hairline));
 	background: var(--surface);
 	border: var(--hairline) solid var(--border);
 	border-radius: var(--radius-panel);
@@ -453,7 +467,7 @@ svg {
 	min-height: var(--control-size);
 }
 .inspector-head strong {
-	font-weight: 650;
+	font-weight: var(--weight-semibold);
 }
 .field {
 	margin-top: var(--space-2);
@@ -489,7 +503,7 @@ svg {
 }
 .color-row {
 	display: grid;
-	grid-template-columns: repeat(6, var(--control-compact));
+	grid-template-columns: repeat(7, var(--control-compact));
 	gap: var(--space-1);
 }
 .color-row button {
@@ -508,14 +522,31 @@ svg {
 	border: var(--stroke-strong) solid var(--ink);
 	border-radius: var(--radius-control);
 }
-.color-row input[type="color"] {
-	grid-column: 1 / -1;
-	width: 100%;
-	height: var(--control-size);
-	padding: 0;
+.custom-color {
+	position: relative;
+	display: grid;
+	place-items: center;
+	width: var(--control-compact);
+	height: var(--control-compact);
 	border: var(--hairline) solid var(--border);
 	border-radius: var(--radius-control);
 	background: var(--surface-muted);
+	color: var(--ink-secondary);
+}
+.custom-color:focus-within {
+	outline: var(--stroke-strong) solid var(--accent);
+	outline-offset: var(--hairline);
+}
+.custom-color > svg {
+	width: var(--icon-small);
+	height: var(--icon-small);
+}
+.custom-color input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	opacity: 0;
 	cursor: pointer;
 }
 .connector-tip,
@@ -562,7 +593,6 @@ svg {
 }
 .canvas text {
 	font-size: var(--type-body);
-	fill: var(--ink);
 	pointer-events: none;
 }
 
@@ -581,7 +611,7 @@ svg {
 .snap-anchor.is-active {
 	fill: var(--accent);
 	stroke: var(--surface);
-	stroke-width: 2;
+	stroke-width: var(--stroke-strong);
 }
 .connection-handle {
 	cursor: grab;

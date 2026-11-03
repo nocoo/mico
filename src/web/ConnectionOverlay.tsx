@@ -10,6 +10,7 @@ interface ConnectionOverlayProps {
 	selected: Connector | null
 	shapes: Shape[]
 	zoom: number
+	controlSize: number
 	onReconnect: (
 		event: React.PointerEvent<SVGGElement>,
 		connector: Connector,
@@ -24,6 +25,7 @@ export function ConnectionOverlay({
 	selected,
 	shapes,
 	zoom,
+	controlSize,
 	onReconnect,
 }: ConnectionOverlayProps) {
 	const from = selected ? shapes.find((shape) => shape.id === selected.from) : null
@@ -124,7 +126,7 @@ export function ConnectionOverlay({
 								document.getElementById(`connection-${endpoint}`)?.focus()
 							}}
 						>
-							<circle cx={point.x} cy={point.y} r={14 / zoom} fill="transparent" />
+							<circle cx={point.x} cy={point.y} r={controlSize / (2 * zoom)} fill="transparent" />
 							<circle
 								className="handle-dot"
 								cx={point.x}

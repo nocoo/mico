@@ -173,6 +173,28 @@ test('fixed control and text tiers are selectable and survive a reload', async (
 	await expect(page.locator('.app')).toHaveAttribute('data-text-tier', 'large')
 })
 
+test('frame controls align to eight-pixel layout slots even on fractional viewport edges', async ({
+	page,
+}) => {
+	await page.setViewportSize({ width: 1453, height: 969 })
+	const controls = await page
+		.locator('.topbar .icon-button, .toolbar .icon-button, .zoom-value')
+		.evaluateAll((buttons) =>
+			buttons.map((button) => {
+				const { x, y, width, height } = button.getBoundingClientRect()
+				return { label: button.getAttribute('aria-label'), x, y, width, height }
+			}),
+		)
+	for (const control of controls) {
+		for (const dimension of [control.x, control.y, control.width, control.height]) {
+			expect(
+				Math.abs(dimension / 8 - Math.round(dimension / 8)),
+				`${control.label} must use grid-aligned geometry`,
+			).toBeLessThan(0.001)
+		}
+	}
+})
+
 test('drag creates a connector with exactly the highlighted target anchor', async ({
 	page,
 	request,
@@ -269,6 +291,15 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 	page,
 }) => {
 	await selectEdge(page)
+	const beforePan = await center(page.locator('[data-connection-handle="from"]'))
+	await page.getByRole('button', { name: 'Pan', exact: true }).click()
+	await page.mouse.move(64, 800)
+	await page.mouse.down()
+	await page.mouse.move(128, 832, { steps: 4 })
+	await page.mouse.up()
+	const afterPan = await center(page.locator('[data-connection-handle="from"]'))
+	expect(afterPan.x - beforePan.x).toBeCloseTo(64)
+	expect(afterPan.y - beforePan.y).toBeCloseTo(32)
 	await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
 	await expect(page.locator('[data-connection-handle]')).toHaveCount(2)
 	await page.setViewportSize({ width: 390, height: 844 })

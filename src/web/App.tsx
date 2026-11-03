@@ -1,4 +1,4 @@
-import { X } from 'lucide-react'
+import { Pipette, X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
@@ -817,7 +817,7 @@ export default function App() {
 						y={shape.y + shape.h / 2}
 						fill={shape.color}
 						dominantBaseline="middle"
-						style={{ fontWeight: 650 }}
+						style={{ fontWeight: 'var(--weight-semibold)' }}
 					>
 						{shape.text || 'Text'}
 					</text>
@@ -961,12 +961,15 @@ export default function App() {
 									title={label}
 								/>
 							))}
-							<input
-								type="color"
-								value={selected.color}
-								onChange={(event) => updateSelectedColor(event.target.value)}
-								aria-label="Custom color"
-							/>
+							<label className="custom-color" title={`Custom color (${selected.color})`}>
+								<Pipette aria-hidden="true" strokeWidth={1.5} />
+								<input
+									type="color"
+									value={selected.color}
+									onChange={(event) => updateSelectedColor(event.target.value)}
+									aria-label="Custom color"
+								/>
+							</label>
 						</div>
 					</div>
 				</aside>
@@ -976,7 +979,7 @@ export default function App() {
 				<div className="connector-tip" role="status">
 					{connection.draft?.pending
 						? 'Saving connection…'
-						: connection.draft?.target
+						: connection.targetShape && connection.draft?.target
 							? 'Release to connect'
 							: connection.draft
 								? 'Drag near a target to snap'
@@ -1031,6 +1034,7 @@ export default function App() {
 						selected={selected && isConnector(selected) ? selected : null}
 						shapes={visibleShapes}
 						zoom={viewport.zoom}
+						controlSize={CONTROL_TIERS[preferences.controls].control}
 						onReconnect={(event, connector, endpoint) => {
 							if (interactionRef.current || spacePressed || tool === 'hand' || event.button !== 0)
 								return
