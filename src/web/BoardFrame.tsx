@@ -82,17 +82,17 @@ export function BoardFrame({
 			<header className="topbar">
 				<div className="identity-panel floating-panel">
 					<div className="brand">
-						<svg className="brand-mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+						<svg className="brand-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
 							<path
-								d="M6 24V8L16 18L26 8V24"
+								d="M3 19V5L12 14L21 5V19"
 								stroke="currentColor"
-								strokeWidth="3"
+								strokeWidth="2.25"
 								strokeLinejoin="round"
 							/>
 							<path
-								d="M6 8H10M22 8H26M14 24H18"
+								d="M3 5H6M18 5H21M10 19H14"
 								stroke="currentColor"
-								strokeWidth="3"
+								strokeWidth="2.25"
 								strokeLinecap="round"
 							/>
 						</svg>

@@ -262,7 +262,7 @@ export default function App() {
 			current.onerror = () => current.close()
 		}
 
-		connect()
+		queueMicrotask(connect)
 
 		return () => {
 			stopped = true

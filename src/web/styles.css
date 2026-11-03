@@ -313,13 +313,19 @@ svg {
 	opacity: 1;
 	visibility: visible;
 }
+:where(.app:has(.icon-button:focus-visible))
+	.icon-button:hover:not(:focus-visible)
+	> .control-tooltip {
+	opacity: 0;
+	visibility: hidden;
+}
 .toolbar {
 	position: absolute;
 	z-index: 20;
 	left: round(nearest, 50%, var(--space-1));
 	bottom: calc(var(--frame-inset) + env(safe-area-inset-bottom, 0px));
 	width: max-content;
-	max-width: calc(100% - var(--space-4));
+	max-width: round(down, calc(100% - var(--space-4)), var(--space-2));
 	transform: translateX(-50%);
 	gap: 0;
 }
@@ -618,6 +624,9 @@ svg {
 	}
 }
 @media (max-width: 480px) {
+	.toolbar .panel-divider {
+		display: none;
+	}
 	.toolbar {
 		overflow-x: auto;
 		overflow-y: hidden;
