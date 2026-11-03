@@ -34,9 +34,9 @@
 	--ink-secondary: #5c6474;
 	--ink-muted: #687386;
 	--canvas: #f4f6f9;
-	--grid-major: #c3cedf;
-	--grid-minor: #d1dbea;
-	--grid-fine: #dfe6f0;
+	--grid-major: #d5dde8;
+	--grid-minor: #e3e8f1;
+	--grid-snap: #4f5bd5;
 	--surface: #ffffff;
 	--surface-muted: #f0f2f6;
 	--surface-hover: #e9edf4;
@@ -53,6 +53,7 @@
 	--shadow-popover: 0 8px 32px #24304a14;
 	--motion-fast: 120ms;
 	--panel-width: 320px;
+	--property-label-width: 80px;
 	font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	color: var(--ink);
 	background: var(--canvas);
@@ -106,13 +107,14 @@ svg {
 	--frame-inset: var(--space-3);
 	--dock-rows: 1;
 	--dock-width: calc(var(--control-size) * 12 + var(--space-8) + var(--space-2) * 6);
-	--dock-height: calc(
+	--dock-base-height: calc(
 		var(--control-size) *
 		var(--dock-rows) +
 		var(--space-1) *
 		(var(--dock-rows) - 1) +
 		var(--space-2)
 	);
+	--dock-height: var(--measured-dock-height, var(--dock-base-height));
 	--popover-width: min(
 		var(--panel-width),
 		round(down, calc(100vw - var(--space-4)), var(--space-2))
@@ -208,7 +210,6 @@ svg {
 	height: var(--control-size);
 }
 .status-dot {
-	flex: 0 0 var(--space-1);
 	width: var(--space-1);
 	height: var(--space-1);
 	border-radius: var(--radius-pill);
@@ -335,6 +336,10 @@ svg {
 	opacity: 1;
 	visibility: visible;
 }
+.icon-button[aria-expanded="true"] > .control-tooltip {
+	opacity: 0;
+	visibility: hidden;
+}
 :where(.app:has(.icon-button:focus-visible))
 	.icon-button:hover:not(:focus-visible)
 	> .control-tooltip {
@@ -346,9 +351,16 @@ svg {
 	z-index: 20;
 	left: round(nearest, 50vw, var(--space-1));
 	bottom: var(--frame-block-end);
-	width: var(--dock-width);
-	margin-left: calc(var(--dock-width) / -2);
+	width: min(var(--dock-width), calc(100vw - var(--space-4)));
+	max-width: calc(100vw - var(--space-4));
+	margin-left: calc(min(var(--dock-width), calc(100vw - var(--space-4))) / -2);
+	flex-direction: column;
 	gap: 0;
+}
+.dock-main {
+	display: flex;
+	align-items: center;
+	width: 100%;
 }
 .tool-slot {
 	display: contents;
@@ -360,22 +372,13 @@ svg {
 .delete-tool:hover:not(:disabled) {
 	color: var(--danger);
 }
-.view-settings {
-	padding: 0;
-	border: 0;
-	min-width: 0;
-}
-.settings-panel {
-	position: fixed;
-	bottom: calc(var(--frame-block-end) + var(--dock-height) + var(--space-2));
-	right: clamp(
-		var(--frame-inline-end),
-		calc(100vw - round(nearest, 50vw, var(--space-1)) - var(--dock-width) / 2),
-		calc(100vw - var(--frame-inset) - var(--popover-width))
-	);
+.properties-popover {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: calc(100% + var(--space-2));
 	z-index: 40;
-	width: var(--popover-width);
-	max-height: calc(100dvh - var(--dock-height) - var(--frame-inset) * 2 - var(--space-4));
+	max-height: 60dvh;
 	overflow-y: auto;
 	padding: calc(var(--space-2) - var(--hairline));
 	box-shadow: var(--shadow-popover);
@@ -395,98 +398,40 @@ svg {
 	font-size: var(--type-caption);
 	color: var(--ink-muted);
 }
-.settings-field {
-	border: 0;
-	padding: 0;
-	margin-top: var(--space-2);
-}
-.settings-field legend,
-.field > label,
-.field > span {
-	display: block;
-	padding: 0;
-	margin-bottom: var(--space-1);
-	color: var(--ink-secondary);
-	font-size: var(--type-caption);
-	font-weight: var(--weight-medium);
-	line-height: var(--line-caption);
-}
-.segmented-control {
+.selection-properties {
+	position: relative;
 	display: flex;
-	gap: 0;
-	padding: 0;
-	border-radius: var(--radius-control);
-	background: var(--surface-muted);
+	align-items: center;
+	gap: var(--space-1);
+	width: 100%;
+	padding-bottom: var(--space-1);
+	margin-bottom: var(--space-1);
+	background: linear-gradient(var(--border), var(--border)) bottom / 100% var(--hairline) no-repeat;
 }
-.segmented-control button {
-	flex: 1;
-	min-width: 0;
-	height: var(--control-size);
-	border: var(--hairline) solid transparent;
-	border-radius: var(--radius-control);
-	background: transparent;
-	color: var(--ink-secondary);
+.selection-summary {
+	flex: 0 0 var(--property-label-width);
+	margin-right: auto;
 	font-size: var(--type-caption);
+	font-weight: var(--weight-semibold);
 	text-transform: capitalize;
 }
-.segmented-control button[aria-pressed="true"] {
-	background: var(--surface);
-	border-color: var(--border);
-	color: var(--ink);
-}
-.settings-reset {
-	width: 100%;
-	gap: var(--space-1);
-	margin-top: var(--space-2);
-}
-.settings-note {
+.properties-fields {
 	display: flex;
 	align-items: center;
-	justify-content: center;
+	flex: 1;
+	min-width: 0;
 	gap: var(--space-1);
-	margin: var(--space-1) 0 0;
-	color: var(--ink-muted);
-	font-size: var(--type-caption);
-	line-height: var(--line-caption);
 }
-.settings-note svg {
-	width: var(--icon-small);
-	height: var(--icon-small);
+.properties-fields:empty {
+	display: none;
 }
-.inspector {
-	position: absolute;
-	z-index: 15;
-	right: var(--frame-inline-end);
-	top: calc(
-		var(--frame-inset) +
-		var(--control-size) +
-		var(--space-4) +
-		env(safe-area-inset-top, 0px)
-	);
-	width: var(--panel-width);
-	max-height: calc(100dvh - var(--control-size) * 2 - var(--space-8) * 2);
-	overflow-y: auto;
-	padding: calc(var(--space-2) - var(--hairline));
-	background: var(--surface);
-	border: var(--hairline) solid var(--border);
-	border-radius: var(--radius-panel);
-	box-shadow: var(--shadow-panel);
+.property-field {
+	flex: 1;
+	min-width: 0;
 }
-.inspector-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	min-height: var(--control-size);
-}
-.inspector-head strong {
-	font-weight: var(--weight-semibold);
-}
-.field {
-	margin-top: var(--space-2);
-}
-.field input:not([type]),
-.field input[type="text"],
-.field select {
+.property-field input:not([type]),
+.property-field input[type="text"],
+.property-field select {
 	width: 100%;
 	height: var(--control-size);
 	padding: 0 var(--space-1);
@@ -495,6 +440,26 @@ svg {
 	background: var(--surface);
 	color: var(--ink);
 	font-size: var(--text-ui);
+}
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+.color-indicator {
+	position: absolute;
+	right: calc(var(--space-1) / 2);
+	bottom: calc(var(--space-1) / 2);
+	width: var(--space-1);
+	height: var(--space-1);
+	border: var(--hairline) solid var(--surface);
+	border-radius: var(--radius-pill);
 }
 .draft-conflict {
 	display: flex;
@@ -514,6 +479,7 @@ svg {
 	background: var(--surface-muted);
 }
 .color-row {
+	margin-top: var(--space-1);
 	display: grid;
 	grid-template-columns: repeat(7, var(--control-compact));
 	gap: var(--space-1);
@@ -590,6 +556,12 @@ svg {
 	top: calc(var(--frame-inset) + var(--control-size) + var(--space-4));
 	color: var(--ink-secondary);
 }
+.alignment-guide {
+	stroke: var(--grid-snap);
+	stroke-width: var(--stroke-standard);
+	stroke-dasharray: 6 4;
+	pointer-events: none;
+}
 .canvas-shape {
 	cursor: move;
 }
@@ -646,12 +618,16 @@ svg {
 	.identity-panel {
 		max-width: 100%;
 	}
-	.toolbar {
+	.dock-main {
 		flex-direction: column;
 		gap: var(--space-1);
 	}
-	.toolbar > .dock-divider {
+	.dock-main > .dock-divider {
 		display: none;
+	}
+	.dock-main .view-controls {
+		justify-content: flex-end;
+		width: 100%;
 	}
 	.notice {
 		top: auto;
@@ -662,31 +638,39 @@ svg {
 	.app {
 		--dock-width: calc(var(--control-size) * 8 + var(--space-2));
 	}
-	.app[data-control-tier="roomy"] {
-		--dock-rows: 3;
-		--dock-width: calc(var(--control-size) * 4 + var(--space-8) + var(--space-2));
-	}
 	.toolbar .panel-divider {
 		display: none;
-	}
-	.app[data-control-tier="roomy"] .drawing-tools {
-		display: grid;
-		grid-template-columns: repeat(4, var(--control-size));
-		row-gap: var(--space-1);
-	}
-	.inspector {
-		width: min(var(--panel-width), calc(100vw - var(--space-4)));
-	}
-}
-@media (max-width: 384px) {
-	.app {
-		--dock-rows: 3;
-		--dock-width: calc(var(--control-size) * 4 + var(--space-8) + var(--space-2));
 	}
 	.drawing-tools {
 		display: grid;
 		grid-template-columns: repeat(4, var(--control-size));
 		row-gap: var(--space-1);
+	}
+	.selection-properties {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) var(--control-size) var(--control-size);
+	}
+	.selection-summary {
+		grid-column: 1;
+		grid-row: 1;
+	}
+	.property-color {
+		grid-column: 2;
+		grid-row: 1;
+	}
+	.property-close {
+		grid-column: 3;
+		grid-row: 1;
+	}
+	.properties-fields {
+		grid-column: 1 / -1;
+		grid-row: 2;
+		gap: var(--space-2);
+	}
+}
+@media (max-width: 384px) {
+	.app {
+		--dock-rows: 3;
 	}
 }
 @media (prefers-reduced-motion: reduce) {

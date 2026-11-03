@@ -14,6 +14,7 @@ export function IconButton({
 	shortcut,
 	tooltipSide = 'top',
 	className = '',
+	children,
 	...props
 }: IconButtonProps) {
 	const tooltipId = useId()
@@ -27,6 +28,7 @@ export function IconButton({
 			data-tooltip-side={tooltipSide}
 		>
 			<Icon aria-hidden="true" strokeWidth={1.5} />
+			{children}
 			<span className="control-tooltip" id={tooltipId} role="tooltip">
 				{label}
 				{shortcut && <kbd>{shortcut}</kbd>}

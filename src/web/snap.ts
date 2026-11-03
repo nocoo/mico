@@ -1,5 +1,5 @@
 import type { CanvasShape, Point, Shape } from '../shared/types.ts'
-import { GRID_FINE_WORLD } from './grid.ts'
+import { GRID_SNAP_WORLD } from './grid.ts'
 
 export interface AlignmentGuide {
 	axis: 'x' | 'y'
@@ -125,7 +125,7 @@ function matchesFeature(
 }
 
 function snapToGrid(value: number): number {
-	return Math.round(value / GRID_FINE_WORLD) * GRID_FINE_WORLD + 0
+	return Math.round(value / GRID_SNAP_WORLD) * GRID_SNAP_WORLD + 0
 }
 
 function buildGuide(

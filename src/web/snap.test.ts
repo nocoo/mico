@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CanvasShape, Shape } from '../shared/types.ts'
-import { GRID_FINE_WORLD } from './grid.ts'
+import { GRID_SNAP_WORLD } from './grid.ts'
 import { snapMove } from './snap.ts'
 
 const rect = (id: string, x: number, y: number, w: number, h: number): CanvasShape => ({
@@ -16,28 +16,28 @@ const rect = (id: string, x: number, y: number, w: number, h: number): CanvasSha
 
 const moving = rect('m', 0, 0, 40, 20)
 
-test('grid snap rounds the origin to the fine world grid', () => {
-	assert.equal(GRID_FINE_WORLD, 8)
-	const result = snapMove(moving, { x: 13, y: 5 }, [], 1)
+test('grid snap rounds the origin to the visible 16px grid', () => {
+	assert.equal(GRID_SNAP_WORLD, 16)
+	const result = snapMove(moving, { x: 21, y: 5 }, [], 1)
 	assert.equal(result.x, 16)
-	assert.equal(result.y, 8)
+	assert.equal(result.y, 0)
 	assert.deepEqual(result.guides, [])
 })
 
 test('grid snap handles negative coordinates', () => {
-	const result = snapMove(moving, { x: -13, y: -5 }, [], 1)
+	const result = snapMove(moving, { x: -21, y: -13 }, [], 1)
 	assert.equal(result.x, -16)
-	assert.equal(result.y, -8)
+	assert.equal(result.y, -16)
 	assert.deepEqual(result.guides, [])
 })
 
 test('grid snap breaks ties toward positive infinity and never yields negative zero', () => {
-	const positive = snapMove(moving, { x: 4, y: 12 }, [], 1)
-	assert.equal(positive.x, 8)
-	assert.equal(positive.y, 16)
-	const negative = snapMove(moving, { x: -4, y: -12 }, [], 1)
+	const positive = snapMove(moving, { x: 8, y: 24 }, [], 1)
+	assert.equal(positive.x, 16)
+	assert.equal(positive.y, 32)
+	const negative = snapMove(moving, { x: -8, y: -24 }, [], 1)
 	assert.equal(negative.x, 0)
-	assert.equal(negative.y, -8)
+	assert.equal(negative.y, -16)
 	assert.equal(Object.is(negative.x, 0), true)
 })
 
@@ -94,35 +94,35 @@ test('the six screen pixel threshold scales with zoom', () => {
 	assert.equal(zoomedOut.x, 100)
 	assert.equal(zoomedOut.y, 100)
 	const zoomedIn = snapMove(moving, { x: 105, y: 105 }, [peer], 2)
-	assert.equal(zoomedIn.x, 104)
-	assert.equal(zoomedIn.y, 104)
+	assert.equal(zoomedIn.x, 112)
+	assert.equal(zoomedIn.y, 112)
 	assert.deepEqual(zoomedIn.guides, [])
 })
 
 test('the 160 screen pixel radius scales with zoom', () => {
 	const peer = rect('peer', 100, 400, 50, 30)
 	const excluded = snapMove(moving, { x: 100.4, y: 100.4 }, [peer], 1)
-	assert.equal(excluded.x, 104)
+	assert.equal(excluded.x, 96)
 	assert.deepEqual(excluded.guides, [])
 	const included = snapMove(moving, { x: 100.4, y: 100.4 }, [peer], 0.25)
 	assert.equal(included.x, 100)
-	assert.equal(included.y, 104)
+	assert.equal(included.y, 96)
 })
 
 test('peers beyond the 160 screen pixel radius are ignored', () => {
 	const far = rect('far', 1000, 1000, 50, 30)
 	const result = snapMove(moving, { x: 100.4, y: 100.4 }, [far], 1)
-	assert.equal(result.x, 104)
-	assert.equal(result.y, 104)
+	assert.equal(result.x, 96)
+	assert.equal(result.y, 96)
 	assert.deepEqual(result.guides, [])
 })
 
 test('a peer within the radius but beyond the alignment threshold is ignored', () => {
 	const peer = rect('peer', 120, 100, 50, 30)
 	const result = snapMove(moving, { x: 100.4, y: 100.4 }, [peer], 1)
-	assert.equal(result.x, 104)
+	assert.equal(result.x, 96)
 	assert.equal(result.y, 100)
-	assert.deepEqual(result.guides, [{ axis: 'y', value: 100, from: 104, to: 170 }])
+	assert.deepEqual(result.guides, [{ axis: 'y', value: 100, from: 96, to: 170 }])
 })
 
 test('signed line bounds are normalized before alignment', () => {
@@ -149,8 +149,8 @@ test('connectors and the moving shape never act as alignment peers', () => {
 	const connector: Shape = { id: 'c', type: 'connector', from: 'm', to: 'peer', color: '#5b5fc7' }
 	const shapes: Shape[] = [moving, connector]
 	const result = snapMove(moving, { x: 100.4, y: 100.4 }, shapes, 1)
-	assert.equal(result.x, 104)
-	assert.equal(result.y, 104)
+	assert.equal(result.x, 96)
+	assert.equal(result.y, 96)
 	assert.deepEqual(result.guides, [])
 })
 
@@ -159,8 +159,8 @@ test('same-feature alignment beats cross-edge alignment on ties', () => {
 	const thin = rect('m', 0, 0, 4, 20)
 	const result = snapMove(thin, { x: 103, y: 250 }, [peer], 1)
 	assert.equal(result.x, 101)
-	assert.equal(result.y, 248)
-	assert.deepEqual(result.guides, [{ axis: 'x', value: 101, from: 100, to: 268 }])
+	assert.equal(result.y, 256)
+	assert.deepEqual(result.guides, [{ axis: 'x', value: 101, from: 100, to: 276 }])
 })
 
 test('equal-size peers report the shared edge as the guide', () => {
@@ -180,7 +180,7 @@ test('a guide spans the moved node and every matching neighbor', () => {
 	const lower = rect('lower', 100, 200, 40, 30)
 	const result = snapMove(moving, { x: 100.4, y: 150 }, [upper, lower], 1)
 	assert.equal(result.x, 100)
-	assert.equal(result.y, 152)
+	assert.equal(result.y, 144)
 	assert.deepEqual(result.guides, [{ axis: 'x', value: 100, from: 100, to: 230 }])
 })
 

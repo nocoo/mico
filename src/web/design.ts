@@ -1,12 +1,6 @@
-export const CONTROL_TIERS = {
-	compact: { control: 32, icon: 16 },
-	standard: { control: 40, icon: 20 },
-	roomy: { control: 48, icon: 24 },
-} as const
-
-export const TEXT_TIERS = { small: 12, standard: 14, large: 16 } as const
-export type ControlTier = keyof typeof CONTROL_TIERS
-export type TextTier = keyof typeof TEXT_TIERS
+export const CONTROL_SIZE = 40
+export const ICON_SIZE = 20
+export const TEXT_SIZE = 14
 export type Tool = 'select' | 'hand' | 'rectangle' | 'ellipse' | 'text' | 'line' | 'connector'
 
 export const SHAPE_COLORS = [

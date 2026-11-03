@@ -131,7 +131,8 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
 	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
-	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(12)
+	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(11)
+	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
 	const select = page.getByRole('button', { name: 'Select', exact: true })
@@ -151,30 +152,35 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	await page.screenshot({ path: '/tmp/mico-frame-desktop.png', animations: 'disabled' })
 })
 
-test('fixed control and text tiers are selectable and survive a reload', async ({ page }) => {
-	await page.getByRole('button', { name: 'Interface settings', exact: true }).click()
-	const controls = page.getByRole('group', { name: 'Control size' })
-	for (const [tier, height] of [
-		['compact', '32px'],
-		['standard', '40px'],
-		['roomy', '48px'],
-	] as const) {
-		await controls.getByRole('button', { name: tier, exact: true }).click()
-		await expect(page.getByRole('button', { name: 'Select', exact: true })).toHaveCSS(
-			'height',
-			height,
-		)
-	}
-	await page
-		.getByRole('group', { name: 'Text size' })
-		.getByRole('button', { name: 'large', exact: true })
-		.click()
-	await expect(page.getByRole('button', { name: 'Reset view' })).toHaveCSS('font-size', '16px')
-	await page.keyboard.press('Escape')
-	await expect(page.getByRole('button', { name: 'Interface settings', exact: true })).toBeFocused()
-	await page.reload()
-	await expect(page.locator('.app')).toHaveAttribute('data-control-tier', 'roomy')
-	await expect(page.locator('.app')).toHaveAttribute('data-text-tier', 'large')
+test('selected object properties live inside the dock and edit the board', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.locator('[data-shape-id="a"] > rect').first().click()
+	const dock = page.getByRole('toolbar')
+	const properties = dock.getByRole('region', { name: 'Selected object properties' })
+	await expect(properties).toBeVisible()
+	await expect(page.locator('.inspector, .topbar .view-controls')).toHaveCount(0)
+	await properties.getByLabel('Text', { exact: true }).fill('Renamed gateway')
+	await properties.getByLabel('Text', { exact: true }).press('Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
+		.toMatchObject({ text: 'Renamed gateway' })
+	await properties.getByRole('button', { name: 'Shape color' }).click()
+	const popover = page.getByRole('region', { name: 'Shape color', exact: true })
+	const panel = await popover.boundingBox()
+	const dockBox = await dock.boundingBox()
+	if (!panel || !dockBox) throw new Error('Expected a color popover and dock')
+	expect(panel.x).toBeGreaterThanOrEqual(0)
+	expect(panel.y + panel.height).toBeLessThanOrEqual(dockBox.y)
+	await popover.getByRole('button', { name: 'Set color Green' }).click()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
+		.toMatchObject({ color: '#107c10' })
+	await expect(popover).toHaveCount(0)
+	await properties.getByRole('button', { name: 'Close properties' }).click()
+	await expect(properties).toHaveCount(0)
 })
 
 test('frame controls align to eight-pixel layout slots even on fractional viewport edges', async ({
@@ -239,10 +245,11 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 	await page.getByRole('button', { name: 'Reset view' }).click()
 	const initial = await snapshot()
 	await expect(page.locator('[data-grid-level="minor"]')).toHaveAttribute('stroke-dasharray', '4 4')
-	await expect(page.locator('[data-grid-level="fine"]')).toHaveAttribute(
+	await expect(page.locator('[data-grid-level="minor"]')).toHaveAttribute(
 		'd',
-		'M8 0V64M0 8H64M16 0V64M0 16H64M24 0V64M0 24H64M40 0V64M0 40H64M48 0V64M0 48H64M56 0V64M0 56H64',
+		'M16 0V64M0 16H64M32 0V64M0 32H64M48 0V64M0 48H64',
 	)
+	await expect(page.locator('[data-grid-level="fine"]')).toHaveCount(0)
 	await page.getByRole('button', { name: 'Pan', exact: true }).click()
 	await page.mouse.move(600, 760)
 	await page.mouse.down()
@@ -262,35 +269,55 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 	await page.screenshot({ path: '/tmp/mico-blueprint-fixed-dock.png', animations: 'disabled' })
 })
 
-test('all dock controls and the upward settings panel remain on-screen at every size tier', async ({
+test('dock and its property popovers stay on-screen at narrow and wide widths', async ({
 	page,
 }) => {
 	for (const width of [360, 390, 768, 1440]) {
 		await page.setViewportSize({ width, height: 844 })
-		for (const tier of ['compact', 'standard', 'roomy']) {
-			await page.getByRole('button', { name: 'Interface settings', exact: true }).click()
-			await page
-				.getByRole('group', { name: 'Control size' })
-				.getByRole('button', { name: tier, exact: true })
-				.click()
-			const panel = await page.locator('.settings-panel').boundingBox()
-			const dock = await page.getByRole('toolbar').boundingBox()
-			if (!panel || !dock) throw new Error('Expected dock and settings panel')
-			expect(panel.x).toBeGreaterThanOrEqual(0)
-			expect(panel.x + panel.width).toBeLessThanOrEqual(width)
-			expect(panel.y).toBeGreaterThanOrEqual(0)
-			expect(panel.y + panel.height).toBeLessThanOrEqual(dock.y - 16)
-			await page.keyboard.press('Escape')
-			for (const button of await page.getByRole('toolbar').getByRole('button').all()) {
-				await expect(button).toBeVisible()
-				const box = await button.boundingBox()
-				if (!box) throw new Error('Expected a visible dock control')
-				expect(box.x).toBeGreaterThanOrEqual(0)
-				expect(box.x + box.width).toBeLessThanOrEqual(width)
-				expect(box.y + box.height).toBeLessThanOrEqual(844)
-			}
+		await page.getByRole('button', { name: 'Select', exact: true }).click()
+		await page.locator('[data-shape-id="a"] > rect').first().click()
+		const dock = page.getByRole('toolbar')
+		const dockBox = await dock.boundingBox()
+		if (!dockBox) throw new Error('Expected a visible dock')
+		for (const button of await dock.getByRole('button').all()) {
+			await expect(button).toBeVisible()
+			const box = await button.boundingBox()
+			if (!box) throw new Error('Expected a visible dock control')
+			expect(box.x).toBeGreaterThanOrEqual(0)
+			expect(box.x + box.width).toBeLessThanOrEqual(width)
+			expect(box.y + box.height).toBeLessThanOrEqual(844)
 		}
+		await dock.getByRole('button', { name: 'Shape color' }).click()
+		const panel = await page.getByRole('region', { name: 'Shape color', exact: true }).boundingBox()
+		if (!panel) throw new Error('Expected a visible color panel')
+		expect(panel.x).toBeGreaterThanOrEqual(0)
+		expect(panel.x + panel.width).toBeLessThanOrEqual(width)
+		expect(panel.y).toBeGreaterThanOrEqual(0)
+		expect(panel.y + panel.height).toBeLessThanOrEqual(dockBox.y)
+		await page.keyboard.press('Escape')
+		await page.keyboard.press('Escape')
 	}
+})
+
+test('dragging snaps to the grid and aligns with nearby objects using guides', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const start = await center(page.locator('[data-shape-id="a"] > rect').first())
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(start.x + 3, start.y + 297, { steps: 8 })
+	const guide = page.locator('.alignment-guide[data-guide-axis="x"]')
+	await expect(guide).toHaveCount(1)
+	const guideValue = Number(await guide.getAttribute('x1'))
+	expect(guideValue).toBeCloseTo(160)
+	await page.screenshot({ path: '/tmp/mico-snap-guides.png', animations: 'disabled' })
+	await page.mouse.up()
+	await expect(guide).toHaveCount(0)
+	const moved = (await board(request)).shapes.find((shape) => shape.id === 'a')
+	expect(moved).toMatchObject({ x: 160 })
+	expect(moved && moved.type !== 'connector' ? moved.y : NaN).toBe(496)
 })
 
 test('drag creates a connector with exactly the highlighted target anchor', async ({
@@ -373,7 +400,7 @@ test('concurrent API edits are not overwritten by an in-flight endpoint drag', a
 	expect((await board(request)).revision).toBe(updated.revision)
 })
 
-test('endpoint rebinding has a keyboard alternative in the inspector', async ({
+test('endpoint rebinding has a keyboard alternative in the dock properties', async ({
 	page,
 	request,
 }) => {
@@ -412,7 +439,7 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 			expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
 		}
 	}
-	await page.getByRole('button', { name: 'Close inspector', exact: true }).click()
+	await page.getByRole('button', { name: 'Close properties', exact: true }).click()
 	await page.mouse.move(0, 0)
 	await page.screenshot({ path: '/tmp/mico-frame-mobile.png', animations: 'disabled' })
 })

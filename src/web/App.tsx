@@ -1,4 +1,3 @@
-import { Pipette, X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
@@ -7,11 +6,11 @@ import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
-import { CONTROL_TIERS, SHAPE_COLORS, TEXT_TIERS } from './design'
-import { IconButton } from './IconButton'
+import { CONTROL_SIZE, ICON_SIZE, TEXT_SIZE } from './design'
 import { canRebaseMove } from './move'
+import { PropertiesBar } from './PropertiesBar'
+import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
-import { useInterfacePreferences } from './useInterfacePreferences'
 import { fitViewport } from './viewport'
 
 const WS_URL = new URL('/api/events', window.location.href)
@@ -116,8 +115,6 @@ function TextField({
 }
 
 export default function App() {
-	const interfacePreferences = useInterfacePreferences()
-	const { preferences } = interfacePreferences
 	const svgRef = useRef<SVGSVGElement>(null)
 	const initialViewFitted = useRef(false)
 	const revisionRef = useRef(0)
@@ -146,6 +143,7 @@ export default function App() {
 	>(() => new Map())
 	const [apiConnected, setApiConnected] = useState(false)
 	const [wsConnected, setWsConnected] = useState(false)
+	const [guides, setGuides] = useState<AlignmentGuide[]>([])
 	const [notice, setNotice] = useState('')
 	const [spacePressed, setSpacePressed] = useState(false)
 	const [isPanning, setIsPanning] = useState(false)
@@ -326,6 +324,7 @@ export default function App() {
 		interactionRef.current = null
 		setCreation(null)
 		setIsPanning(false)
+		setGuides([])
 		connection.cancel()
 		if (interaction?.previewToken && interaction.shape) {
 			clearDragPreview(interaction.shape.id, interaction.previewToken)
@@ -494,17 +493,21 @@ export default function App() {
 		}
 
 		if (interaction.mode === 'shape' && interaction.shape && interaction.previewToken) {
-			const dx = world.x - interaction.startWorld.x
-			const dy = world.y - interaction.startWorld.y
 			const original = interaction.shape
+			const snapped = snapMove(
+				original,
+				{
+					x: original.x + world.x - interaction.startWorld.x,
+					y: original.y + world.y - interaction.startWorld.y,
+				},
+				visibleShapes,
+				viewport.zoom,
+			)
 			const token = interaction.previewToken
 			setDragPreviews((current) =>
-				new Map(current).set(original.id, {
-					x: original.x + dx,
-					y: original.y + dy,
-					token,
-				}),
+				new Map(current).set(original.id, { x: snapped.x, y: snapped.y, token }),
 			)
+			setGuides(snapped.guides)
 		}
 	}
 
@@ -536,10 +539,16 @@ export default function App() {
 					event.clientY - interaction.startClient.y,
 				) > 2
 			if (moved) {
+				const snapped = snapMove(
+					interaction.shape,
+					{ x: interaction.shape.x + dx, y: interaction.shape.y + dy },
+					visibleShapes,
+					viewport.zoom,
+				)
 				const preview = {
 					id: interaction.shape.id,
-					x: interaction.shape.x + dx,
-					y: interaction.shape.y + dy,
+					x: snapped.x,
+					y: snapped.y,
 					token: interaction.previewToken ?? ++dragTokenRef.current,
 				}
 				setDragPreviews((current) => new Map(current).set(preview.id, preview))
@@ -564,6 +573,7 @@ export default function App() {
 
 		setCreation(null)
 		setIsPanning(false)
+		setGuides([])
 		interactionRef.current = null
 		if (svgRef.current?.hasPointerCapture(event.pointerId))
 			svgRef.current.releasePointerCapture(event.pointerId)
@@ -864,18 +874,15 @@ export default function App() {
 	return (
 		<main
 			className="app"
-			data-control-tier={preferences.controls}
-			data-text-tier={preferences.text}
 			style={
 				{
-					'--control-size': `${CONTROL_TIERS[preferences.controls].control}px`,
-					'--icon-size': `${CONTROL_TIERS[preferences.controls].icon}px`,
-					'--text-ui': `${TEXT_TIERS[preferences.text]}px`,
+					'--control-size': `${CONTROL_SIZE}px`,
+					'--icon-size': `${ICON_SIZE}px`,
+					'--text-ui': `${TEXT_SIZE}px`,
 				} as React.CSSProperties
 			}
 		>
 			<BoardFrame
-				{...interfacePreferences}
 				tool={tool}
 				onToolChange={(next) => {
 					cancelInteraction()
@@ -891,90 +898,64 @@ export default function App() {
 				wsConnected={wsConnected}
 				revision={board.revision}
 				objectCount={board.shapes.length}
+				properties={
+					selected && (
+						<PropertiesBar
+							key={selected.id}
+							selected={selected}
+							onColorChange={updateSelectedColor}
+							onClose={() => setSelectedId(null)}
+						>
+							{isCanvasShape(selected) && selected.type !== 'line' && (
+								<div className="property-field">
+									<label className="sr-only" htmlFor="shape-text">
+										Text
+									</label>
+									<TextField
+										key={selected.id}
+										shapeId={selected.id}
+										draft={textDrafts.get(selected.id)}
+										setDrafts={setTextDrafts}
+										text={selected.text ?? ''}
+										revision={board.revision}
+										onSave={(text, revision) =>
+											postOperations(
+												[{ type: 'update', id: selected.id, patch: { text } }],
+												revision,
+											)
+										}
+									/>
+								</div>
+							)}
+							{isConnector(selected) &&
+								(['from', 'to'] as const).map((endpoint) => (
+									<div className="property-field" key={endpoint}>
+										<label className="sr-only" htmlFor={`connection-${endpoint}`}>
+											{endpoint === 'from' ? 'Source' : 'Target'}
+										</label>
+										<select
+											id={`connection-${endpoint}`}
+											value={selected[endpoint]}
+											disabled={!!connection.draft}
+											onChange={(event) => changeEndpoint(endpoint, event.target.value)}
+										>
+											{board.shapes
+												.filter(isCanvasShape)
+												.filter(
+													(shape) => shape.id !== selected[endpoint === 'from' ? 'to' : 'from'],
+												)
+												.map((shape) => (
+													<option key={shape.id} value={shape.id}>
+														{shape.text || shape.id}
+													</option>
+												))}
+										</select>
+									</div>
+								))}
+						</PropertiesBar>
+					)
+				}
 			/>
-
-			{selected && (
-				<aside className="inspector">
-					<div className="inspector-head">
-						<strong>
-							{isConnector(selected)
-								? 'Connector'
-								: selected.type[0].toUpperCase() + selected.type.slice(1)}
-						</strong>
-						<IconButton
-							icon={X}
-							label="Close inspector"
-							tooltipSide="bottom"
-							onClick={() => setSelectedId(null)}
-						/>
-					</div>
-					{isCanvasShape(selected) && selected.type !== 'line' && (
-						<div className="field">
-							<label htmlFor="shape-text">Text</label>
-							<TextField
-								key={selected.id}
-								shapeId={selected.id}
-								draft={textDrafts.get(selected.id)}
-								setDrafts={setTextDrafts}
-								text={selected.text ?? ''}
-								revision={board.revision}
-								onSave={(text, revision) =>
-									postOperations([{ type: 'update', id: selected.id, patch: { text } }], revision)
-								}
-							/>
-						</div>
-					)}
-					{isConnector(selected) &&
-						(['from', 'to'] as const).map((endpoint) => (
-							<div className="field" key={endpoint}>
-								<label htmlFor={`connection-${endpoint}`}>
-									{endpoint === 'from' ? 'Source' : 'Target'}
-								</label>
-								<select
-									id={`connection-${endpoint}`}
-									value={selected[endpoint]}
-									disabled={!!connection.draft}
-									onChange={(event) => changeEndpoint(endpoint, event.target.value)}
-								>
-									{board.shapes
-										.filter(isCanvasShape)
-										.filter((shape) => shape.id !== selected[endpoint === 'from' ? 'to' : 'from'])
-										.map((shape) => (
-											<option key={shape.id} value={shape.id}>
-												{shape.text || shape.id}
-											</option>
-										))}
-								</select>
-							</div>
-						))}
-					<div className="field color-field">
-						<span>Color</span>
-						<div className="color-row">
-							{SHAPE_COLORS.map(({ value: color, label }) => (
-								<button
-									type="button"
-									key={color}
-									className={selected.color === color ? 'chosen' : ''}
-									style={{ background: color }}
-									onClick={() => updateSelectedColor(color)}
-									aria-label={`Set color ${label}`}
-									aria-pressed={selected.color === color}
-									title={label}
-								/>
-							))}
-							<label className="custom-color" title={`Custom color (${selected.color})`}>
-								<Pipette aria-hidden="true" strokeWidth={1.5} />
-								<input
-									type="color"
-									value={selected.color}
-									onChange={(event) => updateSelectedColor(event.target.value)}
-									aria-label="Custom color"
-								/>
-							</label>
-						</div>
-					</div>
-				</aside>
-			)}
 
 			{(tool === 'connector' || connection.draft) && (
 				<div className="connector-tip" role="status">
@@ -1032,6 +1013,18 @@ export default function App() {
 					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => !isConnector(shape)).map(renderShape)}
 					{creation && renderShape(creation)}
+					{guides.map((guide) => (
+						<line
+							key={`${guide.axis}:${guide.value}`}
+							className="alignment-guide"
+							data-guide-axis={guide.axis}
+							x1={guide.axis === 'x' ? guide.value : guide.from}
+							y1={guide.axis === 'x' ? guide.from : guide.value}
+							x2={guide.axis === 'x' ? guide.value : guide.to}
+							y2={guide.axis === 'x' ? guide.to : guide.value}
+							vectorEffect="non-scaling-stroke"
+						/>
+					))}
 					<ConnectionOverlay
 						draft={connection.draft}
 						preview={connection.preview}
@@ -1039,7 +1032,7 @@ export default function App() {
 						selected={selected && isConnector(selected) ? selected : null}
 						shapes={visibleShapes}
 						zoom={viewport.zoom}
-						controlSize={CONTROL_TIERS[preferences.controls].control}
+						controlSize={CONTROL_SIZE}
 						onReconnect={(event, connector, endpoint) => {
 							if (interactionRef.current || spacePressed || tool === 'hand' || event.button !== 0)
 								return
