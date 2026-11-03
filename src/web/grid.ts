@@ -5,29 +5,24 @@ export interface GridViewport {
 }
 
 export const GRID_MAJOR_WORLD = 64
-export const GRID_MID_WORLD = 32
-export const GRID_FINE_WORLD = 8
+export const GRID_SNAP_WORLD = 16
 
 export const GRID_FADE = {
 	majorFull: 32,
 	majorZero: 6,
 	majorMin: 0.06,
-	midFull: 24,
-	midZero: 8,
-	fineFull: 8,
-	fineZero: 4,
+	minorFull: 12,
+	minorZero: 3,
 } as const
 
 export interface GridSpacing {
 	major: number
-	mid: number
-	fine: number
+	minor: number
 }
 
 export interface GridDetail {
 	major: number
-	mid: number
-	fine: number
+	minor: number
 }
 
 export interface GridMetrics {
@@ -36,14 +31,12 @@ export interface GridMetrics {
 	offsetY: number
 	spacing: GridSpacing
 	detail: GridDetail
-	midOffset: number
-	fineOffsets: number[]
+	minorOffsets: number[]
 }
 
 export interface GridPathData {
 	major: string
-	mid: string
-	fine: string
+	minor: string
 }
 
 export function positiveModulo(value: number, modulus: number): number {
@@ -58,15 +51,14 @@ function fade(spacing: number, full: number, zero: number): number {
 	return (spacing - zero) / (full - zero)
 }
 
-function fineFractions(): number[] {
-	const divisions = GRID_MAJOR_WORLD / GRID_FINE_WORLD
-	const midpoint = GRID_MID_WORLD / GRID_FINE_WORLD
-	const fractions: number[] = []
+function minorOffsets(zoom: number): number[] {
+	const step = GRID_SNAP_WORLD * zoom
+	const divisions = GRID_MAJOR_WORLD / GRID_SNAP_WORLD
+	const offsets: number[] = []
 	for (let index = 1; index < divisions; index += 1) {
-		if (index === midpoint) continue
-		fractions.push(index / divisions)
+		offsets.push(index * step)
 	}
-	return fractions
+	return offsets
 }
 
 export function computeGrid(viewport: GridViewport): GridMetrics {
@@ -81,16 +73,14 @@ export function computeGrid(viewport: GridViewport): GridMetrics {
 	const tile = GRID_MAJOR_WORLD * zoom
 	const spacing: GridSpacing = {
 		major: tile,
-		mid: GRID_MID_WORLD * zoom,
-		fine: GRID_FINE_WORLD * zoom,
+		minor: GRID_SNAP_WORLD * zoom,
 	}
 	const detail: GridDetail = {
 		major: Math.max(
 			GRID_FADE.majorMin,
 			fade(spacing.major, GRID_FADE.majorFull, GRID_FADE.majorZero),
 		),
-		mid: fade(spacing.mid, GRID_FADE.midFull, GRID_FADE.midZero),
-		fine: fade(spacing.fine, GRID_FADE.fineFull, GRID_FADE.fineZero),
+		minor: fade(spacing.minor, GRID_FADE.minorFull, GRID_FADE.minorZero),
 	}
 
 	return {
@@ -99,19 +89,17 @@ export function computeGrid(viewport: GridViewport): GridMetrics {
 		offsetY: positiveModulo(y, tile),
 		spacing,
 		detail,
-		midOffset: GRID_MID_WORLD * zoom,
-		fineOffsets: fineFractions().map((fraction) => fraction * tile),
+		minorOffsets: minorOffsets(zoom),
 	}
 }
 
 export function gridPathData(metrics: GridMetrics): GridPathData {
-	const { tile, midOffset, fineOffsets } = metrics
+	const { tile, minorOffsets } = metrics
 	const major = [`M0 0V${tile}`, `M${tile} 0V${tile}`, `M0 0H${tile}`, `M0 ${tile}H${tile}`].join(
 		'',
 	)
-	const mid = [`M${midOffset} 0V${tile}`, `M0 ${midOffset}H${tile}`].join('')
-	const fine = fineOffsets
+	const minor = minorOffsets
 		.flatMap((offset) => [`M${offset} 0V${tile}`, `M0 ${offset}H${tile}`])
 		.join('')
-	return { major, mid, fine }
+	return { major, minor }
 }

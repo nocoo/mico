@@ -2,9 +2,8 @@ import { useId } from 'react'
 import { computeGrid, type GridViewport, gridPathData } from './grid.ts'
 
 const MAJOR_STROKE = 1
-const MID_STROKE = 1
-const FINE_STROKE = 0.5
-const MID_DASH = '4 4'
+const MINOR_STROKE = 0.75
+const MINOR_DASH_WORLD = 4
 
 export function BlueprintGrid({ viewport }: { viewport: GridViewport }) {
 	const rawId = useId()
@@ -13,6 +12,7 @@ export function BlueprintGrid({ viewport }: { viewport: GridViewport }) {
 	const metrics = computeGrid(viewport)
 	const { tile, offsetX, offsetY, detail } = metrics
 	const paths = gridPathData(metrics)
+	const dash = `${MINOR_DASH_WORLD * viewport.zoom} ${MINOR_DASH_WORLD * viewport.zoom}`
 
 	return (
 		<g className="blueprint-grid" focusable="false" pointerEvents="none">
@@ -32,25 +32,15 @@ export function BlueprintGrid({ viewport }: { viewport: GridViewport }) {
 						strokeWidth={MAJOR_STROKE}
 						strokeOpacity={detail.major}
 					/>
-					{detail.mid > 0 && (
+					{detail.minor > 0 && (
 						<path
 							data-grid-level="minor"
-							d={paths.mid}
+							d={paths.minor}
 							fill="none"
 							stroke="var(--grid-minor)"
-							strokeWidth={MID_STROKE}
-							strokeDasharray={MID_DASH}
-							strokeOpacity={detail.mid}
-						/>
-					)}
-					{detail.fine > 0 && (
-						<path
-							data-grid-level="fine"
-							d={paths.fine}
-							fill="none"
-							stroke="var(--grid-fine)"
-							strokeWidth={FINE_STROKE}
-							strokeOpacity={detail.fine}
+							strokeWidth={MINOR_STROKE}
+							strokeDasharray={dash}
+							strokeOpacity={detail.minor}
 						/>
 					)}
 				</pattern>
