@@ -38,7 +38,10 @@ node src/cli/index.ts shape create '{"type":"rectangle","x":100,"y":100,"w":180,
 node src/cli/index.ts shape update <id> '{"x":300,"y":200}'
 node src/cli/index.ts shape delete <id>
 node src/cli/index.ts batch examples/architecture.json
+node examples/distributed-architecture.ts | node src/cli/index.ts batch -
 ```
+
+The distributed-commerce example adds 20 services and clients, 27 connectors, and six headings to the right of the original Mico diagram without deleting existing objects. Its fixed `commerce-` IDs make duplicate application fail atomically. Click Fit after adding it to an open board.
 
 `shape create` generates an ID if one is omitted. A batch is an array of `create`, `update`, or `delete` operations; use `-` instead of a filename to read JSON from standard input. Batch-created shapes must include IDs so that connectors can refer to them. The example uses fixed IDs and can be applied once to an empty board. Deleting a shape also deletes connectors attached to it; connector endpoints must be different.
 
