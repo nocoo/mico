@@ -642,3 +642,66 @@ test('frames hold named members, reject nesting and ungroup on delete', () => {
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
+
+test('widget shapes validate kind, title and bounded items', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const widget = {
+		id: 'board-widget',
+		type: 'widget' as const,
+		x: 40,
+		y: 60,
+		w: 520,
+		h: 360,
+		color: '#5b5fc7',
+		widget: 'kanban' as const,
+		widgetTitle: 'Delivery board',
+		items: [
+			{ id: 'item-1', title: 'Draft', status: 'todo' },
+			{ id: 'item-2', title: 'Build', status: 'doing' },
+		],
+	}
+	try {
+		store.apply({ operations: [{ type: 'create', shape: widget }] })
+		const updated = store.apply({
+			operations: [
+				{
+					type: 'update',
+					id: 'board-widget',
+					patch: { items: [{ id: 'item-1', title: 'Draft', status: 'done', done: true }] },
+				},
+			],
+		})
+		assert.equal(updated.shapes.length, 1)
+
+		for (const patch of [
+			{ widget: 'spreadsheet' },
+			{ widgetTitle: '' },
+			{ items: [{ id: '', title: 'x' }] },
+			{ items: [{ id: 'x', title: 3 }] },
+			{ items: [{ id: 'x', title: 'ok', start: Number.NaN }] },
+		]) {
+			assert.throws(
+				() => store.apply({ operations: [{ type: 'update', id: 'board-widget', patch }] }),
+				(error: unknown) => error instanceof OperationError && error.status === 400,
+				JSON.stringify(patch),
+			)
+		}
+
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [
+						{
+							type: 'create',
+							shape: { ...widget, id: 'note', type: 'note', widget: undefined },
+						},
+					],
+				}),
+			(error: unknown) => error instanceof OperationError,
+		)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})

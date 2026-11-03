@@ -1,7 +1,15 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { Board, BrushStyle, Connector, FontFamily, Operation, Shape } from '../shared/types.ts'
+import type {
+	Board,
+	BrushStyle,
+	Connector,
+	WidgetItem,
+	WidgetKind,
+	Operation,
+	Shape,
+} from '../shared/types.ts'
 import { ANCHOR_COUNTS } from '../shared/types.ts'
 
 export class OperationError extends Error {
@@ -77,11 +85,23 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		value.type !== 'line' &&
 		value.type !== 'path' &&
 		value.type !== 'frame' &&
-		value.type !== 'note'
+		value.type !== 'note' &&
+		value.type !== 'widget'
 	) {
 		invalid('invalid shape type')
 	}
-	if (value.type === 'frame') {
+	if (value.type === 'widget') {
+		if (
+			!hasExactKeys(
+				value,
+				['id', 'type', 'x', 'y', 'w', 'h', 'color', 'widget', 'widgetTitle', 'items'],
+				['frameId'],
+			)
+		) {
+			invalid('invalid widget shape')
+		}
+		validateWidget(value)
+	} else if (value.type === 'frame') {
 		if (!hasExactKeys(value, ['id', 'type', 'x', 'y', 'w', 'h', 'color', 'title'], ['frameId'])) {
 			invalid('invalid frame shape')
 		}
@@ -95,6 +115,7 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		if (Object.hasOwn(value, 'frameId')) invalid('a frame cannot belong to another frame')
 	} else if (
 		value.type !== 'path' &&
+		value.type !== 'widget' &&
 		!hasExactKeys(
 			value,
 			['id', 'type', 'x', 'y', 'w', 'h', 'color'],
@@ -153,6 +174,46 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 			invalid('text fontWeight must be between 100 and 900')
 		}
 	}
+}
+
+function validWidgetKind(value: unknown): value is WidgetKind {
+	return value === 'todo' || value === 'kanban' || value === 'table' || value === 'timeline'
+}
+
+function validateWidgetItems(value: unknown): void {
+	if (!Array.isArray(value) || value.length > 200)
+		invalid('widget items must be an array of at most 200 items')
+	for (const item of value) {
+		if (
+			!isObject(item) ||
+			!hasExactKeys(item, ['id', 'title'], ['done', 'status', 'start', 'end'])
+		) {
+			invalid('invalid widget item')
+		}
+		if (!validId(item.id) || typeof item.title !== 'string' || item.title.length > 200) {
+			invalid('widget item needs an id and a title of at most 200 characters')
+		}
+		if (Object.hasOwn(item, 'done') && typeof item.done !== 'boolean')
+			invalid('item done must be boolean')
+		if (Object.hasOwn(item, 'status') && typeof item.status !== 'string')
+			invalid('item status must be a string')
+		for (const key of ['start', 'end']) {
+			if (Object.hasOwn(item, key) && !validFiniteNumber(item[key]))
+				invalid(`item ${key} must be finite`)
+		}
+	}
+}
+
+function validateWidget(value: Record<string, unknown>): void {
+	if (!validWidgetKind(value.widget)) invalid('widget must be todo, kanban, table or timeline')
+	if (
+		typeof value.widgetTitle !== 'string' ||
+		value.widgetTitle.trim().length === 0 ||
+		value.widgetTitle.length > 120
+	) {
+		invalid('widgetTitle must be a non-empty string of at most 120 characters')
+	}
+	validateWidgetItems(value.items)
 }
 
 function validBrush(value: unknown): value is BrushStyle {
@@ -254,6 +315,9 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		'font',
 		'fontSize',
 		'fontWeight',
+		'widget',
+		'widgetTitle',
+		'items',
 	])
 	const connectorKeys = new Set(['from', 'to', 'color', 'fromAnchor', 'toAnchor'])
 	const allowed =
@@ -284,6 +348,22 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 			invalid('shape height must be non-negative')
 		if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
 			invalid('shape text must be a string')
+		if (target.type === 'widget') {
+			if (
+				Object.hasOwn(patch, 'widget') ||
+				Object.hasOwn(patch, 'items') ||
+				Object.hasOwn(patch, 'widgetTitle')
+			) {
+				const merged = { ...target, ...patch }
+				validateWidget(merged as Record<string, unknown>)
+			}
+		} else if (
+			Object.hasOwn(patch, 'widget') ||
+			Object.hasOwn(patch, 'items') ||
+			Object.hasOwn(patch, 'widgetTitle')
+		) {
+			invalid('widget fields are only valid for widget shapes')
+		}
 		if (Object.hasOwn(patch, 'title')) {
 			if (target.type !== 'frame') invalid('only frames have titles')
 			if (

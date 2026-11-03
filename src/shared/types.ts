@@ -1,5 +1,22 @@
-export type ShapeType = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path' | 'frame' | 'note'
+export type ShapeType =
+	| 'rectangle'
+	| 'ellipse'
+	| 'text'
+	| 'line'
+	| 'path'
+	| 'frame'
+	| 'note'
+	| 'widget'
 export type FontFamily = 'sans' | 'serif' | 'hand' | 'mono'
+export type WidgetKind = 'todo' | 'kanban' | 'table' | 'timeline'
+export interface WidgetItem {
+	id: string
+	title: string
+	done?: boolean
+	status?: string
+	start?: number
+	end?: number
+}
 export type BrushStyle = 'pencil' | 'marker' | 'brush'
 
 export interface Point {
@@ -15,6 +32,7 @@ export const ANCHOR_COUNTS: Record<ShapeType, number> = {
 	path: 12,
 	frame: 12,
 	note: 12,
+	widget: 12,
 }
 
 export interface CanvasShape {
@@ -34,6 +52,9 @@ export interface CanvasShape {
 	font?: FontFamily
 	fontSize?: number
 	fontWeight?: number
+	widget?: WidgetKind
+	widgetTitle?: string
+	items?: WidgetItem[]
 }
 
 export interface Connector {
@@ -73,6 +94,9 @@ export type Operation =
 				font?: FontFamily
 				fontSize?: number
 				fontWeight?: number
+				widget?: WidgetKind
+				widgetTitle?: string
+				items?: WidgetItem[]
 				from?: string
 				to?: string
 				fromAnchor?: number
