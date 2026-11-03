@@ -5,10 +5,10 @@ import type {
 	Board,
 	BrushStyle,
 	Connector,
-	WidgetItem,
-	WidgetKind,
 	Operation,
 	Shape,
+	WidgetItem,
+	WidgetKind,
 } from '../shared/types.ts'
 import { ANCHOR_COUNTS } from '../shared/types.ts'
 
@@ -115,7 +115,6 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		if (Object.hasOwn(value, 'frameId')) invalid('a frame cannot belong to another frame')
 	} else if (
 		value.type !== 'path' &&
-		value.type !== 'widget' &&
 		!hasExactKeys(
 			value,
 			['id', 'type', 'x', 'y', 'w', 'h', 'color'],
