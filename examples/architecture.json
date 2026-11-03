@@ -1,0 +1,107 @@
+[
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-agent",
+			"type": "rectangle",
+			"x": 140,
+			"y": 170,
+			"w": 160,
+			"h": 80,
+			"color": "#2563eb",
+			"text": "Local Agent"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-cli",
+			"type": "rectangle",
+			"x": 380,
+			"y": 170,
+			"w": 160,
+			"h": 80,
+			"color": "#2563eb",
+			"text": "Mico CLI"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-daemon",
+			"type": "rectangle",
+			"x": 620,
+			"y": 170,
+			"w": 180,
+			"h": 80,
+			"color": "#059669",
+			"text": "Mico Daemon"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-browser",
+			"type": "rectangle",
+			"x": 380,
+			"y": 360,
+			"w": 160,
+			"h": 80,
+			"color": "#ea580c",
+			"text": "Browser Canvas"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-storage",
+			"type": "ellipse",
+			"x": 650,
+			"y": 360,
+			"w": 120,
+			"h": 80,
+			"color": "#7c3aed",
+			"text": "SQLite"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-edge-1",
+			"type": "connector",
+			"from": "demo-agent",
+			"to": "demo-cli",
+			"color": "#64748b"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-edge-2",
+			"type": "connector",
+			"from": "demo-cli",
+			"to": "demo-daemon",
+			"color": "#64748b"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-edge-3",
+			"type": "connector",
+			"from": "demo-browser",
+			"to": "demo-daemon",
+			"color": "#64748b"
+		}
+	},
+	{
+		"type": "create",
+		"shape": {
+			"id": "demo-edge-4",
+			"type": "connector",
+			"from": "demo-daemon",
+			"to": "demo-storage",
+			"color": "#64748b"
+		}
+	}
+]
