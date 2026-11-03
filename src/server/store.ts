@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { Board, Connector, Operation, Shape } from '../shared/types.ts'
+import type { Board, BrushStyle, Connector, Operation, Shape } from '../shared/types.ts'
 import { ANCHOR_COUNTS } from '../shared/types.ts'
 
 export class OperationError extends Error {
@@ -74,11 +74,23 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		value.type !== 'rectangle' &&
 		value.type !== 'ellipse' &&
 		value.type !== 'text' &&
-		value.type !== 'line'
+		value.type !== 'line' &&
+		value.type !== 'path'
 	) {
 		invalid('invalid shape type')
 	}
-	if (!hasExactKeys(value, ['id', 'type', 'x', 'y', 'w', 'h', 'color'], ['text'])) {
+	if (value.type === 'path') {
+		if (
+			!hasExactKeys(
+				value,
+				['id', 'type', 'x', 'y', 'w', 'h', 'color', 'points', 'brush', 'strokeWidth'],
+				[],
+			)
+		) {
+			invalid('invalid path shape')
+		}
+		validatePath(value)
+	} else if (!hasExactKeys(value, ['id', 'type', 'x', 'y', 'w', 'h', 'color'], ['text'])) {
 		invalid('invalid canvas shape')
 	}
 	for (const key of ['x', 'y', 'w', 'h']) {
@@ -92,6 +104,43 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 	if (Object.hasOwn(value, 'text') && typeof value.text !== 'string') {
 		invalid('shape text must be a string')
 	}
+}
+
+function validBrush(value: unknown): value is BrushStyle {
+	return value === 'pencil' || value === 'marker' || value === 'brush'
+}
+
+function validStrokeWidth(value: unknown): value is number {
+	return validFiniteNumber(value) && value >= 1 && value <= 64
+}
+
+function validatePoints(value: unknown, w: number, h: number): void {
+	if (!Array.isArray(value) || value.length < 2 || value.length > 4096) {
+		invalid('path points must contain between 2 and 4096 points')
+	}
+	for (const point of value) {
+		if (!isObject(point) || !hasExactKeys(point, ['x', 'y'])) invalid('invalid path point')
+		if (!validFiniteNumber(point.x) || !validFiniteNumber(point.y)) {
+			invalid('path point coordinates must be finite numbers')
+		}
+		if (point.x < 0 || point.x > w || point.y < 0 || point.y > h) {
+			invalid('path points must stay inside the path bounds')
+		}
+	}
+}
+
+function validatePath(value: Record<string, unknown>): void {
+	if (!validBrush(value.brush)) invalid('path brush must be pencil, marker or brush')
+	if (!validStrokeWidth(value.strokeWidth)) {
+		invalid('path strokeWidth must be between 1 and 64')
+	}
+	for (const key of ['x', 'y', 'w', 'h']) {
+		if (!validFiniteNumber(value[key])) invalid(`${key} must be a finite number`)
+	}
+	if ((value.w as number) < 0 || (value.h as number) < 0) {
+		invalid('path width and height must be non-negative')
+	}
+	validatePoints(value.points, value.w as number, value.h as number)
 }
 
 function validateBoardState(board: Board): void {
@@ -142,7 +191,12 @@ function findShape(board: Board, id: string): Shape | undefined {
 function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 	const canvasKeys = new Set(['x', 'y', 'w', 'h', 'color', 'text'])
 	const connectorKeys = new Set(['from', 'to', 'color', 'fromAnchor', 'toAnchor'])
-	const allowed = target.type === 'connector' ? connectorKeys : canvasKeys
+	const allowed =
+		target.type === 'connector'
+			? connectorKeys
+			: target.type === 'path'
+				? new Set([...canvasKeys, 'points', 'brush', 'strokeWidth'])
+				: canvasKeys
 
 	for (const key of Object.keys(patch)) {
 		if (!allowed.has(key)) {
@@ -165,6 +219,21 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 			invalid('shape height must be non-negative')
 		if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
 			invalid('shape text must be a string')
+		if (target.type === 'path') {
+			if (Object.hasOwn(patch, 'brush') && !validBrush(patch.brush)) {
+				invalid('path brush must be pencil, marker or brush')
+			}
+			if (Object.hasOwn(patch, 'strokeWidth') && !validStrokeWidth(patch.strokeWidth)) {
+				invalid('path strokeWidth must be between 1 and 64')
+			}
+			if (Object.hasOwn(patch, 'points')) {
+				validatePoints(
+					patch.points,
+					(patch.w as number | undefined) ?? (target.w as number),
+					(patch.h as number | undefined) ?? (target.h as number),
+				)
+			}
+		}
 	} else {
 		for (const key of ['from', 'to']) {
 			if (Object.hasOwn(patch, key) && !validId(patch[key])) {

@@ -470,3 +470,89 @@ test('boards with out of range anchor pins fail to load', () => {
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
+
+test('path shapes validate brush, stroke width and in-bounds points', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const path = {
+		id: 'stroke',
+		type: 'path' as const,
+		x: 10,
+		y: 20,
+		w: 40,
+		h: 30,
+		color: '#5b5fc7',
+		brush: 'brush' as const,
+		strokeWidth: 6,
+		points: [
+			{ x: 0, y: 0 },
+			{ x: 20, y: 15 },
+			{ x: 40, y: 30 },
+		],
+	}
+	try {
+		store.apply({ operations: [{ type: 'create', shape: path }] })
+		assert.deepEqual(store.getBoard().shapes[0], path)
+
+		for (const patch of [
+			{ brush: 'spray' },
+			{ strokeWidth: 0 },
+			{ strokeWidth: 65 },
+			{ points: [{ x: 0, y: 0 }] },
+			{
+				points: [
+					{ x: 0, y: 0 },
+					{ x: 41, y: 0 },
+				],
+			},
+			{
+				points: [
+					{ x: 0, y: 0 },
+					{ x: Number.NaN, y: 0 },
+				],
+			},
+		]) {
+			assert.throws(
+				() => store.apply({ operations: [{ type: 'update', id: 'stroke', patch }] }),
+				(error: unknown) => error instanceof OperationError && error.status === 400,
+				JSON.stringify(patch),
+			)
+		}
+
+		const widened = store.apply({
+			operations: [
+				{
+					type: 'update',
+					id: 'stroke',
+					patch: {
+						w: 80,
+						points: [
+							{ x: 0, y: 0 },
+							{ x: 60, y: 30 },
+						],
+					},
+				},
+			],
+		})
+		assert.equal(widened.shapes[0].type, 'path')
+		assert.deepEqual((widened.shapes[0] as { points: unknown }).points, [
+			{ x: 0, y: 0 },
+			{ x: 60, y: 30 },
+		])
+
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [
+						{ type: 'create', shape: { ...path, id: 'other' } },
+						{ type: 'create', shape: { ...path, id: 'bad', brush: 'spray' } },
+					],
+				}),
+			(error: unknown) => error instanceof OperationError,
+		)
+		assert.equal(store.getBoard().shapes.length, 1)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
