@@ -11,7 +11,7 @@ export const GRID_FINE_WORLD = 8
 export const GRID_FADE = {
 	majorFull: 32,
 	majorZero: 6,
-	majorMin: 0.35,
+	majorMin: 0.06,
 	midFull: 24,
 	midZero: 8,
 	fineFull: 8,

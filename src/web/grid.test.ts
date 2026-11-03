@@ -86,6 +86,7 @@ test('dense detail fades out at low zoom while the major grid stays readable', (
 	assert.equal(tiny.detail.fine, 0)
 	assert.equal(tiny.detail.mid, 0)
 	assert.equal(tiny.detail.major, GRID_FADE.majorMin)
+	assert.ok(tiny.detail.major > 0 && tiny.detail.major <= 0.1)
 })
 
 test('detail opacity ramps monotonically as zoom grows', () => {
