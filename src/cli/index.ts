@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
+import { DAEMON_PORT } from '../shared/config.ts'
 
 const usage = `Usage:
   mico board get
@@ -31,7 +32,7 @@ async function main(args: string[]) {
 		return
 	}
 
-	const port = process.env.MICO_PORT ?? '4318'
+	const port = process.env.MICO_PORT ?? String(DAEMON_PORT)
 	if (!/^\d+$/.test(port) || Number(port) < 1 || Number(port) > 65535) {
 		throw new Error('MICO_PORT must be a valid port number')
 	}

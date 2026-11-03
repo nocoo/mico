@@ -2,14 +2,12 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import WebSocket, { WebSocketServer } from 'ws'
+import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
 import { BoardStore, OperationError } from './store.ts'
-
-const DEFAULT_PORT = 4318
-const ALLOWED_ORIGINS = new Set(['http://127.0.0.1:5173', 'http://localhost:5173'])
 
 function parsePort(): number {
 	const raw = process.env.MICO_PORT
-	if (!raw) return DEFAULT_PORT
+	if (!raw) return DAEMON_PORT
 	const port = Number(raw)
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
 		throw new Error('MICO_PORT must be an integer from 1 to 65535')
@@ -74,9 +72,14 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
 
+	function isAllowedHost(host: string | undefined): boolean {
+		const address = server.address()
+		const listeningPort = address && typeof address !== 'string' ? address.port : port
+		return host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`
+	}
+
 	const server = createServer(async (req, res) => {
-		const host = req.headers.host
-		if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) {
+		if (!isAllowedHost(req.headers.host)) {
 			sendError(res, 403, 'FORBIDDEN_HOST', 'Host is not allowed')
 			return
 		}
@@ -179,8 +182,7 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 	})
 
 	server.on('upgrade', (req, socket, head) => {
-		const host = req.headers.host
-		if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) {
+		if (!isAllowedHost(req.headers.host)) {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return

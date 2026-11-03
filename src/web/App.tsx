@@ -4,9 +4,8 @@ import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from 
 import { getConnectorAnchors } from './anchors'
 import { canRebaseMove } from './move'
 
-const port = import.meta.env.VITE_MICO_PORT || '4318'
-const API = `http://127.0.0.1:${port}`
-const WS_URL = `ws://127.0.0.1:${port}/api/events`
+const WS_URL = new URL('/api/events', window.location.href)
+WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
 const isConnector = (shape: Shape): shape is Connector => shape.type === 'connector'
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
@@ -167,14 +166,14 @@ export default function App() {
 					const revision = canRebase
 						? revisionRef.current
 						: (expectedRevision ?? revisionRef.current)
-					const response = await fetch(`${API}/api/operations`, {
+					const response = await fetch('/api/operations', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						signal: AbortSignal.timeout(10000),
 						body: JSON.stringify({ operations, expectedRevision: revision }),
 					})
 					if (!response.ok) {
-						const current = await fetch(`${API}/api/board`, { signal: AbortSignal.timeout(10000) })
+						const current = await fetch('/api/board', { signal: AbortSignal.timeout(10000) })
 						if (current.ok) applyBoard((await current.json()) as Board)
 						announce(`Operation failed: HTTP ${response.status}`)
 						return false
@@ -200,7 +199,7 @@ export default function App() {
 
 		const fetchBoard = async () => {
 			try {
-				const response = await fetch(`${API}/api/board`)
+				const response = await fetch('/api/board', { signal: AbortSignal.timeout(10000) })
 				if (!response.ok) throw new Error(`HTTP ${response.status}`)
 				const next = (await response.json()) as Board
 				if (!stopped) {
@@ -220,9 +219,13 @@ export default function App() {
 
 		const connect = () => {
 			if (stopped) return
-			socket = new WebSocket(WS_URL)
-			socket.onopen = () => setWsConnected(true)
-			socket.onmessage = (event) => {
+			const current = new WebSocket(WS_URL)
+			socket = current
+			current.onopen = () => {
+				if (!stopped) setWsConnected(true)
+			}
+			current.onmessage = (event) => {
+				if (stopped) return
 				try {
 					const next = JSON.parse(event.data) as Board
 					applyBoard(next)
@@ -231,11 +234,12 @@ export default function App() {
 					announce('Invalid board event')
 				}
 			}
-			socket.onclose = () => {
+			current.onclose = () => {
+				if (stopped) return
 				setWsConnected(false)
 				retry = window.setTimeout(connect, 2000)
 			}
-			socket.onerror = () => socket?.close()
+			current.onerror = () => current.close()
 		}
 
 		connect()

@@ -1,5 +1,11 @@
 # Retrospective
 
+## HTTPS development setup
+
+- Fetch does not reliably forward an overridden Host header. Validate against the server's actual listening port so ephemeral-port tests exercise the real HTTP contract instead of a synthetic `:0` host.
+- Exact replacements must include enough surrounding context to distinguish repeated test headers; batch edits only after checking uniqueness.
+- Tool paths in skills can lag the machine. Use the installed `openssl` when the documented keg path is absent, and inspect only relevant process metadata during browser discovery.
+
 ## MVP integration
 
 - The frontend and daemon initially disagreed about signed line dimensions. Define edge-case contracts explicitly and test both directions before integration.

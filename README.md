@@ -20,7 +20,11 @@ In another terminal:
 pnpm dev
 ```
 
-Open <http://127.0.0.1:5173/>. The daemon listens only on `127.0.0.1:4318` and stores its board in `.mico/board.sqlite`. `MICO_PORT` and `MICO_DB_PATH` override the daemon's port and database path; the CLI also respects `MICO_PORT`. If changing the port, start Vite with the matching `VITE_MICO_PORT`.
+Open <https://mico.dev.hexly.ai/>. Caddy proxies to Vite on `127.0.0.1:7063`; Vite proxies `/api` (including WebSocket upgrades) to the loopback-only daemon on `127.0.0.1:37063`. The browser uses same-origin HTTPS/WSS, never mixed-content loopback requests. The daemon stores its board in `.mico/board.sqlite`.
+
+Vite hot-reloads frontend changes; `pnpm daemon` watches daemon source changes and restarts automatically. API and CLI writes update open canvases live over WebSocket, with automatic reconnection and a three-second polling fallback. `MICO_PORT` overrides the daemon port for the daemon, CLI, and Vite proxy; set it consistently in both terminals. `MICO_DB_PATH` overrides the database path.
+
+Port allocation: development `7063`, E2E `17063`, browser/BDD `27063`, internal daemon `37063`. Automated tests must use an isolated database and loopback endpoint, not the daily board. The shared Caddy mapping lives in `workflow/caddy/Caddyfile` and the active machine's `/opt/homebrew/etc/Caddyfile`; the existing `*.dev.hexly.ai` certificate covers this hostname.
 
 The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool, then click the source and target objects. Connectors automatically choose the nearest fixed anchor points and may switch anchors as objects move.
 
