@@ -104,6 +104,19 @@ svg {
 	--icon-size: var(--icon-standard);
 	--text-ui: var(--type-body);
 	--frame-inset: var(--space-3);
+	--dock-rows: 1;
+	--dock-width: calc(var(--control-size) * 12 + var(--space-8) + var(--space-2) * 6);
+	--dock-height: calc(
+		var(--control-size) *
+		var(--dock-rows) +
+		var(--space-1) *
+		(var(--dock-rows) - 1) +
+		var(--space-2)
+	);
+	--popover-width: min(
+		var(--panel-width),
+		round(down, calc(100vw - var(--space-4)), var(--space-2))
+	);
 	--frame-inline-end: calc(
 		100% -
 		round(down, 100%, var(--space-1)) +
@@ -141,7 +154,7 @@ svg {
 	background-clip: padding-box;
 }
 .topbar {
-	position: absolute;
+	position: fixed;
 	inset: calc(var(--frame-inset) + env(safe-area-inset-top, 0px)) var(--frame-inline-end) auto
 		calc(var(--frame-inset) + env(safe-area-inset-left, 0px));
 	z-index: 20;
@@ -152,7 +165,6 @@ svg {
 	pointer-events: none;
 }
 .identity-panel,
-.view-panel,
 .toolbar {
 	display: flex;
 	align-items: center;
@@ -235,12 +247,16 @@ svg {
 .status.offline .status-dot {
 	background: var(--danger);
 }
-.view-panel {
-	gap: 0;
-}
+.drawing-tools,
+.view-controls,
 .zoom-controls {
 	display: flex;
 	align-items: center;
+}
+.view-controls {
+	padding: 0;
+	border: 0;
+	min-width: 0;
 }
 .icon-button,
 .text-button {
@@ -337,13 +353,12 @@ svg {
 	visibility: hidden;
 }
 .toolbar {
-	position: absolute;
+	position: fixed;
 	z-index: 20;
-	left: round(nearest, 50%, var(--space-1));
+	left: round(nearest, 50vw, var(--space-1));
 	bottom: var(--frame-block-end);
-	width: max-content;
-	max-width: round(down, calc(100% - var(--space-4)), var(--space-2));
-	transform: translateX(-50%);
+	width: var(--dock-width);
+	margin-left: calc(var(--dock-width) / -2);
 	gap: 0;
 }
 .tool-slot {
@@ -357,17 +372,22 @@ svg {
 	color: var(--danger);
 }
 .view-settings {
-	position: relative;
 	padding: 0;
 	border: 0;
 	min-width: 0;
 }
 .settings-panel {
-	position: absolute;
-	top: calc(100% + var(--space-3));
-	right: calc(-1 * var(--space-1));
+	position: fixed;
+	bottom: calc(var(--frame-block-end) + var(--dock-height) + var(--space-2));
+	right: clamp(
+		var(--frame-inline-end),
+		calc(100vw - round(nearest, 50vw, var(--space-1)) - var(--dock-width) / 2),
+		calc(100vw - var(--frame-inset) - var(--popover-width))
+	);
 	z-index: 40;
-	width: var(--panel-width);
+	width: var(--popover-width);
+	max-height: calc(100dvh - var(--dock-height) - var(--frame-inset) * 2 - var(--space-4));
+	overflow-y: auto;
 	padding: calc(var(--space-2) - var(--hairline));
 	box-shadow: var(--shadow-popover);
 }
@@ -574,7 +594,7 @@ svg {
 	pointer-events: none;
 }
 .connector-tip {
-	bottom: calc(var(--frame-inset) + var(--control-size) + var(--space-4));
+	bottom: calc(var(--frame-block-end) + var(--dock-height) + var(--space-2));
 	color: var(--accent);
 }
 .notice {
@@ -636,6 +656,8 @@ svg {
 @media (max-width: 720px) {
 	.app {
 		--frame-inset: var(--space-2);
+		--dock-rows: 2;
+		--dock-width: calc(var(--control-size) * 8 + var(--space-8));
 	}
 	.identity-panel {
 		max-width: 100%;
@@ -643,38 +665,50 @@ svg {
 	.identity-panel > .panel-divider {
 		display: none;
 	}
-	.view-panel {
-		position: absolute;
-		right: 0;
-		top: calc(var(--control-size) + var(--space-4));
+	.toolbar {
+		flex-direction: column;
+		gap: var(--space-1);
 	}
-	.inspector {
-		top: calc(var(--frame-inset) + var(--control-size) * 2 + var(--space-8));
+	.toolbar > .dock-divider {
+		display: none;
 	}
 	.notice {
 		top: auto;
-		bottom: calc(var(--frame-inset) + var(--control-size) + var(--space-4));
+		bottom: calc(var(--frame-block-end) + var(--dock-height) + var(--space-2));
 	}
 }
 @media (max-width: 480px) {
+	.app {
+		--dock-width: calc(var(--control-size) * 8 + var(--space-2));
+	}
+	.app[data-control-tier="roomy"] {
+		--dock-rows: 3;
+		--dock-width: calc(var(--control-size) * 4 + var(--space-8) + var(--space-2));
+	}
 	.toolbar .panel-divider {
 		display: none;
 	}
-	.toolbar {
-		overflow-x: auto;
-		overflow-y: hidden;
-	}
-	.toolbar .control-tooltip {
-		display: none;
-	}
-	.settings-panel {
-		width: min(var(--panel-width), calc(100vw - var(--space-4)));
+	.app[data-control-tier="roomy"] .drawing-tools {
+		display: grid;
+		grid-template-columns: repeat(4, var(--control-size));
+		row-gap: var(--space-1);
 	}
 	.version {
 		display: none;
 	}
 	.inspector {
 		width: min(var(--panel-width), calc(100vw - var(--space-4)));
+	}
+}
+@media (max-width: 384px) {
+	.app {
+		--dock-rows: 3;
+		--dock-width: calc(var(--control-size) * 4 + var(--space-8) + var(--space-2));
+	}
+	.drawing-tools {
+		display: grid;
+		grid-template-columns: repeat(4, var(--control-size));
+		row-gap: var(--space-1);
 	}
 }
 @media (prefers-reduced-motion: reduce) {

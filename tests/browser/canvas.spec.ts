@@ -129,7 +129,9 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	page,
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
-	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(8)
+	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(12)
+	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
+	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
 	const select = page.getByRole('button', { name: 'Select', exact: true })
 	await expect(select.locator('kbd')).toBeHidden()
 	await select.hover()
@@ -306,7 +308,7 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 	await page.getByRole('button', { name: 'Fit board', exact: true }).click()
 	const viewport = page.viewportSize()
 	if (!viewport) throw new Error('Missing viewport')
-	for (const selector of ['.identity-panel', '.view-panel', '.toolbar']) {
+	for (const selector of ['.identity-panel', '.toolbar']) {
 		const box = await page.locator(selector).boundingBox()
 		expect(box).not.toBeNull()
 		if (box) {
