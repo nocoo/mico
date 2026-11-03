@@ -15,7 +15,7 @@ For angles in the first quadrant:
 - 2 points: all three terminal rays and points are placed in approximately correct first-quadrant positions.
 - 2 points: exact coordinate pairs are correct for 30°, 45°, and 60°.
 - 2 points: sin/cos/tan exact values are all correct for all three angles, with no decimal-only requirement.
-- 1 point: tangent-line geometric construction is correct and x = 1 is identifiable.
+- 1 point: a correct geometric construction of the tangent is identifiable, such as a segment on x = 1 or the tangent at the terminal point.
 - 1 point: trend table or arrow sequence correctly shows sin/tan increasing and cos decreasing from 30° to 60°.
 
 # Accepted equivalents

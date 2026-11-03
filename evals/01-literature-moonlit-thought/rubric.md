@@ -9,7 +9,7 @@ Li Bai's _Quiet Night Thought_ depicts moonlight before the bed that the speaker
 - 2 points: includes a frost-like pale ground or floor effect without relying on written labels.
 - 2 points: depicts both upward moon-gazing and downward homesick reflection, using pose, eye/gaze direction, or a compact before/after visual sequence.
 - 1 point: a distant hometown is conveyed by a village, rooftops, road, mountains, or a remembered place, rather than a generic landscape only.
-- 1 point: composition is a single illustrated scene, contains no text, numbers, arrows used as labels, or explanatory boxes.
+- 1 point: composition is an illustration or unlabelled diptych on one canvas, with no text, numbers, arrows used as labels, or explanatory boxes.
 
 # Accepted equivalents
 

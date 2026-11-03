@@ -20,6 +20,6 @@ For a 2n = 4 germ-line cell:
 # Accepted equivalents
 
 - One or more recombination crosses may be shown by exchanged colored segments.
-- Independent assortment across separate meiotic outcomes may be represented by a second alignment, but not as four different gametes from one single alignment. Exact gamete sequences are accepted if genetically consistent with the depicted pair separation.
+- Without crossover, four independent-assortment combinations require separate meiotic alignments. With crossover, four gametes from one alignment may differ in exchanged segments; accept any genetically consistent chromatids matching the depicted separation.
 - Pre-meiosis S phase may be combined with the initial 2n = 4 diagram rather than a separate stage.
 - A chromosome bar, X-shaped pair, or duplicated-line symbol is accepted if its chromatid count is unambiguous.
