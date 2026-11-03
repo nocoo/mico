@@ -7,11 +7,18 @@ import { IconButton } from './IconButton'
 interface PropertiesBarProps {
 	selected: Shape
 	onColorChange: (color: string) => void
+	onFillChange?: (fill: string | null) => void
 	onClose: () => void
 	children?: ReactNode
 }
 
-export function PropertiesBar({ selected, onColorChange, onClose, children }: PropertiesBarProps) {
+export function PropertiesBar({
+	selected,
+	onColorChange,
+	onFillChange,
+	onClose,
+	children,
+}: PropertiesBarProps) {
 	const [colorOpen, setColorOpen] = useState(false)
 	const root = useRef<HTMLElement>(null)
 
@@ -57,8 +64,57 @@ export function PropertiesBar({ selected, onColorChange, onClose, children }: Pr
 					id="shape-color-panel"
 					aria-label="Shape color"
 				>
+					{onFillChange && (selected.type === 'rectangle' || selected.type === 'ellipse') && (
+						<>
+							<div className="panel-heading">
+								<strong>Fill</strong>
+								<span>Transparent or hex</span>
+							</div>
+							<div className="fill-row">
+								<button
+									type="button"
+									className={`fill-transparent ${selected.fill === null ? 'chosen' : ''}`}
+									aria-label="Set fill Transparent"
+									aria-pressed={selected.fill === null}
+									onClick={() => {
+										onFillChange(null)
+										setColorOpen(false)
+									}}
+								>
+									<span aria-hidden="true">Ø</span>
+								</button>
+								{SHAPE_COLORS.map(({ value, label }) => (
+									<button
+										type="button"
+										key={value}
+										className={selected.fill === value ? 'chosen' : ''}
+										style={{ background: value }}
+										aria-label={`Set fill ${label}`}
+										aria-pressed={selected.fill === value}
+										title={label}
+										onClick={() => {
+											onFillChange(value)
+											setColorOpen(false)
+										}}
+									/>
+								))}
+								<label
+									className="custom-color"
+									title={`Custom fill (${selected.fill ?? 'default'})`}
+								>
+									<Pipette aria-hidden="true" strokeWidth={1.5} />
+									<input
+										type="color"
+										value={selected.fill ?? '#ffffff'}
+										onChange={(event) => onFillChange(event.target.value)}
+										aria-label="Custom fill"
+									/>
+								</label>
+							</div>
+						</>
+					)}
 					<div className="panel-heading">
-						<strong>Color</strong>
+						<strong>Stroke</strong>
 						<span>Selected object</span>
 					</div>
 					<div className="color-row">

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Board, CanvasShape, Shape } from '../shared/types.ts'
-import { canRebaseConnector, findSnapTarget } from './connections.ts'
+import { canRebaseConnector, findSnapTarget, trimConnectorHitSegment } from './connections.ts'
 
 const rectangle: CanvasShape = {
 	id: 'a',
@@ -40,6 +40,23 @@ const connector: Shape = {
 	to: 'e',
 	color: '#616161',
 }
+
+test('short connector hit segments keep a selectable midpoint', () => {
+	const short = trimConnectorHitSegment({ x: 100, y: 100 }, { x: 108, y: 100 }, 1)
+	assert.ok(short)
+	assert.equal(short.start.y, 100)
+	assert.equal(short.end.y, 100)
+	assert.equal(short.start.x, 102)
+	assert.equal(short.end.x, 106)
+	assert.equal(short.short, true)
+
+	const degenerate = trimConnectorHitSegment({ x: 100, y: 100 }, { x: 100, y: 100 }, 1)
+	assert.equal(degenerate.start.x, 96)
+	assert.equal(degenerate.end.x, 104)
+
+	const long = trimConnectorHitSegment({ x: 0, y: 0 }, { x: 100, y: 0 }, 1)
+	assert.deepEqual(long, { start: { x: 24, y: 0 }, end: { x: 76, y: 0 }, short: false })
+})
 
 test('snapping picks the nearest anchor of the closest node', () => {
 	const target = findSnapTarget([rectangle], { x: 52, y: 2 }, 'other', 1)

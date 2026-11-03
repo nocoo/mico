@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type {
 	Board,
 	BrushStyle,
@@ -8,14 +8,13 @@ import type {
 	Operation,
 	Point,
 	Shape,
-	ShapeType,
 } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
-import { canRebaseConnector } from './connections'
+import { canRebaseConnector, trimConnectorHitSegment } from './connections'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
@@ -41,6 +40,7 @@ import {
 	shapeBounds,
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
+import { deriveTextBounds } from './textBounds'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
 import { WidgetCard } from './WidgetCard'
@@ -51,6 +51,31 @@ WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
 const isConnector = (shape: Shape): shape is Connector => shape.type === 'connector'
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
+
+const shapeFill = (shape: CanvasShape) =>
+	shape.fill === undefined ? 'var(--surface)' : shape.fill === null ? 'none' : shape.fill
+
+const shapeTextColor = (shape: CanvasShape) => {
+	if (!shape.fill) return '#172033'
+	const hex = shape.fill.slice(1)
+	if (!/^([0-9a-f]{6})$/i.test(hex)) return '#172033'
+	const channels = [0, 2, 4].map(
+		(offset) => Number.parseInt(hex.slice(offset, offset + 2), 16) / 255,
+	)
+	const linear = channels.map((channel) =>
+		channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
+	)
+	const luminance = 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+	const darkLinear = [23, 32, 51].map((channel) => {
+		const value = channel / 255
+		return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+	})
+	const darkLuminance = 0.2126 * darkLinear[0] + 0.7152 * darkLinear[1] + 0.0722 * darkLinear[2]
+	const darkContrast =
+		(Math.max(luminance, darkLuminance) + 0.05) / (Math.min(luminance, darkLuminance) + 0.05)
+	const whiteContrast = 1.05 / (luminance + 0.05)
+	return whiteContrast >= darkContrast ? '#ffffff' : '#172033'
+}
 
 const randomId = () => crypto.randomUUID()
 
@@ -147,6 +172,104 @@ function TextField({
 	)
 }
 
+function TypographicTextShape({
+	shape,
+	active,
+	cursor,
+	onPointerDown,
+}: {
+	shape: CanvasShape
+	active: boolean
+	cursor: string
+	onPointerDown: (event: React.PointerEvent<SVGGElement>) => void
+}) {
+	const textRef = useRef<HTMLDivElement>(null)
+	const [measuredBounds, setMeasuredBounds] = useState({
+		x: shape.x,
+		y: shape.y,
+		w: shape.w,
+		h: shape.h,
+	})
+
+	useLayoutEffect(() => {
+		let stopped = false
+		const measure = () => {
+			if (stopped) return
+			const measured = deriveTextBounds([shape], textRef.current?.ownerDocument ?? null)[0]
+			if (measured.type !== 'connector') {
+				setMeasuredBounds((current) =>
+					current.x === measured.x &&
+					current.y === measured.y &&
+					current.w === measured.w &&
+					current.h === measured.h
+						? current
+						: { x: measured.x, y: measured.y, w: measured.w, h: measured.h },
+				)
+			}
+		}
+
+		measure()
+		const observer = textRef.current ? new ResizeObserver(measure) : null
+		if (textRef.current) observer?.observe(textRef.current)
+		void document.fonts?.ready.then(measure)
+
+		return () => {
+			stopped = true
+			observer?.disconnect()
+		}
+	}, [shape])
+
+	const visibleX = Math.min(shape.x, measuredBounds.x)
+	const visibleY = Math.min(shape.y, measuredBounds.y)
+	const visibleRight = Math.max(shape.x + shape.w, measuredBounds.x + measuredBounds.w)
+	const visibleBottom = Math.max(shape.y + shape.h, measuredBounds.y + measuredBounds.h)
+	const visibleWidth = visibleRight - visibleX
+	const visibleHeight = visibleBottom - visibleY
+	const font = shape.font ?? 'sans'
+	return (
+		<g
+			className="canvas-shape"
+			data-shape-id={shape.id}
+			style={{ cursor }}
+			onPointerDown={onPointerDown}
+		>
+			<rect
+				className="text-hit-target"
+				x={visibleX}
+				y={visibleY}
+				width={visibleWidth}
+				height={visibleHeight}
+				fill="transparent"
+				pointerEvents="all"
+			/>
+			{active && (
+				<rect
+					className="selection"
+					x={visibleX - 4}
+					y={visibleY - 4}
+					width={visibleWidth + 8}
+					height={visibleHeight + 8}
+					rx={6}
+				/>
+			)}
+			<foreignObject x={shape.x} y={shape.y} width={shape.w} height={shape.h} pointerEvents="all">
+				<div
+					ref={textRef}
+					className="typographic-text"
+					style={{
+						fontFamily: FONT_STACKS[font],
+						fontSize: `${shape.fontSize ?? 32}px`,
+						fontWeight: shape.fontWeight ?? 500,
+						color: shape.color,
+					}}
+				>
+					{shape.text || 'Type something'}
+				</div>
+			</foreignObject>
+		</g>
+	)
+}
+
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const initialViewFitted = useRef(false)
@@ -169,6 +292,7 @@ export default function App() {
 
 	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
+	const [initialFitReady, setInitialFitReady] = useState(false)
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
 	const [marquee, setMarquee] = useState<Rect | null>(null)
@@ -195,6 +319,26 @@ export default function App() {
 
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
 
+	const cancelInitialFit = useCallback(() => {
+		if (initialViewFitted.current) return
+		initialViewFitted.current = true
+		setInitialFitReady(true)
+	}, [])
+
+	const getFitBottomInset = useCallback(() => {
+		const canvasRect = svgRef.current?.getBoundingClientRect()
+		const toolbarRect = document.querySelector<HTMLElement>('.toolbar')?.getBoundingClientRect()
+		if (!canvasRect || !toolbarRect) return 80
+
+		const canvasHeight = Number.isFinite(canvasRect.height) ? Math.max(1, canvasRect.height) : 1
+		const toolbarTopInCanvas = Number.isFinite(toolbarRect.top)
+			? toolbarRect.top - canvasRect.top
+			: canvasHeight
+		const suitableGap = 16
+		const desiredBottom = Math.max(80, toolbarTopInCanvas - suitableGap)
+		return Math.max(80, canvasHeight - desiredBottom)
+	}, [])
+
 	const announce = useCallback((message: string) => {
 		setNotice(message)
 		window.setTimeout(() => setNotice((current) => (current === message ? '' : current)), 2600)
@@ -205,13 +349,6 @@ export default function App() {
 		revisionRef.current = next.revision
 		boardRef.current = next
 		setBoard(next)
-		if (!initialViewFitted.current) {
-			const rect = svgRef.current?.getBoundingClientRect()
-			if (rect) {
-				setViewport(fitViewport(next.shapes, rect.width, rect.height))
-				initialViewFitted.current = true
-			}
-		}
 		setSelectedIds((current) =>
 			current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 		)
@@ -316,6 +453,29 @@ export default function App() {
 		}
 	}, [announce, applyBoard])
 
+	useEffect(() => {
+		if (initialViewFitted.current || board.shapes.length === 0) return
+		let stopped = false
+
+		void (async () => {
+			await document.fonts?.ready
+			await new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			)
+			if (stopped || initialViewFitted.current) return
+			const rect = svgRef.current?.getBoundingClientRect()
+			if (!rect) return
+			const measuredShapes = deriveTextBounds(boardRef.current.shapes, svgRef.current)
+			setViewport(fitViewport(measuredShapes, rect.width, rect.height, getFitBottomInset()))
+			initialViewFitted.current = true
+			setInitialFitReady(true)
+		})()
+
+		return () => {
+			stopped = true
+		}
+	}, [board.shapes.length, getFitBottomInset])
+
 	const clientToWorld = (clientX: number, clientY: number) => {
 		const rect = svgRef.current?.getBoundingClientRect()
 		if (!rect) return { x: 0, y: 0 }
@@ -327,6 +487,7 @@ export default function App() {
 
 	const zoomAt = useCallback(
 		(nextZoom: number, clientX?: number, clientY?: number) => {
+			cancelInitialFit()
 			const rect = svgRef.current?.getBoundingClientRect()
 			const cx = clientX === undefined ? (rect?.left ?? 0) + (rect?.width ?? 0) / 2 : clientX
 			const cy = clientY === undefined ? (rect?.top ?? 0) + (rect?.height ?? 0) / 2 : clientY
@@ -337,13 +498,17 @@ export default function App() {
 			const worldY = (ry - viewport.y) / viewport.zoom
 			setViewport({ x: rx - worldX * zoom, y: ry - worldY * zoom, zoom })
 		},
-		[viewport],
+		[viewport, cancelInitialFit],
 	)
 
 	const fitBoard = useCallback(() => {
+		cancelInitialFit()
 		const rect = svgRef.current?.getBoundingClientRect()
-		if (rect) setViewport(fitViewport(boardRef.current.shapes, rect.width, rect.height))
-	}, [])
+		if (rect) {
+			const measuredShapes = deriveTextBounds(boardRef.current.shapes, svgRef.current)
+			setViewport(fitViewport(measuredShapes, rect.width, rect.height, getFitBottomInset()))
+		}
+	}, [cancelInitialFit, getFitBottomInset])
 
 	const intersectsWidget = (rect: Rect, ignored: string) =>
 		board.shapes.some(
@@ -381,6 +546,7 @@ export default function App() {
 	}, [])
 
 	const cancelInteraction = useCallback(() => {
+		cancelInitialFit()
 		const interaction = interactionRef.current
 		interactionRef.current = null
 		setCreation(null)
@@ -395,7 +561,7 @@ export default function App() {
 		if (interaction && svgRef.current?.hasPointerCapture(interaction.pointerId)) {
 			svgRef.current.releasePointerCapture(interaction.pointerId)
 		}
-	}, [clearDragPreview, connection.cancel])
+	}, [cancelInitialFit, clearDragPreview, connection.cancel])
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -410,6 +576,7 @@ export default function App() {
 
 			if (event.code === 'Space') {
 				event.preventDefault()
+				cancelInitialFit()
 				setSpacePressed(true)
 			}
 			if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -435,7 +602,10 @@ export default function App() {
 			}
 			if (event.key === '+' || event.key === '=') zoomAt(viewport.zoom * 1.2)
 			if (event.key === '-') zoomAt(viewport.zoom / 1.2)
-			if (event.key === '0') setViewport({ x: 0, y: 0, zoom: 1 })
+			if (event.key === '0') {
+				cancelInitialFit()
+				setViewport({ x: 0, y: 0, zoom: 1 })
+			}
 			if (event.key.toLowerCase() === 'f') fitBoard()
 		}
 		const onKeyUp = (event: KeyboardEvent) => {
@@ -453,9 +623,10 @@ export default function App() {
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction, deleteSelected, fitBoard, viewport.zoom, zoomAt])
+	}, [cancelInitialFit, cancelInteraction, deleteSelected, fitBoard, viewport.zoom, zoomAt])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
+		cancelInitialFit()
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
 
 		const shouldPan = event.button === 1 || spacePressed || tool === 'hand'
@@ -697,7 +868,8 @@ export default function App() {
 		}
 
 		if (interaction.mode === 'marquee' && marquee) {
-			setSelectedIds(selectInRect(board.shapes, marquee))
+			const measuredShapes = deriveTextBounds(board.shapes, svgRef.current)
+			setSelectedIds(selectInRect(measuredShapes, marquee))
 			setMarquee(null)
 		}
 
@@ -826,6 +998,7 @@ export default function App() {
 	}
 
 	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
+		cancelInitialFit()
 		if (interactionRef.current) {
 			event.stopPropagation()
 			return
@@ -921,7 +1094,8 @@ export default function App() {
 			const shape = board.shapes.find((candidate) => candidate.id === id)
 			return shape && isCanvasShape(shape) && shape.type !== 'frame'
 		})
-		const bounds = boundsOf(board.shapes, members)
+		const measuredShapes = deriveTextBounds(board.shapes, svgRef.current)
+		const bounds = boundsOf(measuredShapes, members)
 		if (!bounds) return
 		const frameId = randomId()
 		const rect = expandRect(bounds, 32)
@@ -973,6 +1147,7 @@ export default function App() {
 						y2={b.y}
 						stroke="transparent"
 						strokeWidth={16}
+						pointerEvents="none"
 						vectorEffect="non-scaling-stroke"
 					/>
 					<line
@@ -983,6 +1158,7 @@ export default function App() {
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 						markerEnd="url(#arrow)"
+						pointerEvents="none"
 						vectorEffect="non-scaling-stroke"
 					/>
 				</g>
@@ -1009,7 +1185,8 @@ export default function App() {
 						width={shape.w}
 						height={shape.h}
 						rx={10}
-						fill="var(--surface)"
+						fill={shapeFill(shape)}
+						pointerEvents="all"
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 					/>
@@ -1027,7 +1204,7 @@ export default function App() {
 						<text
 							x={shape.x + shape.w / 2}
 							y={shape.y + shape.h / 2}
-							fill="#172033"
+							fill={shapeTextColor(shape)}
 							textAnchor="middle"
 							dominantBaseline="middle"
 						>
@@ -1045,7 +1222,8 @@ export default function App() {
 						cy={shape.y + shape.h / 2}
 						rx={shape.w / 2}
 						ry={shape.h / 2}
-						fill="var(--surface)"
+						fill={shapeFill(shape)}
+						pointerEvents="all"
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 					/>
@@ -1063,7 +1241,7 @@ export default function App() {
 						<text
 							x={shape.x + shape.w / 2}
 							y={shape.y + shape.h / 2}
-							fill="#172033"
+							fill={shapeTextColor(shape)}
 							textAnchor="middle"
 							dominantBaseline="middle"
 						>
@@ -1164,39 +1342,14 @@ export default function App() {
 			)
 		}
 		if (shape.type === 'text') {
-			const font = shape.font ?? 'sans'
 			return (
-				<g key={shape.id} {...common}>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={6}
-						/>
-					)}
-					<foreignObject
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						pointerEvents="none"
-					>
-						<div
-							className="typographic-text"
-							style={{
-								fontFamily: FONT_STACKS[font],
-								fontSize: `${shape.fontSize ?? 32}px`,
-								fontWeight: shape.fontWeight ?? 500,
-								color: shape.color,
-							}}
-						>
-							{shape.text || 'Type something'}
-						</div>
-					</foreignObject>
-				</g>
+				<TypographicTextShape
+					key={shape.id}
+					shape={shape}
+					active={active}
+					cursor={common.style.cursor}
+					onPointerDown={common.onPointerDown}
+				/>
 			)
 		}
 		if (shape.type === 'path' && shape.points && shape.brush && shape.strokeWidth) {
@@ -1374,7 +1527,10 @@ export default function App() {
 				}}
 				zoom={viewport.zoom}
 				onZoom={(factor) => zoomAt(viewport.zoom * factor)}
-				onReset={() => setViewport({ x: 0, y: 0, zoom: 1 })}
+				onReset={() => {
+					cancelInitialFit()
+					setViewport({ x: 0, y: 0, zoom: 1 })
+				}}
 				onFit={fitBoard}
 				onDelete={deleteSelected}
 				canDelete={selectedIds.length > 0}
@@ -1391,6 +1547,9 @@ export default function App() {
 							key={selected.id}
 							selected={selected}
 							onColorChange={updateSelectedColor}
+							onFillChange={(fill) =>
+								void postOperations([{ type: 'update', id: selected.id, patch: { fill } }])
+							}
 							onClose={() => setSelectedIds([])}
 						>
 							{isCanvasShape(selected) &&
@@ -1622,6 +1781,7 @@ export default function App() {
 			<svg
 				ref={svgRef}
 				className="canvas"
+				data-initial-fit-ready={initialFitReady ? 'true' : 'false'}
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
 				onPointerUp={onCanvasPointerUp}
@@ -1630,6 +1790,7 @@ export default function App() {
 				}}
 				onWheel={(event) => {
 					event.preventDefault()
+					cancelInitialFit()
 					zoomAt(viewport.zoom * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
 				}}
 				aria-label="Infinite canvas"
@@ -1668,11 +1829,8 @@ export default function App() {
 							vectorEffect="non-scaling-stroke"
 						/>
 					)}
-					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
-					{visibleShapes
-						.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
-						.map(renderShape)}
+					{visibleShapes.filter((shape) => shape.type !== 'frame').map(renderShape)}
 					{creation && renderShape(creation)}
 					{brushPoints && (
 						<BrushStroke
@@ -1695,6 +1853,32 @@ export default function App() {
 							vectorEffect="non-scaling-stroke"
 						/>
 					))}
+					{tool === 'select' &&
+						visibleShapes.filter(isConnector).map((shape) => {
+							const from = visibleShapes.find((item) => item.id === shape.from)
+							const to = visibleShapes.find((item) => item.id === shape.to)
+							if (!from || !to || !isCanvasShape(from) || !isCanvasShape(to)) return null
+							const { start, end } = getConnectorAnchors(from, to, shape)
+							const hit = trimConnectorHitSegment(start, end, viewport.zoom)
+							return (
+								<g
+									key={`hit:${shape.id}`}
+									className="connector-hit"
+									onPointerDown={(event) => onShapePointerDown(event, shape)}
+								>
+									<line
+										x1={hit.start.x}
+										y1={hit.start.y}
+										x2={hit.end.x}
+										y2={hit.end.y}
+										stroke="transparent"
+										strokeWidth={hit.short ? 4 : 16}
+										pointerEvents="stroke"
+										vectorEffect="non-scaling-stroke"
+									/>
+								</g>
+							)
+						})}
 					<ConnectionOverlay
 						draft={connection.draft}
 						preview={connection.preview}

@@ -51,6 +51,10 @@ function validColor(value: unknown): value is string {
 	return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
 }
 
+function validFill(value: unknown): value is string | null {
+	return value === null || validColor(value)
+}
+
 function validFiniteNumber(value: unknown): value is number {
 	return typeof value === 'number' && Number.isFinite(value)
 }
@@ -118,7 +122,7 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		!hasExactKeys(
 			value,
 			['id', 'type', 'x', 'y', 'w', 'h', 'color'],
-			['text', 'frameId', 'font', 'fontSize', 'fontWeight'],
+			['text', 'frameId', 'font', 'fontSize', 'fontWeight', 'fill'],
 		)
 	) {
 		invalid('invalid canvas shape')
@@ -145,6 +149,12 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 	}
 	if (Object.hasOwn(value, 'text') && typeof value.text !== 'string') {
 		invalid('shape text must be a string')
+	}
+	if (Object.hasOwn(value, 'fill')) {
+		if (value.type !== 'rectangle' && value.type !== 'ellipse') {
+			invalid('fill is only valid for rectangle and ellipse shapes')
+		}
+		if (!validFill(value.fill)) invalid('shape fill must be null or a six-digit hex color')
 	}
 	if (Object.hasOwn(value, 'frameId')) {
 		if (!validId(value.frameId)) invalid('frameId must be a non-empty shape id')
@@ -308,6 +318,7 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		'w',
 		'h',
 		'color',
+		'fill',
 		'text',
 		'frameId',
 		'title',
@@ -334,6 +345,12 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 
 	if (Object.hasOwn(patch, 'color') && !validColor(patch.color)) {
 		invalid('shape color must be a non-empty string')
+	}
+	if (Object.hasOwn(patch, 'fill')) {
+		if (target.type !== 'rectangle' && target.type !== 'ellipse') {
+			invalid('fill is only valid for rectangle and ellipse shapes')
+		}
+		if (!validFill(patch.fill)) invalid('shape fill must be null or a six-digit hex color')
 	}
 	if (target.type !== 'connector') {
 		for (const key of ['x', 'y', 'w', 'h']) {

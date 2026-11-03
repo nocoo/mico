@@ -109,6 +109,46 @@ function isFiniteShape(shape: CanvasShape): boolean {
 	)
 }
 
+export function trimConnectorHitSegment(
+	start: Point,
+	end: Point,
+	zoom: number,
+): { start: Point; end: Point; short: boolean } {
+	const dx = end.x - start.x
+	const dy = end.y - start.y
+	const length = Math.hypot(dx, dy)
+	const safeZoom = Number.isFinite(zoom) && zoom > 0 ? zoom : 1
+	const trimWorld = 24 / safeZoom
+
+	if (!Number.isFinite(length) || length === 0) {
+		const halfWorld = 4 / safeZoom
+		return {
+			start: { x: start.x - halfWorld, y: start.y },
+			end: { x: start.x + halfWorld, y: start.y },
+			short: true,
+		}
+	}
+
+	if (length <= trimWorld * 2) {
+		const center = { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 }
+		const halfWorld = Math.min(length / 4, 2 / safeZoom)
+		const unitX = dx / length
+		const unitY = dy / length
+		return {
+			start: { x: center.x - unitX * halfWorld, y: center.y - unitY * halfWorld },
+			end: { x: center.x + unitX * halfWorld, y: center.y + unitY * halfWorld },
+			short: true,
+		}
+	}
+
+	const trim = trimWorld / length
+	return {
+		start: { x: start.x + dx * trim, y: start.y + dy * trim },
+		end: { x: end.x - dx * trim, y: end.y - dy * trim },
+		short: false,
+	}
+}
+
 export function findSnapTarget(
 	shapes: Shape[],
 	point: Point,

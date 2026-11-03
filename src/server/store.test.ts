@@ -643,6 +643,125 @@ test('frames hold named members, reject nesting and ungroup on delete', () => {
 	}
 })
 
+test('rectangle and ellipse fills persist atomically and are transparent or hex only', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	try {
+		const created = store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'filled',
+						type: 'rectangle',
+						x: 10,
+						y: 20,
+						w: 100,
+						h: 80,
+						color: '#183153',
+						fill: '#fef3c7',
+						text: 'Dark ink',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'transparent',
+						type: 'ellipse',
+						x: 150,
+						y: 20,
+						w: 100,
+						h: 80,
+						color: '#2563eb',
+						fill: null,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'legacy',
+						type: 'rectangle',
+						x: 300,
+						y: 20,
+						w: 100,
+						h: 80,
+						color: '#107c10',
+					},
+				},
+			],
+		})
+		assert.equal(created.revision, 1)
+		assert.deepEqual(
+			created.shapes.find((shape) => shape.id === 'filled'),
+			{
+				id: 'filled',
+				type: 'rectangle',
+				x: 10,
+				y: 20,
+				w: 100,
+				h: 80,
+				color: '#183153',
+				fill: '#fef3c7',
+				text: 'Dark ink',
+			},
+		)
+		const transparent = created.shapes.find((shape) => shape.id === 'transparent')
+		assert.equal(transparent?.type === 'ellipse' ? transparent.fill : undefined, null)
+		const legacy = created.shapes.find((shape) => shape.id === 'legacy')
+		assert.equal(legacy?.type === 'rectangle' ? legacy.fill : 'unexpected', undefined)
+
+		const updated = store.apply({
+			operations: [
+				{ type: 'update', id: 'filled', patch: { fill: null } },
+				{ type: 'update', id: 'transparent', patch: { fill: '#dbeafe' } },
+			],
+		})
+		assert.equal(updated.revision, 2)
+		const updatedFilled = updated.shapes.find((shape) => shape.id === 'filled')
+		assert.equal(updatedFilled?.type === 'rectangle' ? updatedFilled.fill : undefined, null)
+		const updatedTransparent = updated.shapes.find((shape) => shape.id === 'transparent')
+		assert.equal(
+			updatedTransparent?.type === 'ellipse' ? updatedTransparent.fill : undefined,
+			'#dbeafe',
+		)
+
+		for (const operations of [
+			[{ type: 'update', id: 'filled', patch: { fill: '#fff' } }],
+			[{ type: 'update', id: 'filled', patch: { fill: 'transparent' } }],
+			[
+				{ type: 'update', id: 'filled', patch: { fill: '#ffffff' } },
+				{ type: 'update', id: 'legacy', patch: { fill: '#notok0' } },
+			],
+			[
+				{
+					type: 'create',
+					shape: {
+						id: 'bad-fill-text',
+						type: 'text',
+						x: 0,
+						y: 0,
+						w: 100,
+						h: 30,
+						color: '#242424',
+						text: 'No fill',
+						fill: '#ffffff',
+					},
+				},
+			],
+		]) {
+			assert.throws(
+				() => store.apply({ operations: [...operations] }),
+				(error: unknown) => error instanceof OperationError && error.status === 400,
+			)
+		}
+		assert.equal(store.getBoard().revision, 2)
+		assert.equal(store.getBoard().shapes.length, 3)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('widget shapes validate kind, title and bounded items', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))

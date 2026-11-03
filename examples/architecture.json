@@ -9,6 +9,7 @@
 			"w": 160,
 			"h": 80,
 			"color": "#2563eb",
+			"fill": "#eef2ff",
 			"text": "Local Agent"
 		}
 	},
@@ -48,6 +49,7 @@
 			"w": 160,
 			"h": 80,
 			"color": "#ea580c",
+			"fill": null,
 			"text": "Browser Canvas"
 		}
 	},
@@ -61,6 +63,7 @@
 			"w": 120,
 			"h": 80,
 			"color": "#7c3aed",
+			"fill": "#ede9fe",
 			"text": "SQLite"
 		}
 	},

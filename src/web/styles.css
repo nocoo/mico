@@ -487,13 +487,14 @@ svg {
 	color: var(--ink);
 	background: var(--surface-muted);
 }
+.fill-row,
 .color-row {
 	margin-top: var(--space-1);
 	display: grid;
 	grid-template-columns: repeat(7, var(--control-compact));
 	gap: var(--space-1);
 }
-.color-row button {
+:is(.fill-row, .color-row) button {
 	position: relative;
 	width: var(--control-compact);
 	height: var(--control-compact);
@@ -502,12 +503,31 @@ svg {
 	border-radius: var(--radius-control);
 	box-shadow: inset 0 0 0 var(--hairline) #00000014;
 }
-.color-row button.chosen::after {
+:is(.fill-row, .color-row) button.chosen::after {
 	content: "";
 	position: absolute;
 	inset: calc(-1 * var(--hairline) * 3);
 	border: var(--stroke-strong) solid var(--ink);
 	border-radius: var(--radius-control);
+}
+
+.fill-transparent {
+	display: grid;
+	place-items: center;
+	background:
+		linear-gradient(45deg, var(--border) 25%, transparent 25%, transparent 75%, var(--border) 75%),
+		linear-gradient(
+			45deg,
+			var(--border) 25%,
+			var(--surface) 25%,
+			var(--surface) 75%,
+			var(--border) 75%
+		);
+	background-position:
+		0 0,
+		4px 4px;
+	background-size: 8px 8px;
+	color: var(--ink);
 }
 .custom-color {
 	position: relative;
@@ -779,11 +799,15 @@ svg {
 	white-space: pre-wrap;
 }
 .typographic-text {
-	height: 100%;
-	overflow: hidden;
+	min-height: 100%;
+	overflow: visible;
+	overflow-wrap: anywhere;
 	line-height: 1.15;
 	letter-spacing: -0.01em;
 	white-space: pre-wrap;
+}
+foreignObject:has(> .typographic-text) {
+	overflow: visible;
 }
 .frame-label {
 	color: var(--ink-secondary);

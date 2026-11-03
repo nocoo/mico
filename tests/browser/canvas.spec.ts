@@ -123,6 +123,7 @@ test.beforeEach(async ({ request, page, baseURL }) => {
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await expect(page.locator('.canvas-shape')).toHaveCount(5)
+	await expect(page.locator('.canvas')).toHaveAttribute('data-initial-fit-ready', 'true')
 })
 
 test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigation', async ({
@@ -189,6 +190,304 @@ test('selected object properties live inside the dock and edit the board', async
 	await expect(popover).toHaveCount(0)
 	await properties.getByRole('button', { name: 'Close properties' }).click()
 	await expect(properties).toHaveCount(0)
+})
+
+test('rectangle and ellipse fills are explicit and connector paint follows board order', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'paint-node-a',
+						type: 'ellipse',
+						x: 120,
+						y: 620,
+						w: 120,
+						h: 80,
+						color: '#2563eb',
+						fill: null,
+						text: 'A',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'paint-node-b',
+						type: 'rectangle',
+						x: 620,
+						y: 620,
+						w: 120,
+						h: 80,
+						color: '#107c10',
+						fill: '#dbeafe',
+						text: 'B',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'paint-edge',
+						type: 'connector',
+						from: 'paint-node-a',
+						to: 'paint-node-b',
+						color: '#c42b1c',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'paint-bg',
+						type: 'rectangle',
+						x: 80,
+						y: 700,
+						w: 700,
+						h: 180,
+						color: '#183153',
+						fill: '#183153',
+						text: 'Paint order',
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+
+	await expect(page.locator('[data-shape-id="paint-bg"] > rect').first()).toHaveAttribute(
+		'fill',
+		'#183153',
+	)
+	await expect(page.locator('[data-shape-id="paint-node-a"] > ellipse')).toHaveAttribute(
+		'fill',
+		'none',
+	)
+	await expect(page.locator('[data-shape-id="paint-node-b"] > rect').first()).toHaveAttribute(
+		'fill',
+		'#dbeafe',
+	)
+
+	const paintOrder = await page
+		.locator('[data-world-layer] > [data-shape-id]')
+		.evaluateAll((elements) =>
+			elements.map((element) => element.getAttribute('data-shape-id') ?? ''),
+		)
+	expect(paintOrder.indexOf('paint-edge')).toBeLessThan(paintOrder.indexOf('paint-bg'))
+	expect(paintOrder.indexOf('paint-node-b')).toBeLessThan(paintOrder.indexOf('paint-edge'))
+	await expect(page.locator('[data-shape-id="paint-bg"] text')).toHaveAttribute('fill', '#ffffff')
+	await expect(page.locator('[data-shape-id="paint-node-a"] text')).toHaveAttribute(
+		'fill',
+		'#172033',
+	)
+	await expect(page.locator('[data-shape-id="paint-node-b"] text')).toHaveAttribute(
+		'fill',
+		'#172033',
+	)
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const edgePoint = await page
+		.locator('[data-shape-id="paint-edge"] line')
+		.last()
+		.evaluate((element) => {
+			const line = element as SVGLineElement
+			const point = line.getPointAtLength(line.getTotalLength() / 2)
+			const screen = new DOMPoint(point.x, point.y).matrixTransform(
+				line.getScreenCTM() ?? undefined,
+			)
+			return { x: screen.x, y: screen.y }
+		})
+	await page.mouse.click(edgePoint.x, edgePoint.y)
+	await expect(page.locator('[data-selected-id="paint-edge"]')).toHaveCount(1)
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.locator('[data-shape-id="paint-bg"] > rect').first().click()
+	const properties = page
+		.getByRole('toolbar')
+		.getByRole('region', { name: 'Selected object properties' })
+	await properties.getByRole('button', { name: 'Shape color' }).click()
+	const popover = page.getByRole('region', { name: 'Shape color', exact: true })
+	await popover.getByRole('button', { name: 'Set fill Transparent' }).click()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'paint-bg'))
+		.toMatchObject({ fill: null })
+	await expect(page.locator('[data-shape-id="paint-bg"] > rect').first()).toHaveAttribute(
+		'fill',
+		'none',
+	)
+	await expect(page.locator('[data-shape-id="paint-bg"] text')).toHaveAttribute('fill', '#172033')
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const transparentRect = await page
+		.locator('[data-shape-id="paint-bg"] > rect')
+		.first()
+		.boundingBox()
+	if (!transparentRect) throw new Error('Expected transparent rectangle')
+	const transparentRectBefore = (await board(request)).shapes.find((item) => item.id === 'paint-bg')
+	if (transparentRectBefore?.type !== 'rectangle') {
+		throw new Error('Expected transparent rectangle on the board')
+	}
+	const transparentRectStart = {
+		x: transparentRect.x + transparentRect.width / 2,
+		y: transparentRect.y + transparentRect.height / 2,
+	}
+	await page.mouse.move(transparentRectStart.x, transparentRectStart.y)
+	await page.mouse.down()
+	await page.mouse.move(transparentRectStart.x + 24, transparentRectStart.y + 16, { steps: 4 })
+	await page.mouse.up()
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'paint-bg')
+			return shape?.type === 'rectangle' ? shape.x : undefined
+		})
+		.not.toBe(transparentRectBefore.x)
+
+	const transparentEllipse = await page
+		.locator('[data-shape-id="paint-node-a"] > ellipse')
+		.boundingBox()
+	if (!transparentEllipse) throw new Error('Expected transparent ellipse')
+	await expect(page.locator('[data-shape-id="paint-node-a"] > ellipse')).toHaveAttribute(
+		'pointer-events',
+		'all',
+	)
+	await page.mouse.move(
+		transparentEllipse.x + transparentEllipse.width / 2,
+		transparentEllipse.y + transparentEllipse.height / 2,
+	)
+	await page.mouse.down()
+	await page.mouse.move(
+		transparentEllipse.x + transparentEllipse.width / 2 + 20,
+		transparentEllipse.y + transparentEllipse.height / 2,
+		{ steps: 4 },
+	)
+	await page.mouse.up()
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'paint-node-a')
+			return shape?.type === 'ellipse' ? shape.x : undefined
+		})
+		.not.toBe(120)
+
+	await page.getByRole('button', { name: 'Connector', exact: true }).click()
+	const ellipseAfterDrag = await page
+		.locator('[data-shape-id="paint-node-a"] > ellipse')
+		.boundingBox()
+	const nodeB = await page.locator('[data-shape-id="paint-node-b"] > rect').first().boundingBox()
+	if (!ellipseAfterDrag || !nodeB) throw new Error('Expected connectable transparent ellipse')
+	await page.mouse.move(
+		ellipseAfterDrag.x + ellipseAfterDrag.width / 2,
+		ellipseAfterDrag.y + ellipseAfterDrag.height / 2,
+	)
+	await page.mouse.down()
+	await page.mouse.move(nodeB.x + nodeB.width / 2, nodeB.y + nodeB.height / 2, { steps: 8 })
+	await page.mouse.up()
+	await expect
+		.poll(
+			async () =>
+				(await board(request)).shapes.filter((shape) => shape.type === 'connector').length,
+		)
+		.toBeGreaterThan(1)
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.locator('[data-shape-id="paint-bg"] > rect').first().click()
+	await properties.getByRole('button', { name: 'Shape color' }).click()
+	await popover.getByRole('button', { name: 'Set fill Amber' }).click()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'paint-bg'))
+		.toMatchObject({ fill: '#b45309' })
+	await expect(page.locator('[data-shape-id="paint-bg"] > rect').first()).toHaveAttribute(
+		'fill',
+		'#b45309',
+	)
+	await expect(page.locator('[data-shape-id="paint-bg"] text')).toHaveAttribute('fill', '#ffffff')
+})
+
+test('node edge hits win near existing connector endpoints and midsegments stay selectable', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+
+	const current = await board(request)
+	const background = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'hit-background',
+						type: 'rectangle',
+						x: 480,
+						y: 220,
+						w: 120,
+						h: 40,
+						color: '#dce1ea',
+						fill: '#ffffff',
+					},
+				},
+			],
+		},
+	})
+	expect(background.ok()).toBe(true)
+	await expect(page.locator('[data-shape-id="hit-background"]')).toHaveCount(1)
+
+	const endpoint = await page
+		.locator('[data-shape-id="edge"] line')
+		.last()
+		.evaluate((element) => {
+			const line = element as SVGLineElement
+			const point = line.getPointAtLength(0)
+			const screen = new DOMPoint(point.x, point.y).matrixTransform(
+				line.getScreenCTM() ?? undefined,
+			)
+			return { x: screen.x, y: screen.y }
+		})
+	await page.mouse.click(endpoint.x, endpoint.y)
+	const nodeProperties = page.getByRole('region', { name: 'Selected object properties' })
+	await expect(nodeProperties).toBeVisible()
+	await expect(nodeProperties).toHaveAttribute('data-selected-id', 'a')
+
+	const before = (await board(request)).shapes.find((shape) => shape.id === 'a') as
+		| CanvasShape
+		| undefined
+	if (!before) throw new Error('Expected node a')
+	await page.mouse.move(endpoint.x, endpoint.y)
+	await page.mouse.down()
+	await page.mouse.move(endpoint.x + 32, endpoint.y + 16, { steps: 6 })
+	await page.mouse.up()
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'a')
+			return shape?.type === 'connector' ? undefined : shape?.x
+		})
+		.not.toBe(before.x)
+
+	await selectEdge(page)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toHaveAttribute(
+		'data-selected-id',
+		'edge',
+	)
+
+	const midpoint = await page
+		.locator('[data-shape-id="edge"] line')
+		.last()
+		.evaluate((element) => {
+			const line = element as SVGLineElement
+			const point = line.getPointAtLength(line.getTotalLength() / 2)
+			const screen = new DOMPoint(point.x, point.y).matrixTransform(
+				line.getScreenCTM() ?? undefined,
+			)
+			return { x: screen.x, y: screen.y }
+		})
+	await page.mouse.click(midpoint.x, midpoint.y)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toHaveAttribute(
+		'data-selected-id',
+		'edge',
+	)
 })
 
 test('frame controls align to four-pixel layout slots even on fractional viewport edges', async ({
@@ -388,10 +687,10 @@ test('notes, typographic text and frames are editable and move together', async 
 		.toBe(true)
 	const heading = (await board(request)).shapes.find((shape) => shape.type === 'text')
 	expect(heading).toMatchObject({ font: 'hand', fontSize: 48, fontWeight: 700 })
-	const ink = page.locator('[data-shape-id="' + heading?.id + '"] .typographic-text')
+	const ink = page.locator(`[data-shape-id="${heading?.id}"] .typographic-text`)
 	await expect(ink).toHaveCount(1)
 	await expect(
-		page.locator('[data-shape-id="' + heading?.id + '"] > rect:not(.selection)'),
+		page.locator(`[data-shape-id="${heading?.id}"] > rect:not(.selection):not(.text-hit-target)`),
 	).toHaveCount(0)
 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
@@ -420,15 +719,14 @@ test('notes, typographic text and frames are editable and move together', async 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	const frameBox = await page.locator(`[data-shape-id="${frame.id}"]`).boundingBox()
 	if (!frameBox) throw new Error('Expected frame bounds')
-	await page.mouse.click(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2)
-	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
-	await page.mouse.move(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2)
+	const framePaddingPoint = { x: frameBox.x + 16, y: frameBox.y + 16 }
+	await page.mouse.click(framePaddingPoint.x, framePaddingPoint.y)
+	const frameProperties = page.getByRole('region', { name: 'Selected object properties' })
+	await expect(frameProperties).toBeVisible()
+	await expect(frameProperties).toHaveAttribute('data-selected-id', frame.id)
+	await page.mouse.move(framePaddingPoint.x, framePaddingPoint.y)
 	await page.mouse.down()
-	await page.mouse.move(
-		frameBox.x + frameBox.width / 2 + 96,
-		frameBox.y + frameBox.height / 2 + 48,
-		{ steps: 6 },
-	)
+	await page.mouse.move(framePaddingPoint.x + 96, framePaddingPoint.y + 48, { steps: 6 })
 	await page.mouse.up()
 	await expect
 		.poll(async () => {
@@ -614,6 +912,71 @@ test('freehand brush draws a persisted tapered path and API sketches render', as
 	})
 	expect(apiPath.ok()).toBe(true)
 	await expect(page.locator('[data-shape-id="api-figure"] path')).toHaveCount(1)
+})
+
+test('short connector remains selectable at its midpoint', async ({ page, request }) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'short-e',
+						type: 'rectangle',
+						x: 300,
+						y: 300,
+						w: 40,
+						h: 40,
+						color: '#5b5fc7',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'short-f',
+						type: 'rectangle',
+						x: 348,
+						y: 300,
+						w: 40,
+						h: 40,
+						color: '#0f6cbd',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'edge-short',
+						type: 'connector',
+						from: 'short-e',
+						to: 'short-f',
+						fromAnchor: 3,
+						toAnchor: 2,
+						color: '#616161',
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+	await page.reload()
+	await expect(page.locator('.canvas')).toHaveAttribute('data-initial-fit-ready', 'true')
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+
+	const midpoint = await page
+		.locator('[data-shape-id="edge-short"] line')
+		.last()
+		.evaluate((element) => {
+			const line = element as SVGLineElement
+			const point = line.getPointAtLength(line.getTotalLength() / 2)
+			const screen = new DOMPoint(point.x, point.y).matrixTransform(
+				line.getScreenCTM() ?? undefined,
+			)
+			return { x: screen.x, y: screen.y }
+		})
+	await page.mouse.click(midpoint.x, midpoint.y)
+	await expect(page.locator('[data-connection-handle]')).toHaveCount(2)
 })
 
 test('drag creates a connector with exactly the highlighted target anchor', async ({
