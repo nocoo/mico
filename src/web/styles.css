@@ -565,6 +565,13 @@ svg {
 	top: calc(var(--frame-inset) + var(--control-size) + var(--space-4));
 	color: var(--ink-secondary);
 }
+.marquee {
+	fill: rgb(91 95 199 / 0.08);
+	stroke: var(--accent);
+	stroke-width: var(--hairline);
+	stroke-dasharray: 4 4;
+	pointer-events: none;
+}
 .alignment-guide {
 	stroke: var(--grid-snap);
 	stroke-width: var(--stroke-standard);

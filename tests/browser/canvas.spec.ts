@@ -336,6 +336,27 @@ test('dragging snaps to the grid and aligns with nearby objects using guides', a
 	expect(moved && moved.type !== 'connector' ? moved.y : NaN).toBe(496)
 })
 
+test('marquee selects several objects and deletes them atomically', async ({ page, request }) => {
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.mouse.move(120, 160)
+	await page.mouse.down()
+	await page.mouse.move(960, 310, { steps: 10 })
+	await expect(page.locator('.marquee')).toHaveCount(1)
+	await page.screenshot({ path: '/tmp/mico-marquee.png', animations: 'disabled' })
+	await page.mouse.up()
+	await expect(page.locator('.marquee')).toHaveCount(0)
+	await expect(page.locator('[data-shape-id] .selection')).toHaveCount(2)
+	const before = await board(request)
+	await page.keyboard.press('Delete')
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(2)
+	expect(before.shapes.length).toBe(5)
+	const remaining = (await board(request)).shapes.map((shape) => shape.id)
+	expect(remaining).toContain('c')
+	expect(remaining).toContain('d')
+	expect(remaining).not.toContain('a')
+	expect(remaining).not.toContain('b')
+})
+
 test('freehand brush draws a persisted tapered path and API sketches render', async ({
 	page,
 	request,

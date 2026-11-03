@@ -19,6 +19,7 @@ import { canRebaseConnector } from './connections'
 import { BRUSH_STYLES, BRUSH_WIDTHS, CONTROL_SIZE, ICON_SIZE, TEXT_SIZE, type Tool } from './design'
 import { canRebaseMove } from './move'
 import { PropertiesBar } from './PropertiesBar'
+import { normalizeRect, type Rect, selectInRect } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
@@ -132,7 +133,7 @@ export default function App() {
 	const [textDrafts, setTextDrafts] = useState<Map<string, TextDraft>>(() => new Map())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
-		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush'
+		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush' | 'marquee'
 		pointerId: number
 		startClient: { x: number; y: number }
 		startWorld: { x: number; y: number }
@@ -146,7 +147,10 @@ export default function App() {
 	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [tool, setTool] = useState<Tool>('select')
-	const [selectedId, setSelectedId] = useState<string | null>(null)
+	const [selectedIds, setSelectedIds] = useState<string[]>([])
+	const [marquee, setMarquee] = useState<Rect | null>(null)
+	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
+	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
@@ -180,8 +184,8 @@ export default function App() {
 				initialViewFitted.current = true
 			}
 		}
-		setSelectedId((current) =>
-			current && !next.shapes.some((shape) => shape.id === current) ? null : current,
+		setSelectedIds((current) =>
+			current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 		)
 	}, [])
 
@@ -314,14 +318,14 @@ export default function App() {
 	}, [])
 
 	const createShape = (shape: CanvasShape) => {
-		setSelectedId(shape.id)
+		selectOnly(shape.id)
 		void postOperations([{ type: 'create', shape }])
 	}
 
 	const deleteSelected = useCallback(() => {
-		if (!selectedId) return
-		void postOperations([{ type: 'delete', id: selectedId }])
-	}, [postOperations, selectedId])
+		if (selectedIds.length === 0) return
+		void postOperations(selectedIds.map((id) => ({ type: 'delete', id })))
+	}, [postOperations, selectedIds])
 
 	const clearDragPreview = useCallback((id: string, token: number) => {
 		setDragPreviews((current) => {
@@ -339,6 +343,7 @@ export default function App() {
 		setIsPanning(false)
 		setGuides([])
 		setBrushPoints(null)
+		setMarquee(null)
 		connection.cancel()
 		if (interaction?.previewToken && interaction.shape) {
 			clearDragPreview(interaction.shape.id, interaction.previewToken)
@@ -356,10 +361,7 @@ export default function App() {
 				setTool('select')
 				return
 			}
-			if (
-				target.closest('button, input, textarea, select, [role="button"], [contenteditable="true"]')
-			)
-				return
+			if (target.closest('input, textarea, select, [contenteditable="true"]')) return
 			if (event.metaKey || event.ctrlKey || event.altKey) return
 
 			if (event.code === 'Space') {
@@ -425,8 +427,23 @@ export default function App() {
 			return
 		}
 
-		if (tool === 'select' || tool === 'connector') {
-			setSelectedId(null)
+		if (tool === 'select') {
+			event.preventDefault()
+			svgRef.current?.setPointerCapture(event.pointerId)
+			const start = clientToWorld(event.clientX, event.clientY)
+			interactionRef.current = {
+				mode: 'marquee',
+				pointerId: event.pointerId,
+				startClient: { x: event.clientX, y: event.clientY },
+				startWorld: start,
+				startViewport: { x: 0, y: 0 },
+			}
+			setMarquee({ x: start.x, y: start.y, w: 0, h: 0 })
+			return
+		}
+
+		if (tool === 'connector') {
+			setSelectedIds([])
 			return
 		}
 
@@ -500,6 +517,11 @@ export default function App() {
 			return
 		}
 
+		if (interaction.mode === 'marquee') {
+			setMarquee(normalizeRect(interaction.startWorld, world))
+			return
+		}
+
 		if (interaction.mode === 'brush') {
 			setBrushPoints((current) => {
 				if (!current?.length) return [world]
@@ -556,6 +578,11 @@ export default function App() {
 
 		if (interaction.mode === 'connection') {
 			connection.finish(clientToWorld(event.clientX, event.clientY), event.pointerId)
+		}
+
+		if (interaction.mode === 'marquee' && marquee) {
+			setSelectedIds(selectInRect(board.shapes, marquee))
+			setMarquee(null)
 		}
 
 		if (interaction.mode === 'brush' && brushPoints && brushPoints.length >= 2) {
@@ -667,14 +694,22 @@ export default function App() {
 		event.stopPropagation()
 
 		if (tool === 'connector' && isCanvasShape(shape)) {
-			setSelectedId(null)
+			setSelectedIds([])
 			captureConnection(event, () =>
 				connection.begin(shape, clientToWorld(event.clientX, event.clientY), event.pointerId),
 			)
 			return
 		}
 
-		setSelectedId(shape.id)
+		const additive = event.metaKey || event.ctrlKey || event.shiftKey
+		const nextSelection = additive
+			? selectedIds.includes(shape.id)
+				? selectedIds.filter((id) => id !== shape.id)
+				: [...selectedIds, shape.id]
+			: selectedIds.includes(shape.id)
+				? selectedIds
+				: [shape.id]
+		setSelectedIds(nextSelection)
 		if (tool !== 'select' || isConnector(shape)) return
 
 		const world = clientToWorld(event.clientX, event.clientY)
@@ -742,7 +777,7 @@ export default function App() {
 			const to = visibleShapes.find((item) => item.id === shape.to)
 			if (!from || !to || !isCanvasShape(from) || !isCanvasShape(to)) return null
 			const { start: a, end: b } = getConnectorAnchors(from, to, shape)
-			const active = selectedId === shape.id
+			const active = selectedIds.includes(shape.id)
 			return (
 				<g
 					key={shape.id}
@@ -781,7 +816,7 @@ export default function App() {
 			)
 		}
 
-		const active = selectedId === shape.id
+		const active = selectedIds.includes(shape.id)
 		const common = {
 			className: 'canvas-shape',
 			'data-shape-id': shape.id,
@@ -980,7 +1015,7 @@ export default function App() {
 				onReset={() => setViewport({ x: 0, y: 0, zoom: 1 })}
 				onFit={fitBoard}
 				onDelete={deleteSelected}
-				canDelete={!!selectedId}
+				canDelete={selectedIds.length > 0}
 				apiConnected={apiConnected}
 				wsConnected={wsConnected}
 				revision={board.revision}
@@ -995,7 +1030,7 @@ export default function App() {
 							key={selected.id}
 							selected={selected}
 							onColorChange={updateSelectedColor}
-							onClose={() => setSelectedId(null)}
+							onClose={() => setSelectedIds([])}
 						>
 							{isCanvasShape(selected) &&
 								(selected.type === 'rectangle' ||
@@ -1156,6 +1191,16 @@ export default function App() {
 					data-world-layer="true"
 					transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
 				>
+					{marquee && (
+						<rect
+							className="marquee"
+							x={marquee.x}
+							y={marquee.y}
+							width={marquee.w}
+							height={marquee.h}
+							vectorEffect="non-scaling-stroke"
+						/>
+					)}
 					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => !isConnector(shape)).map(renderShape)}
 					{creation && renderShape(creation)}
