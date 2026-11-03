@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import {
 	closeSync,
@@ -18,6 +19,14 @@ import viteConfig from '../vite.config.ts'
 
 export const EVAL_DAEMON_PORT = 57063
 export const EVAL_VITE_PORT = 27063
+
+export function resolveEvalIdentity(value: string | undefined): string {
+	if (!value) return randomUUID()
+	if (!/^[-a-zA-Z0-9_.]{8,128}$/.test(value)) {
+		throw new Error('Eval identity must contain 8-128 letters, digits, dots, underscores or hyphen')
+	}
+	return value
+}
 
 function isOutside(realPath: string, realRoot: string): boolean {
 	return realPath !== realRoot && !realPath.startsWith(`${realRoot}${sep}`)
@@ -124,10 +133,11 @@ async function assertPortAvailable(port: number): Promise<void> {
 	})
 }
 
-export async function startEvalServer(dbPathValue: string | undefined) {
+export async function startEvalServer(dbPathValue: string | undefined, identityValue?: string) {
 	await assertPortAvailable(EVAL_DAEMON_PORT)
 	await assertPortAvailable(EVAL_VITE_PORT)
 	const dbPath = prepareEvalDbPath(dbPathValue)
+	const identity = resolveEvalIdentity(identityValue)
 
 	const cacheDirectory = mkdtempSync(join(realpathSync('/tmp'), 'mico-eval-vite-'))
 	const daemon = createDaemon({ port: EVAL_DAEMON_PORT, dbPath })
@@ -137,6 +147,31 @@ export async function startEvalServer(dbPathValue: string | undefined) {
 			...viteConfig,
 			configFile: false,
 			cacheDir: resolve(cacheDirectory, 'vite-cache'),
+			plugins: [
+				...(viteConfig.plugins ?? []),
+				{
+					name: 'eval-fixture-identity',
+					transformIndexHtml() {
+						return [
+							{
+								tag: 'meta',
+								attrs: { name: 'mico-eval-identity', content: identity },
+							},
+						]
+					},
+					configureServer(server) {
+						server.middlewares.use((request, response, next) => {
+							const pathname = new URL(request.url ?? '/', 'http://127.0.0.1').pathname
+							if (pathname === '/__eval_identity') {
+								response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+								response.end(JSON.stringify({ identity }))
+								return
+							}
+							next()
+						})
+					},
+				},
+			],
 			server: {
 				...viteConfig.server,
 				host: '127.0.0.1',
@@ -177,6 +212,7 @@ export async function startEvalServer(dbPathValue: string | undefined) {
 		await vite.listen()
 		console.log(`Eval daemon: http://127.0.0.1:${EVAL_DAEMON_PORT}`)
 		console.log(`Eval canvas: http://127.0.0.1:${EVAL_VITE_PORT}`)
+		console.log(`Eval identity: ${identity}`)
 		console.log(`Eval database: ${dbPath}`)
 	} catch (error) {
 		await shutdown()
@@ -188,7 +224,7 @@ export async function startEvalServer(dbPathValue: string | undefined) {
 
 const entry = process.argv[1] ? resolve(process.argv[1]) : undefined
 if (entry === fileURLToPath(import.meta.url)) {
-	startEvalServer(process.argv[2]).catch((error: unknown) => {
+	startEvalServer(process.argv[2], process.argv[3]).catch((error: unknown) => {
 		console.error(error instanceof Error ? error.message : String(error))
 		process.exitCode = 1
 	})

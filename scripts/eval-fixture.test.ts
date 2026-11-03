@@ -5,12 +5,17 @@ import test from 'node:test'
 import type { Page } from '@playwright/test'
 import type { Board, CanvasShape } from '../src/shared/types.ts'
 import {
+	acquireCaptureLock,
+	assertAppliedRevision,
 	assertBoardRenderable,
+	assertEvalIdentity,
 	assertStableCapture,
 	captureFailure,
+	releaseCaptureLock,
+	validateCaptureIdentity,
 	validateCaptureRunDirectory,
 } from './eval-capture.ts'
-import { prepareEvalDbPath, validateEvalDbPath } from './eval-server.ts'
+import { prepareEvalDbPath, resolveEvalIdentity, validateEvalDbPath } from './eval-server.ts'
 
 const shape: CanvasShape = {
 	id: 'node',
@@ -99,9 +104,7 @@ test('eval capture failure retains board and screenshot artifacts', async () => 
 			request: {
 				get: async () => ({ ok: () => true, json: async () => board }),
 			},
-			screenshot: async (options: { path: string }) => {
-				writeFileSync(options.path, 'png')
-			},
+			screenshot: async () => Buffer.from('png'),
 		} as unknown as Page
 		await captureFailure(directory, fakePage, new Error('empty eval board'))
 		assert.equal(existsSync(join(directory, 'board.json')), true)
@@ -112,9 +115,45 @@ test('eval capture failure retains board and screenshot artifacts', async () => 
 	}
 })
 
+test('eval fixture identity is per-run and exact when supplied', () => {
+	assert.throws(() => validateCaptureIdentity(undefined), /Usage:/)
+	assert.equal(validateCaptureIdentity('run-alpha'), 'run-alpha')
+	assert.throws(() => validateCaptureIdentity('bad id'), /identity must contain/)
+	assert.doesNotThrow(() => assertEvalIdentity('run-alpha', 'run-alpha'))
+	assert.throws(() => assertEvalIdentity('run-alpha', 'run-beta'), /identity mismatch/)
+	assert.equal(resolveEvalIdentity('run-alpha'), 'run-alpha')
+	assert.match(resolveEvalIdentity(undefined), /^[a-zA-Z0-9-]+$/)
+	assert.throws(() => resolveEvalIdentity('bad id'), /identity must contain/)
+})
+
+test('eval capture refuses preexisting artifacts and concurrent captures', () => {
+	const directory = mkdtempSync('/tmp/mico-eval-output-')
+	try {
+		writeFileSync(join(directory, 'board.json'), '{}')
+		assert.throws(
+			() => validateCaptureRunDirectory(directory),
+			/already contains output artifact: board\.json/,
+		)
+	} finally {
+		rmSync(directory, { recursive: true, force: true })
+	}
+
+	const run = mkdtempSync('/tmp/mico-eval-lock-')
+	try {
+		validateCaptureRunDirectory(run)
+		const lock = acquireCaptureLock(run)
+		assert.throws(() => acquireCaptureLock(run), /already in progress/)
+		releaseCaptureLock(lock)
+		assert.doesNotThrow(() => releaseCaptureLock(acquireCaptureLock(run)))
+	} finally {
+		rmSync(run, { recursive: true, force: true })
+	}
+})
+
 test('eval capture requires stable revision, board shapes and DOM count', () => {
 	const snapshot: Board = { revision: 7, shapes: [shape] }
-	assert.doesNotThrow(() => assertStableCapture(snapshot, snapshot, 1))
+	assert.doesNotThrow(() => assertStableCapture(snapshot, snapshot, 1, 7))
+	assert.doesNotThrow(() => assertAppliedRevision('Revision 7 · 1 objects', 7))
 	assert.throws(
 		() => assertStableCapture(snapshot, { revision: 8, shapes: [shape] }, 1),
 		/revision changed/,
@@ -124,4 +163,12 @@ test('eval capture requires stable revision, board shapes and DOM count', () => 
 		/Board shapes changed/,
 	)
 	assert.throws(() => assertStableCapture(snapshot, snapshot, 0), /Rendered shape count mismatch/)
+	assert.throws(
+		() => assertStableCapture(snapshot, snapshot, 1, 8),
+		/Page applied revision mismatch/,
+	)
+	assert.throws(
+		() => assertAppliedRevision('Revision 8 · 1 objects', 7),
+		/Page applied board revision mismatch/,
+	)
 })
