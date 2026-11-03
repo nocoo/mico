@@ -2,18 +2,21 @@ import {
 	ArrowUpRight,
 	Brush,
 	Circle,
+	Frame,
 	Hand,
+	LayoutGrid,
 	Maximize,
 	Minus,
 	MousePointer2,
 	Plus,
 	Slash,
 	Square,
+	StickyNote,
 	Trash2,
 	Type,
 } from 'lucide-react'
 import { type ReactNode, useLayoutEffect, useRef } from 'react'
-import { BRUSH_STYLES, BRUSH_WIDTHS, type Tool } from './design'
+import type { Tool } from './design'
 import { IconButton } from './IconButton'
 
 const tools = [
@@ -24,6 +27,8 @@ const tools = [
 	{ id: 'text', label: 'Text', shortcut: 'T', icon: Type },
 	{ id: 'line', label: 'Line', shortcut: 'L', icon: Slash },
 	{ id: 'path', label: 'Brush', shortcut: 'P', icon: Brush },
+	{ id: 'note', label: 'Sticky note', shortcut: 'N', icon: StickyNote },
+	{ id: 'widget', label: 'Rich widget', shortcut: 'W', icon: LayoutGrid },
 	{ id: 'connector', label: 'Connector', shortcut: 'C', icon: ArrowUpRight },
 ] as const
 
@@ -41,10 +46,9 @@ interface BoardFrameProps {
 	revision: number
 	objectCount: number
 	properties?: ReactNode
-	brushStyle: (typeof BRUSH_STYLES)[number]['id']
-	brushWidth: (typeof BRUSH_WIDTHS)[number]
-	onBrushStyle: (style: (typeof BRUSH_STYLES)[number]['id']) => void
-	onBrushWidth: (width: (typeof BRUSH_WIDTHS)[number]) => void
+	toolOptions?: ReactNode
+	onFrame: () => void
+	canFrame: boolean
 }
 
 export function BoardFrame({
@@ -61,10 +65,9 @@ export function BoardFrame({
 	revision,
 	objectCount,
 	properties,
-	brushStyle,
-	brushWidth,
-	onBrushStyle,
-	onBrushWidth,
+	toolOptions,
+	onFrame,
+	canFrame,
 }: BoardFrameProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
@@ -177,38 +180,18 @@ export function BoardFrame({
 							onClick={onDelete}
 							className="delete-tool"
 						/>
+						<IconButton
+							icon={Frame}
+							label="Frame selection"
+							tabIndex={-1}
+							disabled={!canFrame}
+							onClick={onFrame}
+						/>
 					</div>
-					{tool === 'path' && (
+					{toolOptions && (
 						<>
 							<span className="panel-divider" />
-							<fieldset className="brush-options" aria-label="Brush options">
-								<div className="segmented-control brush-styles">
-									{BRUSH_STYLES.map(({ id, label }) => (
-										<button
-											type="button"
-											key={id}
-											aria-pressed={brushStyle === id}
-											aria-label={`Brush style ${label}`}
-											onClick={() => onBrushStyle(id)}
-										>
-											{label}
-										</button>
-									))}
-								</div>
-								<div className="segmented-control brush-widths">
-									{BRUSH_WIDTHS.map((width) => (
-										<button
-											type="button"
-											key={width}
-											aria-pressed={brushWidth === width}
-											aria-label={`Brush width ${width}px`}
-											onClick={() => onBrushWidth(width)}
-										>
-											{width}
-										</button>
-									))}
-								</div>
-							</fieldset>
+							{toolOptions}
 						</>
 					)}
 					<span className="panel-divider dock-divider" />

@@ -131,7 +131,7 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
 	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
-	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(12)
+	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(15)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
@@ -355,6 +355,164 @@ test('marquee selects several objects and deletes them atomically', async ({ pag
 	expect(remaining).toContain('d')
 	expect(remaining).not.toContain('a')
 	expect(remaining).not.toContain('b')
+})
+
+test('notes, typographic text and frames are editable and move together', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
+	await page.getByRole('button', { name: 'Pink sticky' }).click()
+	await page.mouse.click(500, 400)
+	await expect
+		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'note'))
+		.toBe(true)
+	const note = (await board(request)).shapes.find((shape) => shape.type === 'note')
+	if (!note || note.type !== 'note') throw new Error('Expected a note')
+	expect(note).toMatchObject({ color: '#fbcfe8', text: 'Note' })
+	await page.locator('#shape-text').fill('Remember this')
+	await page.locator('#shape-text').press('Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === note.id))
+		.toMatchObject({ text: 'Remember this' })
+
+	await page.getByRole('button', { name: 'Text', exact: true }).click()
+	await page.getByLabel('Font family').selectOption('hand')
+	await page.getByLabel('Font size').selectOption('48')
+	await page.getByLabel('Font weight').selectOption('700')
+	await page.mouse.click(1100, 700)
+	await expect
+		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'text'))
+		.toBe(true)
+	const heading = (await board(request)).shapes.find((shape) => shape.type === 'text')
+	expect(heading).toMatchObject({ font: 'hand', fontSize: 48, fontWeight: 700 })
+	const ink = page.locator('[data-shape-id="' + heading?.id + '"] .typographic-text')
+	await expect(ink).toHaveCount(1)
+	await expect(
+		page.locator('[data-shape-id="' + heading?.id + '"] > rect:not(.selection)'),
+	).toHaveCount(0)
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.mouse.move(120, 160)
+	await page.mouse.down()
+	await page.mouse.move(960, 310, { steps: 6 })
+	await page.mouse.up()
+	await page.getByRole('button', { name: 'Frame selection' }).click()
+	await expect
+		.poll(
+			async () => (await board(request)).shapes.filter((shape) => shape.type === 'frame').length,
+		)
+		.toBe(1)
+	const framed = await board(request)
+	const frame = framed.shapes.find((shape) => shape.type === 'frame')
+	if (!frame) throw new Error('Expected a frame')
+	expect(
+		framed.shapes
+			.filter((shape) => shape.type !== 'connector' && shape.frameId === frame.id)
+			.map((shape) => shape.id)
+			.sort(),
+	).toEqual(['a', 'b'])
+	const child = framed.shapes.find((shape) => shape.id === 'a')
+	if (!child) throw new Error('Expected child a')
+	const before = { x: child.x, y: child.y }
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const frameBox = await page.locator(`[data-shape-id="${frame.id}"]`).boundingBox()
+	if (!frameBox) throw new Error('Expected frame bounds')
+	await page.mouse.click(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await page.mouse.move(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2)
+	await page.mouse.down()
+	await page.mouse.move(
+		frameBox.x + frameBox.width / 2 + 96,
+		frameBox.y + frameBox.height / 2 + 48,
+		{ steps: 6 },
+	)
+	await page.mouse.up()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a')?.x)
+		.not.toBe(before.x)
+	const movedBoard = await board(request)
+	const movedFrame = movedBoard.shapes.find((shape) => shape.id === frame.id)
+	const movedChild = movedBoard.shapes.find((shape) => shape.id === 'a')
+	if (!movedFrame || !movedChild) throw new Error('Expected moved frame and child')
+	expect(movedChild.x - before.x).toBe(movedFrame.x - frame.x)
+	expect(movedChild.y - before.y).toBe(movedFrame.y - frame.y)
+	await page.getByRole('button', { name: 'Delete selected' }).click()
+	await expect
+		.poll(async () => (await board(request)).shapes.some((shape) => shape.id === frame.id))
+		.toBe(false)
+	const ungrouped = (await board(request)).shapes.find((shape) => shape.id === 'a')
+	expect(ungrouped?.type !== 'connector' ? ungrouped?.frameId : undefined).toBeUndefined()
+})
+test('rich widgets sit in isolated cards with editable items', async ({ page, request }) => {
+	await page.getByRole('button', { name: 'Rich widget', exact: true }).click()
+	await page.getByRole('button', { name: 'kanban', exact: true }).click()
+	await page.mouse.click(700, 700)
+	await expect
+		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'widget'))
+		.toBe(true)
+	const widget = (await board(request)).shapes.find((shape) => shape.type === 'widget')
+	if (!widget || widget.type !== 'widget') throw new Error('Expected a widget')
+	expect(widget).toMatchObject({ widget: 'kanban', widgetTitle: 'Delivery board' })
+	expect(widget.items).toHaveLength(3)
+	const card = page.locator(`[data-shape-id="${widget.id}"] .widget-card`)
+	await expect(card).toHaveCount(1)
+	await expect(card.locator('.kanban-column')).toHaveCount(3)
+
+	await page.getByLabel('Widget title').fill('Launch board')
+	await page.getByLabel('Widget title').press('Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === widget.id))
+		.toMatchObject({ widgetTitle: 'Launch board' })
+	await page.getByLabel('New widget item').fill('Beta rollout')
+	await page.getByRole('button', { name: 'Add widget item' }).click()
+	await expect
+		.poll(
+			async () =>
+				(await board(request)).shapes.find((shape) => shape.id === widget.id)?.items?.length,
+		)
+		.toBe(4)
+	await page.getByLabel('Status Launch').selectOption('done')
+	await expect(
+		page.locator(`[data-shape-id="${widget.id}"] .kanban-column.done article`),
+	).toHaveCount(2)
+
+	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
+	await page.mouse.click(1300, 300)
+	await expect
+		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
+		.toBe(1)
+	const note = (await board(request)).shapes.find((shape) => shape.type === 'note')
+	if (!note) throw new Error('Expected a note')
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const view = await page.locator('[data-world-layer]').evaluate((element) => {
+		const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
+		if (!matrix) throw new Error('Missing world transform')
+		return { x: matrix.e, y: matrix.f, zoom: matrix.a }
+	})
+	const toScreen = (worldX: number, worldY: number) => ({
+		x: view.x + worldX * view.zoom,
+		y: view.y + worldY * view.zoom,
+	})
+	const noteCenter = toScreen(note.x + note.w / 2, note.y + note.h / 2)
+	const widgetCenter = toScreen(widget.x + widget.w / 2, widget.y + widget.h / 2)
+	await page.mouse.move(noteCenter.x, noteCenter.y)
+	await page.mouse.down()
+	await page.mouse.move(widgetCenter.x, widgetCenter.y, { steps: 8 })
+	await page.mouse.up()
+	await expect(page.locator('.notice')).toContainText('Rich widgets are isolated')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === note.id))
+		.toMatchObject({ x: note.x, y: note.y })
+
+	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
+	await page.mouse.click(
+		widgetCenter.x - widget.w * view.zoom * 0.3,
+		widgetCenter.y - widget.h * view.zoom * 0.2,
+	)
+	await expect
+		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
+		.toBe(1)
 })
 
 test('freehand brush draws a persisted tapered path and API sketches render', async ({

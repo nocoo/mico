@@ -16,13 +16,35 @@ import { BoardFrame } from './BoardFrame'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
-import { BRUSH_STYLES, BRUSH_WIDTHS, CONTROL_SIZE, ICON_SIZE, TEXT_SIZE, type Tool } from './design'
+import {
+	BRUSH_STYLES,
+	BRUSH_WIDTHS,
+	CONTROL_SIZE,
+	FONT_OPTIONS,
+	FONT_SIZES,
+	FONT_STACKS,
+	FONT_WEIGHTS,
+	ICON_SIZE,
+	NOTE_COLORS,
+	TEXT_SIZE,
+	type Tool,
+} from './design'
 import { canRebaseMove } from './move'
 import { PropertiesBar } from './PropertiesBar'
-import { normalizeRect, type Rect, selectInRect } from './selection'
+import {
+	boundsOf,
+	expandRect,
+	intersects,
+	normalizeRect,
+	type Rect,
+	selectInRect,
+	shapeBounds,
+} from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
+import { WidgetCard } from './WidgetCard'
+import { WidgetEditor } from './WidgetEditor'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -141,6 +163,7 @@ export default function App() {
 		revision?: number
 		previewToken?: number
 		shape?: CanvasShape
+		group?: CanvasShape[]
 	} | null>(null)
 	const dragTokenRef = useRef(0)
 
@@ -149,6 +172,11 @@ export default function App() {
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
 	const [marquee, setMarquee] = useState<Rect | null>(null)
+	const [noteColor, setNoteColor] = useState('#fde68a')
+	const [textFont, setTextFont] = useState<'sans' | 'serif' | 'hand' | 'mono'>('sans')
+	const [textSize, setTextSize] = useState(32)
+	const [textWeight, setTextWeight] = useState(500)
+	const [widgetKind, setWidgetKind] = useState<'todo' | 'kanban' | 'table' | 'timeline'>('todo')
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
 	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
@@ -317,7 +345,23 @@ export default function App() {
 		if (rect) setViewport(fitViewport(boardRef.current.shapes, rect.width, rect.height))
 	}, [])
 
+	const intersectsWidget = (rect: Rect, ignored: string) =>
+		board.shapes.some(
+			(candidate) =>
+				candidate.type === 'widget' &&
+				candidate.id !== ignored &&
+				intersects(shapeBounds(candidate), rect),
+		)
+
 	const createShape = (shape: CanvasShape) => {
+		if (
+			shape.type !== 'widget' &&
+			shape.type !== 'frame' &&
+			intersectsWidget(shapeBounds(shape), shape.id)
+		) {
+			announce('Rich widgets are isolated; place this object outside the card')
+			return
+		}
 		selectOnly(shape.id)
 		void postOperations([{ type: 'create', shape }])
 	}
@@ -345,8 +389,8 @@ export default function App() {
 		setBrushPoints(null)
 		setMarquee(null)
 		connection.cancel()
-		if (interaction?.previewToken && interaction.shape) {
-			clearDragPreview(interaction.shape.id, interaction.previewToken)
+		if (interaction?.previewToken && interaction.group) {
+			for (const shape of interaction.group) clearDragPreview(shape.id, interaction.previewToken)
 		}
 		if (interaction && svgRef.current?.hasPointerCapture(interaction.pointerId)) {
 			svgRef.current.releasePointerCapture(interaction.pointerId)
@@ -380,6 +424,8 @@ export default function App() {
 				t: 'text',
 				l: 'line',
 				p: 'path',
+				n: 'note',
+				w: 'widget',
 				c: 'connector',
 			}
 			const nextTool = keys[event.key.toLowerCase()]
@@ -452,12 +498,75 @@ export default function App() {
 			createShape({
 				id: randomId(),
 				type: 'text',
-				x: world.x - 90,
-				y: world.y - 26,
-				w: 180,
-				h: 52,
+				x: world.x - 160,
+				y: world.y - textSize,
+				w: 320,
+				h: Math.round(textSize * 1.6),
+				color: '#242424',
+				text: 'Type something',
+				font: textFont,
+				fontSize: textSize,
+				fontWeight: textWeight,
+			})
+			setTool('select')
+			return
+		}
+
+		if (tool === 'note') {
+			createShape({
+				id: randomId(),
+				type: 'note',
+				x: world.x - 80,
+				y: world.y - 80,
+				w: 160,
+				h: 160,
+				color: noteColor,
+				text: 'Note',
+			})
+			setTool('select')
+			return
+		}
+
+		if (tool === 'widget') {
+			const titles = {
+				todo: 'Checklist',
+				kanban: 'Delivery board',
+				table: 'Registry',
+				timeline: 'Roadmap',
+			}
+			const sample = {
+				todo: [
+					{ id: randomId(), title: 'Draft outline', done: true },
+					{ id: randomId(), title: 'Review with team', done: false },
+					{ id: randomId(), title: 'Publish release', done: false },
+				],
+				kanban: [
+					{ id: randomId(), title: 'Discovery', status: 'done' },
+					{ id: randomId(), title: 'Prototype', status: 'doing' },
+					{ id: randomId(), title: 'Launch', status: 'todo' },
+				],
+				table: [
+					{ id: randomId(), title: 'Kickoff', status: 'done', start: 1, end: 2 },
+					{ id: randomId(), title: 'Build', status: 'doing', start: 2, end: 6 },
+					{ id: randomId(), title: 'Ship', status: 'todo', start: 6, end: 8 },
+				],
+				timeline: [
+					{ id: randomId(), title: 'Design', start: 0, end: 3 },
+					{ id: randomId(), title: 'Build', start: 2, end: 7 },
+					{ id: randomId(), title: 'Launch', start: 7, end: 9 },
+				],
+			}[widgetKind]
+			createShape({
+				id: randomId(),
+				type: 'widget',
+				x: world.x - 260,
+				y: world.y - 190,
+				w: 520,
+				h: 380,
 				color: '#5b5fc7',
-				text: 'Text',
+				widget: widgetKind,
+				widgetTitle: titles[widgetKind],
+				items: sample,
 			})
 			setTool('select')
 			return
@@ -555,19 +664,26 @@ export default function App() {
 
 		if (interaction.mode === 'shape' && interaction.shape && interaction.previewToken) {
 			const original = interaction.shape
+			const group = interaction.group ?? [original]
+			const moving = new Set(group.map((item) => item.id))
 			const snapped = snapMove(
 				original,
 				{
 					x: original.x + world.x - interaction.startWorld.x,
 					y: original.y + world.y - interaction.startWorld.y,
 				},
-				visibleShapes,
+				visibleShapes.filter((candidate) => !moving.has(candidate.id)),
 				viewport.zoom,
 			)
+			const deltaX = snapped.x - original.x
+			const deltaY = snapped.y - original.y
 			const token = interaction.previewToken
-			setDragPreviews((current) =>
-				new Map(current).set(original.id, { x: snapped.x, y: snapped.y, token }),
-			)
+			setDragPreviews((current) => {
+				const next = new Map(current)
+				for (const shape of group)
+					next.set(shape.id, { x: shape.x + deltaX, y: shape.y + deltaY, token })
+				return next
+			})
 			setGuides(snapped.guides)
 		}
 	}
@@ -631,35 +747,59 @@ export default function App() {
 					event.clientY - interaction.startClient.y,
 				) > 2
 			if (moved) {
+				const original = interaction.shape
+				const group = interaction.group ?? [original]
+				const moving = new Set(group.map((item) => item.id))
 				const snapped = snapMove(
-					interaction.shape,
-					{ x: interaction.shape.x + dx, y: interaction.shape.y + dy },
-					visibleShapes,
+					original,
+					{ x: original.x + dx, y: original.y + dy },
+					visibleShapes.filter((candidate) => !moving.has(candidate.id)),
 					viewport.zoom,
 				)
-				const preview = {
-					id: interaction.shape.id,
-					x: snapped.x,
-					y: snapped.y,
-					token: interaction.previewToken ?? ++dragTokenRef.current,
+				const deltaX = snapped.x - original.x
+				const deltaY = snapped.y - original.y
+				const blocked = group.some(
+					(shape) =>
+						shape.type !== 'widget' &&
+						shape.type !== 'frame' &&
+						intersectsWidget(
+							{ x: shape.x + deltaX, y: shape.y + deltaY, w: shape.w, h: shape.h },
+							shape.id,
+						),
+				)
+				if (blocked) {
+					announce('Rich widgets are isolated; drop outside the card')
+					setDragPreviews(new Map())
+					setGuides([])
+					setCreation(null)
+					setIsPanning(false)
+					interactionRef.current = null
+					if (svgRef.current?.hasPointerCapture(event.pointerId)) {
+						svgRef.current.releasePointerCapture(event.pointerId)
+					}
+					return
 				}
-				setDragPreviews((current) => new Map(current).set(preview.id, preview))
-				const original = interaction.shape
+				const token = interaction.previewToken ?? ++dragTokenRef.current
+				setDragPreviews((current) => {
+					const next = new Map(current)
+					for (const shape of group)
+						next.set(shape.id, { x: shape.x + deltaX, y: shape.y + deltaY, token })
+					return next
+				})
 				void postOperations(
-					[
-						{
-							type: 'update',
-							id: preview.id,
-							patch: { x: preview.x, y: preview.y },
-						},
-					],
+					group.map((shape) => ({
+						type: 'update' as const,
+						id: shape.id,
+						patch: { x: shape.x + deltaX, y: shape.y + deltaY },
+					})),
 					interaction.revision,
-					(current) => canRebaseMove(current, original),
+					(current) => group.every((shape) => canRebaseMove(current, shape)),
 				).then(() => {
-					clearDragPreview(preview.id, preview.token)
+					for (const shape of group) clearDragPreview(shape.id, token)
 				})
 			} else if (interaction.previewToken) {
-				clearDragPreview(interaction.shape.id, interaction.previewToken)
+				const group = interaction.group ?? [interaction.shape]
+				for (const shape of group) clearDragPreview(shape.id, interaction.previewToken)
 			}
 		}
 
@@ -716,6 +856,16 @@ export default function App() {
 		if (isCanvasShape(shape)) {
 			event.preventDefault()
 			svgRef.current?.setPointerCapture(event.pointerId)
+			const group =
+				shape.type === 'frame'
+					? [
+							shape,
+							...board.shapes.filter(
+								(candidate): candidate is CanvasShape =>
+									candidate.type !== 'connector' && candidate.frameId === shape.id,
+							),
+						]
+					: [shape]
 			interactionRef.current = {
 				mode: 'shape',
 				pointerId: event.pointerId,
@@ -725,6 +875,7 @@ export default function App() {
 				revision: board.revision,
 				previewToken: ++dragTokenRef.current,
 				shape,
+				group,
 			}
 		}
 	}
@@ -762,6 +913,28 @@ export default function App() {
 			],
 			board.revision,
 			(latest) => canRebaseConnector(latest, selected),
+		)
+	}
+
+	const frameSelection = () => {
+		const members = selectedIds.filter((id) => {
+			const shape = board.shapes.find((candidate) => candidate.id === id)
+			return shape && isCanvasShape(shape) && shape.type !== 'frame'
+		})
+		const bounds = boundsOf(board.shapes, members)
+		if (!bounds) return
+		const frameId = randomId()
+		const rect = expandRect(bounds, 32)
+		setSelectedIds([frameId])
+		void postOperations(
+			[
+				{
+					type: 'create',
+					shape: { id: frameId, type: 'frame', ...rect, color: '#5b5fc7', title: 'Frame' },
+				},
+				...members.map((id) => ({ type: 'update' as const, id, patch: { frameId } })),
+			],
+			board.revision,
 		)
 	}
 
@@ -900,19 +1073,10 @@ export default function App() {
 				</g>
 			)
 		}
-		if (shape.type === 'text') {
+		if (shape.type === 'widget') {
 			return (
 				<g key={shape.id} {...common}>
-					<rect
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						rx={8}
-						fill="var(--surface)"
-						stroke={active ? shape.color : 'var(--border)'}
-						strokeWidth={active ? 2 : 1}
-					/>
+					<WidgetCard shape={shape} />
 					{active && (
 						<rect
 							className="selection"
@@ -923,15 +1087,115 @@ export default function App() {
 							rx={12}
 						/>
 					)}
-					<text
-						x={shape.x + 14}
-						y={shape.y + shape.h / 2}
+				</g>
+			)
+		}
+		if (shape.type === 'frame') {
+			return (
+				<g key={shape.id} {...common}>
+					<rect
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						rx={10}
+						fill="#fbfcff"
+						stroke={active ? shape.color : 'var(--border)'}
+						strokeWidth={active ? 2 : 1}
+						vectorEffect="non-scaling-stroke"
+					/>
+					<g className="frame-label" transform={`translate(${shape.x} ${shape.y - 8})`}>
+						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+							<path
+								d="M4 1H1V4M10 1H13V4M4 13H1V10M10 13H13V10"
+								stroke="currentColor"
+								strokeWidth="1.5"
+							/>
+						</svg>
+						<text x="20" y="6" fill="var(--ink)" dominantBaseline="middle">
+							{shape.title}
+						</text>
+					</g>
+					{active && (
+						<rect
+							className="selection"
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
+							rx={12}
+						/>
+					)}
+				</g>
+			)
+		}
+		if (shape.type === 'note') {
+			return (
+				<g key={shape.id} {...common}>
+					<rect
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						rx={4}
 						fill={shape.color}
-						dominantBaseline="middle"
-						style={{ fontWeight: 'var(--weight-semibold)' }}
+						className="sticky-note"
+					/>
+					{active && (
+						<rect
+							className="selection"
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
+							rx={6}
+						/>
+					)}
+					<foreignObject
+						x={shape.x + 12}
+						y={shape.y + 12}
+						width={shape.w - 24}
+						height={shape.h - 24}
+						pointerEvents="none"
 					>
-						{shape.text || 'Text'}
-					</text>
+						<div className="sticky-text">{shape.text || ''}</div>
+					</foreignObject>
+				</g>
+			)
+		}
+		if (shape.type === 'text') {
+			const font = shape.font ?? 'sans'
+			return (
+				<g key={shape.id} {...common}>
+					{active && (
+						<rect
+							className="selection"
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
+							rx={6}
+						/>
+					)}
+					<foreignObject
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						pointerEvents="none"
+					>
+						<div
+							className="typographic-text"
+							style={{
+								fontFamily: FONT_STACKS[font],
+								fontSize: `${shape.fontSize ?? 32}px`,
+								fontWeight: shape.fontWeight ?? 500,
+								color: shape.color,
+							}}
+						>
+							{shape.text || 'Type something'}
+						</div>
+					</foreignObject>
 				</g>
 			)
 		}
@@ -993,6 +1257,104 @@ export default function App() {
 		)
 	}
 
+	const toolOptions =
+		tool === 'path' ? (
+			<fieldset className="brush-options" aria-label="Brush options">
+				<div className="segmented-control brush-styles">
+					{BRUSH_STYLES.map(({ id, label }) => (
+						<button
+							type="button"
+							key={id}
+							aria-pressed={brushStyle === id}
+							aria-label={`Brush style ${label}`}
+							onClick={() => setBrushStyle(id)}
+						>
+							{label}
+						</button>
+					))}
+				</div>
+				<div className="segmented-control brush-widths">
+					{BRUSH_WIDTHS.map((width) => (
+						<button
+							type="button"
+							key={width}
+							aria-pressed={brushWidth === width}
+							aria-label={`Brush width ${width}px`}
+							onClick={() => setBrushWidth(width)}
+						>
+							{width}
+						</button>
+					))}
+				</div>
+			</fieldset>
+		) : tool === 'note' ? (
+			<fieldset className="brush-options" aria-label="Sticky colors">
+				<div className="segmented-control note-colors">
+					{NOTE_COLORS.map(({ value, label }) => (
+						<button
+							type="button"
+							key={value}
+							aria-pressed={noteColor === value}
+							aria-label={`${label} sticky`}
+							style={{ background: value }}
+							onClick={() => setNoteColor(value)}
+						/>
+					))}
+				</div>
+			</fieldset>
+		) : tool === 'widget' ? (
+			<fieldset className="brush-options" aria-label="Widget kind">
+				<div className="segmented-control">
+					{(['todo', 'kanban', 'table', 'timeline'] as const).map((kind) => (
+						<button
+							type="button"
+							key={kind}
+							aria-pressed={widgetKind === kind}
+							onClick={() => setWidgetKind(kind)}
+						>
+							{kind}
+						</button>
+					))}
+				</div>
+			</fieldset>
+		) : tool === 'text' ? (
+			<fieldset className="brush-options text-options" aria-label="Text options">
+				<select
+					aria-label="Font family"
+					value={textFont}
+					onChange={(event) => setTextFont(event.target.value as typeof textFont)}
+				>
+					{FONT_OPTIONS.map(({ id, label }) => (
+						<option key={id} value={id}>
+							{label}
+						</option>
+					))}
+				</select>
+				<select
+					aria-label="Font size"
+					value={textSize}
+					onChange={(event) => setTextSize(Number(event.target.value))}
+				>
+					{FONT_SIZES.map((size) => (
+						<option key={size} value={size}>
+							{size}
+						</option>
+					))}
+				</select>
+				<select
+					aria-label="Font weight"
+					value={textWeight}
+					onChange={(event) => setTextWeight(Number(event.target.value))}
+				>
+					{FONT_WEIGHTS.map((weight) => (
+						<option key={weight} value={weight}>
+							{weight}
+						</option>
+					))}
+				</select>
+			</fieldset>
+		) : null
+
 	return (
 		<main
 			className="app"
@@ -1020,10 +1382,9 @@ export default function App() {
 				wsConnected={wsConnected}
 				revision={board.revision}
 				objectCount={board.shapes.length}
-				brushStyle={brushStyle}
-				brushWidth={brushWidth}
-				onBrushStyle={setBrushStyle}
-				onBrushWidth={setBrushWidth}
+				onFrame={frameSelection}
+				canFrame={selectedIds.length > 0}
+				toolOptions={toolOptions}
 				properties={
 					selected && (
 						<PropertiesBar
@@ -1035,7 +1396,8 @@ export default function App() {
 							{isCanvasShape(selected) &&
 								(selected.type === 'rectangle' ||
 									selected.type === 'ellipse' ||
-									selected.type === 'text') && (
+									selected.type === 'text' ||
+									selected.type === 'note') && (
 									<div className="property-field">
 										<label className="sr-only" htmlFor="shape-text">
 											Text
@@ -1056,6 +1418,111 @@ export default function App() {
 										/>
 									</div>
 								)}
+							{selected.type === 'widget' && (
+								<WidgetEditor
+									key={selected.id}
+									shape={selected}
+									onPatch={(patch) =>
+										void postOperations([{ type: 'update', id: selected.id, patch }])
+									}
+								/>
+							)}
+							{selected.type === 'text' && (
+								<>
+									<div className="property-field">
+										<label className="sr-only" htmlFor="text-font">
+											Font family
+										</label>
+										<select
+											id="text-font"
+											value={selected.font ?? 'sans'}
+											onChange={(event) =>
+												void postOperations([
+													{
+														type: 'update',
+														id: selected.id,
+														patch: { font: event.target.value as 'sans' },
+													},
+												])
+											}
+										>
+											{FONT_OPTIONS.map(({ id, label }) => (
+												<option key={id} value={id}>
+													{label}
+												</option>
+											))}
+										</select>
+									</div>
+									<div className="property-field">
+										<label className="sr-only" htmlFor="text-size">
+											Font size
+										</label>
+										<select
+											id="text-size"
+											value={selected.fontSize ?? 32}
+											onChange={(event) =>
+												void postOperations([
+													{
+														type: 'update',
+														id: selected.id,
+														patch: { fontSize: Number(event.target.value) },
+													},
+												])
+											}
+										>
+											{FONT_SIZES.map((size) => (
+												<option key={size} value={size}>
+													{size}
+												</option>
+											))}
+										</select>
+									</div>
+									<div className="property-field">
+										<label className="sr-only" htmlFor="text-weight">
+											Font weight
+										</label>
+										<select
+											id="text-weight"
+											value={selected.fontWeight ?? 500}
+											onChange={(event) =>
+												void postOperations([
+													{
+														type: 'update',
+														id: selected.id,
+														patch: { fontWeight: Number(event.target.value) },
+													},
+												])
+											}
+										>
+											{FONT_WEIGHTS.map((weight) => (
+												<option key={weight} value={weight}>
+													{weight}
+												</option>
+											))}
+										</select>
+									</div>
+								</>
+							)}
+							{selected.type === 'frame' && (
+								<div className="property-field">
+									<label className="sr-only" htmlFor="frame-title">
+										Frame title
+									</label>
+									<input
+										id="frame-title"
+										defaultValue={selected.title}
+										key={`${selected.id}:${selected.title}`}
+										onBlur={(event) => {
+											const title = event.target.value.trim()
+											if (!title || title === selected.title) return
+											void postOperations([{ type: 'update', id: selected.id, patch: { title } }])
+										}}
+										onKeyDown={(event) => {
+											if (event.key === 'Enter') event.currentTarget.blur()
+										}}
+									/>
+								</div>
+							)}
 							{selected.type === 'path' && (
 								<>
 									<div className="property-field">
@@ -1202,7 +1669,10 @@ export default function App() {
 						/>
 					)}
 					{visibleShapes.filter(isConnector).map(renderShape)}
-					{visibleShapes.filter((shape) => !isConnector(shape)).map(renderShape)}
+					{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
+					{visibleShapes
+						.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
+						.map(renderShape)}
 					{creation && renderShape(creation)}
 					{brushPoints && (
 						<BrushStroke
