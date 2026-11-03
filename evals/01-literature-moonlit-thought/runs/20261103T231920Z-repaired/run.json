@@ -1,0 +1,20 @@
+{
+	"case": "01-literature-moonlit-thought",
+	"round": "repaired",
+	"sourceRevision": "ae17193",
+	"canvasRevision": "b9fbb1c",
+	"promptRevision": "880a84f",
+	"rubricRevision": "50c5690",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-03T23-17-12-932Z_01a1a3b3-d064-76b7-b047-515b553eb0d3",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 1,
+	"shapeCount": 134,
+	"score": 8,
+	"scoreMaximum": 10
+}
