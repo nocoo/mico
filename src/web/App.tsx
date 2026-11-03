@@ -1,6 +1,8 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
+import { getConnectorAnchors } from './anchors'
+import { canRebaseMove } from './move'
 
 const port = import.meta.env.VITE_MICO_PORT || '4318'
 const API = `http://127.0.0.1:${port}`
@@ -107,16 +109,20 @@ function TextField({
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const revisionRef = useRef(0)
+	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const [textDrafts, setTextDrafts] = useState<Map<string, TextDraft>>(() => new Map())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
 		mode: 'pan' | 'shape' | 'create'
+		pointerId: number
 		startClient: { x: number; y: number }
 		startWorld: { x: number; y: number }
 		startViewport: { x: number; y: number }
 		revision?: number
+		previewToken?: number
 		shape?: CanvasShape
 	} | null>(null)
+	const dragTokenRef = useRef(0)
 
 	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
@@ -124,11 +130,14 @@ export default function App() {
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [connectorFrom, setConnectorFrom] = useState<string | null>(null)
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
-	const [dragPreview, setDragPreview] = useState<{ id: string; x: number; y: number } | null>(null)
+	const [dragPreviews, setDragPreviews] = useState<
+		Map<string, { x: number; y: number; token: number }>
+	>(() => new Map())
 	const [apiConnected, setApiConnected] = useState(false)
 	const [wsConnected, setWsConnected] = useState(false)
 	const [notice, setNotice] = useState('')
 	const [spacePressed, setSpacePressed] = useState(false)
+	const [isPanning, setIsPanning] = useState(false)
 
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
 
@@ -140,6 +149,7 @@ export default function App() {
 	const applyBoard = useCallback((next: Board) => {
 		if (next.revision < revisionRef.current) return
 		revisionRef.current = next.revision
+		boardRef.current = next
 		setBoard(next)
 		setSelectedId((current) =>
 			current && !next.shapes.some((shape) => shape.id === current) ? null : current,
@@ -147,19 +157,24 @@ export default function App() {
 	}, [])
 
 	const postOperations = useCallback(
-		(operations: Operation[], expectedRevision?: number) => {
+		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
 			const result = operationQueue.current.then(async () => {
 				try {
+					if (canRebase && !canRebase(boardRef.current)) {
+						announce('Shape changed during drag')
+						return false
+					}
+					const revision = canRebase
+						? revisionRef.current
+						: (expectedRevision ?? revisionRef.current)
 					const response = await fetch(`${API}/api/operations`, {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							operations,
-							expectedRevision: expectedRevision ?? revisionRef.current,
-						}),
+						signal: AbortSignal.timeout(10000),
+						body: JSON.stringify({ operations, expectedRevision: revision }),
 					})
 					if (!response.ok) {
-						const current = await fetch(`${API}/api/board`)
+						const current = await fetch(`${API}/api/board`, { signal: AbortSignal.timeout(10000) })
 						if (current.ok) applyBoard((await current.json()) as Board)
 						announce(`Operation failed: HTTP ${response.status}`)
 						return false
@@ -267,11 +282,27 @@ export default function App() {
 		void postOperations([{ type: 'delete', id: selectedId }])
 	}, [postOperations, selectedId])
 
+	const clearDragPreview = useCallback((id: string, token: number) => {
+		setDragPreviews((current) => {
+			if (current.get(id)?.token !== token) return current
+			const next = new Map(current)
+			next.delete(id)
+			return next
+		})
+	}, [])
+
 	const cancelInteraction = useCallback(() => {
+		const interaction = interactionRef.current
 		interactionRef.current = null
 		setCreation(null)
-		setDragPreview(null)
-	}, [])
+		setIsPanning(false)
+		if (interaction?.previewToken && interaction.shape) {
+			clearDragPreview(interaction.shape.id, interaction.previewToken)
+		}
+		if (interaction && svgRef.current?.hasPointerCapture(interaction.pointerId)) {
+			svgRef.current.releasePointerCapture(interaction.pointerId)
+		}
+	}, [clearDragPreview])
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -312,23 +343,31 @@ export default function App() {
 		const onKeyUp = (event: KeyboardEvent) => {
 			if (event.code === 'Space') setSpacePressed(false)
 		}
+		const onBlur = () => {
+			setSpacePressed(false)
+			cancelInteraction()
+		}
 		window.addEventListener('keydown', onKeyDown)
 		window.addEventListener('keyup', onKeyUp)
+		window.addEventListener('blur', onBlur)
 		return () => {
 			window.removeEventListener('keydown', onKeyDown)
 			window.removeEventListener('keyup', onKeyUp)
+			window.removeEventListener('blur', onBlur)
 		}
 	}, [cancelInteraction, deleteSelected, viewport.zoom, zoomAt])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
-		if (event.button !== 0 && event.button !== 1) return
+		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
 
 		const shouldPan = event.button === 1 || spacePressed || tool === 'hand'
 		if (shouldPan) {
 			event.preventDefault()
 			svgRef.current?.setPointerCapture(event.pointerId)
+			setIsPanning(true)
 			interactionRef.current = {
 				mode: 'pan',
+				pointerId: event.pointerId,
 				startClient: { x: event.clientX, y: event.clientY },
 				startWorld: { x: 0, y: 0 },
 				startViewport: { x: viewport.x, y: viewport.y },
@@ -350,7 +389,7 @@ export default function App() {
 				y: world.y - 26,
 				w: 180,
 				h: 52,
-				color: '#2563eb',
+				color: '#5b5fc7',
 				text: 'Text',
 			})
 			setTool('select')
@@ -361,6 +400,7 @@ export default function App() {
 		svgRef.current?.setPointerCapture(event.pointerId)
 		interactionRef.current = {
 			mode: 'create',
+			pointerId: event.pointerId,
 			startClient: { x: event.clientX, y: event.clientY },
 			startWorld: world,
 			startViewport: { x: 0, y: 0 },
@@ -372,13 +412,13 @@ export default function App() {
 			y: world.y,
 			w: 0,
 			h: 0,
-			color: tool === 'line' ? '#64748b' : '#2563eb',
+			color: tool === 'line' ? '#616161' : '#5b5fc7',
 		})
 	}
 
 	const onCanvasPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
 		const interaction = interactionRef.current
-		if (!interaction) return
+		if (!interaction || interaction.pointerId !== event.pointerId) return
 
 		if (interaction.mode === 'pan') {
 			setViewport((current) => ({
@@ -412,17 +452,24 @@ export default function App() {
 			return
 		}
 
-		if (interaction.mode === 'shape' && interaction.shape) {
+		if (interaction.mode === 'shape' && interaction.shape && interaction.previewToken) {
 			const dx = world.x - interaction.startWorld.x
 			const dy = world.y - interaction.startWorld.y
 			const original = interaction.shape
-			setDragPreview({ id: original.id, x: original.x + dx, y: original.y + dy })
+			const token = interaction.previewToken
+			setDragPreviews((current) =>
+				new Map(current).set(original.id, {
+					x: original.x + dx,
+					y: original.y + dy,
+					token,
+				}),
+			)
 		}
 	}
 
 	const onCanvasPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
 		const interaction = interactionRef.current
-		if (!interaction) return
+		if (!interaction || interaction.pointerId !== event.pointerId) return
 
 		if (interaction.mode === 'create' && creation) {
 			if (Math.abs(creation.w) >= 8 || Math.abs(creation.h) >= 8) {
@@ -438,28 +485,50 @@ export default function App() {
 			const world = clientToWorld(event.clientX, event.clientY)
 			const dx = world.x - interaction.startWorld.x
 			const dy = world.y - interaction.startWorld.y
-			if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+			const moved =
+				Math.hypot(
+					event.clientX - interaction.startClient.x,
+					event.clientY - interaction.startClient.y,
+				) > 2
+			if (moved) {
+				const preview = {
+					id: interaction.shape.id,
+					x: interaction.shape.x + dx,
+					y: interaction.shape.y + dy,
+					token: interaction.previewToken ?? ++dragTokenRef.current,
+				}
+				setDragPreviews((current) => new Map(current).set(preview.id, preview))
+				const original = interaction.shape
 				void postOperations(
 					[
 						{
 							type: 'update',
-							id: interaction.shape.id,
-							patch: { x: interaction.shape.x + dx, y: interaction.shape.y + dy },
+							id: preview.id,
+							patch: { x: preview.x, y: preview.y },
 						},
 					],
 					interaction.revision,
-				)
+					(current) => canRebaseMove(current, original),
+				).then(() => {
+					clearDragPreview(preview.id, preview.token)
+				})
+			} else if (interaction.previewToken) {
+				clearDragPreview(interaction.shape.id, interaction.previewToken)
 			}
 		}
 
 		setCreation(null)
-		setDragPreview(null)
+		setIsPanning(false)
 		interactionRef.current = null
 		if (svgRef.current?.hasPointerCapture(event.pointerId))
 			svgRef.current.releasePointerCapture(event.pointerId)
 	}
 
 	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
+		if (interactionRef.current) {
+			event.stopPropagation()
+			return
+		}
 		if (tool === 'hand' || spacePressed || event.button === 1 || event.button !== 0) return
 		event.stopPropagation()
 
@@ -474,7 +543,7 @@ export default function App() {
 					type: 'connector',
 					from: connectorFrom,
 					to: shape.id,
-					color: '#64748b',
+					color: '#616161',
 				}
 				setSelectedId(connector.id)
 				setConnectorFrom(null)
@@ -493,32 +562,15 @@ export default function App() {
 			svgRef.current?.setPointerCapture(event.pointerId)
 			interactionRef.current = {
 				mode: 'shape',
+				pointerId: event.pointerId,
 				startClient: { x: event.clientX, y: event.clientY },
 				startWorld: world,
 				startViewport: { x: 0, y: 0 },
 				revision: board.revision,
+				previewToken: ++dragTokenRef.current,
 				shape,
 			}
 		}
-	}
-
-	const shapeCenter = (shape: CanvasShape) => ({
-		x: shape.x + shape.w / 2,
-		y: shape.y + shape.h / 2,
-	})
-
-	const shapeEdge = (shape: CanvasShape, other: { x: number; y: number }) => {
-		const center = shapeCenter(shape)
-		const dx = other.x - center.x
-		const dy = other.y - center.y
-		const rx = Math.abs(shape.w) / 2
-		const ry = Math.abs(shape.h) / 2
-		if ((!dx && !dy) || !rx || !ry || shape.type === 'line') return center
-		const scale =
-			shape.type === 'ellipse'
-				? 1 / Math.hypot(dx / rx, dy / ry)
-				: Math.min(dx ? rx / Math.abs(dx) : Infinity, dy ? ry / Math.abs(dy) : Infinity)
-		return { x: center.x + dx * scale, y: center.y + dy * scale }
 	}
 
 	const updateSelectedColor = (color: string) => {
@@ -526,25 +578,31 @@ export default function App() {
 		void postOperations([{ type: 'update', id: selectedId, patch: { color } }])
 	}
 
-	const visibleShapes = board.shapes.map((shape) =>
-		dragPreview && shape.id === dragPreview.id && isCanvasShape(shape)
-			? { ...shape, x: dragPreview.x, y: dragPreview.y }
-			: shape,
-	)
+	const visibleShapes = board.shapes.map((shape) => {
+		const preview = dragPreviews.get(shape.id)
+		return preview && isCanvasShape(shape) ? { ...shape, x: preview.x, y: preview.y } : shape
+	})
 
 	const renderShape = (shape: Shape) => {
 		if (isConnector(shape)) {
 			const from = visibleShapes.find((item) => item.id === shape.from)
 			const to = visibleShapes.find((item) => item.id === shape.to)
 			if (!from || !to || !isCanvasShape(from) || !isCanvasShape(to)) return null
-			const a = shapeEdge(from, shapeCenter(to))
-			const b = shapeEdge(to, shapeCenter(from))
+			const { start: a, end: b } = getConnectorAnchors(from, to)
 			const active = selectedId === shape.id
 			return (
 				<g
 					key={shape.id}
 					onPointerDown={(event) => onShapePointerDown(event, shape)}
 					className="canvas-shape connector"
+					style={{
+						cursor:
+							tool === 'hand' || spacePressed || isPanning
+								? isPanning
+									? 'grabbing'
+									: 'grab'
+								: 'pointer',
+					}}
 				>
 					<line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth={16} />
 					<line
@@ -563,6 +621,10 @@ export default function App() {
 		const active = selectedId === shape.id
 		const common = {
 			className: 'canvas-shape',
+			style: {
+				cursor:
+					tool === 'hand' || spacePressed || isPanning ? (isPanning ? 'grabbing' : 'grab') : 'move',
+			},
 			onPointerDown: (event: React.PointerEvent<SVGGElement>) => onShapePointerDown(event, shape),
 		}
 
@@ -575,7 +637,7 @@ export default function App() {
 						width={shape.w}
 						height={shape.h}
 						rx={10}
-						fill="#ffffff"
+						fill="var(--surface)"
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 					/>
@@ -611,7 +673,7 @@ export default function App() {
 						cy={shape.y + shape.h / 2}
 						rx={shape.w / 2}
 						ry={shape.h / 2}
-						fill="#ffffff"
+						fill="var(--surface)"
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 					/>
@@ -648,8 +710,8 @@ export default function App() {
 						width={shape.w}
 						height={shape.h}
 						rx={8}
-						fill="#ffffff"
-						stroke={active ? shape.color : '#e2e7ef'}
+						fill="var(--surface)"
+						stroke={active ? shape.color : 'var(--border)'}
 						strokeWidth={active ? 2 : 1}
 					/>
 					{active && (
@@ -714,7 +776,16 @@ export default function App() {
 	const statusClass = !apiConnected ? 'offline' : wsConnected ? 'live' : 'api'
 
 	return (
-		<main className="app">
+		<main
+			className="app"
+			style={
+				{
+					'--grid-x': `${viewport.x}px`,
+					'--grid-y': `${viewport.y}px`,
+					'--grid-size': `${24 * viewport.zoom}px`,
+				} as React.CSSProperties
+			}
+		>
 			<header className="topbar">
 				<div className="brand">
 					<span className="brand-mark">M</span>
@@ -763,8 +834,28 @@ export default function App() {
 							setConnectorFrom(null)
 						}}
 						title={`${label} (${key})`}
+						aria-label={label}
+						aria-pressed={tool === name}
 					>
-						<span className={`tool-icon ${name}`} />
+						{name === 'hand' ? (
+							<svg
+								className="tool-icon hand-icon"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="1.8"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M7.8 11V5.8a1.5 1.5 0 0 1 3 0V10" />
+								<path d="M10.8 10V4.5a1.5 1.5 0 0 1 3 0V10" />
+								<path d="M13.8 10V5.8a1.5 1.5 0 0 1 3 0v5.7" />
+								<path d="M16.8 11.5V9a1.5 1.5 0 0 1 3 0v5.2c0 4.1-2.7 6.8-6.8 6.8h-.8a7 7 0 0 1-5.6-2.8l-2.8-3.7a1.7 1.7 0 0 1 2.5-2.3l1.9 1.6V11" />
+							</svg>
+						) : (
+							<span className={`tool-icon ${name}`} />
+						)}
 						<small>{key}</small>
 					</button>
 				))}
@@ -781,7 +872,7 @@ export default function App() {
 				</button>
 			</aside>
 
-			{selected && (
+			{selected && tool !== 'connector' && (
 				<aside className="inspector">
 					<div className="inspector-head">
 						<strong>
@@ -812,7 +903,7 @@ export default function App() {
 					<label className="field color-field">
 						<span>Color</span>
 						<div className="color-row">
-							{['#2563eb', '#7c3aed', '#059669', '#ea580c', '#dc2626', '#172033'].map((color) => (
+							{['#5b5fc7', '#6264a7', '#0f6cbd', '#107c10', '#c42b1c', '#242424'].map((color) => (
 								<button
 									type="button"
 									key={color}
@@ -843,12 +934,20 @@ export default function App() {
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
 				onPointerUp={onCanvasPointerUp}
-				onPointerCancel={cancelInteraction}
+				onPointerCancel={(event) => {
+					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
+				}}
 				onWheel={(event) => {
 					event.preventDefault()
 					zoomAt(viewport.zoom * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
 				}}
 				aria-label="Infinite canvas"
+				style={{
+					cursor: isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default',
+				}}
+				onLostPointerCapture={(event) => {
+					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
+				}}
 			>
 				<defs>
 					<marker

@@ -22,7 +22,7 @@ pnpm dev
 
 Open <http://127.0.0.1:5173/>. The daemon listens only on `127.0.0.1:4318` and stores its board in `.mico/board.sqlite`. `MICO_PORT` and `MICO_DB_PATH` override the daemon's port and database path; the CLI also respects `MICO_PORT`. If changing the port, start Vite with the matching `VITE_MICO_PORT`.
 
-The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Use the toolbar or the indicated keyboard shortcuts. For connectors, select the connector tool, then click the source and target objects.
+The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool, then click the source and target objects. Connectors automatically choose the nearest fixed anchor points and may switch anchors as objects move.
 
 ## Agent CLI
 
@@ -30,7 +30,7 @@ Commands write JSON to standard output; errors go to standard error and return a
 
 ```sh
 node src/cli/index.ts board get
-node src/cli/index.ts shape create '{"type":"rectangle","x":100,"y":100,"w":180,"h":80,"color":"#2563eb","text":"Hello"}'
+node src/cli/index.ts shape create '{"type":"rectangle","x":100,"y":100,"w":180,"h":80,"color":"#5b5fc7","text":"Hello"}'
 node src/cli/index.ts shape update <id> '{"x":300,"y":200}'
 node src/cli/index.ts shape delete <id>
 node src/cli/index.ts batch examples/architecture.json

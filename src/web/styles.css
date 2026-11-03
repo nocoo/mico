@@ -1,7 +1,30 @@
 :root {
+	--teams-brand: #5b5fc7;
+	--teams-brand-hover: #4f52b2;
+	--teams-brand-pressed: #3f427b;
+	--teams-brand-tint: #eeeffb;
+	--teams-accent: #6264a7;
+	--text-primary: #242424;
+	--text-secondary: #616161;
+	--text-tertiary: #707070;
+	--surface: #ffffff;
+	--surface-muted: #f5f5f5;
+	--surface-hover: #f3f2f1;
+	--surface-selected: #edebff;
+	--border: #d1d1d1;
+	--border-strong: #c8c6c4;
+	--focus-ring: rgba(91, 95, 199, 0.22);
+	--shadow: 0 8px 24px rgba(36, 36, 36, 0.12);
+	--success: #107c10;
+	--success-tint: #dff6dd;
+	--warning: #a76d00;
+	--warning-tint: #fff4ce;
+	--danger: #d13438;
+	--danger-tint: #fde7e9;
+	--info: #0f6cbd;
 	font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-	color: #172033;
-	background: #f7f8fa;
+	color: var(--text-primary);
+	background: var(--surface-muted);
 	font-synthesis: none;
 	text-rendering: optimizeLegibility;
 }
@@ -25,13 +48,18 @@ button {
 	border: 0;
 	cursor: pointer;
 }
+button:focus-visible,
+input:focus-visible {
+	outline: 2px solid var(--teams-brand);
+	outline-offset: 2px;
+}
 
 .app {
 	position: relative;
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
-	background: #f7f8fa;
+	background: var(--surface-muted);
 }
 .canvas {
 	position: absolute;
@@ -46,16 +74,17 @@ button {
 	position: absolute;
 	inset: 0;
 	pointer-events: none;
-	background-image: radial-gradient(circle, #cfd5df 1px, transparent 1px);
-	background-size: 24px 24px;
+	background-image: radial-gradient(circle, #d2d0ce 1px, transparent 1px);
+	background-position: var(--grid-x) var(--grid-y);
+	background-size: var(--grid-size) var(--grid-size);
 }
 
 .topbar {
 	position: absolute;
 	z-index: 20;
-	top: 12px;
-	left: 16px;
-	right: 16px;
+	top: calc(12px + env(safe-area-inset-top, 0px));
+	left: calc(16px + env(safe-area-inset-left, 0px));
+	right: calc(16px + env(safe-area-inset-right, 0px));
 	height: 48px;
 	display: grid;
 	grid-template-columns: 1fr auto 1fr;
@@ -69,9 +98,9 @@ button {
 .inspector,
 .connector-tip,
 .notice {
-	background: rgba(255, 255, 255, 0.94);
-	border: 1px solid #e3e7ee;
-	box-shadow: 0 8px 24px rgba(35, 43, 59, 0.08);
+	background: rgba(255, 255, 255, 0.96);
+	border: 1px solid var(--border);
+	box-shadow: var(--shadow);
 	backdrop-filter: blur(14px);
 }
 .brand {
@@ -82,7 +111,7 @@ button {
 	align-items: center;
 	gap: 9px;
 	padding: 6px 12px 6px 6px;
-	border-radius: 12px;
+	border-radius: 10px;
 	font-size: 14px;
 }
 .brand-mark {
@@ -90,9 +119,9 @@ button {
 	height: 32px;
 	display: grid;
 	place-items: center;
-	border-radius: 9px;
+	border-radius: 8px;
 	color: white;
-	background: #172033;
+	background: var(--teams-brand);
 	font-weight: 800;
 }
 .status {
@@ -103,14 +132,14 @@ button {
 	gap: 7px;
 	padding: 0 10px;
 	border-radius: 999px;
-	color: #64748b;
+	color: var(--text-secondary);
 	font-size: 12px;
 	font-weight: 700;
 }
 .zoom-controls span {
 	width: 48px;
 	text-align: center;
-	color: #64748b;
+	color: var(--text-secondary);
 	font-size: 12px;
 	font-weight: 700;
 }
@@ -118,7 +147,7 @@ button {
 .field > label {
 	display: block;
 	margin: 0 4px 6px;
-	color: #64748b;
+	color: var(--text-secondary);
 	font-size: 11px;
 	font-weight: 800;
 	text-transform: uppercase;
@@ -128,19 +157,19 @@ button {
 	width: 7px;
 	height: 7px;
 	border-radius: 50%;
-	background: #94a3b8;
+	background: var(--text-tertiary);
 }
 .status.live span {
-	background: #10b981;
-	box-shadow: 0 0 0 3px #d1fae5;
+	background: var(--success);
+	box-shadow: 0 0 0 3px var(--success-tint);
 }
 .status.api span {
-	background: #f59e0b;
-	box-shadow: 0 0 0 3px #fef3c7;
+	background: var(--warning);
+	box-shadow: 0 0 0 3px var(--warning-tint);
 }
 .status.offline span {
-	background: #ef4444;
-	box-shadow: 0 0 0 3px #fee2e2;
+	background: var(--danger);
+	box-shadow: 0 0 0 3px var(--danger-tint);
 }
 .zoom-controls {
 	pointer-events: auto;
@@ -150,52 +179,68 @@ button {
 	align-items: center;
 	gap: 2px;
 	padding: 5px;
-	border-radius: 12px;
+	border-radius: 10px;
 }
 .zoom-controls button {
 	min-width: 32px;
 	height: 32px;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: transparent;
-	color: #475569;
+	color: var(--text-secondary);
 	font-weight: 800;
 }
 .zoom-controls button:hover {
-	background: #eef1f5;
+	background: var(--surface-hover);
+	color: var(--text-primary);
+}
+.zoom-controls button:active {
+	background: #edebe9;
 }
 
 .toolbar {
 	position: absolute;
 	z-index: 15;
-	left: 16px;
-	top: 76px;
-	width: 50px;
+	left: 50%;
+	bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+	width: max-content;
+	max-width: calc(100% - 16px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+	transform: translateX(-50%);
+	height: 50px;
 	padding: 5px;
-	border-radius: 14px;
+	border-radius: 12px;
 	display: flex;
-	flex-direction: column;
+	align-items: center;
+	flex-direction: row;
 	gap: 3px;
+	overflow-x: auto;
 }
 .toolbar button {
 	position: relative;
+	flex: 0 0 40px;
 	width: 40px;
 	height: 40px;
-	border-radius: 9px;
+	border-radius: 8px;
 	display: grid;
 	place-items: center;
-	color: #64748b;
+	color: var(--text-secondary);
 	background: transparent;
 }
 .toolbar button:hover {
-	background: #f0f3f7;
-	color: #172033;
+	background: var(--surface-hover);
+	color: var(--text-primary);
 }
 .toolbar button.active {
-	background: #172033;
+	background: var(--teams-brand);
 	color: white;
 }
+.toolbar button.active:hover {
+	background: var(--teams-brand-hover);
+}
+.toolbar button.active:active {
+	background: var(--teams-brand-pressed);
+}
 .toolbar button:disabled {
-	opacity: 0.35;
+	opacity: 0.42;
 	cursor: default;
 }
 .toolbar button small {
@@ -204,12 +249,14 @@ button {
 	bottom: 2px;
 	font-size: 9px;
 	line-height: 1;
-	opacity: 0.75;
+	opacity: 0.8;
 }
 .toolbar-rule {
-	height: 1px;
-	margin: 3px 6px;
-	background: #e7eaef;
+	flex: 0 0 1px;
+	width: 1px;
+	height: 24px;
+	margin: 0 3px;
+	background: var(--border);
 }
 .tool-icon {
 	display: block;
@@ -223,12 +270,6 @@ button {
 .tool-icon.select::after {
 	content: "";
 	position: absolute;
-}
-.tool-icon.hand {
-	width: 13px;
-	height: 15px;
-	border: 1.5px solid currentColor;
-	border-radius: 7px 7px 5px 5px;
 }
 .tool-icon.rectangle {
 	border: 1.5px solid currentColor;
@@ -266,10 +307,17 @@ button {
 .inspector {
 	position: absolute;
 	z-index: 15;
-	right: 16px;
-	top: 76px;
+	right: calc(16px + env(safe-area-inset-right, 0px));
+	top: calc(76px + env(safe-area-inset-top, 0px));
 	width: 238px;
-	border-radius: 14px;
+	max-height: calc(
+		100dvh -
+		144px -
+		env(safe-area-inset-top, 0px) -
+		env(safe-area-inset-bottom, 0px)
+	);
+	overflow-y: auto;
+	border-radius: 12px;
 	padding: 10px;
 }
 .inspector-head {
@@ -279,17 +327,18 @@ button {
 	justify-content: space-between;
 	padding: 0 4px 4px;
 	font-size: 13px;
+	color: var(--text-primary);
 }
 .inspector-head button {
 	width: 28px;
 	height: 28px;
-	border-radius: 8px;
+	border-radius: 6px;
 	background: transparent;
-	color: #94a3b8;
+	color: var(--text-tertiary);
 }
 .inspector-head button:hover {
-	background: #f0f3f7;
-	color: #172033;
+	background: var(--surface-hover);
+	color: var(--text-primary);
 }
 .field {
 	display: block;
@@ -301,28 +350,28 @@ button {
 	gap: 6px;
 	margin-top: 8px;
 	font-size: 12px;
-	color: #9a3412;
+	color: #8a2d00;
 }
 .draft-conflict button {
 	padding: 5px 8px;
 	border-radius: 6px;
-	background: #f0f3f7;
-	color: #172033;
+	background: var(--surface-hover);
+	color: var(--text-primary);
 }
 .field input[type="text"],
 .field input:not([type]) {
 	width: 100%;
 	height: 38px;
-	border: 1px solid #dde3ec;
-	border-radius: 9px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
 	padding: 0 10px;
-	color: #172033;
-	background: white;
+	color: var(--text-primary);
+	background: var(--surface);
 	outline: none;
 }
 .field input:focus {
-	border-color: #94a3b8;
-	box-shadow: 0 0 0 3px #eef1f5;
+	border-color: var(--teams-brand);
+	box-shadow: 0 0 0 3px var(--focus-ring);
 }
 .color-row {
 	height: 38px;
@@ -333,20 +382,20 @@ button {
 .color-row button {
 	width: 24px;
 	height: 24px;
-	border-radius: 7px;
+	border-radius: 6px;
 	border: 2px solid white;
-	box-shadow: 0 0 0 1px #dde3ec;
+	box-shadow: 0 0 0 1px var(--border);
 }
 .color-row button.chosen {
-	box-shadow: 0 0 0 2px #172033;
+	box-shadow: 0 0 0 2px var(--teams-brand);
 }
 .color-row input[type="color"] {
 	width: 28px;
 	height: 28px;
 	padding: 2px;
-	border: 1px solid #dde3ec;
-	border-radius: 7px;
-	background: white;
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	background: var(--surface);
 }
 
 .connector-tip,
@@ -358,18 +407,19 @@ button {
 	height: 36px;
 	display: flex;
 	align-items: center;
-	border-radius: 10px;
+	border-radius: 9px;
 	padding: 0 12px;
 	font-size: 12px;
 	font-weight: 750;
 }
 .connector-tip {
-	bottom: 18px;
-	color: #2563eb;
+	bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+	color: var(--teams-brand);
+	white-space: nowrap;
 }
 .notice {
-	top: 68px;
-	color: #475569;
+	top: calc(68px + env(safe-area-inset-top, 0px));
+	color: var(--text-secondary);
 }
 
 .canvas-shape {
@@ -380,7 +430,7 @@ button {
 }
 .selection {
 	fill: none;
-	stroke: #2563eb;
+	stroke: var(--teams-brand);
 	stroke-width: 1.5;
 	stroke-dasharray: 5 4;
 	pointer-events: none;
@@ -388,4 +438,67 @@ button {
 .canvas text {
 	font-size: 14px;
 	pointer-events: none;
+}
+
+@media (max-width: 600px) {
+	.topbar {
+		left: calc(8px + env(safe-area-inset-left, 0px));
+		right: calc(8px + env(safe-area-inset-right, 0px));
+	}
+	.brand {
+		padding-right: 6px;
+	}
+	.brand strong {
+		display: none;
+	}
+	.zoom-controls {
+		gap: 0;
+	}
+}
+
+@media (max-width: 420px) {
+	.status {
+		width: 32px;
+		justify-content: center;
+		padding: 0;
+		font-size: 0;
+	}
+	.zoom-controls span {
+		width: 40px;
+	}
+	.zoom-controls button:last-child {
+		display: none;
+	}
+	.inspector {
+		left: calc(8px + env(safe-area-inset-left, 0px));
+		right: calc(8px + env(safe-area-inset-right, 0px));
+		width: auto;
+	}
+}
+
+@media (max-width: 380px) {
+	.toolbar {
+		height: 46px;
+		padding: 4px;
+		gap: 1px;
+		border-radius: 10px;
+	}
+	.toolbar button {
+		flex-basis: 32px;
+		width: 32px;
+		height: 36px;
+		border-radius: 6px;
+	}
+	.toolbar-rule {
+		margin: 0 2px;
+	}
+	.toolbar button small {
+		display: none;
+	}
+	.connector-tip {
+		bottom: calc(62px + env(safe-area-inset-bottom, 0px));
+		max-width: calc(100% - 32px);
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 }
