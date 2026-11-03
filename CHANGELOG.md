@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.2.0
+
+- Redesign the floating identity, view controls, inspector and grouped tool dock with Lucide icons and hover-only shortcut hints.
+- Introduce fixed control, icon and typography tiers, device-local interface preferences, and eight-pixel frame alignment.
+- Draw connectors by dragging between nodes; highlight candidate anchors and persist the exact selected attachment.
+- Rebind either endpoint by dragging or using keyboard-accessible inspector controls, preserving cancellation and concurrent-write protection.
+- Validate persisted anchor indices against node geometry and use exact ellipse proximity for screen-space snapping.
+- Add isolated Chrome interaction tests without touching the daily board or development cache.
+
 ## v0.1.1
 
 - Serve local development at `https://mico.dev.hexly.ai` with same-origin API and secure WebSocket proxying.
