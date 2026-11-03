@@ -30,9 +30,9 @@ The canvas supports panning, zooming, rectangles, ellipses, text, lines, connect
 
 Dragging an object snaps its origin to the visible 16px grid and aligns left/right/center or top/bottom/middle with nearby objects within six screen pixels. Matching alignments show dashed guide lines and win over the grid on that axis. Objects farther than 160 screen pixels never attract.
 
-The canvas uses a subtle blueprint grid: a solid line every 64px with four dashed cells between solid lines at 100% zoom. The grid follows world pan and zoom; dashed detail fades at low zoom to avoid moiré.
+The canvas uses a subtle blueprint grid: a solid line every 64px with four dashed 16px cells between solid lines at 100% zoom. Reference sampling of the Miro screenshot measured a 242 base gray with 238 grid lines; Mico keeps that near-neutral calm while retaining a slightly stronger major line for hierarchy. The grid follows world pan and zoom; dashed detail fades at low zoom to avoid moiré.
 
-The identity panel shows only the logo and a breathing connection light, and the unified bottom dock is fixed in screen space: canvas pan and zoom never resize, move or hide them. Drawing tools, zoom/reset, Fit and the selected object's properties share one dock; narrow viewports wrap its controls instead of clipping them. The color panel opens above the dock. Controls use fixed 40px height, 20px icons and 14px text on an eight-pixel layout system, with Lucide icons and hover-only shortcut hints. Toolbar arrow keys move focus; Enter selects a tool.
+The identity panel shows only the logo and a breathing connection light, and the unified bottom dock is fixed in screen space: canvas pan and zoom never resize, move or hide them. Drawing tools, zoom/reset, Fit and the selected object's properties share one dock; narrow viewports wrap its controls instead of clipping them. The color panel opens above the dock. Controls use fixed 40px height, 20px icons and 14px text on a four-pixel spacing system: dock padding, gaps, dividers, property columns and selection insets are all multiples of four. The dock sizes to its content, grows when an object is selected, and keeps a four-pixel gap between buttons. Lucide icons keep hover-only shortcut hints. Toolbar arrow keys move focus; Enter selects a tool.
 
 ## Agent CLI
 

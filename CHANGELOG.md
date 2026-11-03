@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.1
+
+- Sample the Miro reference for a 242 base gray and 238 grid lines; soften the blueprint palette toward those near-neutral values.
+- Size the bottom dock to its content instead of a reserved width, and add four-pixel gaps between every button.
+- Put selected-object properties in the same single-row dock with fixed 96px label and 40px color/close columns.
+- Align control geometry, dividers, selection insets and popovers to a four-pixel spacing system.
+- Verify button gaps and dock resizing in the isolated Chrome suite.
+
 ## v0.4.0
 
 - Lighten the blueprint grid to a solid 64px line with four dashed cells between solid lines.

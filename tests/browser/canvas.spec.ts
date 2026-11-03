@@ -162,6 +162,13 @@ test('selected object properties live inside the dock and edit the board', async
 	const properties = dock.getByRole('region', { name: 'Selected object properties' })
 	await expect(properties).toBeVisible()
 	await expect(page.locator('.inspector, .topbar .view-controls')).toHaveCount(0)
+	const withProperties = await dock.boundingBox()
+	if (!withProperties) throw new Error('Expected a visible dock')
+	await page.screenshot({ path: '/tmp/mico-dock-properties.png', animations: 'disabled' })
+	await properties.getByRole('button', { name: 'Close properties' }).click()
+	const withoutProperties = await dock.boundingBox()
+	expect(withProperties.width).toBeGreaterThan(withoutProperties?.width ?? 0)
+	await page.locator('[data-shape-id="a"] > rect').first().click()
 	await properties.getByLabel('Text', { exact: true }).fill('Renamed gateway')
 	await properties.getByLabel('Text', { exact: true }).press('Enter')
 	await expect
@@ -174,6 +181,7 @@ test('selected object properties live inside the dock and edit the board', async
 	if (!panel || !dockBox) throw new Error('Expected a color popover and dock')
 	expect(panel.x).toBeGreaterThanOrEqual(0)
 	expect(panel.y + panel.height).toBeLessThanOrEqual(dockBox.y)
+	await page.screenshot({ path: '/tmp/mico-dock-color.png', animations: 'disabled' })
 	await popover.getByRole('button', { name: 'Set color Green' }).click()
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
@@ -202,6 +210,12 @@ test('frame controls align to four-pixel layout slots even on fractional viewpor
 				`${control.label} must use four-pixel-aligned geometry`,
 			).toBeLessThan(0.001)
 		}
+	}
+	const sorted = [...controls].sort((a, b) => a.x - b.x)
+	for (let index = 1; index < sorted.length; index += 1) {
+		const gap = sorted[index].x - (sorted[index - 1].x + sorted[index - 1].width)
+		expect(gap, `${sorted[index].label} needs a visible gap`).toBeGreaterThanOrEqual(4)
+		expect(Math.abs(gap / 4 - Math.round(gap / 4))).toBeLessThan(0.001)
 	}
 })
 

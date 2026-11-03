@@ -1,5 +1,11 @@
 # Retrospective
 
+## Four-pixel dock refinement
+
+- A formatting pass rewrote CSS selectors, so a later scripted replacement silently matched nothing and left the old `width: 0; min-width: 100%` rule in place. Verify scripted edits with a follow-up search instead of assuming success.
+- Aligning to a four-pixel grid requires the panel height to be a multiple of four too. Replace layout borders with inset shadows so padding plus control height stays on the grid at odd viewport sizes.
+- Sampling the reference image directly (quarter-scale pixel counts) is faster and more reliable than judging "lighter" by eye.
+
 ## Dock properties and snapping
 
 - Anchoring a popover to a measured dock height raced with responsive layout changes and let the panel overlap the dock. Prefer in-flow or parent-relative anchoring over duplicated measurements.
