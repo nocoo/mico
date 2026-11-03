@@ -478,10 +478,12 @@ test('rich widgets sit in isolated cards with editable items', async ({ page, re
 	await page.getByLabel('New widget item').fill('Beta rollout')
 	await page.getByRole('button', { name: 'Add widget item' }).click()
 	await expect
-		.poll(
-			async () =>
-				(await board(request)).shapes.find((shape) => shape.id === widget.id)?.items?.length,
-		)
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === widget.id) as
+				| CanvasShape
+				| undefined
+			return shape?.items?.length
+		})
 		.toBe(4)
 	await page.getByLabel('Status Launch').selectOption('done')
 	await expect(
