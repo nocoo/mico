@@ -653,7 +653,7 @@ svg {
 		display: none;
 	}
 }
-@media (max-width: 720px) {
+@media (max-width: 768px) {
 	.app {
 		--frame-inset: var(--space-2);
 		--dock-rows: 2;

@@ -197,6 +197,100 @@ test('frame controls align to eight-pixel layout slots even on fractional viewpo
 	}
 })
 
+test('world grid follows pan and zoom while the identity and complete dock stay fixed', async ({
+	page,
+}) => {
+	const snapshot = () =>
+		page.locator('.identity-panel, .brand-mark, .toolbar').evaluateAll((elements) =>
+			elements.map((element) => {
+				const { x, y, width, height } = element.getBoundingClientRect()
+				return { x, y, width, height }
+			}),
+		)
+	const worldGrid = () =>
+		page.locator('[data-world-layer]').evaluate((element) => {
+			const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
+			const pattern = document.querySelector<SVGPatternElement>('.blueprint-grid pattern')
+			const offset = pattern?.patternTransform.baseVal.consolidate()?.matrix
+			if (!matrix || !pattern || !offset) throw new Error('Missing world or grid transform')
+			return {
+				zoom: matrix.a,
+				x: matrix.e,
+				y: matrix.f,
+				tile: Number(pattern.getAttribute('width')),
+				offsetX: offset.e,
+				offsetY: offset.f,
+			}
+		})
+	const verify = async (initial: Awaited<ReturnType<typeof snapshot>>) => {
+		expect(await snapshot()).toEqual(initial)
+		await expect(page.locator('.topbar')).toHaveCSS('position', 'fixed')
+		await expect(page.locator('.toolbar')).toHaveCSS('position', 'fixed')
+		for (const button of await page.getByRole('toolbar').getByRole('button').all())
+			await expect(button).toBeVisible()
+		const grid = await worldGrid()
+		expect(grid.tile).toBeCloseTo(64 * grid.zoom)
+		expect(grid.offsetX).toBeCloseTo(((grid.x % grid.tile) + grid.tile) % grid.tile)
+		expect(grid.offsetY).toBeCloseTo(((grid.y % grid.tile) + grid.tile) % grid.tile)
+	}
+
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	const initial = await snapshot()
+	await expect(page.locator('[data-grid-level="minor"]')).toHaveAttribute('stroke-dasharray', '4 4')
+	await expect(page.locator('[data-grid-level="fine"]')).toHaveAttribute(
+		'd',
+		'M8 0V64M0 8H64M16 0V64M0 16H64M24 0V64M0 24H64M40 0V64M0 40H64M48 0V64M0 48H64M56 0V64M0 56H64',
+	)
+	await page.getByRole('button', { name: 'Pan', exact: true }).click()
+	await page.mouse.move(600, 760)
+	await page.mouse.down()
+	await page.mouse.move(500, 700, { steps: 4 })
+	await page.mouse.up()
+	expect(await worldGrid()).toMatchObject({ x: -100, y: -60, offsetX: 28, offsetY: 4 })
+	await verify(initial)
+	await page.mouse.wheel(0, -100000)
+	await expect.poll(async () => (await worldGrid()).zoom).toBe(3)
+	await verify(initial)
+	await page.mouse.wheel(0, 100000)
+	await expect.poll(async () => (await worldGrid()).zoom).toBeCloseTo(0.05, 6)
+	await verify(initial)
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	await verify(initial)
+	await page.mouse.move(0, 0)
+	await page.screenshot({ path: '/tmp/mico-blueprint-fixed-dock.png', animations: 'disabled' })
+})
+
+test('all dock controls and the upward settings panel remain on-screen at every size tier', async ({
+	page,
+}) => {
+	for (const width of [360, 390, 768, 1440]) {
+		await page.setViewportSize({ width, height: 844 })
+		for (const tier of ['compact', 'standard', 'roomy']) {
+			await page.getByRole('button', { name: 'Interface settings', exact: true }).click()
+			await page
+				.getByRole('group', { name: 'Control size' })
+				.getByRole('button', { name: tier, exact: true })
+				.click()
+			const panel = await page.locator('.settings-panel').boundingBox()
+			const dock = await page.getByRole('toolbar').boundingBox()
+			if (!panel || !dock) throw new Error('Expected dock and settings panel')
+			expect(panel.x).toBeGreaterThanOrEqual(0)
+			expect(panel.x + panel.width).toBeLessThanOrEqual(width)
+			expect(panel.y).toBeGreaterThanOrEqual(0)
+			expect(panel.y + panel.height).toBeLessThanOrEqual(dock.y - 16)
+			await page.keyboard.press('Escape')
+			for (const button of await page.getByRole('toolbar').getByRole('button').all()) {
+				await expect(button).toBeVisible()
+				const box = await button.boundingBox()
+				if (!box) throw new Error('Expected a visible dock control')
+				expect(box.x).toBeGreaterThanOrEqual(0)
+				expect(box.x + box.width).toBeLessThanOrEqual(width)
+				expect(box.y + box.height).toBeLessThanOrEqual(844)
+			}
+		}
+	}
+})
+
 test('drag creates a connector with exactly the highlighted target anchor', async ({
 	page,
 	request,
