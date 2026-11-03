@@ -1,6 +1,6 @@
 {
 	"name": "mico",
-	"version": "0.6.0",
+	"version": "0.6.1",
 	"private": true,
 	"type": "module",
 	"engines": {
@@ -16,6 +16,7 @@
 		"test:browser": "playwright test"
 	},
 	"dependencies": {
+		"@radix-ui/themes": "3.3.0",
 		"lucide-react": "1.62.0",
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",

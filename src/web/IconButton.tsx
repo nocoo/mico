@@ -1,11 +1,14 @@
+import { IconButton as RadixIconButton, Tooltip } from '@radix-ui/themes'
 import type { LucideIcon } from 'lucide-react'
-import { type ButtonHTMLAttributes, useId } from 'react'
+import type { ButtonHTMLAttributes } from 'react'
 
-interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color'> {
 	icon: LucideIcon
 	label: string
 	shortcut?: string
 	tooltipSide?: 'top' | 'bottom'
+	active?: boolean
+	compact?: boolean
 }
 
 export function IconButton({
@@ -15,24 +18,34 @@ export function IconButton({
 	tooltipSide = 'top',
 	className = '',
 	children,
+	active,
+	compact,
 	...props
 }: IconButtonProps) {
-	const tooltipId = useId()
 	return (
-		<button
-			{...props}
-			type="button"
-			className={`icon-button ${className}`}
-			aria-label={label}
-			aria-describedby={tooltipId}
-			data-tooltip-side={tooltipSide}
+		<Tooltip
+			side={tooltipSide}
+			delayDuration={200}
+			content={
+				<span className="tooltip-content">
+					{label}
+					{shortcut && <kbd>{shortcut}</kbd>}
+				</span>
+			}
 		>
-			<Icon aria-hidden="true" strokeWidth={1.5} />
-			{children}
-			<span className="control-tooltip" id={tooltipId} role="tooltip">
-				{label}
-				{shortcut && <kbd>{shortcut}</kbd>}
-			</span>
-		</button>
+			<RadixIconButton
+				{...props}
+				type="button"
+				aria-label={label}
+				variant={active || props['aria-pressed'] ? 'solid' : 'ghost'}
+				color={active || props['aria-pressed'] ? undefined : 'gray'}
+				size={compact ? '1' : '3'}
+				data-compact={compact ? 'true' : undefined}
+				className={`icon-button ${className}`}
+			>
+				<Icon aria-hidden="true" strokeWidth={1.5} />
+				{children}
+			</RadixIconButton>
+		</Tooltip>
 	)
 }

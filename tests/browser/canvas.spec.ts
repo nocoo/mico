@@ -7,6 +7,11 @@ async function board(request: APIRequestContext): Promise<Board> {
 	return response.json()
 }
 
+async function choose(page: Page, label: string, option: string) {
+	await page.getByRole('combobox', { name: label, exact: true }).click()
+	await page.getByRole('option', { name: option, exact: true }).click()
+}
+
 async function center(locator: Locator) {
 	const box = await locator.boundingBox()
 	if (!box) throw new Error('Expected a visible canvas object')
@@ -136,9 +141,11 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
 	const select = page.getByRole('button', { name: 'Select', exact: true })
-	await expect(select.locator('kbd')).toBeHidden()
+	await expect(page.getByRole('tooltip')).toHaveCount(0)
 	await select.hover()
-	await expect(select.locator('kbd')).toBeVisible()
+	const tooltip = page.getByRole('tooltip')
+	await expect(tooltip).toContainText('Select')
+	await expect(tooltip.locator('kbd')).toHaveText('V')
 	await select.focus()
 	await page.keyboard.press('ArrowRight')
 	await expect(page.getByRole('button', { name: 'Pan', exact: true })).toBeFocused()
@@ -379,10 +386,11 @@ test('notes, typographic text and frames are editable and move together', async 
 		.toMatchObject({ text: 'Remember this' })
 
 	await page.getByRole('button', { name: 'Text', exact: true }).click()
-	await page.getByLabel('Font family').selectOption('hand')
-	await page.getByLabel('Font size').selectOption('48')
-	await page.getByLabel('Font weight').selectOption('700')
-	await page.mouse.click(1100, 700)
+	await choose(page, 'Font family', 'Hand')
+	await choose(page, 'Font size', '48')
+	await choose(page, 'Font weight', '700')
+	await page.waitForTimeout(350)
+	await page.mouse.click(1250, 500)
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'text'))
 		.toBe(true)
@@ -485,7 +493,7 @@ test('rich widgets sit in isolated cards with editable items', async ({ page, re
 			return shape?.items?.length
 		})
 		.toBe(4)
-	await page.getByLabel('Status Launch').selectOption('done')
+	await choose(page, 'Status Launch', 'done')
 	await expect(
 		page.locator(`[data-shape-id="${widget.id}"] .kanban-column.done article`),
 	).toHaveCount(2)
@@ -580,7 +588,7 @@ test('freehand brush draws a persisted tapered path and API sketches render', as
 		})
 	await page.mouse.click(ink.x, ink.y)
 	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
-	await page.getByLabel('Stroke width', { exact: true }).selectOption('2')
+	await choose(page, 'Stroke width', '2px')
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === path.id))
 		.toMatchObject({ strokeWidth: 2 })
@@ -703,8 +711,11 @@ test('endpoint rebinding has a keyboard alternative in the dock properties', asy
 	await selectEdge(page)
 	await page.getByRole('button', { name: 'Reconnect target', exact: true }).focus()
 	await page.keyboard.press('Enter')
-	await expect(page.getByLabel('Target', { exact: true })).toBeFocused()
-	await page.getByLabel('Target', { exact: true }).selectOption('c')
+	await page.waitForTimeout(250)
+	const target = page.getByRole('combobox', { name: 'Target', exact: true })
+	await target.focus()
+	await target.press('Space')
+	await page.getByRole('option', { name: 'Event worker', exact: true }).click()
 	await expect.poll(async () => (await edge(request))?.to).toBe('c')
 })
 

@@ -1,4 +1,4 @@
-import { CalendarDays, CheckSquare, KanbanSquare, Table2 } from 'lucide-react'
+import { CalendarDays, CheckSquare, GripVertical, KanbanSquare, Table2 } from 'lucide-react'
 import type { CanvasShape, WidgetItem } from '../shared/types'
 
 const icons = { todo: CheckSquare, kanban: KanbanSquare, table: Table2, timeline: CalendarDays }
@@ -107,6 +107,9 @@ export function WidgetCard({ shape }: { shape: CanvasShape }) {
 						{shape.widgetTitle}
 					</span>
 					<span className="widget-meta">{items.length} items</span>
+					<span className="card-drag">
+						<GripVertical size={14} strokeWidth={1.5} aria-hidden="true" />
+					</span>
 				</header>
 				<div className="widget-body">
 					{kind === 'todo' && todoRows(items)}

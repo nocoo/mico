@@ -2,6 +2,8 @@ import { Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import type { CanvasShape, WidgetItem } from '../shared/types'
 import { IconButton } from './IconButton'
+import { SelectField } from './SelectField'
+import { UiInput } from './UiInput'
 
 interface WidgetEditorProps {
 	shape: CanvasShape
@@ -47,7 +49,7 @@ export function WidgetEditor({ shape, onPatch }: WidgetEditorProps) {
 				<label className="sr-only" htmlFor="widget-title">
 					Widget title
 				</label>
-				<input
+				<UiInput
 					id="widget-title"
 					key={`${shape.id}:${shape.widgetTitle}`}
 					defaultValue={shape.widgetTitle}
@@ -72,7 +74,7 @@ export function WidgetEditor({ shape, onPatch }: WidgetEditorProps) {
 									onChange={(event) => change(item.id, { done: event.target.checked })}
 								/>
 							)}
-							<input
+							<UiInput
 								aria-label={`Item ${item.title}`}
 								defaultValue={item.title}
 								key={`${item.id}:${item.title}`}
@@ -82,21 +84,16 @@ export function WidgetEditor({ shape, onPatch }: WidgetEditorProps) {
 								}}
 							/>
 							{kind === 'kanban' && (
-								<select
-									aria-label={`Status ${item.title}`}
+								<SelectField
+									label={`Status ${item.title}`}
 									value={item.status ?? 'todo'}
-									onChange={(event) => change(item.id, { status: event.target.value })}
-								>
-									{statuses.map((status) => (
-										<option key={status} value={status}>
-											{status}
-										</option>
-									))}
-								</select>
+									options={statuses.map((status) => ({ value: status, label: status }))}
+									onChange={(status) => change(item.id, { status })}
+								/>
 							)}
 							{kind === 'timeline' && (
 								<>
-									<input
+									<UiInput
 										type="number"
 										className="widget-number"
 										aria-label={`Start ${item.title}`}
@@ -104,7 +101,7 @@ export function WidgetEditor({ shape, onPatch }: WidgetEditorProps) {
 										key={`start:${item.id}:${item.start}`}
 										onBlur={(event) => change(item.id, { start: Number(event.target.value) })}
 									/>
-									<input
+									<UiInput
 										type="number"
 										className="widget-number"
 										aria-label={`End ${item.title}`}
@@ -123,7 +120,7 @@ export function WidgetEditor({ shape, onPatch }: WidgetEditorProps) {
 					))}
 				</div>
 				<div className="widget-editor-add">
-					<input
+					<UiInput
 						aria-label="New widget item"
 						placeholder="Add item"
 						value={draft}
@@ -132,7 +129,7 @@ export function WidgetEditor({ shape, onPatch }: WidgetEditorProps) {
 							if (event.key === 'Enter') add()
 						}}
 					/>
-					<IconButton icon={Plus} label="Add widget item" onClick={add} />
+					<IconButton compact icon={Plus} label="Add widget item" onClick={add} />
 				</div>
 			</div>
 		</>

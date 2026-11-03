@@ -1,6 +1,8 @@
+import { Theme } from '@radix-ui/themes'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import '@radix-ui/themes/styles.css'
 import './styles.css'
 
 const browserZoomKeys = new Set(['+', '=', '-', '_', '0'])
@@ -25,6 +27,8 @@ if (!root) throw new Error('Root element missing')
 
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
-		<App />
+		<Theme appearance="light" accentColor="indigo" grayColor="slate" radius="medium" scaling="100%">
+			<App />
+		</Theme>
 	</React.StrictMode>,
 )

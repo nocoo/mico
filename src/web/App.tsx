@@ -31,6 +31,7 @@ import {
 } from './design'
 import { canRebaseMove } from './move'
 import { PropertiesBar } from './PropertiesBar'
+import { SelectField } from './SelectField'
 import {
 	boundsOf,
 	expandRect,
@@ -41,6 +42,7 @@ import {
 	shapeBounds,
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
+import { UiInput } from './UiInput'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
 import { WidgetCard } from './WidgetCard'
@@ -787,11 +789,29 @@ export default function App() {
 					return next
 				})
 				void postOperations(
-					group.map((shape) => ({
-						type: 'update' as const,
-						id: shape.id,
-						patch: { x: shape.x + deltaX, y: shape.y + deltaY },
-					})),
+					group.map((shape) => {
+						const frame = shape.frameId
+							? board.shapes.find(
+									(candidate): candidate is CanvasShape =>
+										candidate.id === shape.frameId && candidate.type !== 'connector',
+								)
+							: undefined
+						const detached =
+							frame &&
+							!intersects(
+								{ x: shape.x + deltaX, y: shape.y + deltaY, w: shape.w, h: shape.h },
+								shapeBounds(frame),
+							)
+						return {
+							type: 'update' as const,
+							id: shape.id,
+							patch: {
+								x: shape.x + deltaX,
+								y: shape.y + deltaY,
+								...(detached ? { frameId: null } : {}),
+							},
+						}
+					}),
 					interaction.revision,
 					(current) => group.every((shape) => canRebaseMove(current, shape)),
 				).then(() => {
@@ -1115,6 +1135,14 @@ export default function App() {
 						<text x="20" y="6" fill="var(--ink)" dominantBaseline="middle">
 							{shape.title}
 						</text>
+						<g className="frame-handle" transform="translate(-16 1)" fill="currentColor">
+							<circle cx="0" cy="-3" r="1" />
+							<circle cx="4" cy="-3" r="1" />
+							<circle cx="0" cy="1" r="1" />
+							<circle cx="4" cy="1" r="1" />
+							<circle cx="0" cy="5" r="1" />
+							<circle cx="4" cy="5" r="1" />
+						</g>
 					</g>
 					{active && (
 						<rect
@@ -1319,39 +1347,24 @@ export default function App() {
 			</fieldset>
 		) : tool === 'text' ? (
 			<fieldset className="brush-options text-options" aria-label="Text options">
-				<select
-					aria-label="Font family"
+				<SelectField
+					label="Font family"
 					value={textFont}
-					onChange={(event) => setTextFont(event.target.value as typeof textFont)}
-				>
-					{FONT_OPTIONS.map(({ id, label }) => (
-						<option key={id} value={id}>
-							{label}
-						</option>
-					))}
-				</select>
-				<select
-					aria-label="Font size"
-					value={textSize}
-					onChange={(event) => setTextSize(Number(event.target.value))}
-				>
-					{FONT_SIZES.map((size) => (
-						<option key={size} value={size}>
-							{size}
-						</option>
-					))}
-				</select>
-				<select
-					aria-label="Font weight"
-					value={textWeight}
-					onChange={(event) => setTextWeight(Number(event.target.value))}
-				>
-					{FONT_WEIGHTS.map((weight) => (
-						<option key={weight} value={weight}>
-							{weight}
-						</option>
-					))}
-				</select>
+					options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
+					onChange={setTextFont}
+				/>
+				<SelectField
+					label="Font size"
+					value={String(textSize)}
+					options={FONT_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
+					onChange={(size) => setTextSize(Number(size))}
+				/>
+				<SelectField
+					label="Font weight"
+					value={String(textWeight)}
+					options={FONT_WEIGHTS.map((weight) => ({ value: String(weight), label: String(weight) }))}
+					onChange={(weight) => setTextWeight(Number(weight))}
+				/>
 			</fieldset>
 		) : null
 
@@ -1433,73 +1446,54 @@ export default function App() {
 										<label className="sr-only" htmlFor="text-font">
 											Font family
 										</label>
-										<select
-											id="text-font"
+										<SelectField
+											label="Font family"
 											value={selected.font ?? 'sans'}
-											onChange={(event) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { font: event.target.value as 'sans' },
-													},
-												])
+											options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
+											onChange={(font) =>
+												void postOperations([{ type: 'update', id: selected.id, patch: { font } }])
 											}
-										>
-											{FONT_OPTIONS.map(({ id, label }) => (
-												<option key={id} value={id}>
-													{label}
-												</option>
-											))}
-										</select>
+										/>
 									</div>
 									<div className="property-field">
 										<label className="sr-only" htmlFor="text-size">
 											Font size
 										</label>
-										<select
-											id="text-size"
-											value={selected.fontSize ?? 32}
-											onChange={(event) =>
+										<SelectField
+											label="Font size"
+											value={String(selected.fontSize ?? 32)}
+											options={FONT_SIZES.map((size) => ({
+												value: String(size),
+												label: String(size),
+											}))}
+											onChange={(size) =>
 												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { fontSize: Number(event.target.value) },
-													},
+													{ type: 'update', id: selected.id, patch: { fontSize: Number(size) } },
 												])
 											}
-										>
-											{FONT_SIZES.map((size) => (
-												<option key={size} value={size}>
-													{size}
-												</option>
-											))}
-										</select>
+										/>
 									</div>
 									<div className="property-field">
 										<label className="sr-only" htmlFor="text-weight">
 											Font weight
 										</label>
-										<select
-											id="text-weight"
-											value={selected.fontWeight ?? 500}
-											onChange={(event) =>
+										<SelectField
+											label="Font weight"
+											value={String(selected.fontWeight ?? 500)}
+											options={FONT_WEIGHTS.map((weight) => ({
+												value: String(weight),
+												label: String(weight),
+											}))}
+											onChange={(weight) =>
 												void postOperations([
 													{
 														type: 'update',
 														id: selected.id,
-														patch: { fontWeight: Number(event.target.value) },
+														patch: { fontWeight: Number(weight) },
 													},
 												])
 											}
-										>
-											{FONT_WEIGHTS.map((weight) => (
-												<option key={weight} value={weight}>
-													{weight}
-												</option>
-											))}
-										</select>
+										/>
 									</div>
 								</>
 							)}
@@ -1508,14 +1502,14 @@ export default function App() {
 									<label className="sr-only" htmlFor="frame-title">
 										Frame title
 									</label>
-									<input
+									<UiInput
 										id="frame-title"
 										defaultValue={selected.title}
 										key={`${selected.id}:${selected.title}`}
 										onBlur={(event) => {
 											const title = event.target.value.trim()
-											if (!title || title === selected.title) return
-											void postOperations([{ type: 'update', id: selected.id, patch: { title } }])
+											if (title && title !== selected.title)
+												void postOperations([{ type: 'update', id: selected.id, patch: { title } }])
 										}}
 										onKeyDown={(event) => {
 											if (event.key === 'Enter') event.currentTarget.blur()
@@ -1529,49 +1523,36 @@ export default function App() {
 										<label className="sr-only" htmlFor="path-brush">
 											Brush style
 										</label>
-										<select
-											id="path-brush"
-											value={selected.brush}
-											onChange={(event) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { brush: event.target.value as BrushStyle },
-													},
-												])
+										<SelectField
+											label="Brush style"
+											value={selected.brush ?? 'brush'}
+											options={BRUSH_STYLES.map(({ id, label }) => ({ value: id, label }))}
+											onChange={(brush) =>
+												void postOperations([{ type: 'update', id: selected.id, patch: { brush } }])
 											}
-										>
-											{BRUSH_STYLES.map(({ id, label }) => (
-												<option key={id} value={id}>
-													{label}
-												</option>
-											))}
-										</select>
+										/>
 									</div>
 									<div className="property-field">
 										<label className="sr-only" htmlFor="path-width">
 											Stroke width
 										</label>
-										<select
-											id="path-width"
-											value={selected.strokeWidth}
-											onChange={(event) =>
+										<SelectField
+											label="Stroke width"
+											value={String(selected.strokeWidth ?? 4)}
+											options={BRUSH_WIDTHS.map((width) => ({
+												value: String(width),
+												label: `${width}px`,
+											}))}
+											onChange={(width) =>
 												void postOperations([
 													{
 														type: 'update',
 														id: selected.id,
-														patch: { strokeWidth: Number(event.target.value) },
+														patch: { strokeWidth: Number(width) },
 													},
 												])
 											}
-										>
-											{BRUSH_WIDTHS.map((width) => (
-												<option key={width} value={width}>
-													{width}px
-												</option>
-											))}
-										</select>
+										/>
 									</div>
 								</>
 							)}
@@ -1581,23 +1562,18 @@ export default function App() {
 										<label className="sr-only" htmlFor={`connection-${endpoint}`}>
 											{endpoint === 'from' ? 'Source' : 'Target'}
 										</label>
-										<select
-											id={`connection-${endpoint}`}
+										<SelectField
+											label={endpoint === 'from' ? 'Source' : 'Target'}
 											value={selected[endpoint]}
 											disabled={!!connection.draft}
-											onChange={(event) => changeEndpoint(endpoint, event.target.value)}
-										>
-											{board.shapes
+											options={board.shapes
 												.filter(isCanvasShape)
 												.filter(
 													(shape) => shape.id !== selected[endpoint === 'from' ? 'to' : 'from'],
 												)
-												.map((shape) => (
-													<option key={shape.id} value={shape.id}>
-														{shape.text || shape.id}
-													</option>
-												))}
-										</select>
+												.map((shape) => ({ value: shape.id, label: shape.text || shape.id }))}
+											onChange={(value) => changeEndpoint(endpoint, value)}
+										/>
 									</div>
 								))}
 						</PropertiesBar>

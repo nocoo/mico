@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.1
+
+- Adopt Radix Themes for all frame controls: buttons, tooltips, selects and text inputs now share the library's motion, focus and elevation.
+- Give frames and rich widgets a standard card header with kind icon, grip handle and title.
+- Keep frame contents individually editable and detach an item when it is dragged outside its frame.
+
 ## v0.6.0
 
 - Block browser-level page zoom while keeping canvas zoom independent.
