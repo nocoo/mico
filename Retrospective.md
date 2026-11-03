@@ -2,7 +2,8 @@
 
 ## Canvas evaluation setup
 
-- The case corpus was committed before checking the formatter, and trailing blank lines made the next check fail. Run the project's complete checks on new Markdown as well as code before each commit.
+- The case corpus was committed before checking the formatter, and trailing blank lines made the next check fail. A later report repeated the error when a shell command used `;` after a failing check. Chain checks and commits with `&&`, and verify generated Markdown before staging.
+- Two workers ran browser tests against the same fixed fixture ports, then one used broad `pkill` commands to clear them. Assign fixture ownership to one worker, forbid broad process termination explicitly, and coordinate tests serially; the daily development listeners remained up.
 
 ## Frames, typography and widgets
 
