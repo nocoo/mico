@@ -26,11 +26,13 @@ Vite hot-reloads frontend changes; `pnpm daemon` watches daemon source changes a
 
 Port allocation: development `7063`, E2E `17063`, browser/BDD `27063`, internal daemon `37063`. Automated tests must use an isolated database and loopback endpoint, not the daily board. The shared Caddy mapping lives in `workflow/caddy/Caddyfile` and the active machine's `/opt/homebrew/etc/Caddyfile`; the existing `*.dev.hexly.ai` certificate covers this hostname.
 
-The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Boards fit the viewport on first load; click Fit or press F to fit all objects again. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool and drag from a source node toward a target. Nearby nodes reveal their anchors; the highlighted anchor is the exact persisted attachment. Select a connector to drag either endpoint to another node. Dropping on empty space, cancelling a pointer, or pressing Escape leaves it unchanged. The inspector's Source and Target controls provide a keyboard alternative. Concurrent agent edits are checked before committing a drag.
+The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Boards fit the viewport on first load; click Fit or press F to fit all objects again. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool and drag from a source node toward a target. Nearby nodes reveal their anchors; the highlighted anchor is the exact persisted attachment. Select a connector to drag either endpoint to another node. Dropping on empty space, cancelling a pointer, or pressing Escape leaves it unchanged. Source and Target controls in the dock properties provide a keyboard alternative. Concurrent agent edits are checked before committing a drag.
 
-The canvas uses a blueprint grid: 64px solid major cells, a dashed 32px midpoint dividing each into 2×2 small cells, and 8px fine divisions at 100% zoom. The grid follows world pan and zoom; dense details fade at low zoom to avoid moiré.
+Dragging an object snaps its origin to the visible 16px grid and aligns left/right/center or top/bottom/middle with nearby objects within six screen pixels. Matching alignments show dashed guide lines and win over the grid on that axis. Objects farther than 160 screen pixels never attract.
 
-The identity panel and unified bottom dock are fixed in screen space: canvas pan and zoom never resize, move or hide them. Drawing tools, zoom/reset, Fit and interface settings share one dock; narrow viewports wrap its controls instead of clipping them. Settings opens upward, with viewport-bounded placement. The frame uses an eight-pixel layout system and Lucide icons with hover-only shortcut hints. Interface settings offers fixed control/icon tiers (32/16, 40/20, 48/24 px) and text tiers (12, 14, 16 px), stored on this device. Caption and brand typography use their own named scale roles. Toolbar arrow keys move focus; Enter selects a tool.
+The canvas uses a subtle blueprint grid: a solid line every 64px with four dashed cells between solid lines at 100% zoom. The grid follows world pan and zoom; dashed detail fades at low zoom to avoid moiré.
+
+The identity panel shows only the logo and a breathing connection light, and the unified bottom dock is fixed in screen space: canvas pan and zoom never resize, move or hide them. Drawing tools, zoom/reset, Fit and the selected object's properties share one dock; narrow viewports wrap its controls instead of clipping them. The color panel opens above the dock. Controls use fixed 40px height, 20px icons and 14px text on an eight-pixel layout system, with Lucide icons and hover-only shortcut hints. Toolbar arrow keys move focus; Enter selects a tool.
 
 ## Agent CLI
 
@@ -62,7 +64,7 @@ pnpm build
 pnpm test:browser
 ```
 
-Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers frame alignment, icon/tooltip behavior, stored interface tiers, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its settings panel visible across all size tiers.
+Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers frame alignment, icon/tooltip behavior, dock property editing, drag snapping with alignment guides, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its color panel visible at narrow and wide widths.
 
 ## MVP limits
 

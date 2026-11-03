@@ -1,5 +1,11 @@
 # Retrospective
 
+## Dock properties and snapping
+
+- Anchoring a popover to a measured dock height raced with responsive layout changes and let the panel overlap the dock. Prefer in-flow or parent-relative anchoring over duplicated measurements.
+- The visible grid and the snapping grid must share one constant. Changing the drawn hierarchy to 16px cells while snapping to 8px would have produced unexplained half-cell offsets.
+- Keep SVG guide lines above shapes and use non-scaling strokes so they remain readable at every zoom.
+
 ## Blueprint grid and fixed dock
 
 - A worker's optional visual experiment used an unbounded loop and left a temporary file in the repository, blocking lint. Bound visual probes with explicit loop limits and timeouts, keep them outside the checkout, and let the coordinator own browser acceptance. The probe was aborted and its owned temporary file removed.

@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.4.0
+
+- Lighten the blueprint grid to a solid 64px line with four dashed cells between solid lines.
+- Simplify the identity panel to the logo and a breathing green connection light; remove the version, board name and text badge.
+- Move selected-object properties into the bottom dock and remove the interface settings controls.
+- Snap dragged objects to the 16px grid and to nearby object edges/centers, showing alignment guide lines.
+- Reject invalid grid coordinates explicitly and keep snapping deterministic across zoom levels.
+
 ## v0.3.0
 
 - Add a world-aligned blueprint grid with solid 64px cells, dashed 32px subdivisions and 8px fine lines, softening dense details at low zoom.
