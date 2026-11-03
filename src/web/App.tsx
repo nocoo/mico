@@ -3,6 +3,7 @@ import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
+import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
@@ -1023,7 +1024,11 @@ export default function App() {
 						<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
 					</marker>
 				</defs>
-				<g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}>
+				<BlueprintGrid viewport={viewport} />
+				<g
+					data-world-layer="true"
+					transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
+				>
 					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => !isConnector(shape)).map(renderShape)}
 					{creation && renderShape(creation)}
