@@ -182,9 +182,7 @@ svg {
 	width: var(--control-size);
 	height: var(--control-size);
 	padding: var(--space-1);
-	border-radius: var(--radius-control);
 	color: var(--accent);
-	background: var(--accent-tint);
 }
 .brand strong {
 	width: var(--space-6);
@@ -403,8 +401,11 @@ svg {
 		);
 	align-items: center;
 	gap: var(--space-05);
-	width: min(360px, 45vw);
-	min-width: 240px;
+	width: min(376px, 45vw);
+	min-width: 256px;
+	padding-inline: var(--space-1);
+	border-radius: var(--radius-control);
+	background: var(--surface-muted);
 }
 .selection-summary {
 	font-size: var(--type-caption);
@@ -417,6 +418,19 @@ svg {
 	min-width: 0;
 	gap: var(--space-1);
 }
+.brush-options {
+	display: flex;
+	align-items: center;
+	gap: var(--space-05);
+	padding: 0;
+	border: 0;
+	min-width: 0;
+}
+.brush-options .segmented-control button {
+	height: var(--control-compact);
+	padding-inline: var(--space-1);
+	font-size: var(--type-caption);
+}
 .properties-fields:empty {
 	display: none;
 }
@@ -428,7 +442,7 @@ svg {
 .property-field input[type="text"],
 .property-field select {
 	width: 100%;
-	height: var(--control-size);
+	height: var(--control-compact);
 	padding: 0 var(--space-1);
 	border: var(--hairline) solid var(--border-strong);
 	border-radius: var(--radius-control);

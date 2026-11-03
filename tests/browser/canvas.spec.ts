@@ -131,7 +131,7 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
 	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
-	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(11)
+	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(12)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
@@ -334,6 +334,92 @@ test('dragging snaps to the grid and aligns with nearby objects using guides', a
 	const moved = (await board(request)).shapes.find((shape) => shape.id === 'a')
 	expect(moved).toMatchObject({ x: 160 })
 	expect(moved && moved.type !== 'connector' ? moved.y : NaN).toBe(496)
+})
+
+test('freehand brush draws a persisted tapered path and API sketches render', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Brush', exact: true }).click()
+	await expect(page.getByRole('group', { name: 'Brush options' })).toBeVisible()
+	await page.getByRole('button', { name: 'Brush style Brush' }).click()
+	await page.getByRole('button', { name: 'Brush width 8px' }).click()
+	await page.mouse.move(320, 700)
+	await page.mouse.down()
+	for (const [x, y] of [
+		[340, 660],
+		[380, 640],
+		[420, 665],
+		[460, 700],
+		[500, 680],
+	]) {
+		await page.mouse.move(x, y, { steps: 4 })
+	}
+	await page.mouse.up()
+	await expect
+		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'path').length)
+		.toBe(1)
+	const path = (await board(request)).shapes.find((shape) => shape.type === 'path')
+	expect(path).toMatchObject({ type: 'path', brush: 'brush', strokeWidth: 8 })
+	if (!path || path.type !== 'path') throw new Error('Expected a path shape')
+	expect(path.points?.length ?? 0).toBeGreaterThan(3)
+	for (const point of path.points ?? []) {
+		expect(point.x).toBeGreaterThanOrEqual(0)
+		expect(point.x).toBeLessThanOrEqual(path.w)
+		expect(point.y).toBeGreaterThanOrEqual(0)
+		expect(point.y).toBeLessThanOrEqual(path.h)
+	}
+	await page.reload()
+	await expect(page.locator(`[data-shape-id="${path.id}"] path`)).not.toHaveCount(0)
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const ink = await page
+		.locator(`[data-shape-id="${path.id}"] path`)
+		.first()
+		.evaluate((element) => {
+			const shape = element as SVGPathElement
+			const point = shape.getPointAtLength(shape.getTotalLength() / 2)
+			const screen = new DOMPoint(point.x, point.y).matrixTransform(
+				shape.getScreenCTM() ?? undefined,
+			)
+			return { x: screen.x, y: screen.y }
+		})
+	await page.mouse.click(ink.x, ink.y)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await page.getByLabel('Stroke width', { exact: true }).selectOption('2')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === path.id))
+		.toMatchObject({ strokeWidth: 2 })
+
+	const revision = (await board(request)).revision
+	const apiPath = await request.post('/api/operations', {
+		data: {
+			expectedRevision: revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'api-figure',
+						type: 'path',
+						x: 900,
+						y: 200,
+						w: 120,
+						h: 80,
+						color: '#242424',
+						brush: 'marker',
+						strokeWidth: 4,
+						points: [
+							{ x: 0, y: 0 },
+							{ x: 60, y: 80 },
+							{ x: 120, y: 0 },
+						],
+					},
+				},
+			],
+		},
+	})
+	expect(apiPath.ok()).toBe(true)
+	await expect(page.locator('[data-shape-id="api-figure"] path')).toHaveCount(1)
 })
 
 test('drag creates a connector with exactly the highlighted target anchor', async ({

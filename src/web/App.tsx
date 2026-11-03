@@ -1,12 +1,22 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
+import type {
+	Board,
+	BrushStyle,
+	CanvasShape,
+	Connector,
+	Operation,
+	Point,
+	Shape,
+	ShapeType,
+} from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
+import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
-import { CONTROL_SIZE, ICON_SIZE, TEXT_SIZE } from './design'
+import { BRUSH_STYLES, BRUSH_WIDTHS, CONTROL_SIZE, ICON_SIZE, TEXT_SIZE } from './design'
 import { canRebaseMove } from './move'
 import { PropertiesBar } from './PropertiesBar'
 import { type AlignmentGuide, snapMove } from './snap'
@@ -122,7 +132,7 @@ export default function App() {
 	const [textDrafts, setTextDrafts] = useState<Map<string, TextDraft>>(() => new Map())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
-		mode: 'pan' | 'shape' | 'create' | 'connection'
+		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush'
 		pointerId: number
 		startClient: { x: number; y: number }
 		startWorld: { x: number; y: number }
@@ -144,6 +154,9 @@ export default function App() {
 	const [apiConnected, setApiConnected] = useState(false)
 	const [wsConnected, setWsConnected] = useState(false)
 	const [guides, setGuides] = useState<AlignmentGuide[]>([])
+	const [brushPoints, setBrushPoints] = useState<Point[] | null>(null)
+	const [brushStyle, setBrushStyle] = useState<BrushStyle>('brush')
+	const [brushWidth, setBrushWidth] = useState<(typeof BRUSH_WIDTHS)[number]>(4)
 	const [notice, setNotice] = useState('')
 	const [spacePressed, setSpacePressed] = useState(false)
 	const [isPanning, setIsPanning] = useState(false)
@@ -325,6 +338,7 @@ export default function App() {
 		setCreation(null)
 		setIsPanning(false)
 		setGuides([])
+		setBrushPoints(null)
 		connection.cancel()
 		if (interaction?.previewToken && interaction.shape) {
 			clearDragPreview(interaction.shape.id, interaction.previewToken)
@@ -363,6 +377,7 @@ export default function App() {
 				o: 'ellipse',
 				t: 'text',
 				l: 'line',
+				p: 'path',
 				c: 'connector',
 			}
 			const nextTool = keys[event.key.toLowerCase()]
@@ -431,6 +446,20 @@ export default function App() {
 			return
 		}
 
+		if (tool === 'path') {
+			event.preventDefault()
+			svgRef.current?.setPointerCapture(event.pointerId)
+			interactionRef.current = {
+				mode: 'brush',
+				pointerId: event.pointerId,
+				startClient: { x: event.clientX, y: event.clientY },
+				startWorld: world,
+				startViewport: { x: 0, y: 0 },
+			}
+			setBrushPoints([world])
+			return
+		}
+
 		event.preventDefault()
 		svgRef.current?.setPointerCapture(event.pointerId)
 		interactionRef.current = {
@@ -468,6 +497,16 @@ export default function App() {
 
 		if (interaction.mode === 'connection') {
 			connection.move(world)
+			return
+		}
+
+		if (interaction.mode === 'brush') {
+			setBrushPoints((current) => {
+				if (!current?.length) return [world]
+				const last = current[current.length - 1]
+				if (Math.hypot(world.x - last.x, world.y - last.y) * viewport.zoom < 1.5) return current
+				return [...current, world]
+			})
 			return
 		}
 
@@ -518,6 +557,32 @@ export default function App() {
 		if (interaction.mode === 'connection') {
 			connection.finish(clientToWorld(event.clientX, event.clientY), event.pointerId)
 		}
+
+		if (interaction.mode === 'brush' && brushPoints && brushPoints.length >= 2) {
+			const xs = brushPoints.map((point) => point.x)
+			const ys = brushPoints.map((point) => point.y)
+			const minX = Math.min(...xs)
+			const minY = Math.min(...ys)
+			const w = Math.max(...xs) - minX
+			const h = Math.max(...ys) - minY
+			const points = brushPoints.map((point) => ({
+				x: Math.min(w, Math.max(0, point.x - minX)),
+				y: Math.min(h, Math.max(0, point.y - minY)),
+			}))
+			createShape({
+				id: randomId(),
+				type: 'path',
+				x: minX,
+				y: minY,
+				w,
+				h,
+				color: '#242424',
+				points,
+				brush: brushStyle,
+				strokeWidth: brushWidth,
+			})
+		}
+		setBrushPoints(null)
 
 		if (interaction.mode === 'create' && creation) {
 			if (Math.abs(creation.w) >= 8 || Math.abs(creation.h) >= 8) {
@@ -835,6 +900,28 @@ export default function App() {
 				</g>
 			)
 		}
+		if (shape.type === 'path' && shape.points && shape.brush && shape.strokeWidth) {
+			return (
+				<g key={shape.id} {...common}>
+					<BrushStroke
+						points={shape.points.map((point) => ({ x: shape.x + point.x, y: shape.y + point.y }))}
+						brush={shape.brush}
+						strokeWidth={shape.strokeWidth}
+						color={shape.color}
+					/>
+					{active && (
+						<rect
+							className="selection"
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
+							rx={4}
+						/>
+					)}
+				</g>
+			)
+		}
 		const lineX = Math.min(shape.x, shape.x + shape.w)
 		const lineY = Math.min(shape.y, shape.y + shape.h)
 		const lineW = Math.abs(shape.w)
@@ -898,6 +985,10 @@ export default function App() {
 				wsConnected={wsConnected}
 				revision={board.revision}
 				objectCount={board.shapes.length}
+				brushStyle={brushStyle}
+				brushWidth={brushWidth}
+				onBrushStyle={setBrushStyle}
+				onBrushWidth={setBrushWidth}
 				properties={
 					selected && (
 						<PropertiesBar
@@ -906,26 +997,81 @@ export default function App() {
 							onColorChange={updateSelectedColor}
 							onClose={() => setSelectedId(null)}
 						>
-							{isCanvasShape(selected) && selected.type !== 'line' && (
-								<div className="property-field">
-									<label className="sr-only" htmlFor="shape-text">
-										Text
-									</label>
-									<TextField
-										key={selected.id}
-										shapeId={selected.id}
-										draft={textDrafts.get(selected.id)}
-										setDrafts={setTextDrafts}
-										text={selected.text ?? ''}
-										revision={board.revision}
-										onSave={(text, revision) =>
-											postOperations(
-												[{ type: 'update', id: selected.id, patch: { text } }],
-												revision,
-											)
-										}
-									/>
-								</div>
+							{isCanvasShape(selected) &&
+								(selected.type === 'rectangle' ||
+									selected.type === 'ellipse' ||
+									selected.type === 'text') && (
+									<div className="property-field">
+										<label className="sr-only" htmlFor="shape-text">
+											Text
+										</label>
+										<TextField
+											key={selected.id}
+											shapeId={selected.id}
+											draft={textDrafts.get(selected.id)}
+											setDrafts={setTextDrafts}
+											text={selected.text ?? ''}
+											revision={board.revision}
+											onSave={(text, revision) =>
+												postOperations(
+													[{ type: 'update', id: selected.id, patch: { text } }],
+													revision,
+												)
+											}
+										/>
+									</div>
+								)}
+							{selected.type === 'path' && (
+								<>
+									<div className="property-field">
+										<label className="sr-only" htmlFor="path-brush">
+											Brush style
+										</label>
+										<select
+											id="path-brush"
+											value={selected.brush}
+											onChange={(event) =>
+												void postOperations([
+													{
+														type: 'update',
+														id: selected.id,
+														patch: { brush: event.target.value as BrushStyle },
+													},
+												])
+											}
+										>
+											{BRUSH_STYLES.map(({ id, label }) => (
+												<option key={id} value={id}>
+													{label}
+												</option>
+											))}
+										</select>
+									</div>
+									<div className="property-field">
+										<label className="sr-only" htmlFor="path-width">
+											Stroke width
+										</label>
+										<select
+											id="path-width"
+											value={selected.strokeWidth}
+											onChange={(event) =>
+												void postOperations([
+													{
+														type: 'update',
+														id: selected.id,
+														patch: { strokeWidth: Number(event.target.value) },
+													},
+												])
+											}
+										>
+											{BRUSH_WIDTHS.map((width) => (
+												<option key={width} value={width}>
+													{width}px
+												</option>
+											))}
+										</select>
+									</div>
+								</>
 							)}
 							{isConnector(selected) &&
 								(['from', 'to'] as const).map((endpoint) => (
@@ -1013,6 +1159,15 @@ export default function App() {
 					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => !isConnector(shape)).map(renderShape)}
 					{creation && renderShape(creation)}
+					{brushPoints && (
+						<BrushStroke
+							points={brushPoints}
+							brush={brushStyle}
+							strokeWidth={brushWidth}
+							color="#242424"
+							preview
+						/>
+					)}
 					{guides.map((guide) => (
 						<line
 							key={`${guide.axis}:${guide.value}`}

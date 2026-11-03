@@ -4,6 +4,14 @@ export const TEXT_SIZE = 14
 export type DrawTool = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path'
 export type Tool = 'select' | 'hand' | 'connector' | DrawTool
 
+export const BRUSH_STYLES = [
+	{ id: 'pencil', label: 'Pencil' },
+	{ id: 'marker', label: 'Marker' },
+	{ id: 'brush', label: 'Brush' },
+] as const
+
+export const BRUSH_WIDTHS = [2, 4, 8] as const
+
 export const SHAPE_COLORS = [
 	{ value: '#5b5fc7', label: 'Indigo' },
 	{ value: '#0f6cbd', label: 'Blue' },

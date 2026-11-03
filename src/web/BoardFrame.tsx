@@ -1,5 +1,6 @@
 import {
 	ArrowUpRight,
+	Brush,
 	Circle,
 	Hand,
 	Maximize,
@@ -12,7 +13,7 @@ import {
 	Type,
 } from 'lucide-react'
 import { type ReactNode, useLayoutEffect, useRef } from 'react'
-import type { Tool } from './design'
+import { BRUSH_STYLES, BRUSH_WIDTHS, type Tool } from './design'
 import { IconButton } from './IconButton'
 
 const tools = [
@@ -22,6 +23,7 @@ const tools = [
 	{ id: 'ellipse', label: 'Ellipse', shortcut: 'O', icon: Circle },
 	{ id: 'text', label: 'Text', shortcut: 'T', icon: Type },
 	{ id: 'line', label: 'Line', shortcut: 'L', icon: Slash },
+	{ id: 'path', label: 'Brush', shortcut: 'P', icon: Brush },
 	{ id: 'connector', label: 'Connector', shortcut: 'C', icon: ArrowUpRight },
 ] as const
 
@@ -39,6 +41,10 @@ interface BoardFrameProps {
 	revision: number
 	objectCount: number
 	properties?: ReactNode
+	brushStyle: (typeof BRUSH_STYLES)[number]['id']
+	brushWidth: (typeof BRUSH_WIDTHS)[number]
+	onBrushStyle: (style: (typeof BRUSH_STYLES)[number]['id']) => void
+	onBrushWidth: (width: (typeof BRUSH_WIDTHS)[number]) => void
 }
 
 export function BoardFrame({
@@ -55,6 +61,10 @@ export function BoardFrame({
 	revision,
 	objectCount,
 	properties,
+	brushStyle,
+	brushWidth,
+	onBrushStyle,
+	onBrushWidth,
 }: BoardFrameProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
@@ -168,6 +178,39 @@ export function BoardFrame({
 							className="delete-tool"
 						/>
 					</div>
+					{tool === 'path' && (
+						<>
+							<span className="panel-divider" />
+							<fieldset className="brush-options" aria-label="Brush options">
+								<div className="segmented-control brush-styles">
+									{BRUSH_STYLES.map(({ id, label }) => (
+										<button
+											type="button"
+											key={id}
+											aria-pressed={brushStyle === id}
+											aria-label={`Brush style ${label}`}
+											onClick={() => onBrushStyle(id)}
+										>
+											{label}
+										</button>
+									))}
+								</div>
+								<div className="segmented-control brush-widths">
+									{BRUSH_WIDTHS.map((width) => (
+										<button
+											type="button"
+											key={width}
+											aria-pressed={brushWidth === width}
+											aria-label={`Brush width ${width}px`}
+											onClick={() => onBrushWidth(width)}
+										>
+											{width}
+										</button>
+									))}
+								</div>
+							</fieldset>
+						</>
+					)}
 					<span className="panel-divider dock-divider" />
 					<fieldset className="view-controls" aria-label="View controls">
 						<div className="zoom-controls">
