@@ -1,9 +1,13 @@
+import { X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import manifest from '../../package.json'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
 import { getConnectorAnchors } from './anchors'
+import { BoardFrame } from './BoardFrame'
+import { CONTROL_TIERS, SHAPE_COLORS, TEXT_TIERS } from './design'
+import { IconButton } from './IconButton'
 import { canRebaseMove } from './move'
+import { useInterfacePreferences } from './useInterfacePreferences'
 import { fitViewport } from './viewport'
 
 const WS_URL = new URL('/api/events', window.location.href)
@@ -108,6 +112,8 @@ function TextField({
 }
 
 export default function App() {
+	const interfacePreferences = useInterfacePreferences()
+	const { preferences } = interfacePreferences
 	const svgRef = useRef<SVGSVGElement>(null)
 	const initialViewFitted = useRef(false)
 	const revisionRef = useRef(0)
@@ -326,7 +332,8 @@ export default function App() {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
-			if (target.matches('input, textarea, select')) return
+			if (target.closest('button, input, textarea, select, [contenteditable="true"]')) return
+			if (event.metaKey || event.ctrlKey || event.altKey) return
 
 			if (event.code === 'Space') {
 				event.preventDefault()
@@ -792,112 +799,38 @@ export default function App() {
 		)
 	}
 
-	const statusText = !apiConnected ? 'Daemon offline' : wsConnected ? 'Live' : 'API connected'
-	const statusClass = !apiConnected ? 'offline' : wsConnected ? 'live' : 'api'
-
 	return (
 		<main
 			className="app"
+			data-control-tier={preferences.controls}
+			data-text-tier={preferences.text}
 			style={
 				{
-					'--grid-x': `${viewport.x}px`,
-					'--grid-y': `${viewport.y}px`,
-					'--grid-size': `${24 * viewport.zoom}px`,
+					'--control-size': `${CONTROL_TIERS[preferences.controls].control}px`,
+					'--icon-size': `${CONTROL_TIERS[preferences.controls].icon}px`,
+					'--text-ui': `${TEXT_TIERS[preferences.text]}px`,
 				} as React.CSSProperties
 			}
 		>
-			<header className="topbar">
-				<div className="brand">
-					<span className="brand-mark">M</span>
-					<strong>Mico</strong>
-					<span className="version">v{manifest.version}</span>
-				</div>
-				<div
-					className={`status ${statusClass}`}
-					title={`Revision ${board.revision} · ${board.shapes.length} objects`}
-				>
-					<span />
-					{statusText}
-				</div>
-				<div className="zoom-controls">
-					<button type="button" onClick={() => zoomAt(viewport.zoom / 1.2)} aria-label="Zoom out">
-						−
-					</button>
-					<span>{Math.round(viewport.zoom * 100)}%</span>
-					<button type="button" onClick={() => zoomAt(viewport.zoom * 1.2)} aria-label="Zoom in">
-						+
-					</button>
-					<button
-						type="button"
-						onClick={() => setViewport({ x: 0, y: 0, zoom: 1 })}
-						aria-label="Reset view"
-					>
-						Reset
-					</button>
-					<button type="button" onClick={fitBoard} aria-label="Fit board" title="Fit board (F)">
-						Fit
-					</button>
-				</div>
-			</header>
-
-			<aside className="toolbar" aria-label="Canvas tools">
-				{(
-					[
-						['select', 'V', 'Select'],
-						['hand', 'H', 'Pan'],
-						['rectangle', 'R', 'Rectangle'],
-						['ellipse', 'O', 'Ellipse'],
-						['text', 'T', 'Text'],
-						['line', 'L', 'Line'],
-						['connector', 'C', 'Connector'],
-					] as const
-				).map(([name, key, label]) => (
-					<button
-						type="button"
-						key={name}
-						className={tool === name ? 'active' : ''}
-						onClick={() => {
-							setTool(name)
-							setConnectorFrom(null)
-						}}
-						title={`${label} (${key})`}
-						aria-label={label}
-						aria-pressed={tool === name}
-					>
-						{name === 'hand' ? (
-							<svg
-								className="tool-icon hand-icon"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="1.8"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								aria-hidden="true"
-							>
-								<path d="M7.8 11V5.8a1.5 1.5 0 0 1 3 0V10" />
-								<path d="M10.8 10V4.5a1.5 1.5 0 0 1 3 0V10" />
-								<path d="M13.8 10V5.8a1.5 1.5 0 0 1 3 0v5.7" />
-								<path d="M16.8 11.5V9a1.5 1.5 0 0 1 3 0v5.2c0 4.1-2.7 6.8-6.8 6.8h-.8a7 7 0 0 1-5.6-2.8l-2.8-3.7a1.7 1.7 0 0 1 2.5-2.3l1.9 1.6V11" />
-							</svg>
-						) : (
-							<span className={`tool-icon ${name}`} />
-						)}
-						<small>{key}</small>
-					</button>
-				))}
-				<div className="toolbar-rule" />
-				<button
-					type="button"
-					className="delete-tool"
-					disabled={!selectedId}
-					onClick={deleteSelected}
-					title="Delete (Del)"
-				>
-					<span className="delete-icon">×</span>
-					<small>Del</small>
-				</button>
-			</aside>
+			<BoardFrame
+				{...interfacePreferences}
+				tool={tool}
+				onToolChange={(next) => {
+					cancelInteraction()
+					setTool(next)
+					setConnectorFrom(null)
+				}}
+				zoom={viewport.zoom}
+				onZoom={(factor) => zoomAt(viewport.zoom * factor)}
+				onReset={() => setViewport({ x: 0, y: 0, zoom: 1 })}
+				onFit={fitBoard}
+				onDelete={deleteSelected}
+				canDelete={!!selectedId}
+				apiConnected={apiConnected}
+				wsConnected={wsConnected}
+				revision={board.revision}
+				objectCount={board.shapes.length}
+			/>
 
 			{selected && tool !== 'connector' && (
 				<aside className="inspector">
@@ -907,9 +840,12 @@ export default function App() {
 								? 'Connector'
 								: selected.type[0].toUpperCase() + selected.type.slice(1)}
 						</strong>
-						<button type="button" onClick={() => setSelectedId(null)} aria-label="Close inspector">
-							×
-						</button>
+						<IconButton
+							icon={X}
+							label="Close inspector"
+							tooltipSide="bottom"
+							onClick={() => setSelectedId(null)}
+						/>
 					</div>
 					{isCanvasShape(selected) && selected.type !== 'line' && (
 						<div className="field">
@@ -927,17 +863,19 @@ export default function App() {
 							/>
 						</div>
 					)}
-					<label className="field color-field">
+					<div className="field color-field">
 						<span>Color</span>
 						<div className="color-row">
-							{['#5b5fc7', '#6264a7', '#0f6cbd', '#107c10', '#c42b1c', '#242424'].map((color) => (
+							{SHAPE_COLORS.map(({ value: color, label }) => (
 								<button
 									type="button"
 									key={color}
 									className={selected.color === color ? 'chosen' : ''}
 									style={{ background: color }}
 									onClick={() => updateSelectedColor(color)}
-									aria-label={`Set color ${color}`}
+									aria-label={`Set color ${label}`}
+									aria-pressed={selected.color === color}
+									title={label}
 								/>
 							))}
 							<input
@@ -947,7 +885,7 @@ export default function App() {
 								aria-label="Custom color"
 							/>
 						</div>
-					</label>
+					</div>
 				</aside>
 			)}
 
