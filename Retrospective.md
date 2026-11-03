@@ -1,5 +1,11 @@
 # Retrospective
 
+## Freehand brush
+
+- A delegated brush-geometry worker stalled on an edge-case interpretation instead of shipping. Interrupt early when an agent debates its own tests, and take over a small pure module directly.
+- Freehand paths are painted, not filled rectangles: clicking the empty centre of a path's bounding box correctly selects whatever is behind it. Tests and users must click the ink.
+- A scripted insertion can silently no-op after formatting changes. Search for the inserted marker after every scripted edit.
+
 ## Four-pixel dock refinement
 
 - A formatting pass rewrote CSS selectors, so a later scripted replacement silently matched nothing and left the old `width: 0; min-width: 100%` rule in place. Verify scripted edits with a follow-up search instead of assuming success.

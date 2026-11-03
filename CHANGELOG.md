@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.5.0
+
+- Add persisted `path` shapes with brush style, stroke width and validated relative points.
+- Draw freehand strokes with pencil, marker and tapered brush styles at 2/4/8px widths.
+- Expose brush style and width for AI agents through the existing batch API, with an example sketch.
+- Tighten dock property padding and use 32px inputs inside the single-row toolbar.
+- Remove the logo background so the mark sits directly on the canvas.
+
 ## v0.4.1
 
 - Sample the Miro reference for a 242 base gray and 238 grid lines; soften the blueprint palette toward those near-neutral values.
