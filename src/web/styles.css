@@ -1,5 +1,7 @@
 :root {
+	--space-05: 4px;
 	--space-1: 8px;
+	--space-15: 12px;
 	--space-2: 16px;
 	--space-3: 24px;
 	--space-4: 32px;
@@ -33,9 +35,9 @@
 	--ink: #242a38;
 	--ink-secondary: #5c6474;
 	--ink-muted: #687386;
-	--canvas: #f4f6f9;
-	--grid-major: #d5dde8;
-	--grid-minor: #e3e8f1;
+	--canvas: #f2f3f4;
+	--grid-major: #e6e8eb;
+	--grid-minor: #edeff1;
 	--grid-snap: #4f5bd5;
 	--surface: #ffffff;
 	--surface-muted: #f0f2f6;
@@ -53,7 +55,7 @@
 	--shadow-popover: 0 8px 32px #24304a14;
 	--motion-fast: 120ms;
 	--panel-width: 320px;
-	--property-label-width: 80px;
+	--property-label-width: 96px;
 	font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	color: var(--ink);
 	background: var(--canvas);
@@ -106,14 +108,8 @@ svg {
 	--text-ui: var(--type-body);
 	--frame-inset: var(--space-3);
 	--dock-rows: 1;
-	--dock-width: calc(var(--control-size) * 12 + var(--space-8) + var(--space-2) * 6);
-	--dock-base-height: calc(
-		var(--control-size) *
-		var(--dock-rows) +
-		var(--space-1) *
-		(var(--dock-rows) - 1) +
-		var(--space-2)
-	);
+	--dock-width: max-content;
+	--dock-base-height: calc(var(--control-size) + var(--space-1));
 	--dock-height: var(--measured-dock-height, var(--dock-base-height));
 	--popover-width: min(
 		var(--panel-width),
@@ -150,9 +146,10 @@ svg {
 }
 .floating-panel {
 	background: var(--surface);
-	border: var(--hairline) solid var(--border);
 	border-radius: var(--radius-panel);
-	box-shadow: var(--shadow-panel);
+	box-shadow:
+		inset 0 0 0 var(--hairline) var(--border),
+		var(--shadow-panel);
 	background-clip: padding-box;
 }
 .topbar {
@@ -170,9 +167,9 @@ svg {
 .toolbar {
 	display: flex;
 	align-items: center;
-	padding: calc(var(--space-1) - var(--hairline));
-	min-height: calc(var(--control-size) + var(--space-2));
-	gap: var(--space-1);
+	padding: var(--space-05);
+	min-height: calc(var(--control-size) + var(--space-1));
+	gap: var(--space-05);
 	pointer-events: auto;
 }
 .brand {
@@ -242,6 +239,7 @@ svg {
 .zoom-controls {
 	display: flex;
 	align-items: center;
+	gap: var(--space-05);
 }
 .view-controls {
 	padding: 0;
@@ -349,25 +347,24 @@ svg {
 .toolbar {
 	position: fixed;
 	z-index: 20;
-	left: round(nearest, 50vw, var(--space-1));
+	left: var(--dock-left, 50%);
 	bottom: var(--frame-block-end);
-	width: min(var(--dock-width), calc(100vw - var(--space-4)));
-	max-width: calc(100vw - var(--space-4));
-	margin-left: calc(min(var(--dock-width), calc(100vw - var(--space-4))) / -2);
+	width: max-content;
+	max-width: calc(100vw - var(--space-2));
 	flex-direction: column;
 	gap: 0;
 }
 .dock-main {
 	display: flex;
 	align-items: center;
-	width: 100%;
+	width: max-content;
 }
 .tool-slot {
 	display: contents;
 }
 .toolbar .panel-divider {
-	flex-basis: var(--space-2);
-	width: var(--space-2);
+	flex-basis: var(--space-1);
+	width: var(--space-1);
 }
 .delete-tool:hover:not(:disabled) {
 	color: var(--danger);
@@ -380,7 +377,7 @@ svg {
 	z-index: 40;
 	max-height: 60dvh;
 	overflow-y: auto;
-	padding: calc(var(--space-2) - var(--hairline));
+	padding: var(--space-15);
 	box-shadow: var(--shadow-popover);
 }
 .panel-heading {
@@ -400,17 +397,16 @@ svg {
 }
 .selection-properties {
 	position: relative;
-	display: flex;
+	display: grid;
+	grid-template-columns: var(--property-label-width) minmax(0, 1fr) var(--control-size) var(
+			--control-size
+		);
 	align-items: center;
-	gap: var(--space-1);
-	width: 100%;
-	padding-bottom: var(--space-1);
-	margin-bottom: var(--space-1);
-	background: linear-gradient(var(--border), var(--border)) bottom / 100% var(--hairline) no-repeat;
+	gap: var(--space-05);
+	width: min(360px, 45vw);
+	min-width: 240px;
 }
 .selection-summary {
-	flex: 0 0 var(--property-label-width);
-	margin-right: auto;
 	font-size: var(--type-caption);
 	font-weight: var(--weight-semibold);
 	text-transform: capitalize;
@@ -418,7 +414,6 @@ svg {
 .properties-fields {
 	display: flex;
 	align-items: center;
-	flex: 1;
 	min-width: 0;
 	gap: var(--space-1);
 }
@@ -571,7 +566,7 @@ svg {
 .selection {
 	fill: none;
 	stroke: var(--accent);
-	stroke-width: 1.5;
+	stroke-width: 1;
 	stroke-dasharray: 4 4;
 	pointer-events: none;
 }
@@ -662,10 +657,14 @@ svg {
 		grid-column: 3;
 		grid-row: 1;
 	}
+	.selection-properties {
+		width: 100%;
+		min-width: 0;
+	}
 	.properties-fields {
 		grid-column: 1 / -1;
 		grid-row: 2;
-		gap: var(--space-2);
+		gap: var(--space-1);
 	}
 }
 @media (max-width: 384px) {

@@ -61,14 +61,23 @@ export function BoardFrame({
 		const dock = dockRef.current
 		const root = dock?.closest<HTMLElement>('.app')
 		if (!dock || !root) return
-		const measure = () =>
-			root.style.setProperty('--measured-dock-height', `${dock.getBoundingClientRect().height}px`)
+		const measure = () => {
+			const rect = dock.getBoundingClientRect()
+			root.style.setProperty('--measured-dock-height', `${rect.height}px`)
+			root.style.setProperty(
+				'--dock-left',
+				`${Math.round((window.innerWidth - rect.width) / 2 / 4) * 4}px`,
+			)
+		}
 		measure()
 		const observer = new ResizeObserver(measure)
 		observer.observe(dock)
+		window.addEventListener('resize', measure)
 		return () => {
 			observer.disconnect()
+			window.removeEventListener('resize', measure)
 			root.style.removeProperty('--measured-dock-height')
+			root.style.removeProperty('--dock-left')
 		}
 	}, [])
 
@@ -131,8 +140,9 @@ export function BoardFrame({
 					buttons[next]?.focus()
 				}}
 			>
-				{properties}
 				<div className="dock-main">
+					{properties}
+					{properties && <span className="panel-divider" />}
 					<div className="drawing-tools">
 						{tools.map(({ id, label, shortcut, icon }) => (
 							<div className="tool-slot" key={id}>

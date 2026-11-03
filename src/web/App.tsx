@@ -743,10 +743,10 @@ export default function App() {
 					{active && (
 						<rect
 							className="selection"
-							x={shape.x - 5}
-							y={shape.y - 5}
-							width={shape.w + 10}
-							height={shape.h + 10}
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
 							rx={12}
 						/>
 					)}
@@ -779,10 +779,10 @@ export default function App() {
 					{active && (
 						<rect
 							className="selection"
-							x={shape.x - 5}
-							y={shape.y - 5}
-							width={shape.w + 10}
-							height={shape.h + 10}
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
 							rx={12}
 						/>
 					)}
@@ -816,10 +816,10 @@ export default function App() {
 					{active && (
 						<rect
 							className="selection"
-							x={shape.x - 5}
-							y={shape.y - 5}
-							width={shape.w + 10}
-							height={shape.h + 10}
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
 							rx={12}
 						/>
 					)}
@@ -860,10 +860,10 @@ export default function App() {
 				{active && (
 					<rect
 						className="selection"
-						x={lineX - 6}
-						y={lineY - 6}
-						width={Math.max(lineW, 12) + 12}
-						height={Math.max(lineH, 12) + 12}
+						x={lineX - 4}
+						y={lineY - 4}
+						width={Math.max(lineW, 8) + 8}
+						height={Math.max(lineH, 8) + 8}
 						rx={8}
 					/>
 				)}

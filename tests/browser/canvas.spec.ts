@@ -183,7 +183,7 @@ test('selected object properties live inside the dock and edit the board', async
 	await expect(properties).toHaveCount(0)
 })
 
-test('frame controls align to eight-pixel layout slots even on fractional viewport edges', async ({
+test('frame controls align to four-pixel layout slots even on fractional viewport edges', async ({
 	page,
 }) => {
 	await page.setViewportSize({ width: 1453, height: 969 })
@@ -198,8 +198,8 @@ test('frame controls align to eight-pixel layout slots even on fractional viewpo
 	for (const control of controls) {
 		for (const dimension of [control.x, control.y, control.width, control.height]) {
 			expect(
-				Math.abs(dimension / 8 - Math.round(dimension / 8)),
-				`${control.label} must use grid-aligned geometry`,
+				Math.abs(dimension / 4 - Math.round(dimension / 4)),
+				`${control.label} must use four-pixel-aligned geometry`,
 			).toBeLessThan(0.001)
 		}
 	}
@@ -296,6 +296,8 @@ test('dock and its property popovers stay on-screen at narrow and wide widths', 
 		expect(panel.y + panel.height).toBeLessThanOrEqual(dockBox.y)
 		await page.keyboard.press('Escape')
 		await page.keyboard.press('Escape')
+		await page.mouse.move(0, 0)
+		await page.screenshot({ path: `/tmp/mico-dock-${width}.png`, animations: 'disabled' })
 	}
 })
 
