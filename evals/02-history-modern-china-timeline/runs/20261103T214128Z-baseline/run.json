@@ -1,0 +1,21 @@
+{
+	"case": "02-history-modern-china-timeline",
+	"round": "baseline",
+	"sourceRevision": "e1af148",
+	"canvasRevision": "66c3a72",
+	"promptRevision": "880a84f",
+	"rubricRevision": "working-tree correction after 50c5690",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-03T21-34-41-951Z_01a1a355-f51e-726b-8f43-ff6e872a6c53",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 4,
+	"shapeCount": 57,
+	"score": 8,
+	"scoreMaximum": 10,
+	"note": "Rubric clarity was corrected during the drawing; the prompt and canvas implementation did not change. Capture used the previous fixture version after the agent completed; no further writes occurred."
+}
