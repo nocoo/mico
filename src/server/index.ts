@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import WebSocket, { WebSocketServer } from 'ws'
+import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
 import { BoardStore, OperationError } from './store.ts'
 
@@ -100,6 +101,7 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 
 		if (req.method === 'OPTIONS') {
 			if (
+				pathname !== '/api/live' &&
 				pathname !== '/api/board' &&
 				pathname !== '/api/operations' &&
 				pathname !== '/api/events'
@@ -115,6 +117,16 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 			}
 			res.writeHead(204)
 			res.end()
+			return
+		}
+
+		if (pathname === '/api/live') {
+			if (req.method !== 'GET') {
+				res.setHeader('Allow', 'GET, OPTIONS')
+				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+				return
+			}
+			sendJson(res, 200, { status: 'ok', version: manifest.version }, origin)
 			return
 		}
 

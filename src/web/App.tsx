@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import manifest from '../../package.json'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
 import { getConnectorAnchors } from './anchors'
 import { canRebaseMove } from './move'
@@ -809,6 +810,7 @@ export default function App() {
 				<div className="brand">
 					<span className="brand-mark">M</span>
 					<strong>Mico</strong>
+					<span className="version">v{manifest.version}</span>
 				</div>
 				<div
 					className={`status ${statusClass}`}

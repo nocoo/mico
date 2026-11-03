@@ -47,7 +47,7 @@ The distributed-commerce example adds 20 services and clients, 27 connectors, an
 
 A canvas shape has `id`, `type` (`rectangle`, `ellipse`, `text`, or `line`), `x`, `y`, `w`, `h`, `color` (six-digit hex), and optional `text`. For a line, `w` and `h` are signed offsets to its endpoint. A connector has `id`, `type: "connector"`, `from` and `to` shape IDs, and `color`.
 
-The daemon exposes `GET /api/board`, `POST /api/operations`, and a WebSocket at `/api/events`. A batch is validated and persisted atomically. An optional `expectedRevision` rejects writes based on stale board state. WebSocket subscribers receive the complete current board on connection and after each mutation.
+The daemon exposes `GET /api/live` (status and manifest-derived version), `GET /api/board`, `POST /api/operations`, and a WebSocket at `/api/events`. A batch is validated and persisted atomically. An optional `expectedRevision` rejects writes based on stale board state. WebSocket subscribers receive the complete current board on connection and after each mutation.
 
 ## Verification
 

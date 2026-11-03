@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { test } from 'node:test'
 import WebSocket from 'ws'
+import manifest from '../../package.json' with { type: 'json' }
 import { DEV_ORIGIN } from '../shared/config.ts'
 import { createDaemon } from './index.ts'
 
@@ -46,6 +47,15 @@ test('HTTPS-origin subscribers receive API writes and reconnect to the latest bo
 	try {
 		const [initial] = await once(socket, 'message')
 		assert.deepEqual(JSON.parse(initial.toString()), { revision: 0, shapes: [] })
+		const live = await fetch(`${url}/api/live`, { headers })
+		assert.equal(live.status, 200)
+		assert.deepEqual(await live.json(), { status: 'ok', version: manifest.version })
+		const wrongMethod = await fetch(`${url}/api/live`, { method: 'POST', headers })
+		assert.equal(wrongMethod.status, 405)
+		assert.equal(wrongMethod.headers.get('allow'), 'GET, OPTIONS')
+		const preflight = await fetch(`${url}/api/live`, { method: 'OPTIONS', headers })
+		assert.equal(preflight.status, 204)
+		assert.equal(preflight.headers.get('access-control-allow-origin'), DEV_ORIGIN)
 		const event = once(socket, 'message')
 		const response = await fetch(`${url}/api/operations`, {
 			method: 'POST',
