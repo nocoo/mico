@@ -556,3 +556,89 @@ test('path shapes validate brush, stroke width and in-bounds points', () => {
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
+
+test('frames hold named members, reject nesting and ungroup on delete', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	try {
+		const frame = {
+			id: 'frame-1',
+			type: 'frame' as const,
+			x: 100,
+			y: 100,
+			w: 400,
+			h: 300,
+			color: '#5b5fc7',
+			title: 'Discovery',
+		}
+		const note = {
+			id: 'note-1',
+			type: 'note' as const,
+			x: 140,
+			y: 160,
+			w: 160,
+			h: 160,
+			color: '#fde68a',
+			text: 'Idea',
+			frameId: 'frame-1',
+		}
+		const heading = {
+			id: 'text-1',
+			type: 'text' as const,
+			x: 140,
+			y: 340,
+			w: 240,
+			h: 48,
+			color: '#242424',
+			text: 'Heading',
+			font: 'hand' as const,
+			fontSize: 32,
+			fontWeight: 600,
+			frameId: 'frame-1',
+		}
+		const board = store.apply({
+			operations: [
+				{ type: 'create', shape: frame },
+				{ type: 'create', shape: note },
+				{ type: 'create', shape: heading },
+			],
+		})
+		assert.equal(board.shapes.length, 3)
+		assert.deepEqual(
+			board.shapes.filter((shape) => shape.type !== 'connector').map((shape) => shape.frameId),
+			[undefined, 'frame-1', 'frame-1'],
+		)
+
+		for (const operations of [
+			[{ type: 'create', shape: { ...frame, id: 'frame-2', frameId: 'frame-1' } }],
+			[{ type: 'update', id: 'note-1', patch: { frameId: 'missing' } }],
+			[{ type: 'update', id: 'frame-1', patch: { frameId: 'frame-1' } }],
+			[{ type: 'update', id: 'note-1', patch: { font: 'hand' } }],
+			[{ type: 'update', id: 'text-1', patch: { fontSize: 4 } }],
+			[{ type: 'update', id: 'text-1', patch: { fontWeight: 950 } }],
+			[{ type: 'update', id: 'frame-1', patch: { title: '' } }],
+		] as const) {
+			assert.throws(
+				() => store.apply({ operations: [...operations] }),
+				(error: unknown) => error instanceof OperationError && error.status === 400,
+				JSON.stringify(operations),
+			)
+		}
+
+		const ungrouped = store.apply({ operations: [{ type: 'delete', id: 'frame-1' }] })
+		assert.deepEqual(
+			ungrouped.shapes.map((shape) => [
+				shape.id,
+				shape.type === 'connector' ? undefined : shape.frameId,
+			]),
+			[
+				['note-1', undefined],
+				['text-1', undefined],
+			],
+		)
+		assert.equal(ungrouped.shapes.length, 2)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})

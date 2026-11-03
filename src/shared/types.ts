@@ -1,4 +1,5 @@
-export type ShapeType = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path'
+export type ShapeType = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path' | 'frame' | 'note'
+export type FontFamily = 'sans' | 'serif' | 'hand' | 'mono'
 export type BrushStyle = 'pencil' | 'marker' | 'brush'
 
 export interface Point {
@@ -12,6 +13,8 @@ export const ANCHOR_COUNTS: Record<ShapeType, number> = {
 	text: 12,
 	line: 5,
 	path: 12,
+	frame: 12,
+	note: 12,
 }
 
 export interface CanvasShape {
@@ -26,6 +29,11 @@ export interface CanvasShape {
 	points?: Point[]
 	brush?: BrushStyle
 	strokeWidth?: number
+	frameId?: string
+	title?: string
+	font?: FontFamily
+	fontSize?: number
+	fontWeight?: number
 }
 
 export interface Connector {
@@ -60,6 +68,11 @@ export type Operation =
 				points?: Point[]
 				brush?: BrushStyle
 				strokeWidth?: number
+				frameId?: string
+				title?: string
+				font?: FontFamily
+				fontSize?: number
+				fontWeight?: number
 				from?: string
 				to?: string
 				fromAnchor?: number

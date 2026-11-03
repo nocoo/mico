@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { Board, BrushStyle, Connector, Operation, Shape } from '../shared/types.ts'
+import type { Board, BrushStyle, Connector, FontFamily, Operation, Shape } from '../shared/types.ts'
 import { ANCHOR_COUNTS } from '../shared/types.ts'
 
 export class OperationError extends Error {
@@ -75,23 +75,45 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		value.type !== 'ellipse' &&
 		value.type !== 'text' &&
 		value.type !== 'line' &&
-		value.type !== 'path'
+		value.type !== 'path' &&
+		value.type !== 'frame' &&
+		value.type !== 'note'
 	) {
 		invalid('invalid shape type')
+	}
+	if (value.type === 'frame') {
+		if (!hasExactKeys(value, ['id', 'type', 'x', 'y', 'w', 'h', 'color', 'title'], ['frameId'])) {
+			invalid('invalid frame shape')
+		}
+		if (
+			typeof value.title !== 'string' ||
+			value.title.trim().length === 0 ||
+			value.title.length > 120
+		) {
+			invalid('frame title must be a non-empty string of at most 120 characters')
+		}
+		if (Object.hasOwn(value, 'frameId')) invalid('a frame cannot belong to another frame')
+	} else if (
+		value.type !== 'path' &&
+		!hasExactKeys(
+			value,
+			['id', 'type', 'x', 'y', 'w', 'h', 'color'],
+			['text', 'frameId', 'font', 'fontSize', 'fontWeight'],
+		)
+	) {
+		invalid('invalid canvas shape')
 	}
 	if (value.type === 'path') {
 		if (
 			!hasExactKeys(
 				value,
 				['id', 'type', 'x', 'y', 'w', 'h', 'color', 'points', 'brush', 'strokeWidth'],
-				[],
+				['frameId'],
 			)
 		) {
 			invalid('invalid path shape')
 		}
 		validatePath(value)
-	} else if (!hasExactKeys(value, ['id', 'type', 'x', 'y', 'w', 'h', 'color'], ['text'])) {
-		invalid('invalid canvas shape')
 	}
 	for (const key of ['x', 'y', 'w', 'h']) {
 		if (!validFiniteNumber(value[key])) {
@@ -103,6 +125,33 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 	}
 	if (Object.hasOwn(value, 'text') && typeof value.text !== 'string') {
 		invalid('shape text must be a string')
+	}
+	if (Object.hasOwn(value, 'frameId')) {
+		if (!validId(value.frameId)) invalid('frameId must be a non-empty shape id')
+		if (value.type === 'frame') invalid('a frame cannot belong to another frame')
+	}
+	if (Object.hasOwn(value, 'title')) {
+		if (value.type !== 'frame') invalid('only frames have titles')
+	}
+	for (const key of ['font', 'fontSize', 'fontWeight']) {
+		if (!Object.hasOwn(value, key)) continue
+		if (value.type !== 'text') invalid(`${key} is only valid for text shapes`)
+	}
+	if (Object.hasOwn(value, 'font')) {
+		const font = value.font
+		if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
+			invalid('text font must be sans, serif, hand or mono')
+		}
+	}
+	if (Object.hasOwn(value, 'fontSize')) {
+		if (!validFiniteNumber(value.fontSize) || value.fontSize < 8 || value.fontSize > 256) {
+			invalid('text fontSize must be between 8 and 256')
+		}
+	}
+	if (Object.hasOwn(value, 'fontWeight')) {
+		if (!validFiniteNumber(value.fontWeight) || value.fontWeight < 100 || value.fontWeight > 900) {
+			invalid('text fontWeight must be between 100 and 900')
+		}
 	}
 }
 
@@ -150,15 +199,19 @@ function validateBoardState(board: Board): void {
 	if (!Array.isArray(board.shapes)) invalid('invalid board shapes')
 
 	const ids = new Set<string>()
+	const frameIds = new Set<string>()
 	for (const shape of board.shapes) {
 		validateShapeShape(shape)
 		if (ids.has(shape.id)) invalid(`duplicate shape id: ${shape.id}`)
 		ids.add(shape.id)
+		if (shape.type === 'frame') frameIds.add(shape.id)
 	}
 
 	for (const shape of board.shapes) {
 		if (shape.type === 'connector') {
 			validateConnectorReferences(shape, board.shapes)
+		} else if (shape.frameId && !frameIds.has(shape.frameId)) {
+			invalid(`shape ${shape.id} references a missing frame ${shape.frameId}`)
 		}
 	}
 }
@@ -189,7 +242,19 @@ function findShape(board: Board, id: string): Shape | undefined {
 }
 
 function validatePatch(target: Shape, patch: Record<string, unknown>): void {
-	const canvasKeys = new Set(['x', 'y', 'w', 'h', 'color', 'text'])
+	const canvasKeys = new Set([
+		'x',
+		'y',
+		'w',
+		'h',
+		'color',
+		'text',
+		'frameId',
+		'title',
+		'font',
+		'fontSize',
+		'fontWeight',
+	])
 	const connectorKeys = new Set(['from', 'to', 'color', 'fromAnchor', 'toAnchor'])
 	const allowed =
 		target.type === 'connector'
@@ -219,6 +284,43 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 			invalid('shape height must be non-negative')
 		if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
 			invalid('shape text must be a string')
+		if (Object.hasOwn(patch, 'title')) {
+			if (target.type !== 'frame') invalid('only frames have titles')
+			if (
+				typeof patch.title !== 'string' ||
+				patch.title.trim().length === 0 ||
+				patch.title.length > 120
+			) {
+				invalid('frame title must be a non-empty string of at most 120 characters')
+			}
+		}
+		if (Object.hasOwn(patch, 'frameId')) {
+			if (target.type === 'frame') invalid('a frame cannot belong to another frame')
+			if (!validId(patch.frameId)) invalid('frameId must be a non-empty shape id')
+		}
+		if (Object.hasOwn(patch, 'font')) {
+			const font = patch.font
+			if (target.type !== 'text') invalid('font is only valid for text shapes')
+			if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
+				invalid('text font must be sans, serif, hand or mono')
+			}
+		}
+		if (Object.hasOwn(patch, 'fontSize')) {
+			if (target.type !== 'text') invalid('fontSize is only valid for text shapes')
+			if (!validFiniteNumber(patch.fontSize) || patch.fontSize < 8 || patch.fontSize > 256) {
+				invalid('text fontSize must be between 8 and 256')
+			}
+		}
+		if (Object.hasOwn(patch, 'fontWeight')) {
+			if (target.type !== 'text') invalid('fontWeight is only valid for text shapes')
+			if (
+				!validFiniteNumber(patch.fontWeight) ||
+				patch.fontWeight < 100 ||
+				patch.fontWeight > 900
+			) {
+				invalid('text fontWeight must be between 100 and 900')
+			}
+		}
 		if (target.type === 'path') {
 			if (Object.hasOwn(patch, 'brush') && !validBrush(patch.brush)) {
 				invalid('path brush must be pencil, marker or brush')
@@ -368,6 +470,7 @@ export class BoardStore {
 					if (cascaded.has(operation.id)) continue
 					throw new OperationError(404, 'NOT_FOUND', `shape not found: ${operation.id}`)
 				}
+				const removed = findShape(next, operation.id)
 				next.shapes = next.shapes.filter((shape) => {
 					if (shape.id === operation.id) return false
 					if (
@@ -379,6 +482,13 @@ export class BoardStore {
 					}
 					return true
 				})
+				if (removed?.type === 'frame') {
+					next.shapes = next.shapes.map((shape) => {
+						if (shape.type === 'connector' || shape.frameId !== operation.id) return shape
+						const { frameId: _frameId, ...rest } = shape
+						return rest as Shape
+					})
+				}
 				continue
 			}
 

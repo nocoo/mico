@@ -16,7 +16,7 @@ import { BoardFrame } from './BoardFrame'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
-import { BRUSH_STYLES, BRUSH_WIDTHS, CONTROL_SIZE, ICON_SIZE, TEXT_SIZE } from './design'
+import { BRUSH_STYLES, BRUSH_WIDTHS, CONTROL_SIZE, ICON_SIZE, TEXT_SIZE, type Tool } from './design'
 import { canRebaseMove } from './move'
 import { PropertiesBar } from './PropertiesBar'
 import { type AlignmentGuide, snapMove } from './snap'
@@ -145,7 +145,7 @@ export default function App() {
 
 	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
-	const [tool, setTool] = useState<'select' | 'hand' | ShapeType | 'connector'>('select')
+	const [tool, setTool] = useState<Tool>('select')
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
 	const [dragPreviews, setDragPreviews] = useState<
