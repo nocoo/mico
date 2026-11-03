@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.0
+
+- Add a world-aligned blueprint grid with solid 64px cells, dashed 32px subdivisions and 8px fine lines, softening dense details at low zoom.
+- Merge zoom, reset, Fit and interface settings into the drawing dock and remove the separate top-right control surface.
+- Keep the identity panel and dock fixed in screen space independently of canvas pan and zoom.
+- Wrap the unified dock on narrow screens and place settings above it without clipping controls or overlays.
+- Verify unchanged frame geometry from 5% to 300% zoom and on-screen controls across every interface size tier.
+
 ## v0.2.0
 
 - Redesign the floating identity, view controls, inspector and grouped tool dock with Lucide icons and hover-only shortcut hints.

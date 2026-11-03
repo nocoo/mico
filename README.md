@@ -28,7 +28,9 @@ Port allocation: development `7063`, E2E `17063`, browser/BDD `27063`, internal 
 
 The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Boards fit the viewport on first load; click Fit or press F to fit all objects again. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool and drag from a source node toward a target. Nearby nodes reveal their anchors; the highlighted anchor is the exact persisted attachment. Select a connector to drag either endpoint to another node. Dropping on empty space, cancelling a pointer, or pressing Escape leaves it unchanged. The inspector's Source and Target controls provide a keyboard alternative. Concurrent agent edits are checked before committing a drag.
 
-The floating frame uses an eight-pixel layout system and Lucide icons with hover-only shortcut hints. Interface settings offers fixed control/icon tiers (32/16, 40/20, 48/24 px) and text tiers (12, 14, 16 px), stored on this device. Caption and brand typography use their own named scale roles. Toolbar arrow keys move focus; Enter selects a tool.
+The canvas uses a blueprint grid: 64px solid major cells, a dashed 32px midpoint dividing each into 2×2 small cells, and 8px fine divisions at 100% zoom. The grid follows world pan and zoom; dense details fade at low zoom to avoid moiré.
+
+The identity panel and unified bottom dock are fixed in screen space: canvas pan and zoom never resize, move or hide them. Drawing tools, zoom/reset, Fit and interface settings share one dock; narrow viewports wrap its controls instead of clipping them. Settings opens upward, with viewport-bounded placement. The frame uses an eight-pixel layout system and Lucide icons with hover-only shortcut hints. Interface settings offers fixed control/icon tiers (32/16, 40/20, 48/24 px) and text tiers (12, 14, 16 px), stored on this device. Caption and brand typography use their own named scale roles. Toolbar arrow keys move focus; Enter selects a tool.
 
 ## Agent CLI
 
@@ -60,7 +62,7 @@ pnpm build
 pnpm test:browser
 ```
 
-Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers frame alignment, icon/tooltip behavior, stored interface tiers, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, zoom and narrow-screen layout.
+Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers frame alignment, icon/tooltip behavior, stored interface tiers, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its settings panel visible across all size tiers.
 
 ## MVP limits
 
