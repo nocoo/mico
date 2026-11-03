@@ -302,6 +302,11 @@ export async function captureEval(
 			{ timeout: 15000 },
 		)
 		await page.evaluate(() => document.fonts.ready.then(() => true))
+		await page.waitForFunction(
+			() => document.querySelector('.canvas')?.getAttribute('data-initial-fit-ready') !== 'false',
+			undefined,
+			{ timeout: 15000 },
+		)
 		await page.waitForTimeout(250)
 		await waitForAppliedRevision(page, snapshot.revision)
 
