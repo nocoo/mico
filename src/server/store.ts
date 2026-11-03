@@ -375,7 +375,9 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		}
 		if (Object.hasOwn(patch, 'frameId')) {
 			if (target.type === 'frame') invalid('a frame cannot belong to another frame')
-			if (!validId(patch.frameId)) invalid('frameId must be a non-empty shape id')
+			if (patch.frameId !== null && !validId(patch.frameId)) {
+				invalid('frameId must be a non-empty shape id or null')
+			}
 		}
 		if (Object.hasOwn(patch, 'font')) {
 			const font = patch.font
@@ -533,6 +535,9 @@ export class BoardStore {
 				}
 				validatePatch(target, operation.patch)
 				const updated = { ...target, ...operation.patch } as Shape
+				if (updated.type !== 'connector' && updated.frameId === null) {
+					delete updated.frameId
+				}
 				validateShapeShape(updated)
 				if (updated.type === 'connector') {
 					validateConnectorReferences(updated, next.shapes)

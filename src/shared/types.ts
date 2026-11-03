@@ -89,7 +89,7 @@ export type Operation =
 				points?: Point[]
 				brush?: BrushStyle
 				strokeWidth?: number
-				frameId?: string
+				frameId?: string | null
 				title?: string
 				font?: FontFamily
 				fontSize?: number
