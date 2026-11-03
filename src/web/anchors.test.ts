@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CanvasShape } from '../shared/types.ts'
+import { ANCHOR_COUNTS } from '../shared/types.ts'
 import { getAnchors, getConnectorAnchors } from './anchors.ts'
 
 const rectangle: CanvasShape = {
@@ -61,4 +62,55 @@ test('ellipse anchors remain on its boundary and lines support signed offsets', 
 	const anchors = getAnchors(line)
 	assert.deepEqual(anchors[0], { x: 100, y: 80 })
 	assert.deepEqual(anchors.at(-1), { x: 40, y: 50 })
+})
+
+test('anchor counts match the shared anchor table for every shape type', () => {
+	const ellipse = { ...rectangle, type: 'ellipse' as const }
+	const text = { ...rectangle, type: 'text' as const }
+	const line = { ...rectangle, type: 'line' as const }
+	assert.equal(getAnchors(rectangle).length, ANCHOR_COUNTS.rectangle)
+	assert.equal(getAnchors(ellipse).length, ANCHOR_COUNTS.ellipse)
+	assert.equal(getAnchors(text).length, ANCHOR_COUNTS.text)
+	assert.equal(getAnchors(line).length, ANCHOR_COUNTS.line)
+	assert.equal(ANCHOR_COUNTS.rectangle, 12)
+	assert.equal(ANCHOR_COUNTS.ellipse, 12)
+	assert.equal(ANCHOR_COUNTS.text, 12)
+	assert.equal(ANCHOR_COUNTS.line, 5)
+})
+
+test('pinned endpoints are honored exactly', () => {
+	const other = { ...rectangle, id: 'b', x: 240 }
+	const pinned = getConnectorAnchors(rectangle, other, { fromAnchor: 3, toAnchor: 3 })
+	assert.deepEqual(pinned, { start: { x: 120, y: 45 }, end: { x: 360, y: 45 } })
+
+	const both = getConnectorAnchors(rectangle, other, { fromAnchor: 0, toAnchor: 1 })
+	assert.deepEqual(both, { start: { x: 60, y: 0 }, end: { x: 300, y: 90 } })
+})
+
+test('a pinned endpoint bypasses the outward restriction only for that endpoint', () => {
+	const other = { ...rectangle, id: 'b', x: 240 }
+	const inwardStart = getConnectorAnchors(rectangle, other, { fromAnchor: 2 })
+	assert.deepEqual(inwardStart.start, { x: 0, y: 45 })
+	assert.equal(inwardStart.end.x, 240)
+
+	const inwardEnd = getConnectorAnchors(rectangle, other, { toAnchor: 1 })
+	assert.deepEqual(inwardEnd.end, { x: 300, y: 90 })
+	assert.equal(inwardEnd.start.x, 120)
+})
+
+test('connectors without pins keep auto routing', () => {
+	const other = { ...rectangle, id: 'b', x: 240 }
+	assert.deepEqual(getConnectorAnchors(rectangle, other), getConnectorAnchors(rectangle, other, {}))
+	assert.deepEqual(getConnectorAnchors(rectangle, other, { fromAnchor: undefined }), {
+		start: { x: 120, y: 45 },
+		end: { x: 240, y: 45 },
+	})
+})
+
+test('out of range or malformed pins fall back to auto routing', () => {
+	const other = { ...rectangle, id: 'b', x: 240 }
+	const auto = getConnectorAnchors(rectangle, other)
+	assert.deepEqual(getConnectorAnchors(rectangle, other, { fromAnchor: 99 }), auto)
+	assert.deepEqual(getConnectorAnchors(rectangle, other, { fromAnchor: -1 }), auto)
+	assert.deepEqual(getConnectorAnchors(rectangle, other, { toAnchor: 1.5 }), auto)
 })

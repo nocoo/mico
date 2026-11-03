@@ -1,7 +1,8 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { Board, Operation, Shape } from '../shared/types.ts'
+import type { Board, Connector, Operation, Shape } from '../shared/types.ts'
+import { ANCHOR_COUNTS } from '../shared/types.ts'
 
 export class OperationError extends Error {
 	readonly status: number
@@ -52,13 +53,20 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 	if (!validColor(value.color)) invalid('shape color must be a non-empty string')
 
 	if (value.type === 'connector') {
-		if (!hasExactKeys(value, ['id', 'type', 'from', 'to', 'color'])) {
+		if (!hasExactKeys(value, ['id', 'type', 'from', 'to', 'color'], ['fromAnchor', 'toAnchor'])) {
 			invalid('invalid connector shape')
 		}
 		if (!validId(value.from) || !validId(value.to)) {
 			invalid('connector endpoints must be non-empty shape ids')
 		}
 		if (value.from === value.to) invalid('connector endpoints must be different')
+		for (const key of ['fromAnchor', 'toAnchor']) {
+			if (!Object.hasOwn(value, key)) continue
+			const index = value[key]
+			if (!Number.isInteger(index) || (index as number) < 0) {
+				invalid(`connector ${key} must be a non-negative integer`)
+			}
+		}
 		return
 	}
 
@@ -93,20 +101,30 @@ function validateBoardState(board: Board): void {
 	if (!Array.isArray(board.shapes)) invalid('invalid board shapes')
 
 	const ids = new Set<string>()
-	const canvasIds = new Set<string>()
 	for (const shape of board.shapes) {
 		validateShapeShape(shape)
 		if (ids.has(shape.id)) invalid(`duplicate shape id: ${shape.id}`)
 		ids.add(shape.id)
-		if (shape.type !== 'connector') canvasIds.add(shape.id)
 	}
 
 	for (const shape of board.shapes) {
 		if (shape.type === 'connector') {
-			if (!canvasIds.has(shape.from) || !canvasIds.has(shape.to)) {
-				invalid(`connector ${shape.id} has an invalid endpoint reference`)
-			}
+			validateConnectorReferences(shape, board.shapes)
 		}
+	}
+}
+
+function validateConnectorReferences(connector: Connector, shapes: Shape[]): void {
+	const from = shapes.find((shape) => shape.id === connector.from)
+	const to = shapes.find((shape) => shape.id === connector.to)
+	if (!from || from.type === 'connector' || !to || to.type === 'connector') {
+		invalid(`connector ${connector.id} has an invalid endpoint reference`)
+	}
+	if (connector.fromAnchor !== undefined && connector.fromAnchor >= ANCHOR_COUNTS[from.type]) {
+		invalid(`connector ${connector.id} fromAnchor is out of range for shape ${from.id}`)
+	}
+	if (connector.toAnchor !== undefined && connector.toAnchor >= ANCHOR_COUNTS[to.type]) {
+		invalid(`connector ${connector.id} toAnchor is out of range for shape ${to.id}`)
 	}
 }
 
@@ -123,7 +141,7 @@ function findShape(board: Board, id: string): Shape | undefined {
 
 function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 	const canvasKeys = new Set(['x', 'y', 'w', 'h', 'color', 'text'])
-	const connectorKeys = new Set(['from', 'to', 'color'])
+	const connectorKeys = new Set(['from', 'to', 'color', 'fromAnchor', 'toAnchor'])
 	const allowed = target.type === 'connector' ? connectorKeys : canvasKeys
 
 	for (const key of Object.keys(patch)) {
@@ -151,6 +169,13 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		for (const key of ['from', 'to']) {
 			if (Object.hasOwn(patch, key) && !validId(patch[key])) {
 				invalid(`connector ${key} must be a non-empty shape id`)
+			}
+		}
+		for (const key of ['fromAnchor', 'toAnchor']) {
+			if (!Object.hasOwn(patch, key)) continue
+			const index = patch[key]
+			if (!Number.isInteger(index) || (index as number) < 0) {
+				invalid(`connector ${key} must be a non-negative integer`)
 			}
 		}
 	}
@@ -242,11 +267,7 @@ export class BoardStore {
 					)
 				}
 				if (operation.shape.type === 'connector') {
-					const from = findShape(next, operation.shape.from)
-					const to = findShape(next, operation.shape.to)
-					if (!from || from.type === 'connector' || !to || to.type === 'connector') {
-						invalid(`connector ${operation.shape.id} has an invalid endpoint reference`)
-					}
+					validateConnectorReferences(operation.shape, next.shapes)
 				}
 				next.shapes.push(operation.shape)
 				continue
@@ -264,11 +285,7 @@ export class BoardStore {
 				const updated = { ...target, ...operation.patch } as Shape
 				validateShapeShape(updated)
 				if (updated.type === 'connector') {
-					const from = findShape(next, updated.from)
-					const to = findShape(next, updated.to)
-					if (!from || from.type === 'connector' || !to || to.type === 'connector') {
-						invalid(`connector ${updated.id} has an invalid endpoint reference`)
-					}
+					validateConnectorReferences(updated, next.shapes)
 				}
 				const index = next.shapes.findIndex((shape) => shape.id === operation.id)
 				next.shapes[index] = updated

@@ -1,8 +1,10 @@
-import type { CanvasShape } from '../shared/types.ts'
+import type { CanvasShape, Point } from '../shared/types.ts'
 
-interface Point {
-	x: number
-	y: number
+export type { Point }
+
+export interface AnchorPins {
+	fromAnchor?: number
+	toAnchor?: number
 }
 
 const fractions = [0.5, 1 / 3, 2 / 3]
@@ -54,12 +56,58 @@ function facesOutward(
 	return projection > 1e-9
 }
 
+function resolvePin(index: number | undefined, anchors: Point[]): Point | undefined {
+	if (index === undefined || !Number.isInteger(index)) return undefined
+	if (index < 0 || index >= anchors.length) return undefined
+	return anchors[index]
+}
+
 export function getConnectorAnchors(
 	from: CanvasShape,
 	to: CanvasShape,
+	pins: AnchorPins = {},
 ): { start: Point; end: Point } {
 	const starts = getAnchors(from)
 	const ends = getAnchors(to)
+	const pinnedStart = resolvePin(pins.fromAnchor, starts)
+	const pinnedEnd = resolvePin(pins.toAnchor, ends)
+
+	if (pinnedStart && pinnedEnd) return { start: pinnedStart, end: pinnedEnd }
+
+	if (pinnedStart) {
+		let best: { end: Point; distance: number } | undefined
+		let nearest: { end: Point; distance: number } | undefined
+		for (const [endIndex, end] of ends.entries()) {
+			const dx = end.x - pinnedStart.x
+			const dy = end.y - pinnedStart.y
+			const distance = dx * dx + dy * dy
+			if (!nearest || distance < nearest.distance) nearest = { end, distance }
+			if ((!best || distance < best.distance) && facesOutward(to, end, endIndex, -dx, -dy)) {
+				best = { end, distance }
+			}
+		}
+		const chosen = best ?? nearest
+		if (!chosen) throw new Error('A shape must have at least one anchor')
+		return { start: pinnedStart, end: chosen.end }
+	}
+
+	if (pinnedEnd) {
+		let best: { start: Point; distance: number } | undefined
+		let nearest: { start: Point; distance: number } | undefined
+		for (const [startIndex, start] of starts.entries()) {
+			const dx = pinnedEnd.x - start.x
+			const dy = pinnedEnd.y - start.y
+			const distance = dx * dx + dy * dy
+			if (!nearest || distance < nearest.distance) nearest = { start, distance }
+			if ((!best || distance < best.distance) && facesOutward(from, start, startIndex, dx, dy)) {
+				best = { start, distance }
+			}
+		}
+		const chosen = best ?? nearest
+		if (!chosen) throw new Error('A shape must have at least one anchor')
+		return { start: chosen.start, end: pinnedEnd }
+	}
+
 	let best: { start: Point; end: Point; distance: number } | undefined
 	let nearest: { start: Point; end: Point; distance: number } | undefined
 

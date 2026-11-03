@@ -1,5 +1,17 @@
 export type ShapeType = 'rectangle' | 'ellipse' | 'text' | 'line'
 
+export interface Point {
+	x: number
+	y: number
+}
+
+export const ANCHOR_COUNTS: Record<ShapeType, number> = {
+	rectangle: 12,
+	ellipse: 12,
+	text: 12,
+	line: 5,
+}
+
 export interface CanvasShape {
 	id: string
 	type: ShapeType
@@ -17,6 +29,8 @@ export interface Connector {
 	from: string
 	to: string
 	color: string
+	fromAnchor?: number
+	toAnchor?: number
 }
 
 export type Shape = CanvasShape | Connector
@@ -40,6 +54,8 @@ export type Operation =
 				text?: string
 				from?: string
 				to?: string
+				fromAnchor?: number
+				toAnchor?: number
 			}
 	  }
 	| { type: 'delete'; id: string }
