@@ -121,7 +121,7 @@ test.beforeEach(async ({ request, page, baseURL }) => {
 	})
 	expect(response.ok()).toBe(true)
 	await page.goto('/')
-	await expect(page.locator('.status')).toContainText('Live')
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await expect(page.locator('.canvas-shape')).toHaveCount(5)
 })
 
@@ -129,6 +129,8 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	page,
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
+	await expect(page.locator('.identity-panel')).toHaveText('mico')
+	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
 	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(12)
 	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()

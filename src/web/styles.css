@@ -42,7 +42,9 @@
 	--surface-hover: #e9edf4;
 	--border: #dce1ea;
 	--border-strong: #8994a6;
-	--success: #28714e;
+	--success: #22c55e;
+	--status-glow: rgb(34 197 94 / 0.28);
+	--motion-breath: 2400ms;
 	--warning: #986a18;
 	--danger: #b83535;
 	--tooltip-surface: #242a38;
@@ -51,8 +53,6 @@
 	--shadow-popover: 0 8px 32px #24304a14;
 	--motion-fast: 120ms;
 	--panel-width: 320px;
-	--status-width: 112px;
-	--board-name-width: 128px;
 	font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 	color: var(--ink);
 	background: var(--canvas);
@@ -194,25 +194,6 @@ svg {
 	line-height: var(--line-heading);
 	letter-spacing: -0.04em;
 }
-.version {
-	display: grid;
-	align-items: center;
-	width: var(--space-8);
-	height: var(--space-3);
-	padding-inline: var(--space-1);
-	border-radius: var(--radius-control);
-	background: var(--surface-muted);
-	color: var(--ink-secondary);
-	font-family: ui-monospace, monospace;
-	font-size: var(--type-caption);
-	line-height: var(--line-caption);
-}
-.board-name {
-	width: var(--board-name-width);
-	padding-inline: var(--space-1);
-	color: var(--ink-secondary);
-	white-space: nowrap;
-}
 .panel-divider {
 	display: block;
 	flex: 0 0 var(--space-1);
@@ -221,15 +202,10 @@ svg {
 	background: linear-gradient(var(--border), var(--border)) center / var(--hairline) 100% no-repeat;
 }
 .status {
-	display: flex;
-	align-items: center;
-	width: var(--status-width);
-	gap: var(--space-1);
-	padding-inline: var(--space-1);
-	font-size: var(--type-caption);
-	line-height: var(--line-caption);
-	color: var(--ink-secondary);
-	white-space: nowrap;
+	display: grid;
+	place-items: center;
+	width: var(--control-size);
+	height: var(--control-size);
 }
 .status-dot {
 	flex: 0 0 var(--space-1);
@@ -240,6 +216,19 @@ svg {
 }
 .status.live .status-dot {
 	background: var(--success);
+	box-shadow: 0 0 var(--space-2) var(--status-glow);
+	animation: status-breathe var(--motion-breath) ease-in-out infinite;
+}
+@keyframes status-breathe {
+	0%,
+	100% {
+		opacity: 0.6;
+		box-shadow: 0 0 var(--space-1) var(--status-glow);
+	}
+	50% {
+		opacity: 1;
+		box-shadow: 0 0 var(--space-2) var(--status-glow);
+	}
 }
 .status.api .status-dot {
 	background: var(--warning);
@@ -648,11 +637,6 @@ svg {
 	cursor: grabbing;
 }
 
-@media (max-width: 960px) {
-	.board-name {
-		display: none;
-	}
-}
 @media (max-width: 768px) {
 	.app {
 		--frame-inset: var(--space-2);
@@ -661,9 +645,6 @@ svg {
 	}
 	.identity-panel {
 		max-width: 100%;
-	}
-	.identity-panel > .panel-divider {
-		display: none;
 	}
 	.toolbar {
 		flex-direction: column;
@@ -693,9 +674,6 @@ svg {
 		grid-template-columns: repeat(4, var(--control-size));
 		row-gap: var(--space-1);
 	}
-	.version {
-		display: none;
-	}
 	.inspector {
 		width: min(var(--panel-width), calc(100vw - var(--space-4)));
 	}
@@ -714,5 +692,9 @@ svg {
 @media (prefers-reduced-motion: reduce) {
 	:root {
 		--motion-fast: 0ms;
+	}
+	.status.live .status-dot {
+		animation: none;
+		opacity: 1;
 	}
 }

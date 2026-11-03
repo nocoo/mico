@@ -11,7 +11,6 @@ import {
 	Trash2,
 	Type,
 } from 'lucide-react'
-import manifest from '../../package.json'
 import type { Tool } from './design'
 import { IconButton } from './IconButton'
 import { InterfaceSettings } from './InterfaceSettings'
@@ -80,17 +79,15 @@ export function BoardFrame({
 							/>
 						</svg>
 						<strong>mico</strong>
-						<span className="version">v{manifest.version}</span>
 					</div>
-					<span className="panel-divider" />
-					<span className="board-name">Local canvas</span>
-					<div
+					<span
 						className={`status ${status}`}
+						role="status"
+						aria-label={statusLabel}
 						title={`Revision ${revision} · ${objectCount} objects`}
 					>
-						<span className="status-dot" />
-						<span className="status-label">{statusLabel}</span>
-					</div>
+						<span className="status-dot" aria-hidden="true" />
+					</span>
 				</div>
 			</header>
 
