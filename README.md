@@ -26,7 +26,7 @@ Vite hot-reloads frontend changes; `pnpm daemon` watches daemon source changes a
 
 Port allocation: development `7063`, E2E `17063`, browser/BDD `27063`, internal daemon `37063`. Automated tests must use an isolated database and loopback endpoint, not the daily board. The shared Caddy mapping lives in `workflow/caddy/Caddyfile` and the active machine's `/opt/homebrew/etc/Caddyfile`; the existing `*.dev.hexly.ai` certificate covers this hostname.
 
-The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool, then click the source and target objects. Connectors automatically choose the nearest fixed anchor points and may switch anchors as objects move.
+The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Boards fit the viewport on first load; click Fit or press F to fit all objects again. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool, then click the source and target objects. Connectors automatically choose the nearest fixed anchor points and may switch anchors as objects move.
 
 ## Agent CLI
 

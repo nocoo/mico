@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
 import { getConnectorAnchors } from './anchors'
 import { canRebaseMove } from './move'
+import { fitViewport } from './viewport'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -107,6 +108,7 @@ function TextField({
 
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
+	const initialViewFitted = useRef(false)
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const [textDrafts, setTextDrafts] = useState<Map<string, TextDraft>>(() => new Map())
@@ -150,6 +152,13 @@ export default function App() {
 		revisionRef.current = next.revision
 		boardRef.current = next
 		setBoard(next)
+		if (!initialViewFitted.current) {
+			const rect = svgRef.current?.getBoundingClientRect()
+			if (rect) {
+				setViewport(fitViewport(next.shapes, rect.width, rect.height))
+				initialViewFitted.current = true
+			}
+		}
 		setSelectedId((current) =>
 			current && !next.shapes.some((shape) => shape.id === current) ? null : current,
 		)
@@ -268,13 +277,18 @@ export default function App() {
 			const cy = clientY === undefined ? (rect?.top ?? 0) + (rect?.height ?? 0) / 2 : clientY
 			const rx = cx - (rect?.left ?? 0)
 			const ry = cy - (rect?.top ?? 0)
-			const zoom = Math.min(3, Math.max(0.25, nextZoom))
+			const zoom = Math.min(3, Math.max(0.05, nextZoom))
 			const worldX = (rx - viewport.x) / viewport.zoom
 			const worldY = (ry - viewport.y) / viewport.zoom
 			setViewport({ x: rx - worldX * zoom, y: ry - worldY * zoom, zoom })
 		},
 		[viewport],
 	)
+
+	const fitBoard = useCallback(() => {
+		const rect = svgRef.current?.getBoundingClientRect()
+		if (rect) setViewport(fitViewport(boardRef.current.shapes, rect.width, rect.height))
+	}, [])
 
 	const createShape = (shape: CanvasShape) => {
 		setSelectedId(shape.id)
@@ -343,6 +357,7 @@ export default function App() {
 			if (event.key === '+' || event.key === '=') zoomAt(viewport.zoom * 1.2)
 			if (event.key === '-') zoomAt(viewport.zoom / 1.2)
 			if (event.key === '0') setViewport({ x: 0, y: 0, zoom: 1 })
+			if (event.key.toLowerCase() === 'f') fitBoard()
 		}
 		const onKeyUp = (event: KeyboardEvent) => {
 			if (event.code === 'Space') setSpacePressed(false)
@@ -359,7 +374,7 @@ export default function App() {
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction, deleteSelected, viewport.zoom, zoomAt])
+	}, [cancelInteraction, deleteSelected, fitBoard, viewport.zoom, zoomAt])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
@@ -795,7 +810,10 @@ export default function App() {
 					<span className="brand-mark">M</span>
 					<strong>Mico</strong>
 				</div>
-				<div className={`status ${statusClass}`}>
+				<div
+					className={`status ${statusClass}`}
+					title={`Revision ${board.revision} · ${board.shapes.length} objects`}
+				>
 					<span />
 					{statusText}
 				</div>
@@ -813,6 +831,9 @@ export default function App() {
 						aria-label="Reset view"
 					>
 						Reset
+					</button>
+					<button type="button" onClick={fitBoard} aria-label="Fit board" title="Fit board (F)">
+						Fit
 					</button>
 				</div>
 			</header>

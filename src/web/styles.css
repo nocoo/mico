@@ -466,7 +466,7 @@ input:focus-visible {
 	.zoom-controls span {
 		width: 40px;
 	}
-	.zoom-controls button:last-child {
+	.zoom-controls button[aria-label="Reset view"] {
 		display: none;
 	}
 	.inspector {
