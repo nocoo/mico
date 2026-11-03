@@ -367,7 +367,9 @@ test('notes, typographic text and frames are editable and move together', async 
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'note'))
 		.toBe(true)
-	const note = (await board(request)).shapes.find((shape) => shape.type === 'note')
+	const note = (await board(request)).shapes.find((shape) => shape.type === 'note') as
+		| CanvasShape
+		| undefined
 	if (!note || note.type !== 'note') throw new Error('Expected a note')
 	expect(note).toMatchObject({ color: '#fbcfe8', text: 'Note' })
 	await page.locator('#shape-text').fill('Remember this')
@@ -404,7 +406,7 @@ test('notes, typographic text and frames are editable and move together', async 
 		)
 		.toBe(1)
 	const framed = await board(request)
-	const frame = framed.shapes.find((shape) => shape.type === 'frame')
+	const frame = framed.shapes.find((shape) => shape.type === 'frame') as CanvasShape | undefined
 	if (!frame) throw new Error('Expected a frame')
 	expect(
 		framed.shapes
@@ -412,7 +414,7 @@ test('notes, typographic text and frames are editable and move together', async 
 			.map((shape) => shape.id)
 			.sort(),
 	).toEqual(['a', 'b'])
-	const child = framed.shapes.find((shape) => shape.id === 'a')
+	const child = framed.shapes.find((shape) => shape.id === 'a') as CanvasShape | undefined
 	if (!child) throw new Error('Expected child a')
 	const before = { x: child.x, y: child.y }
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
@@ -429,11 +431,18 @@ test('notes, typographic text and frames are editable and move together', async 
 	)
 	await page.mouse.up()
 	await expect
-		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a')?.x)
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'a') as
+				| CanvasShape
+				| undefined
+			return shape?.x
+		})
 		.not.toBe(before.x)
 	const movedBoard = await board(request)
-	const movedFrame = movedBoard.shapes.find((shape) => shape.id === frame.id)
-	const movedChild = movedBoard.shapes.find((shape) => shape.id === 'a')
+	const movedFrame = movedBoard.shapes.find((shape) => shape.id === frame.id) as
+		| CanvasShape
+		| undefined
+	const movedChild = movedBoard.shapes.find((shape) => shape.id === 'a') as CanvasShape | undefined
 	if (!movedFrame || !movedChild) throw new Error('Expected moved frame and child')
 	expect(movedChild.x - before.x).toBe(movedFrame.x - frame.x)
 	expect(movedChild.y - before.y).toBe(movedFrame.y - frame.y)
@@ -451,7 +460,9 @@ test('rich widgets sit in isolated cards with editable items', async ({ page, re
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'widget'))
 		.toBe(true)
-	const widget = (await board(request)).shapes.find((shape) => shape.type === 'widget')
+	const widget = (await board(request)).shapes.find((shape) => shape.type === 'widget') as
+		| CanvasShape
+		| undefined
 	if (!widget || widget.type !== 'widget') throw new Error('Expected a widget')
 	expect(widget).toMatchObject({ widget: 'kanban', widgetTitle: 'Delivery board' })
 	expect(widget.items).toHaveLength(3)
@@ -482,7 +493,9 @@ test('rich widgets sit in isolated cards with editable items', async ({ page, re
 	await expect
 		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
 		.toBe(1)
-	const note = (await board(request)).shapes.find((shape) => shape.type === 'note')
+	const note = (await board(request)).shapes.find((shape) => shape.type === 'note') as
+		| CanvasShape
+		| undefined
 	if (!note) throw new Error('Expected a note')
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	const view = await page.locator('[data-world-layer]').evaluate((element) => {

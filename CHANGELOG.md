@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.6.0
+
+- Block browser-level page zoom while keeping canvas zoom independent.
+- Marquee-select multiple objects on the canvas and delete them atomically.
+- Add named frames that wrap a selection with padding, move their members together and release them on delete.
+- Add pastel sticky notes with multi-line text and a five-colour palette.
+- Render text without a box and expose handwriting, serif, sans and mono families with size and weight tiers.
+- Add isolated rich widgets: checklist, kanban, table and timeline cards with editable titles and items.
+- Prevent other objects from entering a widget card while keeping overlays possible.
+
 ## v0.5.0
 
 - Add persisted `path` shapes with brush style, stroke width and validated relative points.

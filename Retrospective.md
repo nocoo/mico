@@ -1,5 +1,12 @@
 # Retrospective
 
+## Frames, typography and widgets
+
+- Marquee and frame dragging operate on a set of shapes, so every preview and commit must update the whole group atomically. Snapping the primary shape and applying the same delta preserves relative positions without fighting per-shape alignment.
+- Rich widgets need to be exclusion zones at creation and drop time; rendering them as normal shapes would have let notes and text disappear underneath.
+- Playwright cannot get a bounding box from SVG groups that only contain foreignObject reliably; convert world coordinates through the canvas transform instead.
+- Scripted string replacements silently no-op after formatting changes; search for the inserted marker before assuming the edit applied.
+
 ## Freehand brush
 
 - A delegated brush-geometry worker stalled on an edge-case interpretation instead of shipping. Interrupt early when an agent debates its own tests, and take over a small pure module directly.
