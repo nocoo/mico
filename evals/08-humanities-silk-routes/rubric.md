@@ -22,5 +22,3 @@
 - Guangzhou may represent the maritime Chinese port; Srivijaya/Palembang and Aden or Siraf are accepted as Southeast Asian and Indian Ocean/Persian Gulf nodes.
 - Horses, silk, porcelain, tea, spices, glass, and Buddhist texts are all accepted as representative exchange items.
 - A two-row comparison is accepted instead of a formal chart, if the risk and benefit are labeled for both routes.
-
-

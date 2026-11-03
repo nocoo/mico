@@ -22,5 +22,3 @@
 - Compression may be labeled 100 J spring energy and √2 m without a decimal approximation.
 - Energy bars may be pies, Sankey-style arrows, or stacked segments, provided their totals remain 100 J at every ideal stage.
 - A spring with a short maximum-compression inset is accepted if the final resting position is explicitly temporary or the full cycle is not claimed.
-
-

@@ -22,5 +22,3 @@
 - A migration of the rain belt may be shown by June–July–August bands rather than a precise date line.
 - Precipitation may be shown as bars, short monthly patterns, or a three-row comparison; exact monthly values are not required.
 - A simplified line at 30–40°N may represent the North China region if it is clearly labeled.
-
-

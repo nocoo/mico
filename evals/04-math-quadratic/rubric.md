@@ -24,5 +24,3 @@ For y = -x² + 4x - 3:
 - The downward-opening curve may pass through the exact four points and need not be perfectly continuous.
 - The rectangle may be drawn with dashed edges or a translucent fill.
 - “Maximum” may be represented by an upward-to-downward curved arrow, if accompanied by a correct numeric label y = 1.
-
-

@@ -1,6 +1,6 @@
 # Factual answer
 
-Li Bai's *Quiet Night Thought* depicts moonlight before the bed that the speaker mistakes for frost, a raised gaze toward the bright moon, and a lowered gaze in homesickness. A valid visual answer need not include the poem's text.
+Li Bai's _Quiet Night Thought_ depicts moonlight before the bed that the speaker mistakes for frost, a raised gaze toward the bright moon, and a lowered gaze in homesickness. A valid visual answer need not include the poem's text.
 
 # Scoring: 10 points
 
@@ -17,4 +17,3 @@ Li Bai's *Quiet Night Thought* depicts moonlight before the bed that the speaker
 - Frost can be rendered as pale crystalline floor patches, silvered ground, or the moonlight's angular shadows.
 - Homesickness may be shown through a downward gaze, a body turn toward the remembered landscape, or a diptych-style pair of panels, provided the result remains pure illustration.
 - A distant village may be used instead of mountains; either must visually establish separation from the moonlit room.
-

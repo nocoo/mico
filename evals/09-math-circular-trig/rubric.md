@@ -24,5 +24,3 @@ For angles in the first quadrant:
 - A table, vertical list, or labeled reference triangles are accepted for the exact values.
 - The tangent intersection may be drawn outside the unit circle along x = 1, or represented by a vertical tangent segment.
 - A 30°–60°–90° triangle and a 45°–45°–90° triangle are both accepted supporting figures.
-
-

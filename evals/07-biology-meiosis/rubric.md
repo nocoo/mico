@@ -23,5 +23,3 @@ For a 2n = 4 germ-line cell:
 - Independent assortment across separate meiotic outcomes may be represented by a second alignment, but not as four different gametes from one single alignment. Exact gamete sequences are accepted if genetically consistent with the depicted pair separation.
 - Pre-meiosis S phase may be combined with the initial 2n = 4 diagram rather than a separate stage.
 - A chromosome bar, X-shaped pair, or duplicated-line symbol is accepted if its chromatid count is unambiguous.
-
-

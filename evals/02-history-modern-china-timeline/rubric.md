@@ -25,5 +25,3 @@ An accurate timeline should include:
 - Taiwan may be represented on a map inset or by an eastward cession arrow.
 - “洋务运动” may be labeled in Chinese or shown with arsenals, railways, shipyards, and the 1861–1895 range.
 - A Qing/Republic transition symbol is accepted for 1911; it need not show the specific Wuchang uprising if the 1911 revolution is otherwise clear.
-
-

@@ -24,5 +24,3 @@ Given v0 = 20 m/s, θ = 30°, g = 10 m/s²:
 - Range may be shown as 20√3 m or 34.6 m.
 - A coordinate axis with 5 m tick, 34.64 m tick, or equal-height arrows is accepted.
 - A single weight arrow plus a correct note at the landing point is accepted instead of two identical arrows, provided both requested locations are visibly marked.
-
-

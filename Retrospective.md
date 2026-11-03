@@ -1,5 +1,9 @@
 # Retrospective
 
+## Canvas evaluation setup
+
+- The case corpus was committed before checking the formatter, and trailing blank lines made the next check fail. Run the project's complete checks on new Markdown as well as code before each commit.
+
 ## Frames, typography and widgets
 
 - Marquee and frame dragging operate on a set of shapes, so every preview and commit must update the whole group atomically. Snapping the primary shape and applying the same delta preserves relative positions without fighting per-shape alignment.

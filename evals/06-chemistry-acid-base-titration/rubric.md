@@ -24,5 +24,3 @@ For 25.0 mL of 0.100 mol/L HCl titrated with 0.100 mol/L NaOH:
 - Initial pH 1 and equivalence pH 7 may be approximate if clearly assigned to 25°C strong-acid/strong-base conditions.
 - A 50.0 mL overshoot point is accepted as a correct example but not required.
 - Ionic labels H⁺, Cl⁻, Na⁺, OH⁻, H₂O are accepted individually or as a correctly combined phase description.
-
-
