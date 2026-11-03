@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { Board, Operation, Shape } from '../shared/types.ts'
+import type { Board, Connector, Operation, Shape } from '../shared/types.ts'
 
 export class OperationError extends Error {
 	readonly status: number
@@ -46,19 +46,28 @@ function validFiniteNumber(value: unknown): value is number {
 	return typeof value === 'number' && Number.isFinite(value)
 }
 
+function validAnchorIndex(value: unknown): value is number {
+	return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 11
+}
+
 function validateShapeShape(value: unknown): asserts value is Shape {
 	if (!isObject(value)) invalid('shape must be an object')
 	if (!validId(value.id)) invalid('shape id must be a non-empty string')
 	if (!validColor(value.color)) invalid('shape color must be a non-empty string')
 
 	if (value.type === 'connector') {
-		if (!hasExactKeys(value, ['id', 'type', 'from', 'to', 'color'])) {
+		if (!hasExactKeys(value, ['id', 'type', 'from', 'to', 'color'], ['fromAnchor', 'toAnchor'])) {
 			invalid('invalid connector shape')
 		}
 		if (!validId(value.from) || !validId(value.to)) {
 			invalid('connector endpoints must be non-empty shape ids')
 		}
 		if (value.from === value.to) invalid('connector endpoints must be different')
+		for (const key of ['fromAnchor', 'toAnchor']) {
+			if (Object.hasOwn(value, key) && !validAnchorIndex(value[key])) {
+				invalid(`${key} must be an integer from 0 to 11`)
+			}
+		}
 		return
 	}
 
@@ -106,6 +115,7 @@ function validateBoardState(board: Board): void {
 			if (!canvasIds.has(shape.from) || !canvasIds.has(shape.to)) {
 				invalid(`connector ${shape.id} has an invalid endpoint reference`)
 			}
+			validateConnectorAnchorReferences(shape, board)
 		}
 	}
 }
@@ -121,9 +131,24 @@ function findShape(board: Board, id: string): Shape | undefined {
 	return board.shapes.find((shape) => shape.id === id)
 }
 
+function validateConnectorAnchorReferences(connector: Connector, board: Board): void {
+	for (const [key, endpointId] of [
+		['fromAnchor', connector.from],
+		['toAnchor', connector.to],
+	] as const) {
+		const anchor = connector[key]
+		if (anchor === undefined) continue
+		const endpoint = findShape(board, endpointId)
+		const limit = endpoint?.type === 'line' ? 4 : 11
+		if (endpoint && anchor > limit) {
+			invalid(`${key} must be in the range 0..${limit} for this endpoint shape`)
+		}
+	}
+}
+
 function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 	const canvasKeys = new Set(['x', 'y', 'w', 'h', 'color', 'text'])
-	const connectorKeys = new Set(['from', 'to', 'color'])
+	const connectorKeys = new Set(['from', 'to', 'color', 'fromAnchor', 'toAnchor'])
 	const allowed = target.type === 'connector' ? connectorKeys : canvasKeys
 
 	for (const key of Object.keys(patch)) {
@@ -151,6 +176,11 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		for (const key of ['from', 'to']) {
 			if (Object.hasOwn(patch, key) && !validId(patch[key])) {
 				invalid(`connector ${key} must be a non-empty shape id`)
+			}
+		}
+		for (const key of ['fromAnchor', 'toAnchor']) {
+			if (Object.hasOwn(patch, key) && !validAnchorIndex(patch[key])) {
+				invalid(`connector ${key} must be an integer from 0 to 11`)
 			}
 		}
 	}
@@ -247,6 +277,7 @@ export class BoardStore {
 					if (!from || from.type === 'connector' || !to || to.type === 'connector') {
 						invalid(`connector ${operation.shape.id} has an invalid endpoint reference`)
 					}
+					validateConnectorAnchorReferences(operation.shape, next)
 				}
 				next.shapes.push(operation.shape)
 				continue
@@ -269,6 +300,7 @@ export class BoardStore {
 					if (!from || from.type === 'connector' || !to || to.type === 'connector') {
 						invalid(`connector ${updated.id} has an invalid endpoint reference`)
 					}
+					validateConnectorAnchorReferences(updated, next)
 				}
 				const index = next.shapes.findIndex((shape) => shape.id === operation.id)
 				next.shapes[index] = updated

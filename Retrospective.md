@@ -7,3 +7,4 @@
 - Waiting for a repeated log message matched an earlier server start. Check the live process or endpoint after a restart rather than treating historical output as proof.
 - A browser race test intercepted the CORS preflight instead of the write response. Filter intercepted requests by method before drawing conclusions about concurrent writes.
 - A drag-feedback fix removed the existing revision guard. Keep concurrency protections explicit in delegated changes and re-test Agent/UI conflicts after interaction updates.
+- A delegated agent restored and deleted files written concurrently by other agents, despite being scoped to different files. Delegation prompts must explicitly prohibit `git restore`, `git clean`, and deletion outside the assigned files; review shared-workspace status before any cleanup.

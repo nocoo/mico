@@ -428,6 +428,25 @@ input:focus-visible {
 .connector {
 	cursor: pointer;
 }
+.endpoint-hit {
+	fill: transparent;
+	cursor: grab;
+	touch-action: none;
+}
+.endpoint-handle,
+.anchor-candidate {
+	fill: var(--surface);
+	stroke: var(--teams-brand);
+	stroke-width: 2;
+	vector-effect: non-scaling-stroke;
+	pointer-events: none;
+}
+.anchor-candidate {
+	stroke-width: 1.5;
+}
+.anchor-candidate.active {
+	fill: var(--teams-brand);
+}
 .selection {
 	fill: none;
 	stroke: var(--teams-brand);

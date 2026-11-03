@@ -127,6 +127,135 @@ test('multiple stores on one database do not overwrite each other', () => {
 	}
 })
 
+test('connector anchors validate types, ranges, endpoint changes, and atomic rollback', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	try {
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'a', type: 'rectangle', x: 0, y: 0, w: 100, h: 100, color: '#123456' },
+				},
+				{
+					type: 'create',
+					shape: { id: 'b', type: 'line', x: 200, y: 0, w: 100, h: 100, color: '#654321' },
+				},
+				{
+					type: 'create',
+					shape: { id: 'c', type: 'connector', from: 'a', to: 'b', color: '#abcdef' },
+				},
+			],
+		})
+
+		for (const invalid of [-1, 12, 1.5, '2', null, {}]) {
+			assert.throws(() =>
+				store.apply({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: `invalid-${String(invalid)}`,
+								type: 'connector',
+								from: 'a',
+								to: 'b',
+								color: '#abcdef',
+								fromAnchor: invalid,
+							},
+						},
+					],
+				}),
+			)
+		}
+
+		assert.throws(() =>
+			store.apply({
+				operations: [{ type: 'update', id: 'c', patch: { toAnchor: 5 } }],
+			}),
+		)
+
+		const before = store.getBoard()
+		assert.throws(() =>
+			store.apply({
+				operations: [
+					{ type: 'update', id: 'c', patch: { from: 'b', to: 'a', fromAnchor: 4, toAnchor: 2 } },
+					{ type: 'update', id: 'c', patch: { to: 'c' } },
+				],
+			}),
+		)
+		assert.deepEqual(store.getBoard(), before)
+
+		const changed = store.apply({
+			operations: [
+				{ type: 'update', id: 'c', patch: { from: 'b', to: 'a', fromAnchor: 4, toAnchor: 2 } },
+			],
+		})
+		const connector = changed.shapes.find((shape) => shape.id === 'c')
+		assert.deepEqual(connector, {
+			id: 'c',
+			type: 'connector',
+			from: 'b',
+			to: 'a',
+			color: '#abcdef',
+			fromAnchor: 4,
+			toAnchor: 2,
+		})
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('connector anchors persist and old automatic connectors remain valid', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	let store = new BoardStore(dbPath)
+	try {
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'a', type: 'rectangle', x: 0, y: 0, w: 100, h: 100, color: '#123456' },
+				},
+				{
+					type: 'create',
+					shape: { id: 'b', type: 'ellipse', x: 200, y: 0, w: 100, h: 100, color: '#654321' },
+				},
+				{
+					type: 'create',
+					shape: { id: 'c', type: 'connector', from: 'a', to: 'b', color: '#abcdef' },
+				},
+			],
+		})
+		const oldConnector = store.getBoard().shapes.find((shape) => shape.id === 'c')
+		assert.ok(oldConnector)
+		assert.ok(!Object.hasOwn(oldConnector, 'fromAnchor'))
+		assert.ok(!Object.hasOwn(oldConnector, 'toAnchor'))
+
+		store.apply({
+			operations: [{ type: 'update', id: 'c', patch: { fromAnchor: 3, toAnchor: 11 } }],
+		})
+		store.close()
+		store = new BoardStore(dbPath)
+		assert.deepEqual(
+			store.getBoard().shapes.find((shape) => shape.id === 'c'),
+			{
+				id: 'c',
+				type: 'connector',
+				from: 'a',
+				to: 'b',
+				color: '#abcdef',
+				fromAnchor: 3,
+				toAnchor: 11,
+			},
+		)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('board persists in sqlite', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')

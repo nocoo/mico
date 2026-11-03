@@ -22,7 +22,7 @@ pnpm dev
 
 Open <http://127.0.0.1:5173/>. The daemon listens only on `127.0.0.1:4318` and stores its board in `.mico/board.sqlite`. `MICO_PORT` and `MICO_DB_PATH` override the daemon's port and database path; the CLI also respects `MICO_PORT`. If changing the port, start Vite with the matching `VITE_MICO_PORT`.
 
-The canvas supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool, then click the source and target objects. Connectors automatically choose the nearest fixed anchor points and may switch anchors as objects move.
+The canvas fits its existing content on first load. It supports panning, zooming, rectangles, ellipses, text, lines, connectors, dragging, color and deletion. Select the hand tool or hold Space and drag to pan. For connectors, select the connector tool, then click the source and target objects. Connections start in automatic anchor mode; select a connector and drag either endpoint to a displayed anchor to fix its position or reconnect it to another object.
 
 ## Agent CLI
 
@@ -38,7 +38,7 @@ node src/cli/index.ts batch examples/architecture.json
 
 `shape create` generates an ID if one is omitted. A batch is an array of `create`, `update`, or `delete` operations; use `-` instead of a filename to read JSON from standard input. Batch-created shapes must include IDs so that connectors can refer to them. The example uses fixed IDs and can be applied once to an empty board. Deleting a shape also deletes connectors attached to it; connector endpoints must be different.
 
-A canvas shape has `id`, `type` (`rectangle`, `ellipse`, `text`, or `line`), `x`, `y`, `w`, `h`, `color` (six-digit hex), and optional `text`. For a line, `w` and `h` are signed offsets to its endpoint. A connector has `id`, `type: "connector"`, `from` and `to` shape IDs, and `color`.
+A canvas shape has `id`, `type` (`rectangle`, `ellipse`, `text`, or `line`), `x`, `y`, `w`, `h`, `color` (six-digit hex), and optional `text`. For a line, `w` and `h` are signed offsets to its endpoint. A connector has `id`, `type: "connector"`, `from` and `to` shape IDs, and `color`. Optional `fromAnchor` and `toAnchor` fix an endpoint to an index from `getAnchors`: 0–11 for boxes and ellipses, 0–4 for lines. An omitted index keeps that endpoint automatic.
 
 The daemon exposes `GET /api/board`, `POST /api/operations`, and a WebSocket at `/api/events`. A batch is validated and persisted atomically. An optional `expectedRevision` rejects writes based on stale board state. WebSocket subscribers receive the complete current board on connection and after each mutation.
 

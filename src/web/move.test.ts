@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Board, CanvasShape } from '../shared/types.ts'
-import { canRebaseMove } from './move.ts'
+import { canRebaseConnector, canRebaseMove } from './move.ts'
 
 const shape: CanvasShape = {
 	id: 'node',
@@ -14,6 +14,22 @@ const shape: CanvasShape = {
 }
 
 const board = (shapes: Board['shapes']): Board => ({ revision: 1, shapes })
+
+test('a connector edit rebases only while its endpoints and style remain unchanged', () => {
+	const connector = {
+		id: 'link',
+		type: 'connector' as const,
+		from: 'a',
+		to: 'b',
+		color: '#000000',
+		toAnchor: 3,
+	}
+	assert.equal(canRebaseConnector(board([{ ...connector }]), connector), true)
+	assert.equal(canRebaseConnector(board([{ ...connector, to: 'c' }]), connector), false)
+	assert.equal(canRebaseConnector(board([{ ...connector, toAnchor: 2 }]), connector), false)
+	assert.equal(canRebaseConnector(board([{ ...connector, color: '#ffffff' }]), connector), false)
+	assert.equal(canRebaseConnector(board([]), connector), false)
+})
 
 test('a move rebases only while its target remains unchanged', () => {
 	assert.equal(canRebaseMove(board([{ ...shape }]), shape), true)

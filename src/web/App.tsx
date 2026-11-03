@@ -1,8 +1,16 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Shape, ShapeType } from '../shared/types'
-import { getConnectorAnchors } from './anchors'
-import { canRebaseMove } from './move'
+import {
+	type AnchorTarget,
+	findClosestAnchor,
+	getAnchors,
+	getConnectorAnchors,
+	type Point,
+} from './anchors'
+import { canRebaseConnector, canRebaseMove } from './move'
+import { getConnectorRoute } from './routing'
+import { fitViewport } from './viewport'
 
 const port = import.meta.env.VITE_MICO_PORT || '4318'
 const API = `http://127.0.0.1:${port}`
@@ -12,6 +20,17 @@ const isConnector = (shape: Shape): shape is Connector => shape.type === 'connec
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
 
 const randomId = () => crypto.randomUUID()
+
+type ConnectorEnd = 'from' | 'to'
+
+interface EndpointDrag {
+	connectorId: string
+	end: ConnectorEnd
+	point: Point
+	target: AnchorTarget | null
+}
+
+type EndpointPreviews = Partial<Record<ConnectorEnd, { target: AnchorTarget; token: number }>>
 
 interface TextDraft {
 	value: string
@@ -108,12 +127,13 @@ function TextField({
 
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
+	const initialViewSet = useRef(false)
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const [textDrafts, setTextDrafts] = useState<Map<string, TextDraft>>(() => new Map())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
-		mode: 'pan' | 'shape' | 'create'
+		mode: 'pan' | 'shape' | 'create' | 'endpoint'
 		pointerId: number
 		startClient: { x: number; y: number }
 		startWorld: { x: number; y: number }
@@ -121,6 +141,8 @@ export default function App() {
 		revision?: number
 		previewToken?: number
 		shape?: CanvasShape
+		connector?: Connector
+		end?: ConnectorEnd
 	} | null>(null)
 	const dragTokenRef = useRef(0)
 
@@ -130,6 +152,10 @@ export default function App() {
 	const [selectedId, setSelectedId] = useState<string | null>(null)
 	const [connectorFrom, setConnectorFrom] = useState<string | null>(null)
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
+	const [endpointDrag, setEndpointDrag] = useState<EndpointDrag | null>(null)
+	const [endpointPreviews, setEndpointPreviews] = useState<Map<string, EndpointPreviews>>(
+		() => new Map(),
+	)
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
 	>(() => new Map())
@@ -150,6 +176,14 @@ export default function App() {
 		if (next.revision < revisionRef.current) return
 		revisionRef.current = next.revision
 		boardRef.current = next
+		if (!initialViewSet.current && svgRef.current) {
+			const { width, height } = svgRef.current.getBoundingClientRect()
+			if (width > 0 && height > 0) {
+				initialViewSet.current = true
+				const fitted = fitViewport(next.shapes, width, height)
+				if (fitted) setViewport(fitted)
+			}
+		}
 		setBoard(next)
 		setSelectedId((current) =>
 			current && !next.shapes.some((shape) => shape.id === current) ? null : current,
@@ -259,18 +293,24 @@ export default function App() {
 
 	const zoomAt = useCallback(
 		(nextZoom: number, clientX?: number, clientY?: number) => {
+			initialViewSet.current = true
 			const rect = svgRef.current?.getBoundingClientRect()
 			const cx = clientX === undefined ? (rect?.left ?? 0) + (rect?.width ?? 0) / 2 : clientX
 			const cy = clientY === undefined ? (rect?.top ?? 0) + (rect?.height ?? 0) / 2 : clientY
 			const rx = cx - (rect?.left ?? 0)
 			const ry = cy - (rect?.top ?? 0)
-			const zoom = Math.min(3, Math.max(0.25, nextZoom))
+			const zoom = Math.min(3, Math.max(0.000001, nextZoom))
 			const worldX = (rx - viewport.x) / viewport.zoom
 			const worldY = (ry - viewport.y) / viewport.zoom
 			setViewport({ x: rx - worldX * zoom, y: ry - worldY * zoom, zoom })
 		},
 		[viewport],
 	)
+
+	const resetViewport = useCallback(() => {
+		initialViewSet.current = true
+		setViewport({ x: 0, y: 0, zoom: 1 })
+	}, [])
 
 	const createShape = (shape: CanvasShape) => {
 		setSelectedId(shape.id)
@@ -296,6 +336,7 @@ export default function App() {
 		interactionRef.current = null
 		setCreation(null)
 		setIsPanning(false)
+		if (interaction?.mode === 'endpoint') setEndpointDrag(null)
 		if (interaction?.previewToken && interaction.shape) {
 			clearDragPreview(interaction.shape.id, interaction.previewToken)
 		}
@@ -338,7 +379,7 @@ export default function App() {
 			}
 			if (event.key === '+' || event.key === '=') zoomAt(viewport.zoom * 1.2)
 			if (event.key === '-') zoomAt(viewport.zoom / 1.2)
-			if (event.key === '0') setViewport({ x: 0, y: 0, zoom: 1 })
+			if (event.key === '0') resetViewport()
 		}
 		const onKeyUp = (event: KeyboardEvent) => {
 			if (event.code === 'Space') setSpacePressed(false)
@@ -355,10 +396,11 @@ export default function App() {
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction, deleteSelected, viewport.zoom, zoomAt])
+	}, [cancelInteraction, deleteSelected, resetViewport, viewport.zoom, zoomAt])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
+		initialViewSet.current = true
 
 		const shouldPan = event.button === 1 || spacePressed || tool === 'hand'
 		if (shouldPan) {
@@ -431,6 +473,24 @@ export default function App() {
 
 		const world = clientToWorld(event.clientX, event.clientY)
 
+		if (interaction.mode === 'endpoint' && interaction.connector && interaction.end) {
+			const otherId =
+				interaction.end === 'from' ? interaction.connector.to : interaction.connector.from
+			const target = findClosestAnchor(
+				visibleShapes.filter(isCanvasShape),
+				world,
+				otherId,
+				20 / viewport.zoom,
+			)
+			setEndpointDrag({
+				connectorId: interaction.connector.id,
+				end: interaction.end,
+				point: target?.point ?? world,
+				target,
+			})
+			return
+		}
+
 		if (interaction.mode === 'create' && creation) {
 			if (creation.type === 'line') {
 				setCreation({
@@ -481,6 +541,50 @@ export default function App() {
 			}
 		}
 
+		if (interaction.mode === 'endpoint' && interaction.connector && interaction.end) {
+			const world = clientToWorld(event.clientX, event.clientY)
+			const otherId =
+				interaction.end === 'from' ? interaction.connector.to : interaction.connector.from
+			const target = findClosestAnchor(
+				visibleShapes.filter(isCanvasShape),
+				world,
+				otherId,
+				20 / viewport.zoom,
+			)
+			if (target) {
+				const connector = interaction.connector
+				const end = interaction.end
+				const token = ++dragTokenRef.current
+				setEndpointPreviews((current) =>
+					new Map(current).set(connector.id, {
+						...current.get(connector.id),
+						[end]: { target, token },
+					}),
+				)
+				const patch =
+					end === 'from'
+						? { from: target.shapeId, fromAnchor: target.index }
+						: { to: target.shapeId, toAnchor: target.index }
+				void postOperations(
+					[{ type: 'update', id: connector.id, patch }],
+					interaction.revision,
+					(current) => canRebaseConnector(current, connector),
+				).then(() => {
+					setEndpointPreviews((current) => {
+						const preview = current.get(connector.id)
+						if (preview?.[end]?.token !== token) return current
+						const next = new Map(current)
+						const remaining = { ...preview }
+						delete remaining[end]
+						if (remaining.from || remaining.to) next.set(connector.id, remaining)
+						else next.delete(connector.id)
+						return next
+					})
+				})
+			}
+			setEndpointDrag(null)
+		}
+
 		if (interaction.mode === 'shape' && interaction.shape) {
 			const world = clientToWorld(event.clientX, event.clientY)
 			const dx = world.x - interaction.startWorld.x
@@ -525,6 +629,7 @@ export default function App() {
 	}
 
 	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
+		initialViewSet.current = true
 		if (interactionRef.current) {
 			event.stopPropagation()
 			return
@@ -573,14 +678,48 @@ export default function App() {
 		}
 	}
 
+	const onEndpointPointerDown = (
+		event: React.PointerEvent<SVGCircleElement>,
+		connector: Connector,
+		end: ConnectorEnd,
+		point: Point,
+	) => {
+		if (tool !== 'select' || spacePressed || event.button !== 0 || interactionRef.current) return
+		event.stopPropagation()
+		event.preventDefault()
+		svgRef.current?.setPointerCapture(event.pointerId)
+		interactionRef.current = {
+			mode: 'endpoint',
+			pointerId: event.pointerId,
+			startClient: { x: event.clientX, y: event.clientY },
+			startWorld: point,
+			startViewport: { x: viewport.x, y: viewport.y },
+			revision: board.revision,
+			connector,
+			end,
+		}
+		setEndpointDrag({ connectorId: connector.id, end, point, target: null })
+	}
+
 	const updateSelectedColor = (color: string) => {
 		if (!selectedId) return
 		void postOperations([{ type: 'update', id: selectedId, patch: { color } }])
 	}
 
 	const visibleShapes = board.shapes.map((shape) => {
+		if (isConnector(shape)) {
+			const preview = endpointPreviews.get(shape.id)
+			if (!preview) return shape
+			return {
+				...shape,
+				...(preview.from
+					? { from: preview.from.target.shapeId, fromAnchor: preview.from.target.index }
+					: {}),
+				...(preview.to ? { to: preview.to.target.shapeId, toAnchor: preview.to.target.index } : {}),
+			}
+		}
 		const preview = dragPreviews.get(shape.id)
-		return preview && isCanvasShape(shape) ? { ...shape, x: preview.x, y: preview.y } : shape
+		return preview ? { ...shape, x: preview.x, y: preview.y } : shape
 	})
 
 	const renderShape = (shape: Shape) => {
@@ -588,7 +727,31 @@ export default function App() {
 			const from = visibleShapes.find((item) => item.id === shape.from)
 			const to = visibleShapes.find((item) => item.id === shape.to)
 			if (!from || !to || !isCanvasShape(from) || !isCanvasShape(to)) return null
-			const { start: a, end: b } = getConnectorAnchors(from, to)
+			const anchors = getConnectorAnchors(from, to, shape.fromAnchor, shape.toAnchor)
+			const a =
+				endpointDrag?.connectorId === shape.id && endpointDrag.end === 'from'
+					? endpointDrag.point
+					: anchors.start
+			const b =
+				endpointDrag?.connectorId === shape.id && endpointDrag.end === 'to'
+					? endpointDrag.point
+					: anchors.end
+			const drag = endpointDrag?.connectorId === shape.id ? endpointDrag : null
+			const targetShape =
+				drag?.target && visibleShapes.find((item) => item.id === drag.target?.shapeId)
+			const startShape =
+				drag?.end === 'from' && targetShape && isCanvasShape(targetShape) ? targetShape : from
+			const endShape =
+				drag?.end === 'to' && targetShape && isCanvasShape(targetShape) ? targetShape : to
+			const fromAnchor = drag?.end === 'from' && drag.target ? drag.target.index : shape.fromAnchor
+			const toAnchor = drag?.end === 'to' && drag.target ? drag.target.index : shape.toAnchor
+			const route =
+				(!drag || drag.target) && (fromAnchor !== undefined || toAnchor !== undefined)
+					? getConnectorRoute(startShape, endShape, a, b, fromAnchor, toAnchor)
+					: [a, b]
+			const path = route
+				.map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`)
+				.join(' ')
 			const active = selectedId === shape.id
 			return (
 				<g
@@ -604,12 +767,10 @@ export default function App() {
 								: 'pointer',
 					}}
 				>
-					<line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="transparent" strokeWidth={16} />
-					<line
-						x1={a.x}
-						y1={a.y}
-						x2={b.x}
-						y2={b.y}
+					<path d={path} fill="none" stroke="transparent" strokeWidth={16} />
+					<path
+						d={path}
+						fill="none"
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 						markerEnd="url(#arrow)"
@@ -772,6 +933,27 @@ export default function App() {
 		)
 	}
 
+	const visibleSelected = visibleShapes.find((shape) => shape.id === selectedId)
+	const selectedConnector =
+		visibleSelected && isConnector(visibleSelected) && tool === 'select' ? visibleSelected : null
+	const connectorFromShape =
+		selectedConnector && visibleShapes.find((shape) => shape.id === selectedConnector.from)
+	const connectorToShape =
+		selectedConnector && visibleShapes.find((shape) => shape.id === selectedConnector.to)
+	const selectedEndpoints =
+		selectedConnector &&
+		connectorFromShape &&
+		connectorToShape &&
+		isCanvasShape(connectorFromShape) &&
+		isCanvasShape(connectorToShape)
+			? getConnectorAnchors(
+					connectorFromShape,
+					connectorToShape,
+					selectedConnector.fromAnchor,
+					selectedConnector.toAnchor,
+				)
+			: null
+
 	const statusText = !apiConnected ? 'Daemon offline' : wsConnected ? 'Live' : 'API connected'
 	const statusClass = !apiConnected ? 'offline' : wsConnected ? 'live' : 'api'
 
@@ -803,11 +985,7 @@ export default function App() {
 					<button type="button" onClick={() => zoomAt(viewport.zoom * 1.2)} aria-label="Zoom in">
 						+
 					</button>
-					<button
-						type="button"
-						onClick={() => setViewport({ x: 0, y: 0, zoom: 1 })}
-						aria-label="Reset view"
-					>
+					<button type="button" onClick={resetViewport} aria-label="Reset view">
 						Reset
 					</button>
 				</div>
@@ -966,6 +1144,63 @@ export default function App() {
 					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => !isConnector(shape)).map(renderShape)}
 					{creation && renderShape(creation)}
+					{endpointDrag &&
+						selectedConnector &&
+						visibleShapes
+							.filter(isCanvasShape)
+							.filter(
+								(shape) =>
+									shape.id !==
+									(endpointDrag.end === 'from' ? selectedConnector.to : selectedConnector.from),
+							)
+							.flatMap((shape) =>
+								getAnchors(shape)
+									.map((point, index) => ({ point, index, id: `${shape.id}:${index}` }))
+									.map((anchor) => (
+										<circle
+											key={anchor.id}
+											cx={anchor.point.x}
+											cy={anchor.point.y}
+											r={3.5 / viewport.zoom}
+											className={
+												endpointDrag.target?.shapeId === shape.id &&
+												endpointDrag.target.index === anchor.index
+													? 'anchor-candidate active'
+													: 'anchor-candidate'
+											}
+										/>
+									)),
+							)}
+					{selectedConnector &&
+						selectedEndpoints &&
+						(['from', 'to'] as const).map((end) => {
+							const point =
+								endpointDrag?.connectorId === selectedConnector.id && endpointDrag.end === end
+									? endpointDrag.point
+									: end === 'from'
+										? selectedEndpoints.start
+										: selectedEndpoints.end
+							return (
+								<g key={end}>
+									<circle
+										cx={point.x}
+										cy={point.y}
+										r={13 / viewport.zoom}
+										className="endpoint-hit"
+										data-endpoint={end}
+										onPointerDown={(event) =>
+											onEndpointPointerDown(event, selectedConnector, end, point)
+										}
+									/>
+									<circle
+										cx={point.x}
+										cy={point.y}
+										r={5 / viewport.zoom}
+										className="endpoint-handle"
+									/>
+								</g>
+							)
+						})}
 				</g>
 			</svg>
 		</main>

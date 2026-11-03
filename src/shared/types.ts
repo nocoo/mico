@@ -17,6 +17,8 @@ export interface Connector {
 	from: string
 	to: string
 	color: string
+	fromAnchor?: number
+	toAnchor?: number
 }
 
 export type Shape = CanvasShape | Connector
@@ -40,6 +42,8 @@ export type Operation =
 				text?: string
 				from?: string
 				to?: string
+				fromAnchor?: number
+				toAnchor?: number
 			}
 	  }
 	| { type: 'delete'; id: string }

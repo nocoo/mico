@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CanvasShape } from '../shared/types.ts'
-import { getAnchors, getConnectorAnchors } from './anchors.ts'
+import { findClosestAnchor, getAnchorNormal, getAnchors, getConnectorAnchors } from './anchors.ts'
 
 const rectangle: CanvasShape = {
 	id: 'a',
@@ -30,6 +30,26 @@ test('box anchors are fixed at the midpoint and thirds of each side', () => {
 	}
 })
 
+test('anchor normals point outward for boxes and ellipses', () => {
+	assert.deepEqual(getAnchorNormal(rectangle, 0), { x: 0, y: -1 })
+	assert.deepEqual(getAnchorNormal(rectangle, 3), { x: 1, y: 0 })
+	const ellipse = { ...rectangle, type: 'ellipse' as const }
+	const normal = getAnchorNormal(ellipse, 4)
+	assert.ok(normal.x < 0 && normal.y < 0)
+	assert.ok(Math.abs(Math.hypot(normal.x, normal.y) - 1) < 1e-10)
+})
+
+test('drag snapping chooses the closest visible valid anchor within range', () => {
+	const other = { ...rectangle, id: 'b', x: 240 }
+	assert.deepEqual(findClosestAnchor([rectangle, other], { x: 241, y: 44 }, 'a', 5), {
+		shapeId: 'b',
+		index: 2,
+		point: { x: 240, y: 45 },
+	})
+	assert.equal(findClosestAnchor([rectangle, other], { x: 241, y: 44 }, 'a', 1), null)
+	assert.equal(findClosestAnchor([rectangle], { x: 0, y: 45 }, 'a', 10), null)
+})
+
 test('connectors choose the nearest candidate anchor pair', () => {
 	const other = { ...rectangle, id: 'b', x: 240 }
 	assert.deepEqual(getConnectorAnchors(rectangle, other), {
@@ -50,6 +70,33 @@ test('connectors leave both shapes outward rather than passing through their int
 	assert.equal(start.x, 40)
 	assert.ok(end.x === 50 || end.y === 20)
 })
+
+test('locked connector anchors use exact indices and unlocked ends remain automatic', () => {
+	const other = { ...rectangle, id: 'b', x: 240 }
+	assert.deepEqual(getConnectorAnchors(rectangle, other, 3, 8), {
+		start: { x: 120, y: 45 },
+		end: { x: 320, y: 0 },
+	})
+
+	const fromLocked = getConnectorAnchors(rectangle, other, 4)
+	assert.deepEqual(fromLocked.start, { x: 40, y: 0 })
+	assert.ok(otherAnchorsExist(fromLocked.end, getAnchors(other)))
+
+	const toLocked = getConnectorAnchors(rectangle, other, undefined, 9)
+	assert.deepEqual(toLocked.end, { x: 320, y: 90 })
+	assert.ok(otherAnchorsExist(toLocked.start, getAnchors(rectangle)))
+
+	assert.throws(() => getConnectorAnchors(rectangle, other, 12))
+	assert.throws(() => getConnectorAnchors(rectangle, other, undefined, -1))
+	assert.throws(() => getConnectorAnchors(rectangle, other, 1.5))
+})
+
+function otherAnchorsExist(
+	point: { x: number; y: number },
+	anchors: { x: number; y: number }[],
+): boolean {
+	return anchors.some((anchor) => anchor.x === point.x && anchor.y === point.y)
+}
 
 test('ellipse anchors remain on its boundary and lines support signed offsets', () => {
 	const ellipse = { ...rectangle, type: 'ellipse' as const }
