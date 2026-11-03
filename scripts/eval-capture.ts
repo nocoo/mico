@@ -337,6 +337,17 @@ export async function captureEval(
 		assertStableCapture(stable, post, postRenderedShapeCount, postAppliedRevision)
 		board = post
 
+		const postIdentityResponse = await fetch(`${BASE_URL}/__eval_identity`, {
+			signal: AbortSignal.timeout(10000),
+		})
+		if (!postIdentityResponse.ok) throw new Error('Eval identity unavailable after screenshot')
+		const postIdentity = (await postIdentityResponse.json()) as { identity?: string }
+		assertEvalIdentity(identity, postIdentity.identity ?? '')
+		const postPageIdentity = await page
+			.locator('meta[name="mico-eval-identity"]')
+			.getAttribute('content')
+		assertEvalIdentity(identity, postPageIdentity ?? '')
+
 		const boardPath = resolve(runDirectory, 'board.json')
 		const screenshotPath = resolve(runDirectory, 'screenshot.png')
 		writeExclusiveJson(boardPath, post)
