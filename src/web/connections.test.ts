@@ -98,6 +98,21 @@ test('ellipses use their real boundary instead of their bounding box', () => {
 	assert.equal(closer?.shapeId, 'seg')
 })
 
+test('ellipse snapping uses the real screen-space distance, not a gradient estimate', () => {
+	const circle: CanvasShape = {
+		id: 'circle',
+		type: 'ellipse',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#123456',
+	}
+	assert.equal(findSnapTarget([circle], { x: 126, y: 50 }, '', 1), null)
+	assert.ok(findSnapTarget([circle], { x: 123, y: 50 }, '', 1))
+	assert.equal(findSnapTarget([circle], { x: 113, y: 50 }, '', 2), null)
+})
+
 test('ellipse anchors are reachable from inside the ellipse', () => {
 	const target = findSnapTarget([ellipse], { x: 50, y: 50 }, 'other', 1)
 	assert.equal(target?.shapeId, 'e')

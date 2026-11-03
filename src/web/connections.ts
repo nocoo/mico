@@ -68,8 +68,21 @@ function ellipseProximity(point: Point, shape: CanvasShape): Proximity {
 	const ny = (point.y - centerY) / radiusY
 	const q = nx * nx + ny * ny
 	if (q <= 1) return { inside: true, distance: 0 }
-	const gradient = Math.hypot((2 * nx) / radiusX, (2 * ny) / radiusY)
-	return { inside: false, distance: (q - 1) / (gradient || 1) }
+	const dx = point.x - centerX
+	const dy = point.y - centerY
+	const rx2 = radiusX * radiusX
+	const ry2 = radiusY * radiusY
+	let low = 0
+	let high = Math.hypot(radiusX * dx, radiusY * dy)
+	for (let step = 0; step < 48; step++) {
+		const t = (low + high) / 2
+		const level = ((radiusX * dx) / (t + rx2)) ** 2 + ((radiusY * dy) / (t + ry2)) ** 2
+		if (level > 1) low = t
+		else high = t
+	}
+	const x = (rx2 * dx) / (high + rx2)
+	const y = (ry2 * dy) / (high + ry2)
+	return { inside: false, distance: Math.hypot(dx - x, dy - y) }
 }
 
 function shapeProximity(point: Point, shape: CanvasShape): Proximity {

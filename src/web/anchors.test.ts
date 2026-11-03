@@ -107,10 +107,9 @@ test('connectors without pins keep auto routing', () => {
 	})
 })
 
-test('out of range or malformed pins fall back to auto routing', () => {
+test('invalid pins fail explicitly rather than silently changing the selected anchor', () => {
 	const other = { ...rectangle, id: 'b', x: 240 }
-	const auto = getConnectorAnchors(rectangle, other)
-	assert.deepEqual(getConnectorAnchors(rectangle, other, { fromAnchor: 99 }), auto)
-	assert.deepEqual(getConnectorAnchors(rectangle, other, { fromAnchor: -1 }), auto)
-	assert.deepEqual(getConnectorAnchors(rectangle, other, { toAnchor: 1.5 }), auto)
+	assert.throws(() => getConnectorAnchors(rectangle, other, { fromAnchor: 99 }), RangeError)
+	assert.throws(() => getConnectorAnchors(rectangle, other, { fromAnchor: -1 }), RangeError)
+	assert.throws(() => getConnectorAnchors(rectangle, other, { toAnchor: 1.5 }), RangeError)
 })

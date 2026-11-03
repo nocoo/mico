@@ -57,8 +57,10 @@ function facesOutward(
 }
 
 function resolvePin(index: number | undefined, anchors: Point[]): Point | undefined {
-	if (index === undefined || !Number.isInteger(index)) return undefined
-	if (index < 0 || index >= anchors.length) return undefined
+	if (index === undefined) return undefined
+	if (!Number.isInteger(index) || index < 0 || index >= anchors.length) {
+		throw new RangeError('Connector anchor index is outside the shape anchor range')
+	}
 	return anchors[index]
 }
 
