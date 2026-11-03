@@ -67,7 +67,8 @@ body,
 	overflow: hidden;
 }
 button,
-input {
+input,
+select {
 	font: inherit;
 }
 button {
@@ -78,7 +79,8 @@ button:disabled {
 	opacity: 0.35;
 }
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
 	outline: var(--stroke-strong) solid var(--accent);
 	outline-offset: var(--hairline);
 }
@@ -451,7 +453,8 @@ svg {
 	margin-top: var(--space-2);
 }
 .field input:not([type]),
-.field input[type="text"] {
+.field input[type="text"],
+.field select {
 	width: 100%;
 	height: var(--control-size);
 	padding: 0 var(--space-1);
@@ -555,6 +558,35 @@ svg {
 	font-size: var(--type-body);
 	fill: var(--ink);
 	pointer-events: none;
+}
+
+.snap-outline {
+	fill: none;
+	stroke: var(--accent);
+	stroke-width: var(--stroke-standard);
+	stroke-dasharray: 4 4;
+}
+.snap-anchor,
+.handle-dot {
+	fill: var(--surface);
+	stroke: var(--accent);
+	stroke-width: var(--stroke-strong);
+}
+.snap-anchor.is-active {
+	fill: var(--accent);
+	stroke: var(--surface);
+	stroke-width: 2;
+}
+.connection-handle {
+	cursor: grab;
+	outline: none;
+}
+.connection-handle:focus-visible .handle-dot {
+	fill: var(--accent);
+	stroke: var(--ink);
+}
+.connection-handle:active {
+	cursor: grabbing;
 }
 
 @media (max-width: 960px) {
