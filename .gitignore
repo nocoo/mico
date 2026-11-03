@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .mico/
+playwright-report/
+test-results/
