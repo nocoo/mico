@@ -8,6 +8,7 @@ interface Stroke {
 
 const strokes: Stroke[] = []
 const ink = '#242424'
+const base = { x: 1760, y: 980 }
 
 function curve(
 	id: string,
@@ -19,7 +20,7 @@ function curve(
 		color: options.color ?? ink,
 		brush: options.brush ?? 'brush',
 		strokeWidth: options.strokeWidth ?? 4,
-		points: points.map(([x, y]) => ({ x, y })),
+		points: points.map(([x, y]) => ({ x: base.x + x, y: base.y + y })),
 	})
 }
 
@@ -226,8 +227,8 @@ const operations = [
 		shape: {
 			id: 'sketch-title',
 			type: 'text',
-			x: 60,
-			y: 48,
+			x: base.x,
+			y: base.y - 72,
 			w: 320,
 			h: 44,
 			color: '#242424',
