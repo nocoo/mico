@@ -14,6 +14,7 @@ const port = BROWSER_PORT + 30000
 const daemon = createDaemon({
 	port,
 	dbPath: join(directory, 'board.sqlite'),
+	settingsPath: join(directory, 'ai-settings', 'settings.json'),
 	aiModel: process.env.MICO_AI_MOCK === '1' ? createMockAiModel() : undefined,
 })
 const base = micoViteConfig()

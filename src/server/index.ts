@@ -5,7 +5,8 @@ import type { LanguageModel } from 'ai'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
-import { createMagpieModel, parseAiChatRequest, streamAiChat } from './ai.ts'
+import { createMagpieModel, type MagpieSettings, parseAiChatRequest, streamAiChat } from './ai.ts'
+import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { BoardStore, OperationError } from './store.ts'
 
 function parsePort(): number {
@@ -88,7 +89,10 @@ function knownPath(pathname: string): boolean {
 		)
 	}
 	if (segments.length === 3) {
-		return segments[1] === 'canvases' || (segments[1] === 'ai' && segments[2] === 'chat')
+		return (
+			segments[1] === 'canvases' ||
+			(segments[1] === 'ai' && ['chat', 'settings'].includes(segments[2]))
+		)
 	}
 	return false
 }
@@ -96,17 +100,32 @@ function knownPath(pathname: string): boolean {
 export interface Daemon {
 	server: ReturnType<typeof createServer>
 	store: BoardStore
+	aiSettings: AiSettingsStore
 	wss: WebSocketServer
 	close(): void
 }
 
 export function createDaemon(
-	options: { port?: number; dbPath?: string; aiModel?: LanguageModel } = {},
+	options: {
+		port?: number
+		dbPath?: string
+		aiModel?: LanguageModel
+		settingsPath?: string
+		env?: NodeJS.ProcessEnv
+		createAiModel?: (settings: MagpieSettings) => LanguageModel
+	} = {},
 ): Daemon {
 	const port = options.port ?? parsePort()
 	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
-	const aiModel = options.aiModel ?? createMagpieModel()
+	const settingsPath = options.settingsPath
+	const aiSettings = new AiSettingsStore({
+		path: settingsPath ?? AI_SETTINGS_PATH,
+		env: options.env ?? process.env,
+		persist: settingsPath !== undefined || options.aiModel === undefined,
+	})
+	const aiModel = options.aiModel
+	const modelFactory = options.createAiModel ?? createMagpieModel
 	const wss = new WebSocketServer({ noServer: true })
 
 	function isAllowedHost(host: string | undefined): boolean {
@@ -275,6 +294,21 @@ export function createDaemon(
 				return
 			}
 
+			if (isPath('api', 'ai', 'settings')) {
+				if (req.method === 'GET') {
+					sendJson(res, 200, aiSettings.getPublic(), origin)
+					return
+				}
+				if (req.method !== 'PUT') {
+					res.setHeader('Allow', 'GET, PUT, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const settings = await aiSettings.update(await readJson(req))
+				sendJson(res, 200, settings, origin)
+				return
+			}
+
 			if (isPath('api', 'ai', 'chat')) {
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
@@ -282,7 +316,8 @@ export function createDaemon(
 					return
 				}
 				const request = await parseAiChatRequest(await readJson(req))
-				await streamAiChat({ res, store, broadcast, model: aiModel, request, origin })
+				const model = aiModel ?? modelFactory(aiSettings.getEffective())
+				await streamAiChat({ res, store, broadcast, model, request, origin })
 				return
 			}
 
@@ -366,6 +401,7 @@ export function createDaemon(
 	return {
 		server,
 		store,
+		aiSettings,
 		wss,
 		close(): void {
 			wss.close()

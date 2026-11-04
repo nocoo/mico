@@ -159,9 +159,9 @@ export async function streamAiChat({
 			request.mode === 'lecture'
 				? undefined
 				: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
-		onError: ({ error }) => {
-			console.error('AI request failed:', error)
-			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and MAGPIE_BASE_URL.'
+		onError: () => {
+			console.error('AI request failed')
+			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and AI settings.'
 		},
 	})
 	await result.pipeUIMessageStreamToResponse(res, { headers })

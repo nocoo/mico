@@ -195,6 +195,7 @@ async function withDaemon(
 	const daemon = createDaemon({
 		port: 0,
 		dbPath: join(directory, 'board.sqlite'),
+		settingsPath: join(directory, 'ai-settings', 'settings.json'),
 		aiModel: model,
 	})
 	daemon.server.listen(0, '127.0.0.1')
@@ -260,6 +261,56 @@ test('AI chat streams a tool loop and draws on the active board', async () => {
 		assert.ok(shapes.some((shape) => shape.id === 'mock-1-title'))
 		assert.ok(shapes.some((shape) => shape.id === 'mock-1-flow' && shape.type === 'connector'))
 	})
+})
+
+test('AI settings updates create the model used by subsequent chats', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-settings-chat-'))
+	const seen: Array<{ baseURL: string; model: string; apiKey: string }> = []
+	const daemon = createDaemon({
+		port: 0,
+		dbPath: join(directory, 'board.sqlite'),
+		settingsPath: join(directory, 'ai-settings', 'settings.json'),
+		createAiModel: (settings) => {
+			seen.push(settings)
+			return createMockAiModel()
+		},
+	})
+	daemon.server.listen(0, '127.0.0.1')
+	await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
+	const address = daemon.server.address()
+	assert.ok(address && typeof address !== 'string')
+	try {
+		const url = `http://127.0.0.1:${address.port}`
+		const put = await fetch(`${url}/api/ai/settings`, {
+			method: 'PUT',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				baseURL: 'https://chat.example/v1',
+				model: 'chat-model',
+				apiKey: 'chat-secret',
+			}),
+		})
+		assert.equal(put.status, 200)
+
+		const chat = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				messages: [{ id: 'u', role: 'user', parts: [{ type: 'text', text: 'Draw' }] }],
+			}),
+		})
+		assert.equal(chat.status, 200)
+		await chat.text()
+		assert.deepEqual(seen.at(-1), {
+			baseURL: 'https://chat.example/v1',
+			model: 'chat-model',
+			apiKey: 'chat-secret',
+		})
+	} finally {
+		for (const client of daemon.wss.clients) client.terminate()
+		daemon.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
 })
 
 test('AI chat rejects invalid requests', async () => {
