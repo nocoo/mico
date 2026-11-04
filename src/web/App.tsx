@@ -13,6 +13,7 @@ import type {
 	ServerEvent,
 	Shape,
 } from '../shared/types'
+import { AiPanel } from './AiPanel'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
@@ -91,6 +92,7 @@ export default function App() {
 	const boardCacheRef = useRef<Map<string, Board>>(new Map())
 	const connectionResetRef = useRef<() => void>(() => {})
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
+	const [aiPanelOpen, setAiPanelOpen] = useState(false)
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -372,6 +374,7 @@ export default function App() {
 	}, [connection.reset])
 
 	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
+	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 
 	const refreshCanvases = useCallback(async () => {
 		try {
@@ -1415,7 +1418,7 @@ export default function App() {
 
 	return (
 		<main
-			className="app"
+			className={`app ${aiPanelOpen ? 'ai-open' : ''}`}
 			style={
 				{
 					'--control-size': `${CONTROL_SIZE}px`,
@@ -1445,7 +1448,11 @@ export default function App() {
 				toolOptions={toolOptions}
 				canvasesOpen={canvasPanelOpen}
 				onToggleCanvases={toggleCanvasPanel}
+				aiOpen={aiPanelOpen}
+				onToggleAi={() => setAiPanelOpen((open) => !open)}
 			/>
+
+			<AiPanel open={aiPanelOpen} onClose={closeAiPanel} />
 
 			<CanvasPanel
 				open={canvasPanelOpen}

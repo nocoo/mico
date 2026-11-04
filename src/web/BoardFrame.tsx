@@ -12,6 +12,7 @@ import {
 	PenTool,
 	Plus,
 	Slash,
+	Sparkles,
 	Square,
 	StickyNote,
 	Trash2,
@@ -52,6 +53,8 @@ interface BoardFrameProps {
 	canFrame: boolean
 	canvasesOpen: boolean
 	onToggleCanvases: () => void
+	aiOpen: boolean
+	onToggleAi: () => void
 }
 
 export function BoardFrame({
@@ -72,6 +75,8 @@ export function BoardFrame({
 	canFrame,
 	canvasesOpen,
 	onToggleCanvases,
+	aiOpen,
+	onToggleAi,
 }: BoardFrameProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
@@ -126,6 +131,19 @@ export function BoardFrame({
 					>
 						<span className="status-dot" aria-hidden="true" />
 					</span>
+				</div>
+				<div className="ai-trigger floating-panel">
+					<IconButton
+						icon={Sparkles}
+						label="AI assistant"
+						active={aiOpen}
+						aria-pressed={aiOpen}
+						aria-expanded={aiOpen}
+						aria-controls="ai-panel"
+						onClick={onToggleAi}
+						data-ai-toggle="true"
+						className="ai-trigger-button"
+					/>
 				</div>
 			</header>
 
