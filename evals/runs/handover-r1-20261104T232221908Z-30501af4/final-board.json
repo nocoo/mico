@@ -1,0 +1,182 @@
+{
+  "canvas": {
+    "id": "50fc2c77-4c8b-4941-85e5-9564b1146b5d",
+    "name": "急诊交接 · 第1轮 · 20261104T232221908Z",
+    "revision": 20,
+    "createdAt": "2026-11-04T23:22:21.929Z",
+    "updatedAt": "2026-11-04T23:24:25.714Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjQ4LjQzMTM3MjU0OTAxOTYiIHk9IjE0LjMxMzcyNTQ5MDE5NjA3MiIgd2lkdGg9IjE0LjI3NDUwOTgwMzkyMTU3IiBoZWlnaHQ9IjYuNTg4MjM1Mjk0MTE3NjQ4IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjUxLjQzMTM3MjU0OTAxOTYiIHk9IjIyLjMxMzcyNTQ5MDE5NjA3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7kuqTmjqXojIPlm7QK4oCiIOaKouaVkeWMugrigKIg55WZ6KeCQeWMugo8L3RleHQ+PHJlY3QgeD0iNjQuMzUyOTQxMTc2NDcwNTgiIHk9IjE0LjMxMzcyNTQ5MDE5NjA3MiIgd2lkdGg9IjE0LjI3NDUwOTgwMzkyMTU3IiBoZWlnaHQ9IjYuNTg4MjM1Mjk0MTE3NjQ4IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjY3LjM1Mjk0MTE3NjQ3MDU4IiB5PSIyMi4zMTM3MjU0OTAxOTYwNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5Lqk5o6l6aG65bqPCuKRoCDlkITluorkvY3mg4XlhrUK4pGhIOaxh+aAu+S4izwvdGV4dD48cmVjdCB4PSI0OC40MzEzNzI1NDkwMTk2IiB5PSIyMy4wOTgwMzkyMTU2ODYyNyIgd2lkdGg9IjE0LjI3NDUwOTgwMzkyMTU3IiBoZWlnaHQ9IjcuMTM3MjU0OTAxOTYwNzg1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjUxLjQzMTM3MjU0OTAxOTYiIHk9IjMxLjA5ODAzOTIxNTY4NjI3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7miqLmlZHljLogwrcgMeW6igrigKIg5Zug5ZG85ZC45Zuw6Zq+55WZ6KeCPC90ZXh0PjxyZWN0IHg9IjY0LjM1Mjk0MTE3NjQ3MDU4IiB5PSIyMy4wOTgwMzkyMTU2ODYyNyIgd2lkdGg9IjE0LjI3NDUwOTgwMzkyMTU3IiBoZWlnaHQ9IjcuMTM3MjU0OTAxOTYwNzg1IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjY3LjM1Mjk0MTE3NjQ3MDU4IiB5PSIzMS4wOTgwMzkyMTU2ODYyNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+MeW6iiDCtyDkuIvkuIDnj63ot5/ov5sK4oCiIOiDuOmDqOW9seWDj+e7kzwvdGV4dD48cmVjdCB4PSI0OC40MzEzNzI1NDkwMTk2IiB5PSIzMi40MzEzNzI1NDkwMTk2IiB3aWR0aD0iMTQuMjc0NTA5ODAzOTIxNTciIGhlaWdodD0iNy42ODYyNzQ1MDk4MDM5MjMiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNTEuNDMxMzcyNTQ5MDE5NiIgeT0iNDAuNDMxMzcyNTQ5MDE5NiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5oqi5pWR5Yy6IMK3IDLluooK4oCiIOWboOiDuOeXm+eVmeinggrigKI8L3RleHQ+PHJlY3QgeD0iNjQuMzUyOTQxMTc2NDcwNTgiIHk9IjMyLjQzMTM3MjU0OTAxOTYiIHdpZHRoPSIxNC4yNzQ1MDk4MDM5MjE1NyIgaGVpZ2h0PSI3LjY4NjI3NDUwOTgwMzkyMyIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSI2Ny4zNTI5NDExNzY0NzA1OCIgeT0iNDAuNDMxMzcyNTQ5MDE5NiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+MuW6iiDCtyDlrrblsZ7ogZTns7vov5vlsZUK4oCiIOW3suiBlOezu+S4ijwvdGV4dD48cmVjdCB4PSI4MS4zNzI1NDkwMTk2MDc4NSIgeT0iMTEuMjk0MTE3NjQ3MDU4ODE3IiB3aWR0aD0iMTQuMjc0NTA5ODAzOTIxNTciIGhlaWdodD0iNy42ODYyNzQ1MDk4MDM5MjMiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iODQuMzcyNTQ5MDE5NjA3ODUiIHk9IjE5LjI5NDExNzY0NzA1ODgyIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7nlZnop4JB5Yy6IMK3IDPluooK4oCiIOWboOiFueeXm+eVmeinggo8L3RleHQ+PHJlY3QgeD0iODEuMzcyNTQ5MDE5NjA3ODUiIHk9IjIxLjE3NjQ3MDU4ODIzNTI5IiB3aWR0aD0iMTQuMjc0NTA5ODAzOTIxNTciIGhlaWdodD0iOS4zMzMzMzMzMzMzMzMzMzQiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iODQuMzcyNTQ5MDE5NjA3ODUiIHk9IjI5LjE3NjQ3MDU4ODIzNTI5IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7nlZnop4JB5Yy6IMK3IDTluooK4oCiIOi3jOWAkuWQjueVmeingu+8jDwvdGV4dD48cmVjdCB4PSI4MS4zNzI1NDkwMTk2MDc4NSIgeT0iMzIuNzA1ODgyMzUyOTQxMTc0IiB3aWR0aD0iMTQuMjc0NTA5ODAzOTIxNTciIGhlaWdodD0iNy4xMzcyNTQ5MDE5NjA3ODUiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iODQuMzcyNTQ5MDE5NjA3ODUiIHk9IjQwLjcwNTg4MjM1Mjk0MTE3NCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+55WZ6KeCQuWMuiDCtyA15bqKCuKAoiDlm6Dlj5Hng63nlZnop4IKPC90ZXh0PjxyZWN0IHg9IjgxLjM3MjU0OTAxOTYwNzg1IiB5PSI0Mi4wMzkyMTU2ODYyNzQ1MSIgd2lkdGg9IjE0LjI3NDUwOTgwMzkyMTU3IiBoZWlnaHQ9IjguMjM1Mjk0MTE3NjQ3MDYiIHJ4PSIzIiBmaWxsPSIjZmZmOGQ0Ii8+PHRleHQgeD0iODQuMzcyNTQ5MDE5NjA3ODUiIHk9IjUwLjAzOTIxNTY4NjI3NDUxIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7nlZnop4JC5Yy6IMK3IDbluooK4oCiIOiEseawtOivhOS8sOS4rQo8L3RleHQ+PHJlY3QgeD0iNDguNDMxMzcyNTQ5MDE5NiIgeT0iNDIuMzEzNzI1NDkwMTk2MDgiIHdpZHRoPSIzMC4xOTYwNzg0MzEzNzI1NTIiIGhlaWdodD0iNy42ODYyNzQ1MDk4MDM5MjMiIHJ4PSIzIiBmaWxsPSIjZmZmOGQ0Ii8+PHRleHQgeD0iNTEuNDMxMzcyNTQ5MDE5NiIgeT0iNTAuMzEzNzI1NDkwMTk2MDgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuS4i+S4gOePrSDCtyDkvJjlhYjot5/ov5sK4pGgIOaKouaVkeWMujHluoo8L3RleHQ+PHJlY3QgeD0iOTcuMjk0MTE3NjQ3MDU4ODEiIHk9IjQyLjAzOTIxNTY4NjI3NDUxIiB3aWR0aD0iMTQuMjc0NTA5ODAzOTIxNTciIGhlaWdodD0iOC4yMzUyOTQxMTc2NDcwNiIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSIxMDAuMjk0MTE3NjQ3MDU4ODEiIHk9IjUwLjAzOTIxNTY4NjI3NDUxIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7kuIvkuIDnj60gwrcg5oyB57ut5YWz5rOoCuKAoiBB5Yy6NOW6iu+8mjwvdGV4dD48cmVjdCB4PSI5Ny4yOTQxMTc2NDcwNTg4MSIgeT0iMzIuNzA1ODgyMzUyOTQxMTc0IiB3aWR0aD0iMTQuMjc0NTA5ODAzOTIxNTciIGhlaWdodD0iNy4xMzcyNTQ5MDE5NjA3ODUiIHJ4PSIzIiBmaWxsPSIjZmZlOWYwIi8+PHRleHQgeD0iMTAwLjI5NDExNzY0NzA1ODgxIiB5PSI0MC43MDU4ODIzNTI5NDExNzQiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuS6pOaOpee7k+adnyDCtyDlpITnva7ljp/liJkK5YW35L2T5aSE572u5Lul6LSjPC90ZXh0Pjx0ZXh0IHg9IjQ4LjQzMTM3MjU0OTAxOTYiIHk9IjExLjk5OTk5OTk5OTk5OTk5MyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCI+5oCl6K+K56eR5oqk5aOr5Lqk5o6l54+tPC90ZXh0Pjx0ZXh0IHg9IjQ4LjQzMTM3MjU0OTAxOTYiIHk9IjE1LjI5NDExNzY0NzA1ODgxNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iI2ZmN2ZhMyI+5qih5ouf55eF5L6LIMK3IOS6pOaOpea8lOe7gzwvdGV4dD48cmVjdCB4PSI0OC40MzEzNzI1NDkwMTk2IiB5PSI1NS43NjQ3MDU4ODIzNTI5NCIgd2lkdGg9IjYzLjEzNzI1NDkwMTk2MDc5IiBoZWlnaHQ9IjM2LjIzNTI5NDExNzY0NzA2NSIgcng9IjQiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS1vcGFjaXR5PSIwLjQ1Ii8+PC9zdmc+"
+  },
+  "board": {
+    "revision": 20,
+    "shapes": [
+      {
+        "id": "handover-title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 880,
+        "h": 72,
+        "text": "急诊科护士交接班",
+        "font": "sans",
+        "fontSize": 48,
+        "fontWeight": 700
+      },
+      {
+        "id": "simulation-label",
+        "color": "#ff7fa3",
+        "type": "text",
+        "x": 80,
+        "y": 160,
+        "w": 880,
+        "h": 48,
+        "text": "模拟病例 · 交接演练",
+        "font": "sans",
+        "fontSize": 26,
+        "fontWeight": 500
+      },
+      {
+        "id": "handover-agenda-2",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 248,
+        "w": 416,
+        "h": 192,
+        "text": "交接范围\n• 抢救区\n• 留观A区\n• 留观B区"
+      },
+      {
+        "id": "handover-order-2",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 544,
+        "y": 248,
+        "w": 416,
+        "h": 192,
+        "text": "交接顺序\n① 各床位情况\n② 汇总下一班重点"
+      },
+      {
+        "id": "resus-bed1-3",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 504,
+        "w": 416,
+        "h": 208,
+        "text": "抢救区 · 1床\n• 因呼吸困难留观\n• 血氧饱和度：93% → 复测96%\n• 正在持续监测"
+      },
+      {
+        "id": "resus-bed1-followup-4",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 544,
+        "y": 504,
+        "w": 416,
+        "h": 208,
+        "text": "1床 · 下一班跟进\n• 胸部影像结果尚未回报\n• 跟进结果\n• 通知责任医生"
+      },
+      {
+        "id": "resus-bed2-5",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 776,
+        "w": 416,
+        "h": 224,
+        "text": "抢救区 · 2床\n• 因胸痛留观\n• 目前生命体征平稳\n• 第二次心电图已完成\n• 医生正在查看"
+      },
+      {
+        "id": "resus-bed2-followup-6",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 544,
+        "y": 776,
+        "w": 416,
+        "h": 224,
+        "text": "2床 · 家属联系进展\n• 已联系上家属\n• 预计稍后到达"
+      },
+      {
+        "id": "observation-a-bed3-7",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 160,
+        "w": 416,
+        "h": 224,
+        "text": "留观A区 · 3床\n• 因腹痛留观\n• 疼痛评分：入院7分 → 现4分\n• 检验结果已回报\n• 责任医生正在评估"
+      },
+      {
+        "id": "observation-a-bed4-8",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 448,
+        "w": 416,
+        "h": 272,
+        "text": "留观A区 · 4床\n• 跌倒后留观，意识清楚\n• 起身不稳\n• 需协助活动\n• 落实防跌倒措施\n• 影像检查已完成，报告待回"
+      },
+      {
+        "id": "observation-b-bed5-10",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 784,
+        "w": 416,
+        "h": 208,
+        "text": "留观B区 · 5床\n• 因发热留观\n• 体温：38.2℃ → 复测37.6℃\n• 采样已送检，结果待回报"
+      },
+      {
+        "id": "observation-b-bed6-11",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 1056,
+        "w": 416,
+        "h": 240,
+        "text": "留观B区 · 6床\n• 脱水评估中\n• 补液已结束\n• 下一班记录复评结果\n• 家属已到达，可协助沟通"
+      },
+      {
+        "id": "priority-followup-17",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1064,
+        "w": 880,
+        "h": 224,
+        "text": "下一班 · 优先跟进\n① 抢救区1床：胸部影像结果，并通知责任医生\n② 留观A区4床：影像报告\n③ 留观B区5床：采样结果"
+      },
+      {
+        "id": "ongoing-care-18",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1504,
+        "y": 1056,
+        "w": 416,
+        "h": 240,
+        "text": "下一班 · 持续关注\n• A区4床：落实防跌倒措施\n• B区6床：复评并记录结果\n• 抢救区2床：家属到达情况"
+      },
+      {
+        "id": "clinical-boundary-19",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1504,
+        "y": 784,
+        "w": 416,
+        "h": 208,
+        "text": "交接结束 · 处置原则\n具体处置以责任医生的判断和医嘱为准。"
+      },
+      {
+        "id": "handover-summary-20",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 1456,
+        "w": 1840,
+        "h": 1056,
+        "title": "急诊护理交接｜模拟病例总结",
+        "html": "<div style=\"font-family:sans-serif;color:#2b3038;padding:32px;font-size:19px;line-height:1.5;box-sizing:border-box;\"><div style=\"font-size:34px;font-weight:700;\">急诊护理交接｜模拟病例总结</div><div style=\"margin-top:8px;\">目的：汇总抢救区、留观A区及留观B区六床患者的最终状态，明确下一班跟进重点。</div><div style=\"margin-top:18px;padding:12px 16px;background:#fff8d4;border-left:6px solid #f7de4b;\"><b>核心交接重点：</b>优先追踪1床胸部影像、A区4床影像及B区5床采样结果；持续落实防跌倒、复评记录和家属到达跟进。</div><h2 style=\"font-size:23px;margin:20px 0 8px;color:#00a2e1;\">最终状态与下一班行动</h2><table style=\"width:100%;border-collapse:collapse;table-layout:fixed;font-size:18px;\"><thead><tr style=\"background:#e2f5fc;text-align:left;\"><th style=\"padding:10px;width:10%;border-bottom:2px solid #00a2e1;\">区域／床位</th><th style=\"padding:10px;width:34%;border-bottom:2px solid #00a2e1;\">交接时最终状态</th><th style=\"padding:10px;width:30%;border-bottom:2px solid #00a2e1;\">行动／跟进事项</th><th style=\"padding:10px;width:12%;border-bottom:2px solid #00a2e1;\">责任角色</th><th style=\"padding:10px;width:14%;border-bottom:2px solid #00a2e1;\">时点</th></tr></thead><tbody><tr><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">抢救区1床</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">呼吸困难留观；血氧饱和度93% → 96%；持续监测；胸部影像待回。</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">优先跟进胸部影像结果，并通知责任医生。</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">下一班护士</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">下一班优先</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">抢救区2床</td><td style=\"padding:10px;\">胸痛留观；生命体征平稳；第二次心电图已完成，医生正在查看；家属已联系上。</td><td style=\"padding:10px;\">留意家属到达情况。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">持续关注；家属预计稍后到达</td></tr><tr><td style=\"padding:10px;\">A区3床</td><td style=\"padding:10px;\">腹痛评分7分 → 4分；检验已回报，责任医生正在评估。</td><td style=\"padding:10px;\">医生评估进行中；未另指定下一班任务。</td><td style=\"padding:10px;\">责任医生<br>（评估中）</td><td style=\"padding:10px;\">完成时间未说明</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">A区4床</td><td style=\"padding:10px;\">跌倒后留观，意识清楚、起身不稳；影像已完成，报告待回。</td><td style=\"padding:10px;\">优先跟进影像报告；协助活动，落实防跌倒措施。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">报告优先跟进；防跌倒持续落实</td></tr><tr><td style=\"padding:10px;\">B区5床</td><td style=\"padding:10px;\">发热留观；体温38.2℃ → 37.6℃；采样已送检，结果待回。</td><td style=\"padding:10px;\">优先跟进采样结果。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">下一班优先</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">B区6床</td><td style=\"padding:10px;\">脱水评估中；补液已结束；家属已到达，可协助沟通。</td><td style=\"padding:10px;\">复评并记录结果。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">下一班</td></tr></tbody></table><div style=\"font-size:16px;margin-top:8px;\">责任角色按交接内容归纳；具体接班人员及钟点截止时间未提供。</div><div style=\"display:flex;gap:24px;margin-top:18px;\"><div style=\"flex:1;background:#e2f5fc;padding:14px 18px;\"><b style=\"font-size:22px;\">交接进程（无具体时刻）</b><div style=\"margin-top:8px;\">逐床交接 → 状态更新 → 下一班重点汇总</div><div style=\"margin-top:6px;\">更新：1床血氧升至96%；3床检验回报；5床体温降至37.6℃；2床家属已联系上。</div></div><div style=\"flex:1;background:#ffe9f0;padding:14px 18px;\"><b style=\"font-size:22px;\">未决事项与风险</b><div style=\"margin-top:8px;\">三项检查结果仍待回；A区4床存在跌倒风险；B区6床复评结果待记录；2床家属尚待到达。</div><div style=\"margin-top:6px;\">3床医生评估结论、2床心电图查看结论未在交接中说明。</div></div></div><div style=\"margin-top:18px;padding:12px 16px;border-left:6px solid #ff7fa3;background:#ffe9f0;\"><b>模拟病例 · 处置边界：</b>具体处置以责任医生的判断和医嘱为准。</div></div>"
+      }
+    ]
+  }
+}

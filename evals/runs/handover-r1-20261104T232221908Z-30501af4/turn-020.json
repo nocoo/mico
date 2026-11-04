@@ -1,0 +1,1532 @@
+{
+  "index": 20,
+  "startedAt": "2026-11-04T23:24:06.639Z",
+  "endedAt": "2026-11-04T23:24:29.627Z",
+  "elapsedMs": 22985,
+  "timedOut": false,
+  "exactInput": {
+    "text": "[Post-session summary] The session is over. Review the whole conversation and the board. First call get_board and fix any overlap or frame-escape warnings with update_shapes. Then create exactly one rich HTML summary card with add_html_cards (not a plain note), plus any missing title or frame. Include: (1) title and one-line purpose; (2) the key decisions or the core mechanism; (3) an action table with owner and deadline for meetings, or the key formulas and steps for lessons; (4) open questions or risks; (5) a compact timeline when relevant. Use inline CSS and the palette colors; no scripts; keep the markup under 20,000 characters. Place the summary below the existing bounds with a 160px gap and a width of at least 1200, or in an empty right column; never cover existing objects. Do not delete existing work. Finish with a short plain-text takeaway in chat.",
+    "body": {
+      "selection": [],
+      "mode": "chat",
+      "canvasId": "50fc2c77-4c8b-4941-85e5-9564b1146b5d"
+    },
+    "conversationBefore": [
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 1 | 0:00–0:00] 早上好，现在进行急诊科护士交接班，本次内容均为模拟病例。"
+          }
+        ],
+        "id": "DdreStZ9SuJtawLs",
+        "role": "user"
+      },
+      {
+        "id": "mx7Zf7FeR5ZG7QQd",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_texts",
+            "toolCallId": "call_B2KtvohUpncOHGbgjtZXjSyS",
+            "state": "output-available",
+            "input": {
+              "texts": [
+                {
+                  "id": "handover-title",
+                  "x": 80,
+                  "y": 64,
+                  "text": "急诊科护士交接班",
+                  "w": 880,
+                  "h": 72,
+                  "fontSize": 48,
+                  "fontWeight": 700
+                },
+                {
+                  "id": "simulation-label",
+                  "x": 80,
+                  "y": 160,
+                  "text": "模拟病例 · 交接演练",
+                  "w": 880,
+                  "h": 48,
+                  "color": "#ff7fa3",
+                  "fontSize": 26
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 1,
+              "created": [
+                {
+                  "id": "handover-title",
+                  "type": "text"
+                },
+                {
+                  "id": "simulation-label",
+                  "type": "text"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已建立交接班标题，并标明本次均为模拟病例。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 2 | 0:00–0:00] 今天需要分别交接抢救区、留观A区和留观B区，先说各床位的情况，再汇总下一班的重点。"
+          }
+        ],
+        "id": "vBPNgW7Ye4yEspA3",
+        "role": "user"
+      },
+      {
+        "id": "4JiY190D2y4k5GsE",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_bbPLsGuZfbZVvxW3JlRjhDpR",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "handover-agenda-2",
+                  "x": 80,
+                  "y": 248,
+                  "w": 416,
+                  "h": 192,
+                  "text": "交接范围\n• 抢救区\n• 留观A区\n• 留观B区",
+                  "color": "#e2f5fc"
+                },
+                {
+                  "id": "handover-order-2",
+                  "x": 544,
+                  "y": 248,
+                  "w": 416,
+                  "h": 192,
+                  "text": "交接顺序\n① 各床位情况\n② 汇总下一班重点",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 2,
+              "created": [
+                {
+                  "id": "handover-agenda-2",
+                  "type": "note"
+                },
+                {
+                  "id": "handover-order-2",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录三个交接区域，并明确先交接床位情况，再汇总下一班重点。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 3 | 0:00–0:00] 抢救区1床患者因呼吸困难留观，目前血氧饱和度为93%，正在持续监测。"
+          }
+        ],
+        "id": "83450ps9TtAwisBf",
+        "role": "user"
+      },
+      {
+        "id": "AujPZ4GzUJhJy4v4",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_GWLw1A0LceNvlOQknfSwSk40",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "resus-bed1-3",
+                  "x": 80,
+                  "y": 504,
+                  "w": 416,
+                  "h": 208,
+                  "text": "抢救区 · 1床\n• 因呼吸困难留观\n• 当前血氧饱和度：93%\n• 正在持续监测",
+                  "color": "#e2f5fc"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 3,
+              "created": [
+                {
+                  "id": "resus-bed1-3",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录抢救区1床的留观原因、血氧饱和度及持续监测状态。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 4 | 0:00–0:00] 1床胸部影像结果尚未回报，下一班需要跟进结果并通知责任医生。"
+          }
+        ],
+        "id": "IXFDQq4wijNBtKL3",
+        "role": "user"
+      },
+      {
+        "id": "Jm5xM5xPh1HYZdsv",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_lBj0wN1bEZBk64cgudypJJdb",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "resus-bed1-followup-4",
+                  "x": 544,
+                  "y": 504,
+                  "w": 416,
+                  "h": 208,
+                  "text": "1床 · 下一班跟进\n• 胸部影像结果尚未回报\n• 跟进结果\n• 通知责任医生",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 4,
+              "created": [
+                {
+                  "id": "resus-bed1-followup-4",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已补充1床影像结果待回报，以及下一班跟进并通知责任医生的任务。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 5 | 0:00–0:00] 抢救区2床患者因胸痛留观，目前生命体征平稳，第二次心电图已完成，医生正在查看。"
+          }
+        ],
+        "id": "vdNkR6qePsCX9EIs",
+        "role": "user"
+      },
+      {
+        "id": "DGM6lzZZzeh2KWC8",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_hoJoBWhTa0MUFXLxbVr1pa6w",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "resus-bed2-5",
+                  "x": 80,
+                  "y": 776,
+                  "w": 416,
+                  "h": 224,
+                  "text": "抢救区 · 2床\n• 因胸痛留观\n• 目前生命体征平稳\n• 第二次心电图已完成\n• 医生正在查看",
+                  "color": "#e2f5fc"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 5,
+              "created": [
+                {
+                  "id": "resus-bed2-5",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录抢救区2床情况：生命体征平稳，第二次心电图已完成，医生正在查看。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 6 | 0:00–0:00] 2床家属还没有到达，请下一班留意家属联系情况。"
+          }
+        ],
+        "id": "2wPvMpAr7zxs4aBi",
+        "role": "user"
+      },
+      {
+        "id": "j9flE5ns6d8ncvMp",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_1ip33xHgXqdqeA014WNy1zE7",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "resus-bed2-followup-6",
+                  "x": 544,
+                  "y": 776,
+                  "w": 416,
+                  "h": 224,
+                  "text": "2床 · 下一班跟进\n• 家属尚未到达\n• 留意家属联系情况",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 6,
+              "created": [
+                {
+                  "id": "resus-bed2-followup-6",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已补充2床家属尚未到达，提醒下一班留意家属联系情况。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 7 | 0:00–0:00] 留观A区3床患者因腹痛留观，疼痛评分从入院时的7分降到4分，检验结果还在等待。"
+          }
+        ],
+        "id": "9hPDndwaDT4gJeeq",
+        "role": "user"
+      },
+      {
+        "id": "xndp9H9MK4DLgsw1",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_HHcrl4KW4L7NJRmPVqwSrnkv",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "observation-a-bed3-7",
+                  "x": 1040,
+                  "y": 160,
+                  "w": 416,
+                  "h": 224,
+                  "text": "留观A区 · 3床\n• 因腹痛留观\n• 疼痛评分：入院7分 → 现4分\n• 检验结果待回报",
+                  "color": "#e2f5fc"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 7,
+              "created": [
+                {
+                  "id": "observation-a-bed3-7",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录留观A区3床腹痛减轻，疼痛评分由7分降至4分，检验结果待回报。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 8 | 0:00–0:00] 留观A区4床患者跌倒后留观，意识清楚，但起身不稳，需要协助活动并落实防跌倒措施。"
+          }
+        ],
+        "id": "0BqatyBfkEhg4TTz",
+        "role": "user"
+      },
+      {
+        "id": "GNJsrKJNVUFcs7YT",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_WcgHW0p5cJHCCXhAoOVyIfEq",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "observation-a-bed4-8",
+                  "x": 1040,
+                  "y": 448,
+                  "w": 416,
+                  "h": 224,
+                  "text": "留观A区 · 4床\n• 跌倒后留观，意识清楚\n• 起身不稳\n• 需协助活动\n• 落实防跌倒措施",
+                  "color": "#e2f5fc"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 8,
+              "created": [
+                {
+                  "id": "observation-a-bed4-8",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录4床意识清楚但起身不稳，需协助活动并落实防跌倒措施。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 9 | 0:00–0:00] A区4床的影像检查已经完成，报告尚未返回。"
+          }
+        ],
+        "id": "L2c75kUYBktEc5ai",
+        "role": "user"
+      },
+      {
+        "id": "dQLLDCa531cDem98",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-update_shapes",
+            "toolCallId": "call_ND0jcIJH58URKgaH2pEFr7as",
+            "state": "output-available",
+            "input": {
+              "updates": [
+                {
+                  "id": "observation-a-bed4-8",
+                  "patch": {
+                    "h": 272,
+                    "text": "留观A区 · 4床\n• 跌倒后留观，意识清楚\n• 起身不稳\n• 需协助活动\n• 落实防跌倒措施\n• 影像检查已完成，报告待回"
+                  }
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 9,
+              "created": [],
+              "updated": [
+                "observation-a-bed4-8"
+              ]
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已补充A区4床影像检查已完成、报告尚未返回。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 10 | 0:00–0:00] 留观B区5床患者因发热留观，目前体温38.2摄氏度，采样已经送检。"
+          }
+        ],
+        "id": "Yz1m21NDzIKhO4ki",
+        "role": "user"
+      },
+      {
+        "id": "7JFZrSCXEJGQVa7X",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_wBhHugQIHpsyndaQQ2wObJyV",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "observation-b-bed5-10",
+                  "x": 1040,
+                  "y": 784,
+                  "w": 416,
+                  "h": 208,
+                  "text": "留观B区 · 5床\n• 因发热留观\n• 当前体温：38.2℃\n• 采样已送检",
+                  "color": "#e2f5fc"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 10,
+              "created": [
+                {
+                  "id": "observation-b-bed5-10",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录留观B区5床发热、体温38.2℃，采样已送检。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 11 | 0:00–0:00] 留观B区6床患者脱水评估中，补液已经结束，下一班需要记录复评结果。"
+          }
+        ],
+        "id": "96CV93v4nwTNIY6C",
+        "role": "user"
+      },
+      {
+        "id": "LNFEBov1oXd5iLMo",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_1n1ydZp2Qs4R8HbJo325ZtEx",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "observation-b-bed6-11",
+                  "x": 1040,
+                  "y": 1056,
+                  "w": 416,
+                  "h": 208,
+                  "text": "留观B区 · 6床\n• 脱水评估中\n• 补液已结束\n• 下一班记录复评结果",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 11,
+              "created": [
+                {
+                  "id": "observation-b-bed6-11",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录B区6床补液结束、脱水评估中，下一班需记录复评结果。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 12 | 0:00–0:00] B区6床的家属已到达，可以协助沟通。"
+          }
+        ],
+        "id": "qOCvBhn98NEo6nIs",
+        "role": "user"
+      },
+      {
+        "id": "CbiEXJB91QaGckdM",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-update_shapes",
+            "toolCallId": "call_9k0BtMOhnVd4dCxcJlzjgdd9",
+            "state": "output-available",
+            "input": {
+              "updates": [
+                {
+                  "id": "observation-b-bed6-11",
+                  "patch": {
+                    "h": 240,
+                    "text": "留观B区 · 6床\n• 脱水评估中\n• 补液已结束\n• 下一班记录复评结果\n• 家属已到达，可协助沟通"
+                  }
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 12,
+              "created": [],
+              "updated": [
+                "observation-b-bed6-11"
+              ]
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已补充B区6床家属已到达，可协助沟通。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 13 | 0:00–0:00] 回到抢救区1床，刚才复测血氧饱和度已经升到96%，胸部影像报告仍在等待。"
+          }
+        ],
+        "id": "hPMkfE1knhj0xz2h",
+        "role": "user"
+      },
+      {
+        "id": "8Nbr4TpJsn2nszMc",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-update_shapes",
+            "toolCallId": "call_htGZ7GmRelJQhdpbAmAT56KO",
+            "state": "output-available",
+            "input": {
+              "updates": [
+                {
+                  "id": "resus-bed1-3",
+                  "patch": {
+                    "text": "抢救区 · 1床\n• 因呼吸困难留观\n• 血氧饱和度：93% → 复测96%\n• 正在持续监测"
+                  }
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 13,
+              "created": [],
+              "updated": [
+                "resus-bed1-3"
+              ]
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已更新1床复测血氧饱和度至96%，保留胸部影像报告待回提示。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 14 | 0:00–0:00] 再补充留观A区3床，检验结果已经回报，责任医生正在评估，腹痛评分仍为4分。"
+          }
+        ],
+        "id": "fiS27Tkdz3fVl7Ms",
+        "role": "user"
+      },
+      {
+        "id": "U0lb6TcrTraWUclY",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-update_shapes",
+            "toolCallId": "call_6EIhN5n5ikVtwVVa24trGRBS",
+            "state": "output-available",
+            "input": {
+              "updates": [
+                {
+                  "id": "observation-a-bed3-7",
+                  "patch": {
+                    "text": "留观A区 · 3床\n• 因腹痛留观\n• 疼痛评分：入院7分 → 现4分\n• 检验结果已回报\n• 责任医生正在评估"
+                  }
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 14,
+              "created": [],
+              "updated": [
+                "observation-a-bed3-7"
+              ]
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已更新A区3床检验结果已回报、责任医生正在评估，疼痛评分仍为4分。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 15 | 0:00–0:00] 留观B区5床刚刚复测体温为37.6摄氏度，采样结果仍未回报。"
+          }
+        ],
+        "id": "VrDoAHauuSqxUiMA",
+        "role": "user"
+      },
+      {
+        "id": "GgHk6qvJOdhV9Ioz",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-update_shapes",
+            "toolCallId": "call_BA5zSv8vh61rtBOPcK0Mprza",
+            "state": "output-available",
+            "input": {
+              "updates": [
+                {
+                  "id": "observation-b-bed5-10",
+                  "patch": {
+                    "text": "留观B区 · 5床\n• 因发热留观\n• 体温：38.2℃ → 复测37.6℃\n• 采样已送检，结果待回报"
+                  }
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 15,
+              "created": [],
+              "updated": [
+                "observation-b-bed5-10"
+              ]
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已更新B区5床复测体温为37.6℃，采样结果仍待回报。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 16 | 0:00–0:00] 抢救区2床家属已经联系上，预计稍后到达。"
+          }
+        ],
+        "id": "j4laC0wS5HgKZp1Z",
+        "role": "user"
+      },
+      {
+        "id": "MNObiwiCJy18nJWm",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-update_shapes",
+            "toolCallId": "call_DGuWuGxXcHxpPwHlwxQlZ63M",
+            "state": "output-available",
+            "input": {
+              "updates": [
+                {
+                  "id": "resus-bed2-followup-6",
+                  "patch": {
+                    "text": "2床 · 家属联系进展\n• 已联系上家属\n• 预计稍后到达"
+                  }
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 16,
+              "created": [],
+              "updated": [
+                "resus-bed2-followup-6"
+              ]
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已更新2床家属联系进展：已联系上，预计稍后到达。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 17 | 0:00–0:00] 最后做交接总结：下一班优先跟进抢救区1床影像结果、留观A区4床影像报告和留观B区5床采样结果。"
+          }
+        ],
+        "id": "mXLbAYVqenYPgPqV",
+        "role": "user"
+      },
+      {
+        "id": "vMKN5YhlV24en0AD",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_tgwAEGt5T0AKvIWC0gOw2g9H",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "priority-followup-17",
+                  "x": 80,
+                  "y": 1064,
+                  "w": 880,
+                  "h": 224,
+                  "text": "下一班 · 优先跟进\n① 抢救区1床：胸部影像结果，并通知责任医生\n② 留观A区4床：影像报告\n③ 留观B区5床：采样结果",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 17,
+              "created": [
+                {
+                  "id": "priority-followup-17",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已突出下一班优先跟进的三项待回结果。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 18 | 0:00–0:00] 请持续关注A区4床防跌倒、B区6床复评，以及抢救区2床家属到达情况。"
+          }
+        ],
+        "id": "VJFSqVrsqyiXtq51",
+        "role": "user"
+      },
+      {
+        "id": "oXlj5Lho588JkBJp",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_at21eg2P1nl4dR7INg0L5izA",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "ongoing-care-18",
+                  "x": 1504,
+                  "y": 1056,
+                  "w": 416,
+                  "h": 240,
+                  "text": "下一班 · 持续关注\n• A区4床：落实防跌倒措施\n• B区6床：复评并记录结果\n• 抢救区2床：家属到达情况",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 18,
+              "created": [
+                {
+                  "id": "ongoing-care-18",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已补充持续关注事项：4床防跌倒、6床复评记录及2床家属到达情况。",
+            "state": "done"
+          }
+        ]
+      },
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 19 | 0:00–0:00] 以上是本次交接，具体处置以责任医生的判断和医嘱为准。"
+          }
+        ],
+        "id": "FZr6Za3j8fLCVrai",
+        "role": "user"
+      },
+      {
+        "id": "ItwFZrtvxUm8svds",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_U0ZbOvY72wBMtQvF32SXIE0X",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "clinical-boundary-19",
+                  "x": 1504,
+                  "y": 784,
+                  "w": 416,
+                  "h": 208,
+                  "text": "交接结束 · 处置原则\n具体处置以责任医生的判断和医嘱为准。",
+                  "color": "#ffe9f0"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 19,
+              "created": [
+                {
+                  "id": "clinical-boundary-19",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已标明处置原则：具体处置以责任医生的判断和医嘱为准。",
+            "state": "done"
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "text": "白板无重叠或越框警告。我将在下方汇总最终状态、下一班任务和待确认事项，保留原有记录。已在原记录下方添加总结卡，汇总六床最终状态、下一班责任与时点、待回结果及风险。\n\n交接重点：优先追踪三项检查结果，持续落实防跌倒、复评记录及家属到达跟进；具体处置以责任医生判断和医嘱为准。",
+    "assistantMessages": [
+      {
+        "id": "StbAc1TkcpjrVa9J",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-get_board",
+            "toolCallId": "call_BPAKv7CP6tdaTV5428evQR1m",
+            "state": "output-available",
+            "input": {},
+            "output": {
+              "ok": true,
+              "revision": 19,
+              "count": 15,
+              "bounds": {
+                "x": 80,
+                "y": 64,
+                "w": 1840,
+                "h": 1232
+              },
+              "selection": [],
+              "shapes": [
+                {
+                  "id": "handover-title",
+                  "type": "text",
+                  "x": 80,
+                  "y": 64,
+                  "w": 880,
+                  "h": 72,
+                  "color": "#2b3038",
+                  "text": "急诊科护士交接班",
+                  "font": "sans",
+                  "fontSize": 48,
+                  "fontWeight": 700
+                },
+                {
+                  "id": "simulation-label",
+                  "type": "text",
+                  "x": 80,
+                  "y": 160,
+                  "w": 880,
+                  "h": 48,
+                  "color": "#ff7fa3",
+                  "text": "模拟病例 · 交接演练",
+                  "font": "sans",
+                  "fontSize": 26,
+                  "fontWeight": 500
+                },
+                {
+                  "id": "handover-agenda-2",
+                  "type": "note",
+                  "x": 80,
+                  "y": 248,
+                  "w": 416,
+                  "h": 192,
+                  "color": "#e2f5fc",
+                  "text": "交接范围\n• 抢救区\n• 留观A区\n• 留观B区"
+                },
+                {
+                  "id": "handover-order-2",
+                  "type": "note",
+                  "x": 544,
+                  "y": 248,
+                  "w": 416,
+                  "h": 192,
+                  "color": "#fff8d4",
+                  "text": "交接顺序\n① 各床位情况\n② 汇总下一班重点"
+                },
+                {
+                  "id": "resus-bed1-3",
+                  "type": "note",
+                  "x": 80,
+                  "y": 504,
+                  "w": 416,
+                  "h": 208,
+                  "color": "#e2f5fc",
+                  "text": "抢救区 · 1床\n• 因呼吸困难留观\n• 血氧饱和度：93% → 复测96%\n• 正在持续监测"
+                },
+                {
+                  "id": "resus-bed1-followup-4",
+                  "type": "note",
+                  "x": 544,
+                  "y": 504,
+                  "w": 416,
+                  "h": 208,
+                  "color": "#fff8d4",
+                  "text": "1床 · 下一班跟进\n• 胸部影像结果尚未回报\n• 跟进结果\n• 通知责任医生"
+                },
+                {
+                  "id": "resus-bed2-5",
+                  "type": "note",
+                  "x": 80,
+                  "y": 776,
+                  "w": 416,
+                  "h": 224,
+                  "color": "#e2f5fc",
+                  "text": "抢救区 · 2床\n• 因胸痛留观\n• 目前生命体征平稳\n• 第二次心电图已完成\n• 医生正在查看"
+                },
+                {
+                  "id": "resus-bed2-followup-6",
+                  "type": "note",
+                  "x": 544,
+                  "y": 776,
+                  "w": 416,
+                  "h": 224,
+                  "color": "#fff8d4",
+                  "text": "2床 · 家属联系进展\n• 已联系上家属\n• 预计稍后到达"
+                },
+                {
+                  "id": "observation-a-bed3-7",
+                  "type": "note",
+                  "x": 1040,
+                  "y": 160,
+                  "w": 416,
+                  "h": 224,
+                  "color": "#e2f5fc",
+                  "text": "留观A区 · 3床\n• 因腹痛留观\n• 疼痛评分：入院7分 → 现4分\n• 检验结果已回报\n• 责任医生正在评估"
+                },
+                {
+                  "id": "observation-a-bed4-8",
+                  "type": "note",
+                  "x": 1040,
+                  "y": 448,
+                  "w": 416,
+                  "h": 272,
+                  "color": "#e2f5fc",
+                  "text": "留观A区 · 4床\n• 跌倒后留观，意识清楚\n• 起身不稳\n• 需协助活动\n• 落实防跌倒措施\n• 影像检查已完成，报告待回"
+                },
+                {
+                  "id": "observation-b-bed5-10",
+                  "type": "note",
+                  "x": 1040,
+                  "y": 784,
+                  "w": 416,
+                  "h": 208,
+                  "color": "#e2f5fc",
+                  "text": "留观B区 · 5床\n• 因发热留观\n• 体温：38.2℃ → 复测37.6℃\n• 采样已送检，结果待回报"
+                },
+                {
+                  "id": "observation-b-bed6-11",
+                  "type": "note",
+                  "x": 1040,
+                  "y": 1056,
+                  "w": 416,
+                  "h": 240,
+                  "color": "#fff8d4",
+                  "text": "留观B区 · 6床\n• 脱水评估中\n• 补液已结束\n• 下一班记录复评结果\n• 家属已到达，可协助沟通"
+                },
+                {
+                  "id": "priority-followup-17",
+                  "type": "note",
+                  "x": 80,
+                  "y": 1064,
+                  "w": 880,
+                  "h": 224,
+                  "color": "#fff8d4",
+                  "text": "下一班 · 优先跟进\n① 抢救区1床：胸部影像结果，并通知责任医生\n② 留观A区4床：影像报告\n③ 留观B区5床：采样结果"
+                },
+                {
+                  "id": "ongoing-care-18",
+                  "type": "note",
+                  "x": 1504,
+                  "y": 1056,
+                  "w": 416,
+                  "h": 240,
+                  "color": "#fff8d4",
+                  "text": "下一班 · 持续关注\n• A区4床：落实防跌倒措施\n• B区6床：复评并记录结果\n• 抢救区2床：家属到达情况"
+                },
+                {
+                  "id": "clinical-boundary-19",
+                  "type": "note",
+                  "x": 1504,
+                  "y": 784,
+                  "w": 416,
+                  "h": 208,
+                  "color": "#ffe9f0",
+                  "text": "交接结束 · 处置原则\n具体处置以责任医生的判断和医嘱为准。"
+                }
+              ],
+              "omitted": 0,
+              "warnings": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "白板无重叠或越框警告。我将在下方汇总最终状态、下一班任务和待确认事项，保留原有记录。",
+            "state": "done"
+          },
+          {
+            "type": "tool-add_html_cards",
+            "toolCallId": "call_2aca8c16a32d42fdb5fbe2a54db22d65",
+            "state": "output-available",
+            "input": {
+              "cards": [
+                {
+                  "id": "handover-summary-20",
+                  "x": 80,
+                  "y": 1456,
+                  "w": 1840,
+                  "h": 1056,
+                  "title": "急诊护理交接｜模拟病例总结",
+                  "html": "<div style=\"font-family:sans-serif;color:#2b3038;padding:32px;font-size:19px;line-height:1.5;box-sizing:border-box;\"><div style=\"font-size:34px;font-weight:700;\">急诊护理交接｜模拟病例总结</div><div style=\"margin-top:8px;\">目的：汇总抢救区、留观A区及留观B区六床患者的最终状态，明确下一班跟进重点。</div><div style=\"margin-top:18px;padding:12px 16px;background:#fff8d4;border-left:6px solid #f7de4b;\"><b>核心交接重点：</b>优先追踪1床胸部影像、A区4床影像及B区5床采样结果；持续落实防跌倒、复评记录和家属到达跟进。</div><h2 style=\"font-size:23px;margin:20px 0 8px;color:#00a2e1;\">最终状态与下一班行动</h2><table style=\"width:100%;border-collapse:collapse;table-layout:fixed;font-size:18px;\"><thead><tr style=\"background:#e2f5fc;text-align:left;\"><th style=\"padding:10px;width:10%;border-bottom:2px solid #00a2e1;\">区域／床位</th><th style=\"padding:10px;width:34%;border-bottom:2px solid #00a2e1;\">交接时最终状态</th><th style=\"padding:10px;width:30%;border-bottom:2px solid #00a2e1;\">行动／跟进事项</th><th style=\"padding:10px;width:12%;border-bottom:2px solid #00a2e1;\">责任角色</th><th style=\"padding:10px;width:14%;border-bottom:2px solid #00a2e1;\">时点</th></tr></thead><tbody><tr><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">抢救区1床</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">呼吸困难留观；血氧饱和度93% → 96%；持续监测；胸部影像待回。</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">优先跟进胸部影像结果，并通知责任医生。</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">下一班护士</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">下一班优先</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">抢救区2床</td><td style=\"padding:10px;\">胸痛留观；生命体征平稳；第二次心电图已完成，医生正在查看；家属已联系上。</td><td style=\"padding:10px;\">留意家属到达情况。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">持续关注；家属预计稍后到达</td></tr><tr><td style=\"padding:10px;\">A区3床</td><td style=\"padding:10px;\">腹痛评分7分 → 4分；检验已回报，责任医生正在评估。</td><td style=\"padding:10px;\">医生评估进行中；未另指定下一班任务。</td><td style=\"padding:10px;\">责任医生<br>（评估中）</td><td style=\"padding:10px;\">完成时间未说明</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">A区4床</td><td style=\"padding:10px;\">跌倒后留观，意识清楚、起身不稳；影像已完成，报告待回。</td><td style=\"padding:10px;\">优先跟进影像报告；协助活动，落实防跌倒措施。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">报告优先跟进；防跌倒持续落实</td></tr><tr><td style=\"padding:10px;\">B区5床</td><td style=\"padding:10px;\">发热留观；体温38.2℃ → 37.6℃；采样已送检，结果待回。</td><td style=\"padding:10px;\">优先跟进采样结果。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">下一班优先</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">B区6床</td><td style=\"padding:10px;\">脱水评估中；补液已结束；家属已到达，可协助沟通。</td><td style=\"padding:10px;\">复评并记录结果。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">下一班</td></tr></tbody></table><div style=\"font-size:16px;margin-top:8px;\">责任角色按交接内容归纳；具体接班人员及钟点截止时间未提供。</div><div style=\"display:flex;gap:24px;margin-top:18px;\"><div style=\"flex:1;background:#e2f5fc;padding:14px 18px;\"><b style=\"font-size:22px;\">交接进程（无具体时刻）</b><div style=\"margin-top:8px;\">逐床交接 → 状态更新 → 下一班重点汇总</div><div style=\"margin-top:6px;\">更新：1床血氧升至96%；3床检验回报；5床体温降至37.6℃；2床家属已联系上。</div></div><div style=\"flex:1;background:#ffe9f0;padding:14px 18px;\"><b style=\"font-size:22px;\">未决事项与风险</b><div style=\"margin-top:8px;\">三项检查结果仍待回；A区4床存在跌倒风险；B区6床复评结果待记录；2床家属尚待到达。</div><div style=\"margin-top:6px;\">3床医生评估结论、2床心电图查看结论未在交接中说明。</div></div></div><div style=\"margin-top:18px;padding:12px 16px;border-left:6px solid #ff7fa3;background:#ffe9f0;\"><b>模拟病例 · 处置边界：</b>具体处置以责任医生的判断和医嘱为准。</div></div>",
+                  "color": "#00a2e1"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 20,
+              "created": [
+                {
+                  "id": "handover-summary-20",
+                  "type": "html"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已在原记录下方添加总结卡，汇总六床最终状态、下一班责任与时点、待回结果及风险。\n\n交接重点：优先追踪三项检查结果，持续落实防跌倒、复评记录及家属到达跟进；具体处置以责任医生判断和医嘱为准。",
+            "state": "done"
+          }
+        ]
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "get_board",
+      "state": "output-available",
+      "input": {},
+      "output": {
+        "ok": true,
+        "revision": 19,
+        "count": 15,
+        "bounds": {
+          "x": 80,
+          "y": 64,
+          "w": 1840,
+          "h": 1232
+        },
+        "selection": [],
+        "shapes": [
+          {
+            "id": "handover-title",
+            "type": "text",
+            "x": 80,
+            "y": 64,
+            "w": 880,
+            "h": 72,
+            "color": "#2b3038",
+            "text": "急诊科护士交接班",
+            "font": "sans",
+            "fontSize": 48,
+            "fontWeight": 700
+          },
+          {
+            "id": "simulation-label",
+            "type": "text",
+            "x": 80,
+            "y": 160,
+            "w": 880,
+            "h": 48,
+            "color": "#ff7fa3",
+            "text": "模拟病例 · 交接演练",
+            "font": "sans",
+            "fontSize": 26,
+            "fontWeight": 500
+          },
+          {
+            "id": "handover-agenda-2",
+            "type": "note",
+            "x": 80,
+            "y": 248,
+            "w": 416,
+            "h": 192,
+            "color": "#e2f5fc",
+            "text": "交接范围\n• 抢救区\n• 留观A区\n• 留观B区"
+          },
+          {
+            "id": "handover-order-2",
+            "type": "note",
+            "x": 544,
+            "y": 248,
+            "w": 416,
+            "h": 192,
+            "color": "#fff8d4",
+            "text": "交接顺序\n① 各床位情况\n② 汇总下一班重点"
+          },
+          {
+            "id": "resus-bed1-3",
+            "type": "note",
+            "x": 80,
+            "y": 504,
+            "w": 416,
+            "h": 208,
+            "color": "#e2f5fc",
+            "text": "抢救区 · 1床\n• 因呼吸困难留观\n• 血氧饱和度：93% → 复测96%\n• 正在持续监测"
+          },
+          {
+            "id": "resus-bed1-followup-4",
+            "type": "note",
+            "x": 544,
+            "y": 504,
+            "w": 416,
+            "h": 208,
+            "color": "#fff8d4",
+            "text": "1床 · 下一班跟进\n• 胸部影像结果尚未回报\n• 跟进结果\n• 通知责任医生"
+          },
+          {
+            "id": "resus-bed2-5",
+            "type": "note",
+            "x": 80,
+            "y": 776,
+            "w": 416,
+            "h": 224,
+            "color": "#e2f5fc",
+            "text": "抢救区 · 2床\n• 因胸痛留观\n• 目前生命体征平稳\n• 第二次心电图已完成\n• 医生正在查看"
+          },
+          {
+            "id": "resus-bed2-followup-6",
+            "type": "note",
+            "x": 544,
+            "y": 776,
+            "w": 416,
+            "h": 224,
+            "color": "#fff8d4",
+            "text": "2床 · 家属联系进展\n• 已联系上家属\n• 预计稍后到达"
+          },
+          {
+            "id": "observation-a-bed3-7",
+            "type": "note",
+            "x": 1040,
+            "y": 160,
+            "w": 416,
+            "h": 224,
+            "color": "#e2f5fc",
+            "text": "留观A区 · 3床\n• 因腹痛留观\n• 疼痛评分：入院7分 → 现4分\n• 检验结果已回报\n• 责任医生正在评估"
+          },
+          {
+            "id": "observation-a-bed4-8",
+            "type": "note",
+            "x": 1040,
+            "y": 448,
+            "w": 416,
+            "h": 272,
+            "color": "#e2f5fc",
+            "text": "留观A区 · 4床\n• 跌倒后留观，意识清楚\n• 起身不稳\n• 需协助活动\n• 落实防跌倒措施\n• 影像检查已完成，报告待回"
+          },
+          {
+            "id": "observation-b-bed5-10",
+            "type": "note",
+            "x": 1040,
+            "y": 784,
+            "w": 416,
+            "h": 208,
+            "color": "#e2f5fc",
+            "text": "留观B区 · 5床\n• 因发热留观\n• 体温：38.2℃ → 复测37.6℃\n• 采样已送检，结果待回报"
+          },
+          {
+            "id": "observation-b-bed6-11",
+            "type": "note",
+            "x": 1040,
+            "y": 1056,
+            "w": 416,
+            "h": 240,
+            "color": "#fff8d4",
+            "text": "留观B区 · 6床\n• 脱水评估中\n• 补液已结束\n• 下一班记录复评结果\n• 家属已到达，可协助沟通"
+          },
+          {
+            "id": "priority-followup-17",
+            "type": "note",
+            "x": 80,
+            "y": 1064,
+            "w": 880,
+            "h": 224,
+            "color": "#fff8d4",
+            "text": "下一班 · 优先跟进\n① 抢救区1床：胸部影像结果，并通知责任医生\n② 留观A区4床：影像报告\n③ 留观B区5床：采样结果"
+          },
+          {
+            "id": "ongoing-care-18",
+            "type": "note",
+            "x": 1504,
+            "y": 1056,
+            "w": 416,
+            "h": 240,
+            "color": "#fff8d4",
+            "text": "下一班 · 持续关注\n• A区4床：落实防跌倒措施\n• B区6床：复评并记录结果\n• 抢救区2床：家属到达情况"
+          },
+          {
+            "id": "clinical-boundary-19",
+            "type": "note",
+            "x": 1504,
+            "y": 784,
+            "w": 416,
+            "h": 208,
+            "color": "#ffe9f0",
+            "text": "交接结束 · 处置原则\n具体处置以责任医生的判断和医嘱为准。"
+          }
+        ],
+        "omitted": 0,
+        "warnings": []
+      },
+      "failed": false
+    },
+    {
+      "name": "add_html_cards",
+      "state": "output-available",
+      "input": {
+        "cards": [
+          {
+            "id": "handover-summary-20",
+            "x": 80,
+            "y": 1456,
+            "w": 1840,
+            "h": 1056,
+            "title": "急诊护理交接｜模拟病例总结",
+            "html": "<div style=\"font-family:sans-serif;color:#2b3038;padding:32px;font-size:19px;line-height:1.5;box-sizing:border-box;\"><div style=\"font-size:34px;font-weight:700;\">急诊护理交接｜模拟病例总结</div><div style=\"margin-top:8px;\">目的：汇总抢救区、留观A区及留观B区六床患者的最终状态，明确下一班跟进重点。</div><div style=\"margin-top:18px;padding:12px 16px;background:#fff8d4;border-left:6px solid #f7de4b;\"><b>核心交接重点：</b>优先追踪1床胸部影像、A区4床影像及B区5床采样结果；持续落实防跌倒、复评记录和家属到达跟进。</div><h2 style=\"font-size:23px;margin:20px 0 8px;color:#00a2e1;\">最终状态与下一班行动</h2><table style=\"width:100%;border-collapse:collapse;table-layout:fixed;font-size:18px;\"><thead><tr style=\"background:#e2f5fc;text-align:left;\"><th style=\"padding:10px;width:10%;border-bottom:2px solid #00a2e1;\">区域／床位</th><th style=\"padding:10px;width:34%;border-bottom:2px solid #00a2e1;\">交接时最终状态</th><th style=\"padding:10px;width:30%;border-bottom:2px solid #00a2e1;\">行动／跟进事项</th><th style=\"padding:10px;width:12%;border-bottom:2px solid #00a2e1;\">责任角色</th><th style=\"padding:10px;width:14%;border-bottom:2px solid #00a2e1;\">时点</th></tr></thead><tbody><tr><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">抢救区1床</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">呼吸困难留观；血氧饱和度93% → 96%；持续监测；胸部影像待回。</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">优先跟进胸部影像结果，并通知责任医生。</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">下一班护士</td><td style=\"padding:10px;border-bottom:1px solid #00a2e1;\">下一班优先</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">抢救区2床</td><td style=\"padding:10px;\">胸痛留观；生命体征平稳；第二次心电图已完成，医生正在查看；家属已联系上。</td><td style=\"padding:10px;\">留意家属到达情况。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">持续关注；家属预计稍后到达</td></tr><tr><td style=\"padding:10px;\">A区3床</td><td style=\"padding:10px;\">腹痛评分7分 → 4分；检验已回报，责任医生正在评估。</td><td style=\"padding:10px;\">医生评估进行中；未另指定下一班任务。</td><td style=\"padding:10px;\">责任医生<br>（评估中）</td><td style=\"padding:10px;\">完成时间未说明</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">A区4床</td><td style=\"padding:10px;\">跌倒后留观，意识清楚、起身不稳；影像已完成，报告待回。</td><td style=\"padding:10px;\">优先跟进影像报告；协助活动，落实防跌倒措施。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">报告优先跟进；防跌倒持续落实</td></tr><tr><td style=\"padding:10px;\">B区5床</td><td style=\"padding:10px;\">发热留观；体温38.2℃ → 37.6℃；采样已送检，结果待回。</td><td style=\"padding:10px;\">优先跟进采样结果。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">下一班优先</td></tr><tr style=\"background:#f3f5f4;\"><td style=\"padding:10px;\">B区6床</td><td style=\"padding:10px;\">脱水评估中；补液已结束；家属已到达，可协助沟通。</td><td style=\"padding:10px;\">复评并记录结果。</td><td style=\"padding:10px;\">下一班护士</td><td style=\"padding:10px;\">下一班</td></tr></tbody></table><div style=\"font-size:16px;margin-top:8px;\">责任角色按交接内容归纳；具体接班人员及钟点截止时间未提供。</div><div style=\"display:flex;gap:24px;margin-top:18px;\"><div style=\"flex:1;background:#e2f5fc;padding:14px 18px;\"><b style=\"font-size:22px;\">交接进程（无具体时刻）</b><div style=\"margin-top:8px;\">逐床交接 → 状态更新 → 下一班重点汇总</div><div style=\"margin-top:6px;\">更新：1床血氧升至96%；3床检验回报；5床体温降至37.6℃；2床家属已联系上。</div></div><div style=\"flex:1;background:#ffe9f0;padding:14px 18px;\"><b style=\"font-size:22px;\">未决事项与风险</b><div style=\"margin-top:8px;\">三项检查结果仍待回；A区4床存在跌倒风险；B区6床复评结果待记录；2床家属尚待到达。</div><div style=\"margin-top:6px;\">3床医生评估结论、2床心电图查看结论未在交接中说明。</div></div></div><div style=\"margin-top:18px;padding:12px 16px;border-left:6px solid #ff7fa3;background:#ffe9f0;\"><b>模拟病例 · 处置边界：</b>具体处置以责任医生的判断和医嘱为准。</div></div>",
+            "color": "#00a2e1"
+          }
+        ]
+      },
+      "output": {
+        "ok": true,
+        "revision": 20,
+        "created": [
+          {
+            "id": "handover-summary-20",
+            "type": "html"
+          }
+        ],
+        "updated": []
+      },
+      "failed": false
+    }
+  ],
+  "status": "ready",
+  "revisions": {
+    "before": 19,
+    "after": 20,
+    "tool": [
+      19,
+      20
+    ]
+  }
+}

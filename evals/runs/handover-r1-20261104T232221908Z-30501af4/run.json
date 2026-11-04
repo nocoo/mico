@@ -1,0 +1,12 @@
+{
+  "round": 1,
+  "startedAt": "2026-11-04T23:22:21.908Z",
+  "canvasName": "急诊交接 · 第1轮 · 20261104T232221908Z",
+  "fixedText": "evals/cases/c11-er-handover.zh.txt",
+  "segments": 19,
+  "summaryRequested": true,
+  "turns": 20,
+  "status": "success",
+  "canvasId": "50fc2c77-4c8b-4941-85e5-9564b1146b5d",
+  "finalBoardRevision": 20
+}

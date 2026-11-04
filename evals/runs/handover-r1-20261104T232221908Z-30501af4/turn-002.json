@@ -1,0 +1,204 @@
+{
+  "index": 2,
+  "startedAt": "2026-11-04T23:22:26.812Z",
+  "endedAt": "2026-11-04T23:22:32.933Z",
+  "elapsedMs": 6119,
+  "timedOut": false,
+  "exactInput": {
+    "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 2 | 0:00–0:00] 今天需要分别交接抢救区、留观A区和留观B区，先说各床位的情况，再汇总下一班的重点。",
+    "body": {
+      "selection": [],
+      "mode": "lecture",
+      "canvasId": "50fc2c77-4c8b-4941-85e5-9564b1146b5d"
+    },
+    "conversationBefore": [
+      {
+        "parts": [
+          {
+            "type": "text",
+            "text": "[Lecture | 急诊护理交接 · 急诊交接 | segment 1 | 0:00–0:00] 早上好，现在进行急诊科护士交接班，本次内容均为模拟病例。"
+          }
+        ],
+        "id": "DdreStZ9SuJtawLs",
+        "role": "user"
+      },
+      {
+        "id": "mx7Zf7FeR5ZG7QQd",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_texts",
+            "toolCallId": "call_B2KtvohUpncOHGbgjtZXjSyS",
+            "state": "output-available",
+            "input": {
+              "texts": [
+                {
+                  "id": "handover-title",
+                  "x": 80,
+                  "y": 64,
+                  "text": "急诊科护士交接班",
+                  "w": 880,
+                  "h": 72,
+                  "fontSize": 48,
+                  "fontWeight": 700
+                },
+                {
+                  "id": "simulation-label",
+                  "x": 80,
+                  "y": 160,
+                  "text": "模拟病例 · 交接演练",
+                  "w": 880,
+                  "h": 48,
+                  "color": "#ff7fa3",
+                  "fontSize": 26
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 1,
+              "created": [
+                {
+                  "id": "handover-title",
+                  "type": "text"
+                },
+                {
+                  "id": "simulation-label",
+                  "type": "text"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已建立交接班标题，并标明本次均为模拟病例。",
+            "state": "done"
+          }
+        ]
+      }
+    ]
+  },
+  "output": {
+    "text": "已记录三个交接区域，并明确先交接床位情况，再汇总下一班重点。",
+    "assistantMessages": [
+      {
+        "id": "4JiY190D2y4k5GsE",
+        "role": "assistant",
+        "parts": [
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "tool-add_notes",
+            "toolCallId": "call_bbPLsGuZfbZVvxW3JlRjhDpR",
+            "state": "output-available",
+            "input": {
+              "notes": [
+                {
+                  "id": "handover-agenda-2",
+                  "x": 80,
+                  "y": 248,
+                  "w": 416,
+                  "h": 192,
+                  "text": "交接范围\n• 抢救区\n• 留观A区\n• 留观B区",
+                  "color": "#e2f5fc"
+                },
+                {
+                  "id": "handover-order-2",
+                  "x": 544,
+                  "y": 248,
+                  "w": 416,
+                  "h": 192,
+                  "text": "交接顺序\n① 各床位情况\n② 汇总下一班重点",
+                  "color": "#fff8d4"
+                }
+              ]
+            },
+            "output": {
+              "ok": true,
+              "revision": 2,
+              "created": [
+                {
+                  "id": "handover-agenda-2",
+                  "type": "note"
+                },
+                {
+                  "id": "handover-order-2",
+                  "type": "note"
+                }
+              ],
+              "updated": []
+            }
+          },
+          {
+            "type": "step-start"
+          },
+          {
+            "type": "text",
+            "text": "已记录三个交接区域，并明确先交接床位情况，再汇总下一班重点。",
+            "state": "done"
+          }
+        ]
+      }
+    ]
+  },
+  "tools": [
+    {
+      "name": "add_notes",
+      "state": "output-available",
+      "input": {
+        "notes": [
+          {
+            "id": "handover-agenda-2",
+            "x": 80,
+            "y": 248,
+            "w": 416,
+            "h": 192,
+            "text": "交接范围\n• 抢救区\n• 留观A区\n• 留观B区",
+            "color": "#e2f5fc"
+          },
+          {
+            "id": "handover-order-2",
+            "x": 544,
+            "y": 248,
+            "w": 416,
+            "h": 192,
+            "text": "交接顺序\n① 各床位情况\n② 汇总下一班重点",
+            "color": "#fff8d4"
+          }
+        ]
+      },
+      "output": {
+        "ok": true,
+        "revision": 2,
+        "created": [
+          {
+            "id": "handover-agenda-2",
+            "type": "note"
+          },
+          {
+            "id": "handover-order-2",
+            "type": "note"
+          }
+        ],
+        "updated": []
+      },
+      "failed": false
+    }
+  ],
+  "status": "ready",
+  "revisions": {
+    "before": 1,
+    "after": 2,
+    "tool": [
+      2
+    ]
+  }
+}
