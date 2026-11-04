@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { board, resetBoard } from './support'
 
 const AI_BUTTON = 'AI assistant'
+const COMPOSER = 'Message the assistant'
 
 test.beforeEach(async ({ page, request }) => {
 	await resetBoard(request, [])
@@ -9,7 +10,7 @@ test.beforeEach(async ({ page, request }) => {
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 })
 
-test('the AI panel sends a message and answers in the chat log', async ({ page }) => {
+test('the AI panel streams a tool loop and draws on the board', async ({ page, request }) => {
 	const trigger = page.getByRole('button', { name: AI_BUTTON, exact: true })
 	await expect(trigger).toHaveAttribute('aria-expanded', 'false')
 	await trigger.click()
@@ -17,34 +18,124 @@ test('the AI panel sends a message and answers in the chat log', async ({ page }
 
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
-	await expect(panel.getByRole('tab', { name: 'Chat' })).toHaveAttribute('aria-selected', 'true')
-	await expect(panel.locator('.ai-message.assistant .ai-message-text')).toHaveCount(1)
+	await expect(panel.getByText('Draw a lesson with Mico')).toBeVisible()
 
-	const composer = panel.getByRole('textbox', { name: 'Message the assistant' })
-	await composer.fill('Sketch a login flow')
+	const composer = panel.getByRole('textbox', { name: COMPOSER })
+	await composer.fill('Draw projectile motion')
 	await composer.press('Enter')
-
-	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveText('Sketch a login flow')
-	await expect(panel.locator('.ai-typing')).toBeVisible()
-	await expect(panel.locator('.ai-message.assistant .ai-message-text')).toHaveCount(2)
-	await expect(panel.locator('.ai-message.assistant .ai-message-text').last()).toContainText(
-		'Sketch a login flow',
+	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveText(
+		'Draw projectile motion',
 	)
-	await expect(panel.locator('.ai-typing')).toHaveCount(0)
-	await expect(composer).toHaveValue('')
 
-	await composer.fill('Group the field and the button into a frame')
-	await panel.getByRole('button', { name: 'Send message' }).click()
-	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveCount(2)
-	await expect(panel.locator('.ai-message.assistant .ai-message-text')).toHaveCount(3)
+	await expect(panel.locator('.ai-tool').first()).toBeVisible()
+	await expect(panel.getByText('The diagram is ready', { exact: false })).toBeVisible({
+		timeout: 15_000,
+	})
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
+	const shapes = (await board(request)).shapes
+	expect(shapes.some((shape) => shape.id === 'mock-1-title' && shape.type === 'text')).toBe(true)
+	expect(shapes.some((shape) => shape.id === 'mock-1-flow' && shape.type === 'connector')).toBe(
+		true,
+	)
+	await expect(panel.locator('.ai-tool.done').first()).toBeVisible()
 
 	await page.keyboard.press('Escape')
 	await expect(panel).toBeHidden()
-	await expect(trigger).toHaveAttribute('aria-expanded', 'false')
 	await expect(trigger).toBeFocused()
 
 	await trigger.click()
-	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveCount(2)
+	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveText(
+		'Draw projectile motion',
+	)
+})
+
+test('a second turn keeps the conversation and the tool history valid', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const composer = panel.getByRole('textbox', { name: COMPOSER })
+	await composer.fill('Draw projectile motion')
+	await composer.press('Enter')
+	await expect(panel.getByRole('button', { name: 'Send message' })).toBeVisible({
+		timeout: 15_000,
+	})
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
+
+	await composer.fill('Now add the same diagram again')
+	await composer.press('Enter')
+	await expect(panel.getByRole('button', { name: 'Send message' })).toBeVisible({
+		timeout: 15_000,
+	})
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(16)
+	await expect(panel.locator('.ai-message.assistant')).toHaveCount(2)
+	await expect(panel.locator('.ai-tool.failed')).toHaveCount(0)
+})
+
+test('quick prompts draw without typing', async ({ page, request }) => {
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await panel.getByRole('button', { name: 'Projectile motion' }).click()
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
+	await expect(panel.locator('.ai-message.user .ai-message-text')).toContainText(
+		'projectile motion',
+	)
+})
+
+test('a URL prompt opens the panel and starts the lesson', async ({ page, request }) => {
+	await page.goto('/?ai=Explain%20and%20draw%20projectile%20motion')
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await expect(panel).toBeVisible()
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
+})
+
+test('the current marquee selection is attached to the request', async ({ page, request }) => {
+	await resetBoard(request, [
+		{
+			id: 'selected',
+			type: 'rectangle',
+			x: 120,
+			y: 120,
+			w: 180,
+			h: 80,
+			color: '#00a2e1',
+			text: 'Selected',
+		},
+	])
+	await page.reload()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await page.locator('[data-shape-id="selected"]').first().click()
+
+	let sent: { selection?: string[] } | undefined
+	await page.route('**/api/ai/chat', async (route) => {
+		sent = route.request().postDataJSON() as { selection?: string[] }
+		await route.continue()
+	})
+
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await expect(panel.getByText('1 selected object attached')).toBeVisible()
+	await panel.getByRole('textbox', { name: COMPOSER }).fill('Extend the selected object')
+	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
+
+	await expect.poll(() => sent?.selection).toEqual(['selected'])
+})
+
+test('a failed gateway response shows an actionable error', async ({ page }) => {
+	await page.route('**/api/ai/chat', (route) =>
+		route.fulfill({
+			status: 500,
+			contentType: 'application/json',
+			body: JSON.stringify({ error: 'INTERNAL_ERROR', message: 'gateway down' }),
+		}),
+	)
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await panel.getByRole('textbox', { name: COMPOSER }).fill('Draw something')
+	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
+	await expect(panel.getByRole('alert')).toContainText('Assistant unavailable')
+	await expect(panel.getByRole('alert')).toContainText('127.0.0.1:3425')
 })
 
 test('the audio tab fills the dialog with a recording microphone', async ({ page }) => {
@@ -83,7 +174,7 @@ test('the audio tab fills the dialog with a recording microphone', async ({ page
 	expect(compactBox.height).toBeGreaterThan(70)
 
 	await panel.getByRole('tab', { name: 'Chat' }).click()
-	const shortComposer = panel.getByRole('textbox', { name: 'Message the assistant' })
+	const shortComposer = panel.getByRole('textbox', { name: COMPOSER })
 	await expect(shortComposer).toBeVisible()
 	const composerBox = await shortComposer.boundingBox()
 	if (!composerBox) throw new Error('Missing compact composer')
@@ -112,7 +203,7 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
-	await expect(panel.getByRole('textbox', { name: 'Message the assistant' })).toBeFocused()
+	await expect(panel.getByRole('textbox', { name: COMPOSER })).toBeFocused()
 
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
 	await page.mouse.move(320, 320)
@@ -129,7 +220,7 @@ test('Escape closes the panel when keyboard focus is back in the composer', asyn
 	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
-	await panel.getByRole('textbox', { name: 'Message the assistant' }).focus()
+	await panel.getByRole('textbox', { name: COMPOSER }).focus()
 	await page.keyboard.press('Escape')
 	await expect(panel).toBeHidden()
 })
@@ -179,7 +270,7 @@ test('the AI panel replaces the narrow properties sheet instead of hiding its co
 
 	const composer = page
 		.getByRole('region', { name: AI_BUTTON })
-		.getByRole('textbox', { name: 'Message the assistant' })
+		.getByRole('textbox', { name: COMPOSER })
 	await composer.fill('Sketch a login flow')
 	await expect(composer).toHaveValue('Sketch a login flow')
 })

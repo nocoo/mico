@@ -2,7 +2,11 @@
 
 ## Unreleased
 
-- Add a top-right AI button and assistant panel with Chat and Audio tabs: a local simulated chat transcript and a full-panel recording microphone placeholder, both interface-only.
+- Add a top-right AI button and assistant panel with Chat and Audio tabs.
+- Connect Chat to the local Magpie gateway through the Vercel AI SDK with streaming responses, a stepwise canvas-agent prompt and a mock model for deterministic tests.
+- Give the assistant canvas tools for text, notes, boxes, lines, connectors, frames, strokes, HTML cards, updates and deletes; every call writes and broadcasts immediately.
+- Attach the current marquee selection to each AI request as primary context, add quick lesson prompts and a `?ai=` URL trigger for automation.
+- Keep the Audio tab as a recording microphone interface placeholder.
 - Add multiple saved canvases with names, timestamps and generated SVG previews; the top-left Canvases panel creates, switches, renames and deletes them.
 - Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.
 - Add full canvas management to the agent API and CLI, including per-canvas operations, `--canvas` targeting, state snapshots and WebSocket canvas events.

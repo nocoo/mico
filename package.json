@@ -16,19 +16,24 @@
 		"check": "biome check . && tsc --noEmit",
 		"test": "node --test src/**/*.test.ts scripts/*.test.ts",
 		"test:unit": "node --test src/web/*.test.ts src/server/store.test.ts",
-		"test:api": "node --test src/server/api.test.ts src/server/index.test.ts",
+		"test:api": "node --test src/server/api.test.ts src/server/index.test.ts src/server/ai.test.ts",
 		"test:cli": "node --test src/cli/index.test.ts",
 		"test:examples": "node --test scripts/examples.test.ts",
 		"test:browser": "playwright test"
 	},
 	"dependencies": {
+		"@ai-sdk/openai-compatible": "3.0.80",
+		"@ai-sdk/react": "4.0.159",
 		"@radix-ui/themes": "3.3.0",
+		"ai": "7.0.155",
 		"lucide-react": "1.62.0",
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",
-		"ws": "^8.22.0"
+		"ws": "^8.22.0",
+		"zod": "4.6.7"
 	},
 	"devDependencies": {
+		"@ai-sdk/provider": "4.0.34",
 		"@biomejs/biome": "^2.6.3",
 		"@playwright/test": "1.64.1",
 		"@types/node": "^26.6.5",

@@ -3,13 +3,18 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createServer } from 'vite'
+import { createMockAiModel } from '../src/server/aiMock.ts'
 import { createDaemon } from '../src/server/index.ts'
 import { BROWSER_PORT } from '../src/shared/config.ts'
 import viteConfig from '../vite.config.ts'
 
 const directory = mkdtempSync(join(tmpdir(), 'mico-browser-'))
 const port = BROWSER_PORT + 30000
-const daemon = createDaemon({ port, dbPath: join(directory, 'board.sqlite') })
+const daemon = createDaemon({
+	port,
+	dbPath: join(directory, 'board.sqlite'),
+	aiModel: process.env.MICO_AI_MOCK === '1' ? createMockAiModel() : undefined,
+})
 const vite = await createServer({
 	...viteConfig,
 	configFile: false,

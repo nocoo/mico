@@ -40,7 +40,19 @@ Dragging an object snaps its origin to the visible 16px grid and aligns left/rig
 
 The interface uses a single iPhone 5C-inspired candy palette: vivid shell colours for accents and outlines, readable companion tones for typographic text, and a pale tint family for notes, shape fills, frames and the canvas background. Every palette value lives in `src/web/design.ts` and is exposed as a CSS custom property, so components and stylesheets share one source of truth. The canvas has a light neutral background and a blueprint grid: a solid line every 64px with four dashed 16px cells between solid lines at 100% zoom. Solid and dashed lines share the same color and width; the grid follows world pan and zoom, and dashed detail fades at low zoom to avoid moiré.
 
-The identity panel holds the logo, the Canvases button and a breathing connection light. A separate AI button in the top-right corner opens an assistant panel docked in that corner. The panel has Chat and Audio tabs: Chat keeps a local transcript and answers each prompt with a simulated reply, and Audio fills the panel with a recording microphone, ripple rings and a timer. Both tabs are interface previews; no model provider or microphone capture is connected yet. The unified bottom dock is fixed in screen space, and the selected object's properties open in a right-side panel; narrow viewports move that panel above the dock and wrap the dock controls instead of clipping them. Canvas pan and zoom never resize or move these panels. Controls use fixed 40px height, 20px icons and 14px text on a four-pixel spacing system: dock padding, gaps, dividers, property columns and selection insets are all multiples of four. The dock sizes to its content and keeps a four-pixel gap between buttons. Lucide icons provide every functional glyph, with hover-only shortcut hints; toolbar arrow keys move focus and Enter selects a tool.
+The identity panel holds the logo, the Canvases button and a breathing connection light. A separate AI button in the top-right corner opens an assistant panel docked in that corner. The Chat tab streams from the local Magpie gateway through the Vercel AI SDK, and every message is a canvas turn: the assistant reads the board and the current marquee selection, calls drawing tools, and the board updates live while the reply streams. Instructions require incremental work — start with a title and the core objects, inspect the board, then adjust and extend instead of dumping one batch — so a science lesson appears step by step. An empty board offers quick lesson prompts, and `?ai=<prompt>` opens the panel and sends that prompt immediately for scripted testing. The Audio tab remains an interface-only microphone with ripple rings and a timer; it does not capture audio yet. The unified bottom dock is fixed in screen space, and the selected object's properties open in a right-side panel; narrow viewports move that panel above the dock and wrap the dock controls instead of clipping them. Canvas pan and zoom never resize or move these panels. Controls use fixed 40px height, 20px icons and 14px text on a four-pixel spacing system: dock padding, gaps, dividers, property columns and selection insets are all multiples of four. The dock sizes to its content and keeps a four-pixel gap between buttons. Lucide icons provide every functional glyph, with hover-only shortcut hints; toolbar arrow keys move focus and Enter selects a tool.
+
+## AI gateway
+
+The assistant uses the OpenAI-compatible Chat Completions API. Configuration is server-side only:
+
+| Variable          | Default                    | Purpose                                               |
+| ----------------- | -------------------------- | ----------------------------------------------------- |
+| `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | Gateway URL, including `/v1`.                         |
+| `MAGPIE_MODEL`    | `auto/gpt-6-luna`          | Model id sent to the gateway.                         |
+| `MAGPIE_API_KEY`  | `magpie`                   | Bearer token; set it to an empty string to send none. |
+
+The daemon owns the key and the browser never receives it. If the gateway is unreachable, the panel shows an actionable error and a Retry button. The assistant can only operate the canvas; it is not a general chat endpoint.
 
 ## Agent CLI
 
@@ -86,6 +98,7 @@ The daemon exposes:
 - `PUT /api/active-canvas` — `{id}`; switches the shared active canvas and returns the updated state.
 - `GET /api/board` — the active canvas's `{revision, shapes}`.
 - `POST /api/operations` — `{operations, expectedRevision?, canvasId?}`; defaults to the active canvas and can target any canvas without switching. Returns that canvas's board.
+- `POST /api/ai/chat` — `{messages, selection}`; streams Vercel AI SDK UI message chunks. Server-side tools read and mutate the active canvas and broadcast the same `board` events as `POST /api/operations`. `selection` is an array of shape ids that the user marqueed; the assistant receives their geometry and labels as primary context.
 - `GET /api/events` — WebSocket events. On connect and after canvas create/rename/delete/switch the daemon sends `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`; after operations it sends `{type: "board", canvasId, canvas, board}`. `stateVersion` increases on canvas metadata changes so clients can ignore delayed snapshots; clients update preview metadata from `canvas` and only apply `board` when `canvasId` is their active canvas.
 
 A batch is validated and persisted atomically per canvas. An optional `expectedRevision` rejects writes based on stale canvas state. A canvas name is trimmed, 1–80 characters, and rejected if it contains control characters.
@@ -96,7 +109,7 @@ A batch is validated and persisted atomically per canvas. An optional `expectedR
 pnpm check          # Biome + TypeScript
 pnpm test           # pure logic, store, HTTP API, CLI and agent examples
 pnpm test:unit      # pure logic + store
-pnpm test:api       # HTTP and WebSocket daemon contract
+pnpm test:api       # HTTP, WebSocket and AI streaming contract
 pnpm test:cli       # real daemon + CLI commands
 pnpm test:examples  # agent example batches through the validated store
 pnpm test:browser   # Playwright browser interaction
@@ -109,4 +122,4 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 
 ## MVP limits
 
-This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet. The AI assistant panel is interface-only: it neither calls a model nor captures audio.
+This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet. Audio capture is still interface-only. The AI assistant depends on the local Magpie gateway and has no authentication of its own beyond the daemon's loopback and origin restrictions.

@@ -23,5 +23,6 @@ export default defineConfig({
 		url: `${baseURL}/api/live`,
 		reuseExistingServer: false,
 		timeout: 20000,
+		env: { MICO_AI_MOCK: '1' },
 	},
 })

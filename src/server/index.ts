@@ -1,9 +1,11 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { LanguageModel } from 'ai'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
+import { createMagpieModel, parseAiChatRequest, streamAiChat } from './ai.ts'
 import { BoardStore, OperationError } from './store.ts'
 
 function parsePort(): number {
@@ -85,7 +87,10 @@ function knownPath(pathname: string): boolean {
 			segments[1],
 		)
 	}
-	return segments.length === 3 && segments[1] === 'canvases'
+	if (segments.length === 3) {
+		return segments[1] === 'canvases' || (segments[1] === 'ai' && segments[2] === 'chat')
+	}
+	return false
 }
 
 export interface Daemon {
@@ -95,10 +100,13 @@ export interface Daemon {
 	close(): void
 }
 
-export function createDaemon(options: { port?: number; dbPath?: string } = {}): Daemon {
+export function createDaemon(
+	options: { port?: number; dbPath?: string; aiModel?: LanguageModel } = {},
+): Daemon {
 	const port = options.port ?? parsePort()
 	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
+	const aiModel = options.aiModel ?? createMagpieModel()
 	const wss = new WebSocketServer({ noServer: true })
 
 	function isAllowedHost(host: string | undefined): boolean {
@@ -264,6 +272,17 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 				const state = store.activateCanvas(body.id)
 				broadcastState(state)
 				sendJson(res, 200, state, origin)
+				return
+			}
+
+			if (isPath('api', 'ai', 'chat')) {
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const request = await parseAiChatRequest(await readJson(req))
+				await streamAiChat({ res, store, broadcast, model: aiModel, request, origin })
 				return
 			}
 

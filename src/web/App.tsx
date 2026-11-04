@@ -92,7 +92,10 @@ export default function App() {
 	const boardCacheRef = useRef<Map<string, Board>>(new Map())
 	const connectionResetRef = useRef<() => void>(() => {})
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
-	const [aiPanelOpen, setAiPanelOpen] = useState(false)
+	const [aiPrompt, setAiPrompt] = useState(
+		() => new URLSearchParams(window.location.search).get('ai')?.trim() ?? '',
+	)
+	const [aiPanelOpen, setAiPanelOpen] = useState(() => aiPrompt.length > 0)
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -375,6 +378,8 @@ export default function App() {
 
 	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
+	const clearSelection = useCallback(() => setSelectedIds([]), [])
+	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
 	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
 
 	const refreshCanvases = useCallback(async () => {
@@ -1453,7 +1458,15 @@ export default function App() {
 				onToggleAi={() => setAiPanelOpen((open) => !open)}
 			/>
 
-			<AiPanel open={aiPanelOpen} onClose={closeAiPanel} isGestureActive={isGestureActive} />
+			<AiPanel
+				open={aiPanelOpen}
+				onClose={closeAiPanel}
+				isGestureActive={isGestureActive}
+				selectedIds={selectedIds}
+				onClearSelection={clearSelection}
+				initialPrompt={aiPrompt}
+				onInitialPromptConsumed={consumeAiPrompt}
+			/>
 
 			<CanvasPanel
 				open={canvasPanelOpen}
