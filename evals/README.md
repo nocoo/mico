@@ -21,11 +21,38 @@ All ten baseline drawings used the same canvas implementation at `66c3a72`, prov
 
 Mean rubric score: **7.1/10**. Scores measure each case's subject-specific criteria and do not replace a visual review: in particular, case 06 scores highly despite poor readability.
 
+## Paired results
+
+The final round uses canvas revision `b86eb89` and the same prompts, model and viewport as the baseline. Each score is a coordinator's visual judgement, not an automated correctness proof. The two intermediate runs of cases 01 and 02 are retained for transparency but excluded from this table; an additional multiline-label fix was needed before the final round.
+
+| Case | Baseline | Final | Screenshots                                                                                                                                                                     |
+| ---- | -------: | ----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 01   |        6 |     6 | [Before](01-literature-moonlit-thought/runs/20261103T213254Z-baseline/screenshot.png) · [After](01-literature-moonlit-thought/runs/20261104T000806Z-final/screenshot.png)       |
+| 02   |        8 |    10 | [Before](02-history-modern-china-timeline/runs/20261103T214128Z-baseline/screenshot.png) · [After](02-history-modern-china-timeline/runs/20261104T001201Z-final/screenshot.png) |
+| 03   |        7 |     8 | [Before](03-geography-east-asia-monsoon/runs/20261103T214750Z-baseline/screenshot.png) · [After](03-geography-east-asia-monsoon/runs/20261104T001525Z-final/screenshot.png)     |
+| 04   |        7 |     7 | [Before](04-math-quadratic/runs/20261103T215201Z-baseline/screenshot.png) · [After](04-math-quadratic/runs/20261104T001841Z-final/screenshot.png)                               |
+| 05   |        8 |     9 | [Before](05-physics-projectile/runs/20261103T215526Z-baseline/screenshot.png) · [After](05-physics-projectile/runs/20261104T002219Z-final/screenshot.png)                       |
+| 06   |        9 |    10 | [Before](06-chemistry-acid-base-titration/runs/20261103T215841Z-baseline/screenshot.png) · [After](06-chemistry-acid-base-titration/runs/20261104T002620Z-final/screenshot.png) |
+| 07   |        7 |     9 | [Before](07-biology-meiosis/runs/20261103T220158Z-baseline/screenshot.png) · [After](07-biology-meiosis/runs/20261104T003052Z-final/screenshot.png)                             |
+| 08   |        5 |     9 | [Before](08-humanities-silk-routes/runs/20261103T220602Z-baseline/screenshot.png) · [After](08-humanities-silk-routes/runs/20261104T003449Z-final/screenshot.png)               |
+| 09   |        7 |    10 | [Before](09-math-circular-trig/runs/20261103T221103Z-baseline/screenshot.png) · [After](09-math-circular-trig/runs/20261104T003851Z-final/screenshot.png)                       |
+| 10   |        7 |     8 | [Before](10-physics-energy-collision/runs/20261103T221705Z-baseline/screenshot.png) · [After](10-physics-energy-collision/runs/20261104T004234Z-final/screenshot.png)           |
+
+Mean: **7.1 → 8.6/10**; eight cases increased and two were unchanged. One independent sample per case and revision cannot establish statistical significance or isolate product effects from agent variability. In case 08 the final agent used lines rather than connectors, so its score increase is not direct evidence of the connector fix; that fix has separate Chrome regression coverage.
+
 ## Confirmed product issues
 
 - Connectors are always painted before non-frame objects, so later opaque backgrounds can completely hide valid connections (case 08).
 - Rectangle and ellipse `color` means outline rather than fill, but the original documentation does not explain that distinction; the API cannot request a transparent or colored fill (cases 04, 09 and 10).
 - Typographic text is clipped to its supplied height; model-generated Chinese labels routinely underestimate that height (cases 02, 03, 06, 08 and 10).
 - Fit and selection use stored object bounds, so any solution that makes overflowing text visible must also account for its actual rendered geometry.
+
+The canvas fixes add explicit fill, honor board paint order, preserve connector and transparent-shape interaction, wrap multiline labels, preserve multiline edits, measure overflow for selection and Fit, and account for the dock. API validation and browser regressions cover these behaviors. The history intermediate run exposed the separate shape-label newline defect; it was fixed before all ten final runs.
+
+## Remaining limits
+
+- Agents can still choose opaque fills, put labels on top of each other, draw unclear figures or make scientifically inconsistent diagrams. The final quadratic and energy cases demonstrate this. Mico does not automatically solve layout or verify subject facts.
+- Case 01 still lacks a clear two-pose transition and frost, and its final score matches baseline. The agent initially tried a rectangle/ellipse `strokeWidth` unsupported by the evaluated revision; any later fix is recorded separately rather than silently changing the comparison.
+- Small labels, crowded annotations and whitespace remain in several final screenshots, even where subject-specific rubric scores are high.
 
 Incorrect factual reasoning, arbitrary layout choices and weak illustration are recorded separately in the assessments; they are not automatically attributed to the drawing engine.
