@@ -1,0 +1,20 @@
+{
+	"case": "07-biology-meiosis",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "880a84f",
+	"rubricRevision": "50c5690",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-27-30-732Z_01a1a3f4-2c2b-767b-a831-e34e0676346e",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 3,
+	"shapeCount": 183,
+	"score": 9,
+	"scoreMaximum": 10
+}
