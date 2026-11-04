@@ -27,22 +27,22 @@
     }
 
     main {
-      min-width: 1440px;
-      min-height: max(100vh, 1440px);
+      min-width: 1120px;
+      min-height: max(100vh, 1120px);
       display: grid;
       place-items: center;
     }
 
     .note {
-      width: 1280px;
-      height: 1280px;
+      width: 960px;
+      height: 960px;
       overflow: visible;
       transform-origin: 50% 20%;
-      animation: stick 1.15s cubic-bezier(.2, .7, .2, 1) both;
+      animation: stick 1.4s both;
     }
 
     .outline {
-      animation: curl 1.15s ease-in-out both;
+      animation: curl 1.4s both;
     }
 
     .paper {
@@ -52,16 +52,16 @@
 
     .corner-light {
       fill: url(#corner-light);
-      opacity: .35;
-      animation: curl 1.15s ease-in-out both, light 1.15s ease-in-out both;
+      opacity: 0;
+      animation: curl 1.4s both, light 1.4s both;
     }
 
     .corner-shadow {
       fill: var(--ink);
-      opacity: .12;
+      opacity: 0;
       filter: blur(2px);
       transform-origin: 139px 157px;
-      animation: shadow 1.15s ease-in-out both;
+      animation: shadow 1.4s both;
     }
 
     .replay {
@@ -80,24 +80,47 @@
     .replay:focus-visible { outline: 2px solid #00a2e1; outline-offset: 3px; }
 
     @keyframes stick {
-      0% { opacity: 0; transform: perspective(5600px) translate3d(0, -56px, 112px) rotateX(5deg) rotateZ(-.5deg); }
-      40% { opacity: 1; transform: perspective(5600px) translate3d(0, 0, 0) rotateX(0) rotateZ(0); }
-      100% { opacity: 1; transform: perspective(5600px) translate3d(0, 0, 0) rotateX(0) rotateZ(0); }
+      0% {
+        opacity: 0;
+        transform: perspective(4200px) translate3d(0, -42px, 84px) rotateX(4deg) rotateZ(-.4deg);
+        animation-timing-function: cubic-bezier(.25, .65, .35, 1);
+      }
+      32%, 100% {
+        opacity: 1;
+        transform: perspective(4200px) translate3d(0, 0, 0) rotateX(0) rotateZ(0);
+      }
     }
 
     @keyframes curl {
-      0%, 35%, 100% { d: path("M4 0 H156 Q160 0 160 4 V153 Q160 157 156 157 Q145 157 130 160 Q118 160 105 160 H4 Q0 160 0 156 V4 Q0 0 4 0 Z"); }
-      65% { d: path("M4 0 H156 Q160 0 160 4 V145 Q160 150 156 151 Q145 152 129 157 Q118 160 105 160 H4 Q0 160 0 156 V4 Q0 0 4 0 Z"); }
+      0%, 28% {
+        d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
+        animation-timing-function: cubic-bezier(.16, .6, .3, 1);
+      }
+      53% {
+        d: path("M0 0 H160 V98.88 C160 120 160 141 156 152 C148 154 121 160 98.88 160 H0 Z");
+        animation-timing-function: cubic-bezier(.55, 0, .8, .5);
+      }
+      78% {
+        d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
+        animation-timing-function: cubic-bezier(.2, .65, .3, 1);
+      }
+      87% {
+        d: path("M0 0 H160 V98.88 C160 120 160 140 159.5 159 C140 159.3 120 160 98.88 160 H0 Z");
+        animation-timing-function: cubic-bezier(.55, 0, .8, .5);
+      }
+      100% { d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"); }
     }
 
     @keyframes light {
-      0%, 35%, 100% { opacity: .35; }
-      65% { opacity: .7; }
+      0%, 28%, 78%, 100% { opacity: 0; animation-timing-function: cubic-bezier(.16, .6, .3, 1); }
+      53% { opacity: .55; animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
+      87% { opacity: .08; animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
     }
 
     @keyframes shadow {
-      0%, 35%, 100% { opacity: .12; transform: none; }
-      65% { opacity: .2; transform: translateY(3px) scale(1.15, 1.5); }
+      0%, 28%, 78%, 100% { opacity: 0; transform: none; animation-timing-function: cubic-bezier(.16, .6, .3, 1); }
+      53% { opacity: .2; transform: translateY(3px) scale(1.15, 1.5); animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
+      87% { opacity: .03; transform: translateY(.4px); animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -115,8 +138,8 @@
         </radialGradient>
       </defs>
       <ellipse class="corner-shadow" cx="139" cy="157" rx="22" ry="2.5"/>
-      <path class="paper outline" d="M4 0 H156 Q160 0 160 4 V153 Q160 157 156 157 Q145 157 130 160 Q118 160 105 160 H4 Q0 160 0 156 V4 Q0 0 4 0 Z"/>
-      <path class="corner-light" d="M4 0 H156 Q160 0 160 4 V153 Q160 157 156 157 Q145 157 130 160 Q118 160 105 160 H4 Q0 160 0 156 V4 Q0 0 4 0 Z"/>
+      <path class="paper outline" d="M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"/>
+      <path class="corner-light" d="M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"/>
       <text x="12" y="26" fill="var(--ink)" font-size="14" font-family="system-ui, sans-serif">
         <tspan x="12">A little space</tspan>
         <tspan x="12" dy="21">for good ideas.</tspan>
