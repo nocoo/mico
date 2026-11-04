@@ -1,16 +1,8 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type {
-	Board,
-	BrushStyle,
-	Connector,
-	Operation,
-	Shape,
-	WidgetItem,
-	WidgetKind,
-} from '../shared/types.ts'
-import { ANCHOR_COUNTS } from '../shared/types.ts'
+import type { Board, BrushStyle, Connector, Operation, Shape, ShapeType } from '../shared/types.ts'
+import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
 
 export class OperationError extends Error {
 	readonly status: number
@@ -55,9 +47,44 @@ function validFiniteNumber(value: unknown): value is number {
 	return typeof value === 'number' && Number.isFinite(value)
 }
 
+const SHAPE_TYPES = new Set<string>([
+	'rectangle',
+	'ellipse',
+	'text',
+	'line',
+	'path',
+	'frame',
+	'note',
+	'html',
+	'connector',
+])
+const MAX_HTML_LENGTH = 200_000
+
+function validTitle(value: unknown, label: string): void {
+	if (typeof value !== 'string' || value.trim().length === 0 || value.length > 120) {
+		invalid(`${label} must be a non-empty string of at most 120 characters`)
+	}
+}
+
+function validHtml(value: unknown): void {
+	if (typeof value !== 'string' || value.length > MAX_HTML_LENGTH) {
+		invalid(`html must be a string of at most ${MAX_HTML_LENGTH} characters`)
+	}
+}
+
+function validateGeometry(value: Record<string, unknown>): void {
+	for (const key of ['x', 'y', 'w', 'h']) {
+		if (!validFiniteNumber(value[key])) invalid(`${key} must be a finite number`)
+	}
+	if (value.type !== 'line' && ((value.w as number) < 0 || (value.h as number) < 0)) {
+		invalid('shape width and height must be non-negative')
+	}
+}
+
 function validateShapeShape(value: unknown): asserts value is Shape {
 	if (!isObject(value)) invalid('shape must be an object')
 	if (!validId(value.id)) invalid('shape id must be a non-empty string')
+	if (typeof value.type !== 'string' || !SHAPE_TYPES.has(value.type)) invalid('invalid shape type')
 	if (!validColor(value.color)) invalid('shape color must be a non-empty string')
 
 	if (value.type === 'connector') {
@@ -78,84 +105,37 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		return
 	}
 
-	if (
-		value.type !== 'rectangle' &&
-		value.type !== 'ellipse' &&
-		value.type !== 'text' &&
-		value.type !== 'line' &&
-		value.type !== 'path' &&
-		value.type !== 'frame' &&
-		value.type !== 'note' &&
-		value.type !== 'widget'
-	) {
-		invalid('invalid shape type')
-	}
-	if (value.type === 'widget') {
-		if (
-			!hasExactKeys(
-				value,
-				['id', 'type', 'x', 'y', 'w', 'h', 'color', 'widget', 'widgetTitle', 'items'],
-				['frameId'],
-			)
-		) {
-			invalid('invalid widget shape')
+	const base = ['id', 'type', 'x', 'y', 'w', 'h', 'color']
+	if (value.type === 'frame') {
+		if (!hasExactKeys(value, base, ['title'])) invalid('invalid frame shape')
+		validTitle(value.title, 'frame title')
+	} else if (value.type === 'html') {
+		if (!hasExactKeys(value, [...base, 'title', 'html'], ['frameId'])) {
+			invalid('invalid html shape')
 		}
-		validateWidget(value)
-	} else if (value.type === 'frame') {
-		if (!hasExactKeys(value, ['id', 'type', 'x', 'y', 'w', 'h', 'color', 'title'], ['frameId'])) {
-			invalid('invalid frame shape')
+		validTitle(value.title, 'html title')
+		validHtml(value.html)
+	} else if (value.type === 'text') {
+		if (!hasExactKeys(value, base, ['text', 'frameId', 'font', 'fontSize', 'fontWeight'])) {
+			invalid('invalid text shape')
 		}
-		if (
-			typeof value.title !== 'string' ||
-			value.title.trim().length === 0 ||
-			value.title.length > 120
-		) {
-			invalid('frame title must be a non-empty string of at most 120 characters')
-		}
-		if (Object.hasOwn(value, 'frameId')) invalid('a frame cannot belong to another frame')
-	} else if (
-		value.type !== 'path' &&
-		!hasExactKeys(
-			value,
-			['id', 'type', 'x', 'y', 'w', 'h', 'color'],
-			['text', 'frameId', 'font', 'fontSize', 'fontWeight'],
-		)
-	) {
-		invalid('invalid canvas shape')
-	}
-	if (value.type === 'path') {
-		if (
-			!hasExactKeys(
-				value,
-				['id', 'type', 'x', 'y', 'w', 'h', 'color', 'points', 'brush', 'strokeWidth'],
-				['frameId'],
-			)
-		) {
+	} else if (value.type === 'path') {
+		if (!hasExactKeys(value, [...base, 'points', 'brush', 'strokeWidth'], ['frameId'])) {
 			invalid('invalid path shape')
 		}
 		validatePath(value)
+	} else if (value.type === 'line') {
+		if (!hasExactKeys(value, base, ['text', 'frameId'])) invalid('invalid canvas shape')
+	} else if (!hasExactKeys(value, base, ['text', 'frameId'])) {
+		invalid('invalid canvas shape')
 	}
-	for (const key of ['x', 'y', 'w', 'h']) {
-		if (!validFiniteNumber(value[key])) {
-			invalid(`${key} must be a finite number`)
-		}
-	}
-	if (value.type !== 'line' && ((value.w as number) < 0 || (value.h as number) < 0)) {
-		invalid('shape width and height must be non-negative')
-	}
+
+	validateGeometry(value)
 	if (Object.hasOwn(value, 'text') && typeof value.text !== 'string') {
 		invalid('shape text must be a string')
 	}
-	if (Object.hasOwn(value, 'frameId')) {
-		if (!validId(value.frameId)) invalid('frameId must be a non-empty shape id')
-		if (value.type === 'frame') invalid('a frame cannot belong to another frame')
-	}
-	if (Object.hasOwn(value, 'title')) {
-		if (value.type !== 'frame') invalid('only frames have titles')
-	}
-	for (const key of ['font', 'fontSize', 'fontWeight']) {
-		if (!Object.hasOwn(value, key)) continue
-		if (value.type !== 'text') invalid(`${key} is only valid for text shapes`)
+	if (Object.hasOwn(value, 'frameId') && !validId(value.frameId)) {
+		invalid('frameId must be a non-empty shape id')
 	}
 	if (Object.hasOwn(value, 'font')) {
 		const font = value.font
@@ -173,46 +153,6 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 			invalid('text fontWeight must be between 100 and 900')
 		}
 	}
-}
-
-function validWidgetKind(value: unknown): value is WidgetKind {
-	return value === 'todo' || value === 'kanban' || value === 'table' || value === 'timeline'
-}
-
-function validateWidgetItems(value: unknown): void {
-	if (!Array.isArray(value) || value.length > 200)
-		invalid('widget items must be an array of at most 200 items')
-	for (const item of value) {
-		if (
-			!isObject(item) ||
-			!hasExactKeys(item, ['id', 'title'], ['done', 'status', 'start', 'end'])
-		) {
-			invalid('invalid widget item')
-		}
-		if (!validId(item.id) || typeof item.title !== 'string' || item.title.length > 200) {
-			invalid('widget item needs an id and a title of at most 200 characters')
-		}
-		if (Object.hasOwn(item, 'done') && typeof item.done !== 'boolean')
-			invalid('item done must be boolean')
-		if (Object.hasOwn(item, 'status') && typeof item.status !== 'string')
-			invalid('item status must be a string')
-		for (const key of ['start', 'end']) {
-			if (Object.hasOwn(item, key) && !validFiniteNumber(item[key]))
-				invalid(`item ${key} must be finite`)
-		}
-	}
-}
-
-function validateWidget(value: Record<string, unknown>): void {
-	if (!validWidgetKind(value.widget)) invalid('widget must be todo, kanban, table or timeline')
-	if (
-		typeof value.widgetTitle !== 'string' ||
-		value.widgetTitle.trim().length === 0 ||
-		value.widgetTitle.length > 120
-	) {
-		invalid('widgetTitle must be a non-empty string of at most 120 characters')
-	}
-	validateWidgetItems(value.items)
 }
 
 function validBrush(value: unknown): value is BrushStyle {
@@ -282,12 +222,43 @@ function validateConnectorReferences(connector: Connector, shapes: Shape[]): voi
 	if (!from || from.type === 'connector' || !to || to.type === 'connector') {
 		invalid(`connector ${connector.id} has an invalid endpoint reference`)
 	}
+	if (!connectionCompatible(from.type, to.type)) {
+		invalid(`connector ${connector.id} cannot join a frame to a non-frame shape`)
+	}
 	if (connector.fromAnchor !== undefined && connector.fromAnchor >= ANCHOR_COUNTS[from.type]) {
 		invalid(`connector ${connector.id} fromAnchor is out of range for shape ${from.id}`)
 	}
 	if (connector.toAnchor !== undefined && connector.toAnchor >= ANCHOR_COUNTS[to.type]) {
 		invalid(`connector ${connector.id} toAnchor is out of range for shape ${to.id}`)
 	}
+}
+
+function migrateLegacyShapes(shapes: unknown): { shapes: unknown; changed: boolean } {
+	if (!Array.isArray(shapes)) return { shapes, changed: false }
+	const types = new Map<string, string>()
+	const retired = new Set<string>()
+	for (const shape of shapes) {
+		if (!isObject(shape) || typeof shape.id !== 'string' || typeof shape.type !== 'string') continue
+		types.set(shape.id, shape.type)
+		if (shape.type === 'widget') retired.add(shape.id)
+	}
+	const kept = shapes.filter((shape) => {
+		if (!isObject(shape)) return true
+		if (shape.type === 'widget') return false
+		return !(
+			shape.type === 'connector' &&
+			((typeof shape.from === 'string' && retired.has(shape.from)) ||
+				(typeof shape.to === 'string' && retired.has(shape.to)))
+		)
+	})
+	const compatible = kept.filter((shape) => {
+		if (!isObject(shape) || shape.type !== 'connector') return true
+		const from = typeof shape.from === 'string' ? types.get(shape.from) : undefined
+		const to = typeof shape.to === 'string' ? types.get(shape.to) : undefined
+		if (!from || !to || from === 'connector' || to === 'connector') return true
+		return (from === 'frame') === (to === 'frame')
+	})
+	return { shapes: compatible, changed: compatible.length !== shapes.length }
 }
 
 function cloneBoard(board: Board): Board {
@@ -301,123 +272,28 @@ function findShape(board: Board, id: string): Shape | undefined {
 	return board.shapes.find((shape) => shape.id === id)
 }
 
-function validatePatch(target: Shape, patch: Record<string, unknown>): void {
-	const canvasKeys = new Set([
-		'x',
-		'y',
-		'w',
-		'h',
-		'color',
-		'text',
-		'frameId',
-		'title',
-		'font',
-		'fontSize',
-		'fontWeight',
-		'widget',
-		'widgetTitle',
-		'items',
-	])
-	const connectorKeys = new Set(['from', 'to', 'color', 'fromAnchor', 'toAnchor'])
-	const allowed =
-		target.type === 'connector'
-			? connectorKeys
-			: target.type === 'path'
-				? new Set([...canvasKeys, 'points', 'brush', 'strokeWidth'])
-				: canvasKeys
+const PATCH_KEYS: Record<ShapeType | 'connector', readonly string[]> = {
+	rectangle: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
+	ellipse: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
+	note: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
+	line: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
+	text: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId', 'font', 'fontSize', 'fontWeight'],
+	path: ['x', 'y', 'w', 'h', 'color', 'frameId', 'points', 'brush', 'strokeWidth'],
+	frame: ['x', 'y', 'w', 'h', 'color', 'title'],
+	html: ['x', 'y', 'w', 'h', 'color', 'title', 'html', 'frameId'],
+	connector: ['from', 'to', 'color', 'fromAnchor', 'toAnchor'],
+}
 
+function validatePatch(target: Shape, patch: Record<string, unknown>): void {
+	const allowed = new Set(PATCH_KEYS[target.type])
 	for (const key of Object.keys(patch)) {
-		if (!allowed.has(key)) {
-			invalid(`patch key ${key} is not valid for this shape type`)
-		}
+		if (!allowed.has(key)) invalid(`patch key ${key} is not valid for this shape type`)
 	}
 
 	if (Object.hasOwn(patch, 'color') && !validColor(patch.color)) {
 		invalid('shape color must be a non-empty string')
 	}
-	if (target.type !== 'connector') {
-		for (const key of ['x', 'y', 'w', 'h']) {
-			if (Object.hasOwn(patch, key) && !validFiniteNumber(patch[key])) {
-				invalid(`${key} must be a finite number`)
-			}
-		}
-		if (target.type !== 'line' && Object.hasOwn(patch, 'w') && (patch.w as number) < 0)
-			invalid('shape width must be non-negative')
-		if (target.type !== 'line' && Object.hasOwn(patch, 'h') && (patch.h as number) < 0)
-			invalid('shape height must be non-negative')
-		if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
-			invalid('shape text must be a string')
-		if (target.type === 'widget') {
-			if (
-				Object.hasOwn(patch, 'widget') ||
-				Object.hasOwn(patch, 'items') ||
-				Object.hasOwn(patch, 'widgetTitle')
-			) {
-				const merged = { ...target, ...patch }
-				validateWidget(merged as Record<string, unknown>)
-			}
-		} else if (
-			Object.hasOwn(patch, 'widget') ||
-			Object.hasOwn(patch, 'items') ||
-			Object.hasOwn(patch, 'widgetTitle')
-		) {
-			invalid('widget fields are only valid for widget shapes')
-		}
-		if (Object.hasOwn(patch, 'title')) {
-			if (target.type !== 'frame') invalid('only frames have titles')
-			if (
-				typeof patch.title !== 'string' ||
-				patch.title.trim().length === 0 ||
-				patch.title.length > 120
-			) {
-				invalid('frame title must be a non-empty string of at most 120 characters')
-			}
-		}
-		if (Object.hasOwn(patch, 'frameId')) {
-			if (target.type === 'frame') invalid('a frame cannot belong to another frame')
-			if (patch.frameId !== null && !validId(patch.frameId)) {
-				invalid('frameId must be a non-empty shape id or null')
-			}
-		}
-		if (Object.hasOwn(patch, 'font')) {
-			const font = patch.font
-			if (target.type !== 'text') invalid('font is only valid for text shapes')
-			if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
-				invalid('text font must be sans, serif, hand or mono')
-			}
-		}
-		if (Object.hasOwn(patch, 'fontSize')) {
-			if (target.type !== 'text') invalid('fontSize is only valid for text shapes')
-			if (!validFiniteNumber(patch.fontSize) || patch.fontSize < 8 || patch.fontSize > 256) {
-				invalid('text fontSize must be between 8 and 256')
-			}
-		}
-		if (Object.hasOwn(patch, 'fontWeight')) {
-			if (target.type !== 'text') invalid('fontWeight is only valid for text shapes')
-			if (
-				!validFiniteNumber(patch.fontWeight) ||
-				patch.fontWeight < 100 ||
-				patch.fontWeight > 900
-			) {
-				invalid('text fontWeight must be between 100 and 900')
-			}
-		}
-		if (target.type === 'path') {
-			if (Object.hasOwn(patch, 'brush') && !validBrush(patch.brush)) {
-				invalid('path brush must be pencil, marker or brush')
-			}
-			if (Object.hasOwn(patch, 'strokeWidth') && !validStrokeWidth(patch.strokeWidth)) {
-				invalid('path strokeWidth must be between 1 and 64')
-			}
-			if (Object.hasOwn(patch, 'points')) {
-				validatePoints(
-					patch.points,
-					(patch.w as number | undefined) ?? (target.w as number),
-					(patch.h as number | undefined) ?? (target.h as number),
-				)
-			}
-		}
-	} else {
+	if (target.type === 'connector') {
 		for (const key of ['from', 'to']) {
 			if (Object.hasOwn(patch, key) && !validId(patch[key])) {
 				invalid(`connector ${key} must be a non-empty shape id`)
@@ -429,6 +305,57 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 			if (!Number.isInteger(index) || (index as number) < 0) {
 				invalid(`connector ${key} must be a non-negative integer`)
 			}
+		}
+		return
+	}
+
+	for (const key of ['x', 'y', 'w', 'h']) {
+		if (Object.hasOwn(patch, key) && !validFiniteNumber(patch[key])) {
+			invalid(`${key} must be a finite number`)
+		}
+	}
+	if (target.type !== 'line' && Object.hasOwn(patch, 'w') && (patch.w as number) < 0)
+		invalid('shape width must be non-negative')
+	if (target.type !== 'line' && Object.hasOwn(patch, 'h') && (patch.h as number) < 0)
+		invalid('shape height must be non-negative')
+	if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
+		invalid('shape text must be a string')
+	if (Object.hasOwn(patch, 'frameId')) {
+		if (patch.frameId !== null && !validId(patch.frameId)) {
+			invalid('frameId must be a non-empty shape id or null')
+		}
+	}
+	if (Object.hasOwn(patch, 'title')) validTitle(patch.title, 'title')
+	if (Object.hasOwn(patch, 'html')) validHtml(patch.html)
+	if (Object.hasOwn(patch, 'font')) {
+		const font = patch.font
+		if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
+			invalid('text font must be sans, serif, hand or mono')
+		}
+	}
+	if (Object.hasOwn(patch, 'fontSize')) {
+		if (!validFiniteNumber(patch.fontSize) || patch.fontSize < 8 || patch.fontSize > 256) {
+			invalid('text fontSize must be between 8 and 256')
+		}
+	}
+	if (Object.hasOwn(patch, 'fontWeight')) {
+		if (!validFiniteNumber(patch.fontWeight) || patch.fontWeight < 100 || patch.fontWeight > 900) {
+			invalid('text fontWeight must be between 100 and 900')
+		}
+	}
+	if (target.type === 'path') {
+		if (Object.hasOwn(patch, 'brush') && !validBrush(patch.brush)) {
+			invalid('path brush must be pencil, marker or brush')
+		}
+		if (Object.hasOwn(patch, 'strokeWidth') && !validStrokeWidth(patch.strokeWidth)) {
+			invalid('path strokeWidth must be between 1 and 64')
+		}
+		if (Object.hasOwn(patch, 'points')) {
+			validatePoints(
+				patch.points,
+				(patch.w as number | undefined) ?? (target.w as number),
+				(patch.h as number | undefined) ?? (target.h as number),
+			)
 		}
 	}
 }
@@ -469,8 +396,14 @@ export class BoardStore {
 		} catch {
 			throw new Error('Invalid board JSON in SQLite')
 		}
-		const board = { revision: row.revision, shapes: parsed } as Board
+		const migrated = migrateLegacyShapes(parsed)
+		const board = { revision: row.revision, shapes: migrated.shapes } as Board
 		validateBoardState(board)
+		if (migrated.changed) {
+			this.db
+				.prepare('UPDATE board SET shapes = ? WHERE id = 1')
+				.run(JSON.stringify(migrated.shapes))
+		}
 		return board
 	}
 

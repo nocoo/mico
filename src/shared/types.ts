@@ -6,17 +6,8 @@ export type ShapeType =
 	| 'path'
 	| 'frame'
 	| 'note'
-	| 'widget'
+	| 'html'
 export type FontFamily = 'sans' | 'serif' | 'hand' | 'mono'
-export type WidgetKind = 'todo' | 'kanban' | 'table' | 'timeline'
-export interface WidgetItem {
-	id: string
-	title: string
-	done?: boolean
-	status?: string
-	start?: number
-	end?: number
-}
 export type BrushStyle = 'pencil' | 'marker' | 'brush'
 
 export interface Point {
@@ -32,7 +23,25 @@ export const ANCHOR_COUNTS: Record<ShapeType, number> = {
 	path: 12,
 	frame: 12,
 	note: 12,
-	widget: 12,
+	html: 12,
+}
+
+export const MEMBER_TYPES = [
+	'rectangle',
+	'ellipse',
+	'text',
+	'line',
+	'path',
+	'note',
+	'html',
+] as const satisfies readonly ShapeType[]
+
+export function isMemberType(type: ShapeType): boolean {
+	return (MEMBER_TYPES as readonly ShapeType[]).includes(type)
+}
+
+export function connectionCompatible(a: ShapeType, b: ShapeType): boolean {
+	return (a === 'frame') === (b === 'frame')
 }
 
 export interface CanvasShape {
@@ -49,12 +58,10 @@ export interface CanvasShape {
 	strokeWidth?: number
 	frameId?: string
 	title?: string
+	html?: string
 	font?: FontFamily
 	fontSize?: number
 	fontWeight?: number
-	widget?: WidgetKind
-	widgetTitle?: string
-	items?: WidgetItem[]
 }
 
 export interface Connector {
@@ -91,12 +98,10 @@ export type Operation =
 				strokeWidth?: number
 				frameId?: string | null
 				title?: string
+				html?: string
 				font?: FontFamily
 				fontSize?: number
 				fontWeight?: number
-				widget?: WidgetKind
-				widgetTitle?: string
-				items?: WidgetItem[]
 				from?: string
 				to?: string
 				fromAnchor?: number

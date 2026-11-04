@@ -14,7 +14,15 @@ interface Geometry {
 	h: number
 }
 
-const CANVAS_SHAPE_TYPES = new Set<string>(['rectangle', 'ellipse', 'text', 'line', 'path'])
+const CANVAS_SHAPE_TYPES = new Set<string>([
+	'rectangle',
+	'ellipse',
+	'text',
+	'line',
+	'path',
+	'note',
+	'html',
+])
 
 function isFiniteNumber(value: unknown): value is number {
 	return typeof value === 'number' && Number.isFinite(value)

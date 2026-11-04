@@ -643,46 +643,61 @@ test('frames hold named members, reject nesting and ungroup on delete', () => {
 	}
 })
 
-test('widget shapes validate kind, title and bounded items', () => {
+test('html cards embed generated markup and expose only title and html', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
-	const widget = {
-		id: 'board-widget',
-		type: 'widget' as const,
-		x: 40,
-		y: 60,
-		w: 520,
-		h: 360,
-		color: '#5b5fc7',
-		widget: 'kanban' as const,
-		widgetTitle: 'Delivery board',
-		items: [
-			{ id: 'item-1', title: 'Draft', status: 'todo' },
-			{ id: 'item-2', title: 'Build', status: 'doing' },
-		],
-	}
 	try {
-		store.apply({ operations: [{ type: 'create', shape: widget }] })
+		const frame = {
+			id: 'html-frame',
+			type: 'frame' as const,
+			x: 0,
+			y: 0,
+			w: 640,
+			h: 480,
+			color: '#5b5fc7',
+			title: 'Dashboard',
+		}
+		const card = {
+			id: 'html-card',
+			type: 'html' as const,
+			x: 40,
+			y: 60,
+			w: 520,
+			h: 360,
+			color: '#5b5fc7',
+			title: 'Revenue',
+			html: '<p>Quarterly revenue</p>',
+			frameId: 'html-frame',
+		}
+		store.apply({
+			operations: [
+				{ type: 'create', shape: frame },
+				{ type: 'create', shape: card },
+			],
+		})
 		const updated = store.apply({
 			operations: [
 				{
 					type: 'update',
-					id: 'board-widget',
-					patch: { items: [{ id: 'item-1', title: 'Draft', status: 'done', done: true }] },
+					id: 'html-card',
+					patch: { title: 'Revenue 2026', html: '<strong>Updated</strong>' },
 				},
 			],
 		})
-		assert.equal(updated.shapes.length, 1)
+		assert.deepEqual(
+			updated.shapes.find((shape) => shape.id === 'html-card'),
+			{ ...card, title: 'Revenue 2026', html: '<strong>Updated</strong>' },
+		)
 
 		for (const patch of [
-			{ widget: 'spreadsheet' },
-			{ widgetTitle: '' },
-			{ items: [{ id: '', title: 'x' }] },
-			{ items: [{ id: 'x', title: 3 }] },
-			{ items: [{ id: 'x', title: 'ok', start: Number.NaN }] },
+			{ title: '' },
+			{ html: 12 },
+			{ html: 'x'.repeat(200_001) },
+			{ widget: 'kanban' },
+			{ text: 'legacy' },
 		]) {
 			assert.throws(
-				() => store.apply({ operations: [{ type: 'update', id: 'board-widget', patch }] }),
+				() => store.apply({ operations: [{ type: 'update', id: 'html-card', patch }] }),
 				(error: unknown) => error instanceof OperationError && error.status === 400,
 				JSON.stringify(patch),
 			)
@@ -694,11 +709,288 @@ test('widget shapes validate kind, title and bounded items', () => {
 					operations: [
 						{
 							type: 'create',
-							shape: { ...widget, id: 'note', type: 'note', widget: undefined },
+							shape: {
+								id: 'legacy-widget',
+								type: 'widget',
+								x: 0,
+								y: 0,
+								w: 100,
+								h: 100,
+								color: '#5b5fc7',
+								widget: 'todo',
+								widgetTitle: 'Legacy',
+								items: [],
+							},
 						},
 					],
 				}),
-			(error: unknown) => error instanceof OperationError,
+			(error: unknown) => error instanceof OperationError && error.status === 400,
+		)
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [
+						{
+							type: 'create',
+							shape: { ...card, id: 'missing-html', frameId: 'nope' },
+						},
+					],
+				}),
+			(error: unknown) => error instanceof OperationError && error.status === 400,
+		)
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'html-note',
+								type: 'note',
+								x: 40,
+								y: 60,
+								w: 80,
+								h: 80,
+								color: '#fef3c7',
+								text: 'Nope',
+								frameId: 'html-card',
+							},
+						},
+					],
+				}),
+			(error: unknown) => error instanceof OperationError && error.status === 400,
+		)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('legacy lines may keep an ignored text field', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	try {
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'legacy-line',
+						type: 'line',
+						x: 0,
+						y: 0,
+						w: 100,
+						h: 40,
+						color: '#123456',
+						text: '',
+					},
+				},
+			],
+		})
+		store.apply({
+			operations: [{ type: 'update', id: 'legacy-line', patch: { text: 'ignored' } }],
+		})
+		store.close()
+		const reopened = new BoardStore(dbPath)
+		try {
+			assert.deepEqual(reopened.getBoard().shapes[0], {
+				id: 'legacy-line',
+				type: 'line',
+				x: 0,
+				y: 0,
+				w: 100,
+				h: 40,
+				color: '#123456',
+				text: 'ignored',
+			})
+		} finally {
+			reopened.close()
+		}
+	} finally {
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('frames connect only to frames', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	try {
+		const left = {
+			id: 'left',
+			type: 'frame' as const,
+			x: 0,
+			y: 0,
+			w: 400,
+			h: 300,
+			color: '#5b5fc7',
+			title: 'Left',
+		}
+		const right = { ...left, id: 'right', x: 600, title: 'Right' }
+		const node = {
+			id: 'node',
+			type: 'note' as const,
+			x: 100,
+			y: 100,
+			w: 120,
+			h: 120,
+			color: '#fde68a',
+			text: 'Inside',
+			frameId: 'left',
+		}
+		store.apply({
+			operations: [
+				{ type: 'create', shape: left },
+				{ type: 'create', shape: right },
+				{ type: 'create', shape: node },
+			],
+		})
+		const board = store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'frame-edge',
+						type: 'connector',
+						from: 'left',
+						to: 'right',
+						fromAnchor: 3,
+						toAnchor: 5,
+						color: '#5c6474',
+					},
+				},
+			],
+		})
+		assert.ok(board.shapes.some((shape) => shape.id === 'frame-edge'))
+
+		for (const operations of [
+			[
+				{
+					type: 'create',
+					shape: {
+						id: 'mixed',
+						type: 'connector',
+						from: 'left',
+						to: 'node',
+						color: '#5c6474',
+					},
+				},
+			],
+			[{ type: 'update', id: 'frame-edge', patch: { to: 'node' } }],
+			[{ type: 'update', id: 'frame-edge', patch: { from: 'node', to: 'right' } }],
+		] as const) {
+			assert.throws(
+				() => store.apply({ operations: [...operations] }),
+				(error: unknown) => error instanceof OperationError && error.status === 400,
+				JSON.stringify(operations),
+			)
+		}
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('sticky note text updates persist', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	try {
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'note',
+						type: 'note',
+						x: 10,
+						y: 10,
+						w: 160,
+						h: 160,
+						color: '#fef3c7',
+						text: 'Note',
+					},
+				},
+			],
+		})
+		store.apply({ operations: [{ type: 'update', id: 'note', patch: { text: 'Remember this' } }] })
+		store.close()
+		const reopened = new BoardStore(dbPath)
+		try {
+			assert.deepEqual(reopened.getBoard().shapes, [
+				{
+					id: 'note',
+					type: 'note',
+					x: 10,
+					y: 10,
+					w: 160,
+					h: 160,
+					color: '#fef3c7',
+					text: 'Remember this',
+				},
+			])
+		} finally {
+			reopened.close()
+		}
+	} finally {
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('legacy widget shapes and incompatible connectors are dropped on load', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	const legacy = [
+		{
+			id: 'legacy-widget',
+			type: 'widget',
+			x: 0,
+			y: 0,
+			w: 100,
+			h: 100,
+			color: '#5b5fc7',
+			widget: 'todo',
+			widgetTitle: 'Legacy',
+			items: [],
+		},
+		{
+			id: 'kept',
+			type: 'rectangle',
+			x: 200,
+			y: 0,
+			w: 100,
+			h: 100,
+			color: '#5b5fc7',
+		},
+		{ id: 'legacy-edge', type: 'connector', from: 'kept', to: 'legacy-widget', color: '#5c6474' },
+		{
+			id: 'legacy-frame',
+			type: 'frame',
+			x: 500,
+			y: 0,
+			w: 300,
+			h: 300,
+			color: '#5b5fc7',
+			title: 'Legacy frame',
+		},
+		{ id: 'mixed-edge', type: 'connector', from: 'legacy-frame', to: 'kept', color: '#5c6474' },
+	]
+	try {
+		store.db
+			.prepare('UPDATE board SET revision = ?, shapes = ? WHERE id = 1')
+			.run(7, JSON.stringify(legacy))
+		assert.deepEqual(
+			store.getBoard().shapes.map((shape) => shape.id),
+			['kept', 'legacy-frame'],
+		)
+		assert.equal(store.getBoard().revision, 7)
+		const row = store.db.prepare('SELECT shapes FROM board WHERE id = 1').get() as {
+			shapes: string
+		}
+		assert.deepEqual(
+			(JSON.parse(row.shapes) as { id: string }[]).map((shape) => shape.id),
+			['kept', 'legacy-frame'],
 		)
 	} finally {
 		store.close()

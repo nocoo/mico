@@ -1,7 +1,7 @@
 export const CONTROL_SIZE = 40
 export const ICON_SIZE = 20
 export const TEXT_SIZE = 14
-export type DrawTool = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path' | 'note' | 'widget'
+export type DrawTool = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path' | 'note' | 'html'
 export type Tool = 'select' | 'hand' | 'connector' | DrawTool
 
 export const BRUSH_STYLES = [

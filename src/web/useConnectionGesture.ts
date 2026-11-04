@@ -100,17 +100,19 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 	const move = (pointer: Point) => {
 		const current = draftRef.current
 		if (!current || current.pending) return
+		const fixed = node(board.shapes, current.fixed.shapeId)
 		update({
 			...current,
 			pointer,
-			target: findSnapTarget(board.shapes, pointer, current.fixed.shapeId, zoom),
+			target: fixed ? findSnapTarget(board.shapes, pointer, fixed, zoom) : null,
 		})
 	}
 
 	const finish = (pointer: Point, pointerId: number) => {
 		const current = draftRef.current
 		if (!current || current.pending || current.pointerId !== pointerId) return
-		const target = findSnapTarget(board.shapes, pointer, current.fixed.shapeId, zoom)
+		const fixedShape = node(board.shapes, current.fixed.shapeId)
+		const target = fixedShape ? findSnapTarget(board.shapes, pointer, fixedShape, zoom) : null
 		if (
 			!target ||
 			(current.original &&

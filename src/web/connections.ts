@@ -1,4 +1,5 @@
 import type { Board, CanvasShape, Connector, Point, Shape } from '../shared/types.ts'
+import { connectionCompatible } from '../shared/types.ts'
 import { getAnchors } from './anchors.ts'
 
 export interface SnapTarget {
@@ -112,7 +113,7 @@ function isFiniteShape(shape: CanvasShape): boolean {
 export function findSnapTarget(
 	shapes: Shape[],
 	point: Point,
-	excludedId: string,
+	source: CanvasShape,
 	zoom: number,
 ): SnapTarget | null {
 	const scale = Number.isFinite(zoom) && zoom > 0 ? zoom : 1
@@ -121,7 +122,8 @@ export function findSnapTarget(
 
 	for (const [index, shape] of shapes.entries()) {
 		if (shape.type === 'connector') continue
-		if (shape.id === excludedId) continue
+		if (shape.id === source.id) continue
+		if (!connectionCompatible(source.type, shape.type)) continue
 		if (!isFiniteShape(shape)) continue
 		const proximity = shapeProximity(point, shape)
 		if (!proximity.inside && proximity.distance > threshold) continue

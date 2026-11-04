@@ -41,28 +41,38 @@ const connector: Shape = {
 	color: '#616161',
 }
 
+const source: CanvasShape = {
+	id: 'source',
+	type: 'rectangle',
+	x: -999,
+	y: -999,
+	w: 10,
+	h: 10,
+	color: '#000000',
+}
+
 test('snapping picks the nearest anchor of the closest node', () => {
-	const target = findSnapTarget([rectangle], { x: 52, y: 2 }, 'other', 1)
+	const target = findSnapTarget([rectangle], { x: 52, y: 2 }, source, 1)
 	assert.deepEqual(target, { shapeId: 'a', anchorIndex: 0, point: { x: 50, y: 0 } })
 })
 
 test('snapping stays within 24 screen pixels of the node boundary', () => {
-	assert.equal(findSnapTarget([rectangle], { x: 50, y: -20 }, 'other', 1)?.shapeId, 'a')
-	assert.equal(findSnapTarget([rectangle], { x: 50, y: -30 }, 'other', 1), null)
-	assert.equal(findSnapTarget([rectangle], { x: 50, y: -20 }, 'other', 2), null)
-	assert.equal(findSnapTarget([rectangle], { x: 50, y: -10 }, 'other', 2)?.shapeId, 'a')
+	assert.equal(findSnapTarget([rectangle], { x: 50, y: -20 }, source, 1)?.shapeId, 'a')
+	assert.equal(findSnapTarget([rectangle], { x: 50, y: -30 }, source, 1), null)
+	assert.equal(findSnapTarget([rectangle], { x: 50, y: -20 }, source, 2), null)
+	assert.equal(findSnapTarget([rectangle], { x: 50, y: -10 }, source, 2)?.shapeId, 'a')
 })
 
 test('snapping ignores the source shape and connectors', () => {
-	assert.equal(findSnapTarget([rectangle], { x: 50, y: 50 }, 'a', 1), null)
-	assert.equal(findSnapTarget([rectangle, connector], { x: 50, y: 50 }, 'other', 1)?.shapeId, 'a')
-	assert.equal(findSnapTarget([connector], { x: 50, y: 50 }, 'other', 1), null)
+	assert.equal(findSnapTarget([rectangle], { x: 50, y: 50 }, rectangle, 1), null)
+	assert.equal(findSnapTarget([rectangle, connector], { x: 50, y: 50 }, source, 1)?.shapeId, 'a')
+	assert.equal(findSnapTarget([connector], { x: 50, y: 50 }, source, 1), null)
 })
 
 test('the topmost overlapping node wins', () => {
 	const top: CanvasShape = { ...rectangle, id: 'top' }
 	const bottom: CanvasShape = { ...rectangle, id: 'bottom' }
-	const target = findSnapTarget([bottom, top], { x: 50, y: 50 }, 'other', 1)
+	const target = findSnapTarget([bottom, top], { x: 50, y: 50 }, source, 1)
 	assert.equal(target?.shapeId, 'top')
 })
 
@@ -76,7 +86,7 @@ test('a node containing the pointer beats a node that is merely nearby', () => {
 		h: 100,
 		color: '#000000',
 	}
-	const target = findSnapTarget([near, rectangle], { x: 50, y: 50 }, 'other', 1)
+	const target = findSnapTarget([near, rectangle], { x: 50, y: 50 }, source, 1)
 	assert.equal(target?.shapeId, 'a')
 })
 
@@ -90,11 +100,11 @@ test('ellipses use their real boundary instead of their bounding box', () => {
 		h: 20,
 		color: '#000000',
 	}
-	const insideBox = findSnapTarget([ellipse], { x: 95, y: 5 }, 'other', 1)
+	const insideBox = findSnapTarget([ellipse], { x: 95, y: 5 }, source, 1)
 	assert.ok(insideBox)
 	assert.equal(insideBox?.shapeId, 'e')
 
-	const closer = findSnapTarget([ellipse, segment], { x: 95, y: 5 }, 'other', 1)
+	const closer = findSnapTarget([ellipse, segment], { x: 95, y: 5 }, source, 1)
 	assert.equal(closer?.shapeId, 'seg')
 })
 
@@ -108,13 +118,13 @@ test('ellipse snapping uses the real screen-space distance, not a gradient estim
 		h: 100,
 		color: '#123456',
 	}
-	assert.equal(findSnapTarget([circle], { x: 126, y: 50 }, '', 1), null)
-	assert.ok(findSnapTarget([circle], { x: 123, y: 50 }, '', 1))
-	assert.equal(findSnapTarget([circle], { x: 113, y: 50 }, '', 2), null)
+	assert.equal(findSnapTarget([circle], { x: 126, y: 50 }, source, 1), null)
+	assert.ok(findSnapTarget([circle], { x: 123, y: 50 }, source, 1))
+	assert.equal(findSnapTarget([circle], { x: 113, y: 50 }, source, 2), null)
 })
 
 test('ellipse anchors are reachable from inside the ellipse', () => {
-	const target = findSnapTarget([ellipse], { x: 50, y: 50 }, 'other', 1)
+	const target = findSnapTarget([ellipse], { x: 50, y: 50 }, source, 1)
 	assert.equal(target?.shapeId, 'e')
 	assert.ok(target)
 	assert.ok(target.anchorIndex >= 0 && target.anchorIndex < 12)
@@ -123,9 +133,9 @@ test('ellipse anchors are reachable from inside the ellipse', () => {
 })
 
 test('lines snap to their nearest segment point, including signed directions', () => {
-	const target = findSnapTarget([line], { x: 70, y: 85 }, 'other', 1)
+	const target = findSnapTarget([line], { x: 70, y: 85 }, source, 1)
 	assert.deepEqual(target, { shapeId: 'l', anchorIndex: 1, point: { x: 70, y: 85 } })
-	assert.equal(findSnapTarget([line], { x: 70, y: 140 }, 'other', 1), null)
+	assert.equal(findSnapTarget([line], { x: 70, y: 140 }, source, 1), null)
 })
 
 test('degenerate geometry still snaps within the threshold', () => {
@@ -138,9 +148,9 @@ test('degenerate geometry still snaps within the threshold', () => {
 		h: 0,
 		color: '#000000',
 	}
-	const target = findSnapTarget([dot], { x: 30, y: 10 }, 'other', 1)
+	const target = findSnapTarget([dot], { x: 30, y: 10 }, source, 1)
 	assert.deepEqual(target, { shapeId: 'dot', anchorIndex: 0, point: { x: 10, y: 10 } })
-	assert.equal(findSnapTarget([dot], { x: 40, y: 10 }, 'other', 1), null)
+	assert.equal(findSnapTarget([dot], { x: 40, y: 10 }, source, 1), null)
 
 	const flatEllipse: CanvasShape = {
 		id: 'flat',
@@ -151,9 +161,26 @@ test('degenerate geometry still snaps within the threshold', () => {
 		h: 100,
 		color: '#000000',
 	}
-	const flat = findSnapTarget([flatEllipse], { x: 5, y: 50 }, 'other', 1)
+	const flat = findSnapTarget([flatEllipse], { x: 5, y: 50 }, source, 1)
 	assert.equal(flat?.shapeId, 'flat')
 	assert.deepEqual(flat?.point, { x: 0, y: 50 })
+})
+
+test('frames only snap to frames and members only to members', () => {
+	const frame: CanvasShape = {
+		id: 'f1',
+		type: 'frame',
+		x: 0,
+		y: 0,
+		w: 400,
+		h: 300,
+		color: '#123456',
+		title: 'One',
+	}
+	const otherFrame: CanvasShape = { ...frame, id: 'f2', x: 500 }
+	assert.equal(findSnapTarget([rectangle, otherFrame], { x: 510, y: 150 }, frame, 1)?.shapeId, 'f2')
+	assert.equal(findSnapTarget([rectangle], { x: 50, y: 50 }, frame, 1), null)
+	assert.equal(findSnapTarget([frame], { x: 10, y: 10 }, rectangle, 1), null)
 })
 
 test('connectors can only be rebased while they stay identical', () => {

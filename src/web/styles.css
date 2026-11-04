@@ -337,7 +337,7 @@ svg {
 	[data-tool-id="select"],
 	[data-tool-id="hand"],
 	[data-tool-id="rectangle"],
-	[data-tool-id="widget"]
+	[data-tool-id="html"]
 ) {
 	--tool-accent: var(--candy-blue);
 	--tool-tint: var(--candy-blue-tint);
@@ -514,144 +514,29 @@ svg {
 .canvas-shape {
 	cursor: move;
 }
-.widget-card {
-	display: flex;
-	flex-direction: column;
+.html-card {
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
 	border-radius: var(--radius-panel);
-	border: var(--hairline) solid var(--border);
 	background: var(--surface);
-	box-shadow: var(--shadow-panel);
-	font-family: Inter, ui-sans-serif, sans-serif;
-	color: var(--ink);
 }
-.widget-kind {
-	display: flex;
-	align-items: center;
-	gap: var(--space-1);
-	font-weight: var(--weight-semibold);
+.html-card-frame {
+	display: block;
+	width: 100%;
+	height: 100%;
+	border: 0;
+	background: transparent;
 }
-.widget-meta {
-	color: var(--ink-muted);
-}
-.widget-body {
-	flex: 1;
-	min-height: 0;
-	overflow: hidden;
-	padding: var(--space-15);
-}
-.widget-todo {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: grid;
-	gap: var(--space-1);
-	font-size: 13px;
-}
-.widget-todo li {
-	display: flex;
-	align-items: center;
-	gap: var(--space-1);
-}
-.widget-todo li.done {
-	color: var(--ink-muted);
-	text-decoration: line-through;
-}
-.todo-box {
+.html-card-empty {
 	display: grid;
 	place-items: center;
-	width: 16px;
-	height: 16px;
-	border: var(--hairline) solid var(--border-strong);
-	border-radius: 4px;
-	font-size: 11px;
-}
-.widget-kanban {
-	display: grid;
-	grid-template-columns: repeat(3, 1fr);
-	gap: var(--space-1);
+	width: 100%;
 	height: 100%;
-}
-.kanban-column {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-1);
-	min-width: 0;
-	padding: var(--space-1);
-	border-radius: var(--radius-control);
-	background: var(--surface-muted);
-}
-.kanban-column header {
-	display: flex;
-	justify-content: space-between;
-	font-size: 12px;
-	font-weight: var(--weight-semibold);
-	color: var(--ink-secondary);
-}
-.kanban-column header em {
-	font-style: normal;
+	padding: var(--space-2);
 	color: var(--ink-muted);
-}
-.kanban-column article {
-	padding: var(--space-1);
-	border: var(--hairline) solid var(--border);
-	border-radius: 6px;
-	background: var(--surface);
-	font-size: 12px;
-}
-.kanban-column.doing article {
-	border-color: #b7c7ee;
-}
-.kanban-column.done article {
-	border-color: #bfe3c9;
-}
-.widget-table {
-	display: grid;
-	font-size: 12px;
-}
-.widget-table > strong {
-	padding: 6px 8px;
-	color: var(--ink-muted);
-	font-weight: var(--weight-medium);
-	border-bottom: var(--hairline) solid var(--border);
-}
-.widget-table-row {
-	display: contents;
-}
-.widget-table-row > * {
-	padding: 6px 8px;
-	border-bottom: var(--hairline) solid var(--surface-hover);
-}
-.widget-table-row em {
-	font-style: normal;
-	color: var(--ink-secondary);
-}
-.widget-timeline {
-	display: grid;
-	gap: var(--space-1);
-	font-size: 12px;
-}
-.timeline-row {
-	display: grid;
-	grid-template-columns: 96px 1fr;
-	align-items: center;
-	gap: var(--space-1);
-}
-.timeline-track {
-	position: relative;
-	height: 22px;
-	border-radius: 4px;
-	background: var(--surface-muted);
-}
-.timeline-bar {
-	position: absolute;
-	top: 3px;
-	height: 16px;
-	border-radius: 4px;
-	background: var(--candy-yellow-tint);
-	border: var(--hairline) solid var(--candy-yellow);
+	font-size: var(--type-caption);
+	text-align: center;
 }
 .sticky-note {
 	filter: drop-shadow(0 2px 4px rgb(36 42 56 / 0.16));
@@ -670,13 +555,6 @@ svg {
 	line-height: 1.15;
 	letter-spacing: -0.01em;
 	white-space: pre-wrap;
-}
-.frame-label {
-	color: var(--ink-secondary);
-}
-.frame-label text {
-	font-size: var(--type-caption);
-	font-weight: var(--weight-semibold);
 }
 .note-colors button {
 	width: var(--control-compact);
@@ -939,14 +817,6 @@ svg {
 .selection-panel .rt-TextAreaRoot textarea {
 	min-height: 64px;
 }
-.selection-panel .widget-add {
-	width: 100%;
-}
-.selection-panel .widget-rows {
-	max-height: 168px;
-	overflow-y: auto;
-	padding-right: var(--space-05);
-}
 @media (max-width: 768px) {
 	.selection-panel {
 		top: auto;
@@ -991,8 +861,4 @@ svg {
 	border: 0;
 	padding: 0;
 	cursor: pointer;
-}
-.widget-rows {
-	max-height: 160px;
-	overflow-y: auto;
 }

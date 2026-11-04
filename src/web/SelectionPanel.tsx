@@ -1,5 +1,4 @@
 import {
-	Button,
 	Card,
 	Flex,
 	Grid,
@@ -14,16 +13,16 @@ import {
 	ArrowUpRight,
 	Brush,
 	Circle,
+	CodeXml,
 	Frame,
-	LayoutGrid,
 	Slash,
 	Square,
 	StickyNote,
-	Trash2,
 	Type,
 	X,
 } from 'lucide-react'
-import type { CanvasShape, Operation, Shape } from '../shared/types'
+import type { CanvasShape, Operation, Shape, ShapeType } from '../shared/types'
+import { connectionCompatible } from '../shared/types'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
@@ -54,7 +53,7 @@ const icons: Partial<Record<Shape['type'], typeof Square>> = {
 	path: Brush,
 	note: StickyNote,
 	frame: Frame,
-	widget: LayoutGrid,
+	html: CodeXml,
 	connector: ArrowUpRight,
 }
 
@@ -66,7 +65,7 @@ const labels: Partial<Record<Shape['type'], string>> = {
 	path: 'Brush stroke',
 	note: 'Sticky note',
 	frame: 'Frame',
-	widget: 'Rich widget',
+	html: 'HTML card',
 	connector: 'Connector',
 }
 
@@ -79,8 +78,9 @@ const field = (label: string, control: React.ReactNode, key?: string) => (
 	</Flex>
 )
 
-function itemsOf(shape: Shape) {
-	return shape.type === 'widget' ? (shape.items ?? []) : []
+function shapeLabel(shape: CanvasShape) {
+	if (shape.type === 'frame' || shape.type === 'html') return shape.title || shape.id
+	return shape.text || shape.id
 }
 
 export function SelectionPanel({
@@ -93,14 +93,21 @@ export function SelectionPanel({
 	onReconnect,
 }: SelectionPanelProps) {
 	if (!shape && count === 0) return null
-	const Icon = shape ? (icons[shape.type] ?? Square) : LayoutGrid
+	const Icon = shape ? (icons[shape.type] ?? Square) : Frame
 	const title = shape
 		? shape.type === 'frame'
 			? (shape.title ?? 'Frame')
-			: shape.type === 'widget'
-				? (shape.widgetTitle ?? 'Rich widget')
+			: shape.type === 'html'
+				? (shape.title ?? 'HTML card')
 				: (labels[shape.type] ?? shape.type)
 		: `${count} objects selected`
+	const peer = shape?.type === 'connector' ? shapes.find((item) => item.id === shape.from) : null
+	const shapeClass: ShapeType =
+		peer && peer.type !== 'connector'
+			? peer.type
+			: shape && shape.type !== 'connector'
+				? shape.type
+				: 'rectangle'
 
 	return (
 		<Card
@@ -226,6 +233,7 @@ export function SelectionPanel({
 								'Frame title',
 								<TextField.Root
 									id="frame-title"
+									aria-label="Frame title"
 									key={`${shape.id}:${shape.title}`}
 									defaultValue={shape.title ?? ''}
 									onBlur={(event) => onPatch({ title: event.target.value })}
@@ -269,11 +277,13 @@ export function SelectionPanel({
 										options={shapes
 											.filter(
 												(candidate): candidate is CanvasShape =>
-													candidate.type !== 'connector' && candidate.id !== shape.to,
+													candidate.type !== 'connector' &&
+													candidate.id !== shape.to &&
+													connectionCompatible(candidate.type, shapeClass),
 											)
 											.map((candidate) => ({
 												value: candidate.id,
-												label: candidate.text || candidate.id,
+												label: shapeLabel(candidate),
 											}))}
 										onChange={(id) => onReconnect('from', id)}
 									/>,
@@ -286,181 +296,33 @@ export function SelectionPanel({
 										options={shapes
 											.filter(
 												(candidate): candidate is CanvasShape =>
-													candidate.type !== 'connector' && candidate.id !== shape.from,
+													candidate.type !== 'connector' &&
+													candidate.id !== shape.from &&
+													connectionCompatible(candidate.type, shapeClass),
 											)
 											.map((candidate) => ({
 												value: candidate.id,
-												label: candidate.text || candidate.id,
+												label: shapeLabel(candidate),
 											}))}
 										onChange={(id) => onReconnect('to', id)}
 									/>,
 								)}
 							</Grid>
 						)}
-						{shape.type === 'widget' && (
-							<>
-								{field(
-									'Widget title',
-									<TextField.Root
-										id="widget-title"
-										aria-label="Widget title"
-										key={`${shape.id}:${shape.widgetTitle}`}
-										defaultValue={shape.widgetTitle ?? ''}
-										onBlur={(event) => onPatch({ widgetTitle: event.target.value })}
-										onKeyDown={(event) => {
-											if (event.key === 'Enter') event.currentTarget.blur()
-										}}
-									/>,
-								)}
-								<Flex direction="column" gap="1">
-									<Text size="1" color="gray" weight="medium">
-										Items
-									</Text>
-									<Grid gap="1" className="widget-rows">
-										{itemsOf(shape).map((item) => (
-											<Grid
-												columns={
-													shape.widget === 'kanban'
-														? '1fr 96px 24px'
-														: shape.widget === 'timeline'
-															? '1fr 56px 56px 24px'
-															: shape.widget === 'todo'
-																? '1fr 24px'
-																: '1fr 24px'
-												}
-												gap="1"
-												align="center"
-												key={item.id}
-											>
-												<TextField.Root
-													size="1"
-													aria-label={`Item ${item.title}`}
-													defaultValue={item.title}
-													key={`${item.id}:${item.title}`}
-													onBlur={(event) => {
-														const title = event.target.value.trim()
-														if (title && title !== item.title) {
-															onPatch({
-																items: itemsOf(shape).map((candidate) =>
-																	candidate.id === item.id ? { ...candidate, title } : candidate,
-																),
-															})
-														}
-													}}
-												/>
-												{shape.widget === 'kanban' && (
-													<SelectField
-														label={`Status ${item.title}`}
-														value={item.status ?? 'todo'}
-														options={[
-															{ value: 'todo', label: 'todo' },
-															{ value: 'doing', label: 'doing' },
-															{ value: 'done', label: 'done' },
-														]}
-														onChange={(status) =>
-															onPatch({
-																items: itemsOf(shape).map((candidate) =>
-																	candidate.id === item.id ? { ...candidate, status } : candidate,
-																),
-															})
-														}
-													/>
-												)}
-												{shape.widget === 'timeline' && (
-													<>
-														<TextField.Root
-															size="1"
-															type="number"
-															aria-label={`Start ${item.title}`}
-															defaultValue={item.start ?? 0}
-															key={`start:${item.id}:${item.start}`}
-															onBlur={(event) =>
-																onPatch({
-																	items: itemsOf(shape).map((candidate) =>
-																		candidate.id === item.id
-																			? { ...candidate, start: Number(event.target.value) }
-																			: candidate,
-																	),
-																})
-															}
-														/>
-														<TextField.Root
-															size="1"
-															type="number"
-															aria-label={`End ${item.title}`}
-															defaultValue={item.end ?? 1}
-															key={`end:${item.id}:${item.end}`}
-															onBlur={(event) =>
-																onPatch({
-																	items: itemsOf(shape).map((candidate) =>
-																		candidate.id === item.id
-																			? { ...candidate, end: Number(event.target.value) }
-																			: candidate,
-																	),
-																})
-															}
-														/>
-													</>
-												)}
-												{shape.widget === 'todo' && (
-													<RadixIconButton
-														size="1"
-														variant="soft"
-														aria-label={`Toggle ${item.title}`}
-														onClick={() =>
-															onPatch({
-																items: itemsOf(shape).map((candidate) =>
-																	candidate.id === item.id
-																		? { ...candidate, done: !candidate.done }
-																		: candidate,
-																),
-															})
-														}
-													>
-														<span aria-hidden="true">{item.done ? '✓' : '·'}</span>
-													</RadixIconButton>
-												)}
-												<RadixIconButton
-													size="1"
-													variant="ghost"
-													color="red"
-													aria-label={`Remove ${item.title}`}
-													onClick={() =>
-														onPatch({
-															items: itemsOf(shape).filter((candidate) => candidate.id !== item.id),
-														})
-													}
-												>
-													<Trash2 size={12} />
-												</RadixIconButton>
-											</Grid>
-										))}
-									</Grid>
-									<Button
-										size="1"
-										variant="soft"
-										aria-label="Add widget item"
-										onClick={() =>
-											onPatch({
-												items: [
-													...itemsOf(shape),
-													{
-														id: crypto.randomUUID(),
-														title: 'New item',
-														...(shape.widget === 'kanban' ? { status: 'todo' } : {}),
-														...(shape.widget === 'timeline'
-															? { start: itemsOf(shape).length, end: itemsOf(shape).length + 2 }
-															: {}),
-													},
-												],
-											})
-										}
-									>
-										Add item
-									</Button>
-								</Flex>
-							</>
-						)}
+						{shape.type === 'html' &&
+							field(
+								'Card title',
+								<TextField.Root
+									id="html-title"
+									aria-label="Card title"
+									key={`${shape.id}:${shape.title}`}
+									defaultValue={shape.title ?? ''}
+									onBlur={(event) => onPatch({ title: event.target.value })}
+									onKeyDown={(event) => {
+										if (event.key === 'Enter') event.currentTarget.blur()
+									}}
+								/>,
+							)}
 						<Flex direction="column" gap="1">
 							<Text size="1" color="gray" weight="medium">
 								Color

@@ -18,6 +18,21 @@ async function center(locator: Locator) {
 	return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
 }
 
+async function pillBox(page: Page, id: string) {
+	const box = await page.locator(`[data-card-handle="${id}"] .card-pill`).boundingBox()
+	if (!box) throw new Error(`Missing label for ${id}`)
+	return box
+}
+
+async function worldPoint(page: Page, x: number, y: number) {
+	const view = await page.locator('[data-world-layer]').evaluate((element) => {
+		const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
+		if (!matrix) throw new Error('Missing world transform')
+		return { x: matrix.e, y: matrix.f, zoom: matrix.a }
+	})
+	return { x: view.x + x * view.zoom, y: view.y + y * view.zoom }
+}
+
 async function targetPoint(page: Page, id: string, side: 'left' | 'right' = 'left') {
 	const box = await page.locator(`[data-shape-id="${id}"] > rect`).first().boundingBox()
 	if (!box) throw new Error(`Missing node: ${id}`)
@@ -182,7 +197,7 @@ test('selected object properties live inside the dock and edit the board', async
 	await properties.getByRole('button', { name: 'Set color Green' }).click()
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
-		.toMatchObject({ color: '#107c10' })
+		.toMatchObject({ color: '#166534' })
 	await properties.getByRole('button', { name: 'Close properties' }).click()
 	await expect(properties).toHaveCount(0)
 })
@@ -353,10 +368,7 @@ test('marquee selects several objects and deletes them atomically', async ({ pag
 	expect(remaining).not.toContain('b')
 })
 
-test('notes, typographic text and frames are editable and move together', async ({
-	page,
-	request,
-}) => {
+test('sticky note text edits inline and in the properties panel', async ({ page, request }) => {
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
 	await page.getByRole('button', { name: 'Pink sticky' }).click()
 	await page.mouse.click(500, 400)
@@ -367,36 +379,105 @@ test('notes, typographic text and frames are editable and move together', async 
 		| CanvasShape
 		| undefined
 	if (!note || note.type !== 'note') throw new Error('Expected a note')
-	expect(note).toMatchObject({ color: '#fbcfe8', text: 'Note' })
-	await page.locator('#shape-text').fill('Remember this')
+	expect(note).toMatchObject({ color: '#fce7f3', text: 'Note' })
+
+	const center = await worldPoint(page, note.x + note.w / 2, note.y + note.h / 2)
+	await page.mouse.dblclick(center.x, center.y)
+	const editor = page.locator('.inline-editor textarea')
+	await expect(editor).toBeVisible()
+	const editorBox = await editor.boundingBox()
+	if (!editorBox) throw new Error('Expected the inline editor')
+	await page.mouse.move(editorBox.x + editorBox.width / 2, editorBox.y + editorBox.height / 2)
+	await page.mouse.down()
+	await expect(page.locator('.marquee')).toHaveCount(0)
+	await page.mouse.up()
+	await page.keyboard.press('Meta+A')
+	await page.keyboard.type('Inline remember')
+	await page.keyboard.press('Control+Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === note.id))
+		.toMatchObject({ text: 'Inline remember' })
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.mouse.click(center.x, center.y)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await page.locator('#shape-text').fill('Panel remember')
 	await page.locator('#shape-text').press('Control+Enter')
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === note.id))
-		.toMatchObject({ text: 'Remember this' })
+		.toMatchObject({ text: 'Panel remember' })
+})
 
-	await page.getByRole('button', { name: 'Text', exact: true }).click()
-	await choose(page, 'Font family', 'Hand')
-	await choose(page, 'Font size', '48')
-	await choose(page, 'Font weight', '700')
-	await page.waitForTimeout(350)
-	await page.mouse.click(1250, 500)
+test('the frame label hit area matches the visible pill and edits its title', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const created = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'hit-frame',
+						type: 'frame',
+						x: 200,
+						y: 200,
+						w: 640,
+						h: 400,
+						color: '#3b82f6',
+						title: 'Discovery',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'hit-rect',
+						type: 'rectangle',
+						x: 450,
+						y: 160,
+						w: 120,
+						h: 36,
+						color: '#5b5fc7',
+						text: 'Behind the label row',
+					},
+				},
+			],
+		},
+	})
+	expect(created.ok()).toBe(true)
+	await page.reload()
+	await page.locator('.status[aria-label="Live"]').waitFor()
+	await page.getByRole('button', { name: 'Reset view' }).click()
+
+	const behind = await worldPoint(page, 510, 178)
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.mouse.click(behind.x, behind.y)
+	const properties = page.getByRole('region', { name: 'Selected object properties' })
+	await expect(properties).toBeVisible()
+	await expect(properties.getByLabel('Text', { exact: true })).toBeVisible()
+	await expect(properties.getByLabel('Frame title')).toHaveCount(0)
+
+	const labelBox = await pillBox(page, 'hit-frame')
+	await page.mouse.dblclick(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2)
+	const titleEditor = page.locator('.inline-editor input')
+	await expect(titleEditor).toBeVisible()
+	await titleEditor.fill('Renamed frame')
+	await titleEditor.press('Enter')
 	await expect
-		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'text'))
-		.toBe(true)
-	const heading = (await board(request)).shapes.find((shape) => shape.type === 'text')
-	expect(heading).toMatchObject({ font: 'hand', fontSize: 48, fontWeight: 700 })
-	const ink = page.locator('[data-shape-id="' + heading?.id + '"] .typographic-text')
-	await expect(ink).toHaveCount(1)
-	await expect(
-		page.locator(
-			'[data-shape-id="' + heading?.id + '"] > rect:not(.selection):not([fill="transparent"])',
-		),
-	).toHaveCount(0)
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'hit-frame'))
+		.toMatchObject({ title: 'Renamed frame' })
+})
 
+test('frame selection wraps members and deleting the frame releases them', async ({
+	page,
+	request,
+}) => {
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	await page.mouse.move(120, 160)
 	await page.mouse.down()
-	await page.mouse.move(960, 310, { steps: 6 })
+	await page.mouse.move(960, 310, { steps: 8 })
 	await page.mouse.up()
 	await page.getByRole('button', { name: 'Frame selection' }).click()
 	await expect
@@ -405,255 +486,413 @@ test('notes, typographic text and frames are editable and move together', async 
 		)
 		.toBe(1)
 	const framed = await board(request)
-	const frame = framed.shapes.find((shape) => shape.type === 'frame') as CanvasShape | undefined
-	if (!frame) throw new Error('Expected a frame')
+	const frame = framed.shapes.find((shape) => shape.type === 'frame') as CanvasShape
 	expect(
 		framed.shapes
 			.filter((shape) => shape.type !== 'connector' && shape.frameId === frame.id)
 			.map((shape) => shape.id)
 			.sort(),
 	).toEqual(['a', 'b'])
-	const child = framed.shapes.find((shape) => shape.id === 'a') as CanvasShape | undefined
-	if (!child) throw new Error('Expected child a')
-	const before = { x: child.x, y: child.y }
-	await page.getByRole('button', { name: 'Select', exact: true }).click()
-	const frameBox = await page.locator(`[data-shape-id="${frame.id}"]`).boundingBox()
-	if (!frameBox) throw new Error('Expected frame bounds')
-	await page.mouse.click(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2)
-	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
-	await page.mouse.move(frameBox.x + frameBox.width / 2, frameBox.y + frameBox.height / 2)
-	await page.mouse.down()
-	await page.mouse.move(
-		frameBox.x + frameBox.width / 2 + 96,
-		frameBox.y + frameBox.height / 2 + 48,
-		{ steps: 6 },
-	)
-	await page.mouse.up()
-	await expect
-		.poll(async () => {
-			const shape = (await board(request)).shapes.find((item) => item.id === 'a') as
-				| CanvasShape
-				| undefined
-			return shape?.x
-		})
-		.not.toBe(before.x)
-	const movedBoard = await board(request)
-	const movedFrame = movedBoard.shapes.find((shape) => shape.id === frame.id) as
-		| CanvasShape
-		| undefined
-	const movedChild = movedBoard.shapes.find((shape) => shape.id === 'a') as CanvasShape | undefined
-	if (!movedFrame || !movedChild) throw new Error('Expected moved frame and child')
-	expect(movedChild.x - before.x).toBe(movedFrame.x - frame.x)
-	expect(movedChild.y - before.y).toBe(movedFrame.y - frame.y)
+	await expect(page.getByLabel('Frame title')).toHaveValue('Frame')
+
 	await page.getByRole('button', { name: 'Delete selected' }).click()
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.id === frame.id))
 		.toBe(false)
-	const ungrouped = (await board(request)).shapes.find((shape) => shape.id === 'a')
-	expect(ungrouped?.type !== 'connector' ? ungrouped?.frameId : undefined).toBeUndefined()
+	const released = await board(request)
+	expect(
+		released.shapes
+			.filter((shape) => shape.id === 'a' || shape.id === 'b')
+			.map((shape) => (shape.type === 'connector' ? null : shape.frameId)),
+	).toEqual([undefined, undefined])
 })
-test('rich widgets sit in isolated cards with editable items', async ({ page, request }) => {
-	await page.getByRole('button', { name: 'Rich widget', exact: true }).click()
-	await page.getByRole('button', { name: 'kanban', exact: true }).click()
-	await page.mouse.click(700, 700)
+
+test('typographic text keeps its font settings', async ({ page, request }) => {
+	await page.getByRole('button', { name: 'Text', exact: true }).click()
+	await choose(page, 'Font family', 'Hand')
+	await choose(page, 'Font size', '48')
+	await choose(page, 'Font weight', '700')
+	await page.waitForTimeout(250)
+	await page.mouse.click(700, 500)
 	await expect
-		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'widget'))
+		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'text'))
 		.toBe(true)
-	const widget = (await board(request)).shapes.find((shape) => shape.type === 'widget') as
-		| CanvasShape
-		| undefined
-	if (!widget || widget.type !== 'widget') throw new Error('Expected a widget')
-	expect(widget).toMatchObject({ widget: 'kanban', widgetTitle: 'Delivery board' })
-	expect(widget.items).toHaveLength(3)
-	const card = page.locator(`[data-shape-id="${widget.id}"] .widget-card`)
-	await expect(card).toHaveCount(1)
-	await expect(card.locator('.kanban-column')).toHaveCount(3)
-
-	await page.getByLabel('Widget title').fill('Launch board')
-	await page.getByLabel('Widget title').press('Enter')
-	await expect
-		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === widget.id))
-		.toMatchObject({ widgetTitle: 'Launch board' })
-	await page.getByRole('button', { name: 'Add widget item' }).click()
-	await expect
-		.poll(async () => {
-			const shape = (await board(request)).shapes.find((item) => item.id === widget.id) as
-				| CanvasShape
-				| undefined
-			return shape?.items?.length
-		})
-		.toBe(4)
-	await choose(page, 'Status Launch', 'done')
-	await expect(
-		page.locator(`[data-shape-id="${widget.id}"] .kanban-column.done article`),
-	).toHaveCount(2)
-
-	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
-	await expect(page.getByRole('button', { name: 'Sticky note', exact: true })).toHaveAttribute(
-		'aria-pressed',
-		'true',
-	)
-	await page.mouse.click(1000, 150)
-	await expect
-		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
-		.toBe(1)
-	const note = (await board(request)).shapes.find((shape) => shape.type === 'note') as
-		| CanvasShape
-		| undefined
-	if (!note) throw new Error('Expected a note')
-	await page.getByRole('button', { name: 'Select', exact: true }).click()
-	const view = await page.locator('[data-world-layer]').evaluate((element) => {
-		const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
-		if (!matrix) throw new Error('Missing world transform')
-		return { x: matrix.e, y: matrix.f, zoom: matrix.a }
-	})
-	const toScreen = (worldX: number, worldY: number) => ({
-		x: view.x + worldX * view.zoom,
-		y: view.y + worldY * view.zoom,
-	})
-	const noteCenter = toScreen(note.x + note.w / 2, note.y + note.h / 2)
-	const widgetCenter = toScreen(widget.x + widget.w / 2, widget.y + widget.h / 2)
-	await page.mouse.move(noteCenter.x, noteCenter.y)
-	await page.mouse.down()
-	await page.mouse.move(widgetCenter.x, widgetCenter.y, { steps: 8 })
-	await page.mouse.up()
-	await expect(page.locator('.notice')).toContainText('Rich widgets are isolated')
-	await expect
-		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === note.id))
-		.toMatchObject({ x: note.x, y: note.y })
-
-	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
-	await page.mouse.click(
-		widgetCenter.x - widget.w * view.zoom * 0.3,
-		widgetCenter.y - widget.h * view.zoom * 0.2,
-	)
-	await expect
-		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
-		.toBe(1)
+	const heading = (await board(request)).shapes.find((shape) => shape.type === 'text')
+	expect(heading).toMatchObject({ font: 'hand', fontSize: 48, fontWeight: 700 })
 })
 
-test('nested widgets stay draggable and text edits inline on double click', async ({
-	page,
-	request,
-}) => {
+test('frames are selected and dragged only through their label', async ({ page, request }) => {
 	const current = await board(request)
-	const response = await request.post('/api/operations', {
+	const created = await request.post('/api/operations', {
 		data: {
 			expectedRevision: current.revision,
 			operations: [
 				{
 					type: 'create',
 					shape: {
-						id: 'nest-frame',
+						id: 'frame-label',
 						type: 'frame',
-						x: 200,
-						y: 200,
-						w: 720,
-						h: 460,
-						color: '#5b5fc7',
-						title: 'Nested',
-					},
-				},
-				{
-					type: 'create',
-					shape: {
-						id: 'nest-widget',
-						type: 'widget',
 						x: 240,
-						y: 280,
-						w: 460,
-						h: 320,
-						color: '#0f6cbd',
-						widget: 'todo',
-						widgetTitle: 'Inside frame',
-						frameId: 'nest-frame',
-						items: [{ id: 'n1', title: 'Task one', done: false }],
+						y: 240,
+						w: 640,
+						h: 400,
+						color: '#3b82f6',
+						title: 'Discovery',
 					},
 				},
 				{
 					type: 'create',
 					shape: {
-						id: 'nest-text',
-						type: 'text',
-						x: 260,
-						y: 640,
-						w: 320,
-						h: 48,
-						color: '#242424',
-						text: 'Inline',
-						font: 'sans',
-						fontSize: 32,
-						fontWeight: 500,
+						id: 'frame-note',
+						type: 'note',
+						x: 300,
+						y: 320,
+						w: 160,
+						h: 160,
+						color: '#fef3c7',
+						text: 'Member',
+						frameId: 'frame-label',
 					},
 				},
 			],
 		},
 	})
-	expect(response.ok()).toBe(true)
+	expect(created.ok()).toBe(true)
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
 	await page.getByRole('button', { name: 'Reset view' }).click()
-	const view = await page.locator('[data-world-layer]').evaluate((element) => {
-		const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
-		if (!matrix) throw new Error('Missing transform')
-		return { x: matrix.e, y: matrix.f, zoom: matrix.a }
-	})
-	const screen = (x: number, y: number) => ({
-		x: view.x + x * view.zoom,
-		y: view.y + y * view.zoom,
-	})
 
-	const widgetPoint = screen(470, 440)
-	await page.mouse.dblclick(widgetPoint.x, widgetPoint.y)
-	const editor = page.locator('.inline-editor input')
-	await expect(editor).toBeVisible()
-	await editor.fill('Renamed board')
-	await editor.press('Enter')
-	await expect
-		.poll(
-			async () =>
-				(
-					(await board(request)).shapes.find((shape) => shape.id === 'nest-widget') as
-						| CanvasShape
-						| undefined
-				)?.widgetTitle,
-		)
-		.toBe('Renamed board')
+	const inside = await worldPoint(page, 620, 500)
+	await page.mouse.click(inside.x, inside.y)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toHaveCount(0)
+	await expect(page.locator('[data-shape-id="frame-label"] .selection')).toHaveCount(0)
 
-	await page.getByRole('button', { name: 'Select', exact: true }).click()
-	await page.mouse.move(widgetPoint.x, widgetPoint.y)
+	await page.mouse.move(inside.x, inside.y)
 	await page.mouse.down()
-	await page.mouse.move(widgetPoint.x + 96, widgetPoint.y + 48, { steps: 6 })
+	await page.mouse.move(inside.x + 64, inside.y + 48, { steps: 4 })
+	const stacking = await page.locator('.marquee').evaluate((marquee) => {
+		const children = [...(marquee.parentElement?.children ?? [])]
+		return {
+			marquee: children.indexOf(marquee),
+			frame: children.findIndex((child) => child.getAttribute('data-shape-id') === 'frame-label'),
+		}
+	})
+	expect(stacking.marquee).toBeGreaterThan(stacking.frame)
+	await page.mouse.up()
+
+	const labelBox = await pillBox(page, 'frame-label')
+	await page.mouse.click(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await expect(page.getByLabel('Frame title')).toHaveValue('Discovery')
+
+	const frameBefore = (await board(request)).shapes.find(
+		(shape) => shape.id === 'frame-label',
+	) as CanvasShape
+	const noteBefore = (await board(request)).shapes.find(
+		(shape) => shape.id === 'frame-note',
+	) as CanvasShape
+	await page.mouse.move(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2)
+	await page.mouse.down()
+	await page.mouse.move(
+		labelBox.x + labelBox.width / 2 + 128,
+		labelBox.y + labelBox.height / 2 + 64,
+		{
+			steps: 8,
+		},
+	)
 	await page.mouse.up()
 	await expect
-		.poll(
-			async () =>
-				(
-					(await board(request)).shapes.find((shape) => shape.id === 'nest-widget') as
-						| CanvasShape
-						| undefined
-				)?.x,
-		)
-		.not.toBe(240)
-	const moved = (await board(request)).shapes.find((shape) => shape.id === 'nest-widget')
-	expect(moved?.type !== 'connector' ? moved?.frameId : undefined).toBe('nest-frame')
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'frame-label')
+			return shape?.type === 'frame' ? shape.x : undefined
+		})
+		.not.toBe(frameBefore.x)
+	const moved = await board(request)
+	const frameAfter = moved.shapes.find((shape) => shape.id === 'frame-label') as CanvasShape
+	const noteAfter = moved.shapes.find((shape) => shape.id === 'frame-note') as CanvasShape
+	expect(noteAfter.x - noteBefore.x).toBe(frameAfter.x - frameBefore.x)
+	expect(noteAfter.y - noteBefore.y).toBe(frameAfter.y - frameBefore.y)
+	expect(noteAfter.frameId).toBe('frame-label')
+})
 
-	const textPoint = screen(420, 664)
-	await page.mouse.dblclick(textPoint.x, textPoint.y)
-	const textEditor = page.locator('.inline-editor textarea')
-	await expect(textEditor).toBeVisible()
-	await textEditor.fill('Edited inline')
-	await page.keyboard.press('Control+Enter')
+test('drawing inside a frame joins it and dragging in or out updates membership', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const created = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: ['alpha', 'beta'].map((id, index) => ({
+				type: 'create',
+				shape: {
+					id: `frame-${id}`,
+					type: 'frame',
+					x: 200 + index * 900,
+					y: 200,
+					w: 640,
+					h: 400,
+					color: '#3b82f6',
+					title: id,
+				},
+			})),
+		},
+	})
+	expect(created.ok()).toBe(true)
+	await page.reload()
+	await page.locator('.status[aria-label="Live"]').waitFor()
+	await page.getByRole('button', { name: 'Reset view' }).click()
+
+	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
+	const insideAlpha = await worldPoint(page, 500, 400)
+	await page.mouse.click(insideAlpha.x, insideAlpha.y)
 	await expect
-		.poll(
-			async () =>
-				(
-					(await board(request)).shapes.find((shape) => shape.id === 'nest-text') as
-						| CanvasShape
-						| undefined
-				)?.text,
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.type === 'note')
+			return shape?.type === 'note' ? shape.frameId : undefined
+		})
+		.toBe('frame-alpha')
+	const note = (await board(request)).shapes.find((shape) => shape.type === 'note') as CanvasShape
+
+	const noteCenter = await worldPoint(page, note.x + note.w / 2, note.y + note.h / 2)
+	const outside = await worldPoint(page, 800, 800)
+	await page.mouse.move(noteCenter.x, noteCenter.y)
+	await page.mouse.down()
+	await page.mouse.move(outside.x, outside.y, { steps: 10 })
+	await page.mouse.up()
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === note.id)
+			return shape?.type === 'note' ? shape.frameId : 'missing'
+		})
+		.toBeUndefined()
+
+	const detached = (await board(request)).shapes.find(
+		(shape) => shape.id === note.id,
+	) as CanvasShape
+	const detachedCenter = await worldPoint(
+		page,
+		detached.x + detached.w / 2,
+		detached.y + detached.h / 2,
+	)
+	const insideBeta = await worldPoint(page, 1200, 400)
+	await page.mouse.move(detachedCenter.x, detachedCenter.y)
+	await page.mouse.down()
+	await page.mouse.move(insideBeta.x, insideBeta.y, { steps: 10 })
+	await page.mouse.up()
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === note.id)
+			return shape?.type === 'note' ? shape.frameId : undefined
+		})
+		.toBe('frame-beta')
+})
+
+test('frames connect only to frames through the canvas and the API', async ({ page, request }) => {
+	const current = await board(request)
+	const created = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'link-left',
+						type: 'frame',
+						x: 200,
+						y: 240,
+						w: 520,
+						h: 360,
+						color: '#3b82f6',
+						title: 'Left',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'link-right',
+						type: 'frame',
+						x: 1040,
+						y: 240,
+						w: 520,
+						h: 360,
+						color: '#22c55e',
+						title: 'Right',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'link-node',
+						type: 'rectangle',
+						x: 260,
+						y: 780,
+						w: 220,
+						h: 100,
+						color: '#5b5fc7',
+						text: 'Node',
+					},
+				},
+			],
+		},
+	})
+	expect(created.ok()).toBe(true)
+	await page.reload()
+	await page.locator('.status[aria-label="Live"]').waitFor()
+	await page.getByRole('button', { name: 'Reset view' }).click()
+
+	const before = (await board(request)).shapes.filter((shape) => shape.type === 'connector')
+	await page.getByRole('button', { name: 'Connector', exact: true }).click()
+	const nodeStart = await worldPoint(page, 320, 820)
+	const frameEnd = await worldPoint(page, 460, 420)
+	await page.mouse.move(nodeStart.x, nodeStart.y)
+	await page.mouse.down()
+	await page.mouse.move(frameEnd.x, frameEnd.y, { steps: 8 })
+	await expect(page.locator('[data-snap-target="link-left"]')).toHaveCount(0)
+	await page.mouse.up()
+	await page.waitForTimeout(250)
+	expect((await board(request)).shapes.filter((shape) => shape.type === 'connector')).toHaveLength(
+		before.length,
+	)
+
+	const leftBox = await pillBox(page, 'link-left')
+	const rightInside = await worldPoint(page, 1200, 420)
+	await page.mouse.move(leftBox.x + leftBox.width / 2, leftBox.y + leftBox.height / 2)
+	await page.mouse.down()
+	await page.mouse.move(rightInside.x, rightInside.y, { steps: 8 })
+	await expect(page.locator('[data-snap-target="link-right"]')).toHaveCount(1)
+	await page.mouse.up()
+	await expect
+		.poll(async () =>
+			(await board(request)).shapes.some(
+				(shape) =>
+					shape.type === 'connector' && shape.from === 'link-left' && shape.to === 'link-right',
+			),
 		)
-		.toBe('Edited inline')
+		.toBe(true)
+
+	const mixed = await request.post('/api/operations', {
+		data: {
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'mixed',
+						type: 'connector',
+						from: 'link-left',
+						to: 'link-node',
+						color: '#5c6474',
+					},
+				},
+			],
+		},
+	})
+	expect(mixed.status()).toBe(400)
+	const mixedReverse = await request.post('/api/operations', {
+		data: {
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'mixed-2',
+						type: 'connector',
+						from: 'link-node',
+						to: 'link-right',
+						color: '#5c6474',
+					},
+				},
+			],
+		},
+	})
+	expect(mixedReverse.status()).toBe(400)
+})
+
+test('html cards render generated markup and expose only their title', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const created = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'html-frame',
+						type: 'frame',
+						x: 240,
+						y: 240,
+						w: 640,
+						h: 420,
+						color: '#3b82f6',
+						title: 'Board',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'html-card',
+						type: 'html',
+						x: 280,
+						y: 320,
+						w: 560,
+						h: 300,
+						color: '#22c55e',
+						title: 'Stats',
+						html: '<!doctype html><html><body style="margin:0"><h1 id="value">42</h1></body></html>',
+						frameId: 'html-frame',
+					},
+				},
+			],
+		},
+	})
+	expect(created.ok()).toBe(true)
+	await page.reload()
+	await page.locator('.status[aria-label="Live"]').waitFor()
+	await page.getByRole('button', { name: 'Reset view' }).click()
+
+	const frame = page.frameLocator('[data-shape-id="html-card"] iframe')
+	await expect(frame.locator('#value')).toHaveText('42')
+
+	const updated = await request.post('/api/operations', {
+		data: {
+			operations: [
+				{
+					type: 'update',
+					id: 'html-card',
+					patch: {
+						html: '<!doctype html><html><body style="margin:0"><h1 id="value">43</h1></body></html>',
+					},
+				},
+			],
+		},
+	})
+	expect(updated.ok()).toBe(true)
+	await expect(frame.locator('#value')).toHaveText('43')
+
+	const labelBox = await pillBox(page, 'html-card')
+	await page.mouse.dblclick(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2)
+	const titleEditor = page.locator('.inline-editor input')
+	await expect(titleEditor).toBeVisible()
+	await titleEditor.fill('Revenue')
+	await titleEditor.press('Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'html-card'))
+		.toMatchObject({ title: 'Revenue' })
+	expect(
+		(await board(request)).shapes.find((shape) => shape.id === 'html-card') as CanvasShape,
+	).toMatchObject({
+		html: '<!doctype html><html><body style="margin:0"><h1 id="value">43</h1></body></html>',
+	})
+
+	const cardPoint = await worldPoint(page, 560, 500)
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.mouse.click(cardPoint.x, cardPoint.y)
+	const properties = page.getByRole('region', { name: 'Selected object properties' })
+	await expect(properties).toBeVisible()
+	await expect(properties.getByLabel('Card title')).toHaveValue('Revenue')
+	await expect(properties.getByLabel('Text', { exact: true })).toHaveCount(0)
 })
 
 test('freehand brush draws a persisted tapered path and API sketches render', async ({

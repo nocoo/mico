@@ -1,4 +1,4 @@
-import { Frame } from 'lucide-react'
+import { CodeXml, Frame } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
@@ -17,6 +17,7 @@ import { BrushStroke } from './BrushStroke'
 import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
+import { membershipAfterMove, membershipFor } from './containers'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
@@ -33,13 +34,12 @@ import {
 	TEXT_SIZE,
 	type Tool,
 } from './design'
-import { canRebaseMove } from './move'
+import { canRebaseMoveGroup } from './move'
 import { SelectField } from './SelectField'
 import { SelectionPanel } from './SelectionPanel'
 import {
 	boundsOf,
 	expandRect,
-	intersects,
 	normalizeRect,
 	type Rect,
 	selectInRect,
@@ -48,7 +48,6 @@ import {
 import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
-import { WidgetCard } from './WidgetCard'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -84,14 +83,13 @@ export default function App() {
 	const [marquee, setMarquee] = useState<Rect | null>(null)
 	const [editing, setEditing] = useState<{
 		id: string
-		field: 'text' | 'title' | 'widgetTitle'
+		field: 'text' | 'title'
 		value: string
 	} | null>(null)
 	const [noteColor, setNoteColor] = useState<string>(CANDY_TINTS.yellow)
 	const [textFont, setTextFont] = useState<'sans' | 'serif' | 'hand' | 'mono'>('sans')
 	const [textSize, setTextSize] = useState(32)
 	const [textWeight, setTextWeight] = useState(500)
-	const [widgetKind, setWidgetKind] = useState<'todo' | 'kanban' | 'table' | 'timeline'>('todo')
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
 	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
@@ -260,25 +258,11 @@ export default function App() {
 		if (rect) setViewport(fitViewport(boardRef.current.shapes, rect.width, rect.height))
 	}, [])
 
-	const intersectsWidget = (rect: Rect, ignored: string) =>
-		board.shapes.some(
-			(candidate) =>
-				candidate.type === 'widget' &&
-				candidate.id !== ignored &&
-				intersects(shapeBounds(candidate), rect),
-		)
-
 	const createShape = (shape: CanvasShape) => {
-		if (
-			shape.type !== 'widget' &&
-			shape.type !== 'frame' &&
-			intersectsWidget(shapeBounds(shape), shape.id)
-		) {
-			announce('Rich widgets are isolated; place this object outside the card')
-			return
-		}
+		const frameId =
+			shape.type === 'frame' ? null : membershipFor(board.shapes, shapeBounds(shape), shape.id)
 		selectOnly(shape.id)
-		void postOperations([{ type: 'create', shape }])
+		void postOperations([{ type: 'create', shape: frameId ? { ...shape, frameId } : shape }])
 	}
 
 	const deleteSelected = useCallback(() => {
@@ -340,7 +324,7 @@ export default function App() {
 				l: 'line',
 				p: 'path',
 				n: 'note',
-				w: 'widget',
+				w: 'html',
 				c: 'connector',
 			}
 			const nextTool = keys[event.key.toLowerCase()]
@@ -442,46 +426,17 @@ export default function App() {
 			return
 		}
 
-		if (tool === 'widget') {
-			const titles = {
-				todo: 'Checklist',
-				kanban: 'Delivery board',
-				table: 'Registry',
-				timeline: 'Roadmap',
-			}
-			const sample = {
-				todo: [
-					{ id: randomId(), title: 'Draft outline', done: true },
-					{ id: randomId(), title: 'Review with team', done: false },
-					{ id: randomId(), title: 'Publish release', done: false },
-				],
-				kanban: [
-					{ id: randomId(), title: 'Discovery', status: 'done' },
-					{ id: randomId(), title: 'Prototype', status: 'doing' },
-					{ id: randomId(), title: 'Launch', status: 'todo' },
-				],
-				table: [
-					{ id: randomId(), title: 'Kickoff', status: 'done', start: 1, end: 2 },
-					{ id: randomId(), title: 'Build', status: 'doing', start: 2, end: 6 },
-					{ id: randomId(), title: 'Ship', status: 'todo', start: 6, end: 8 },
-				],
-				timeline: [
-					{ id: randomId(), title: 'Design', start: 0, end: 3 },
-					{ id: randomId(), title: 'Build', start: 2, end: 7 },
-					{ id: randomId(), title: 'Launch', start: 7, end: 9 },
-				],
-			}[widgetKind]
+		if (tool === 'html') {
 			createShape({
 				id: randomId(),
-				type: 'widget',
+				type: 'html',
 				x: world.x - 260,
-				y: world.y - 190,
+				y: world.y - 180,
 				w: 520,
-				h: 380,
+				h: 360,
 				color: CANDY_COLORS.blue,
-				widget: widgetKind,
-				widgetTitle: titles[widgetKind],
-				items: sample,
+				title: 'HTML card',
+				html: '',
 			})
 			setTool('select')
 			return
@@ -673,27 +628,6 @@ export default function App() {
 				)
 				const deltaX = snapped.x - original.x
 				const deltaY = snapped.y - original.y
-				const blocked = group.some(
-					(shape) =>
-						shape.type !== 'widget' &&
-						shape.type !== 'frame' &&
-						intersectsWidget(
-							{ x: shape.x + deltaX, y: shape.y + deltaY, w: shape.w, h: shape.h },
-							shape.id,
-						),
-				)
-				if (blocked) {
-					announce('Rich widgets are isolated; drop outside the card')
-					setDragPreviews(new Map())
-					setGuides([])
-					setCreation(null)
-					setIsPanning(false)
-					interactionRef.current = null
-					if (svgRef.current?.hasPointerCapture(event.pointerId)) {
-						svgRef.current.releasePointerCapture(event.pointerId)
-					}
-					return
-				}
 				const token = interaction.previewToken ?? ++dragTokenRef.current
 				setDragPreviews((current) => {
 					const next = new Map(current)
@@ -703,30 +637,24 @@ export default function App() {
 				})
 				void postOperations(
 					group.map((shape) => {
-						const frame = shape.frameId
-							? board.shapes.find(
-									(candidate): candidate is CanvasShape =>
-										candidate.id === shape.frameId && candidate.type !== 'connector',
-								)
-							: undefined
-						const detached =
-							frame &&
-							!intersects(
-								{ x: shape.x + deltaX, y: shape.y + deltaY, w: shape.w, h: shape.h },
-								shapeBounds(frame),
-							)
+						const rect = { x: shape.x + deltaX, y: shape.y + deltaY, w: shape.w, h: shape.h }
+						const frameId =
+							shape.frameId && moving.has(shape.frameId)
+								? shape.frameId
+								: membershipAfterMove(board.shapes, shape.frameId, rect, shape.id)
+						const detached = shape.type !== 'frame' && frameId !== (shape.frameId ?? null)
 						return {
 							type: 'update' as const,
 							id: shape.id,
 							patch: {
-								x: shape.x + deltaX,
-								y: shape.y + deltaY,
-								...(detached ? { frameId: null } : {}),
+								x: rect.x,
+								y: rect.y,
+								...(detached ? { frameId } : {}),
 							},
 						}
 					}),
 					interaction.revision,
-					(current) => group.every((shape) => canRebaseMove(current, shape)),
+					(current) => canRebaseMoveGroup(current, group),
 				).then(() => {
 					for (const shape of group) clearDragPreview(shape.id, token)
 				})
@@ -761,19 +689,13 @@ export default function App() {
 	const beginInlineEdit = (shape: CanvasShape) => {
 		if (
 			shape.type !== 'frame' &&
-			shape.type !== 'widget' &&
+			shape.type !== 'html' &&
 			shape.type !== 'text' &&
 			shape.type !== 'note'
 		)
 			return
-		const field =
-			shape.type === 'frame' ? 'title' : shape.type === 'widget' ? 'widgetTitle' : 'text'
-		const value =
-			field === 'title'
-				? (shape.title ?? '')
-				: field === 'widgetTitle'
-					? (shape.widgetTitle ?? '')
-					: (shape.text ?? '')
+		const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
+		const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
 		setEditing({ id: shape.id, field, value })
 	}
 
@@ -946,22 +868,7 @@ export default function App() {
 			'data-shape-id': shape.id,
 			onDoubleClick: (event: React.MouseEvent<SVGGElement>) => {
 				event.stopPropagation()
-				if (
-					shape.type !== 'frame' &&
-					shape.type !== 'widget' &&
-					shape.type !== 'text' &&
-					shape.type !== 'note'
-				)
-					return
-				const field =
-					shape.type === 'frame' ? 'title' : shape.type === 'widget' ? 'widgetTitle' : 'text'
-				const value =
-					field === 'title'
-						? (shape.title ?? '')
-						: field === 'widgetTitle'
-							? (shape.widgetTitle ?? '')
-							: (shape.text ?? '')
-				setEditing({ id: shape.id, field, value })
+				beginInlineEdit(shape)
 			},
 			style: {
 				cursor:
@@ -1043,11 +950,54 @@ export default function App() {
 				</g>
 			)
 		}
-		if (shape.type === 'widget') {
+		if (shape.type === 'html') {
 			return (
 				<g key={shape.id} {...common}>
-					<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} fill="transparent" />
-					<WidgetCard shape={shape} />
+					<rect
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						rx={10}
+						fill="var(--surface)"
+						stroke={active ? shape.color : 'var(--border)'}
+						strokeWidth={active ? 2 : 1}
+						vectorEffect="non-scaling-stroke"
+					/>
+					<foreignObject
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						pointerEvents="none"
+					>
+						<div className="html-card">
+							{shape.html ? (
+								<iframe
+									className="html-card-frame"
+									title={shape.title ?? 'HTML card'}
+									sandbox="allow-scripts"
+									srcDoc={shape.html}
+								/>
+							) : (
+								<div className="html-card-empty">HTML content is generated through the API</div>
+							)}
+						</div>
+					</foreignObject>
+					<CardHeaderPill
+						x={shape.x}
+						y={shape.y}
+						width={Math.min(shape.w, 360)}
+						color={shape.color}
+						title={shape.title ?? 'HTML card'}
+						icon={CodeXml}
+						handleId={shape.id}
+						onPointerDown={(event) => onShapePointerDown(event, shape)}
+						onDoubleClick={(event) => {
+							event.stopPropagation()
+							beginInlineEdit(shape)
+						}}
+					/>
 					{active && (
 						<rect
 							className="selection"
@@ -1063,7 +1013,7 @@ export default function App() {
 		}
 		if (shape.type === 'frame') {
 			return (
-				<g key={shape.id} {...common}>
+				<g key={shape.id} className="canvas-shape frame" data-shape-id={shape.id}>
 					<rect
 						x={shape.x}
 						y={shape.y}
@@ -1074,14 +1024,7 @@ export default function App() {
 						stroke={active ? shape.color : 'var(--border)'}
 						strokeWidth={active ? 2 : 1}
 						vectorEffect="non-scaling-stroke"
-					/>
-					<CardHeaderPill
-						x={shape.x}
-						y={shape.y}
-						width={Math.min(shape.w, 360)}
-						color={shape.color}
-						title={shape.title ?? 'Frame'}
-						icon={Frame}
+						pointerEvents="none"
 					/>
 					{active && (
 						<rect
@@ -1091,6 +1034,7 @@ export default function App() {
 							width={shape.w + 8}
 							height={shape.h + 8}
 							rx={12}
+							pointerEvents="none"
 						/>
 					)}
 				</g>
@@ -1225,6 +1169,24 @@ export default function App() {
 		)
 	}
 
+	const renderFrameLabel = (shape: CanvasShape) => (
+		<CardHeaderPill
+			key={`label:${shape.id}`}
+			x={shape.x}
+			y={shape.y}
+			width={Math.min(shape.w, 360)}
+			color={shape.color}
+			title={shape.title ?? 'Frame'}
+			icon={Frame}
+			handleId={shape.id}
+			onPointerDown={(event) => onShapePointerDown(event, shape)}
+			onDoubleClick={(event) => {
+				event.stopPropagation()
+				beginInlineEdit(shape)
+			}}
+		/>
+	)
+
 	const toolOptions =
 		tool === 'path' ? (
 			<fieldset className="brush-options" aria-label="Brush options">
@@ -1267,21 +1229,6 @@ export default function App() {
 							style={{ background: value }}
 							onClick={() => setNoteColor(value)}
 						/>
-					))}
-				</div>
-			</fieldset>
-		) : tool === 'widget' ? (
-			<fieldset className="brush-options" aria-label="Widget kind">
-				<div className="segmented-control">
-					{(['todo', 'kanban', 'table', 'timeline'] as const).map((kind) => (
-						<button
-							type="button"
-							key={kind}
-							aria-pressed={widgetKind === kind}
-							onClick={() => setWidgetKind(kind)}
-						>
-							{kind}
-						</button>
 					))}
 				</div>
 			</fieldset>
@@ -1384,7 +1331,9 @@ export default function App() {
 				}}
 				onDoubleClick={(event) => {
 					const element = document.elementFromPoint(event.clientX, event.clientY)
-					const id = element?.closest('[data-shape-id]')?.getAttribute('data-shape-id')
+					const id =
+						element?.closest('[data-card-handle]')?.getAttribute('data-card-handle') ??
+						element?.closest('[data-shape-id]')?.getAttribute('data-shape-id')
 					const shape = id ? visibleShapes.find((candidate) => candidate.id === id) : undefined
 					if (shape && isCanvasShape(shape)) beginInlineEdit(shape)
 				}}
@@ -1414,15 +1363,48 @@ export default function App() {
 					data-world-layer="true"
 					transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
 				>
+					{visibleShapes.filter(isConnector).map(renderShape)}
+					{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
+					{visibleShapes
+						.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
+						.map(renderShape)}
+					{visibleShapes
+						.filter((shape): shape is CanvasShape => shape.type === 'frame')
+						.map(renderFrameLabel)}
+					{creation && renderShape(creation)}
+					{brushPoints && (
+						<BrushStroke
+							points={brushPoints}
+							brush={brushStyle}
+							strokeWidth={brushWidth}
+							color={CANDY_COLORS.ink}
+							preview
+						/>
+					)}
+					{marquee && (
+						<rect
+							className="marquee"
+							x={marquee.x}
+							y={marquee.y}
+							width={marquee.w}
+							height={marquee.h}
+							vectorEffect="non-scaling-stroke"
+						/>
+					)}
 					{editing &&
 						(() => {
 							const target = visibleShapes.find((shape) => shape.id === editing.id) as
 								| CanvasShape
 								| undefined
 							if (!target) return null
-							const frame = target.type === 'frame' || target.type === 'widget'
-							const box = frame
-								? { x: target.x, y: target.y - 48, w: Math.min(target.w, 360), h: 36 }
+							const header = target.type === 'frame' || target.type === 'html'
+							const box = header
+								? {
+										x: target.x,
+										y: target.y - 40,
+										w: Math.max(160, Math.min(target.w, 360)),
+										h: 36,
+									}
 								: target.type === 'note'
 									? { x: target.x + 12, y: target.y + 12, w: target.w - 24, h: target.h - 24 }
 									: { x: target.x, y: target.y, w: target.w, h: target.h }
@@ -1450,6 +1432,7 @@ export default function App() {
 									width={box.w}
 									height={box.h}
 									className="inline-editor"
+									onPointerDown={(event) => event.stopPropagation()}
 								>
 									{multiline ? (
 										<textarea
@@ -1480,31 +1463,6 @@ export default function App() {
 								</foreignObject>
 							)
 						})()}
-					{marquee && (
-						<rect
-							className="marquee"
-							x={marquee.x}
-							y={marquee.y}
-							width={marquee.w}
-							height={marquee.h}
-							vectorEffect="non-scaling-stroke"
-						/>
-					)}
-					{visibleShapes.filter(isConnector).map(renderShape)}
-					{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
-					{visibleShapes
-						.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
-						.map(renderShape)}
-					{creation && renderShape(creation)}
-					{brushPoints && (
-						<BrushStroke
-							points={brushPoints}
-							brush={brushStyle}
-							strokeWidth={brushWidth}
-							color={CANDY_COLORS.ink}
-							preview
-						/>
-					)}
 					{guides.map((guide) => (
 						<line
 							key={`${guide.axis}:${guide.value}`}

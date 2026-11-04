@@ -4,6 +4,18 @@
 
 - A source-only investigator read the live board database despite being told not to access it. Give delegated investigations an isolated checkout without the daily board instead of relying on prompt instructions alone.
 
+## Frame containers, HTML cards and membership
+
+- A foreignObject captures pointer events across its whole box, not just the visible HTML child. Measure the `.card-pill` width and drive a transparent SVG hit rect from it; keep the foreignObject at `pointer-events: none`. Tests must click `.card-pill`, not the handle group bounding box, which still spans the foreignObject.
+- Implicit pointer capture retargets double-click compatibility events to the capturing SVG. Resolve label double-clicks through the canvas `elementFromPoint` fallback and look up `[data-card-handle]`, not only `[data-shape-id]`.
+- "New member needs full containment" and "existing member detaches only when fully outside" are different rules. Reusing one full-containment check silently dropped partially overlapping members that the old detach semantics kept.
+- Drag membership must normalize signed line geometry before containment; creation already used `shapeBounds`, the drag path passed raw `w`/`h`.
+- A group drag snapshots its shapes, so rebasing must also compare derived sets. Frame drags need a member-set check, otherwise members added concurrently stay behind holding `frameId`.
+- Tightening persisted schema locally needs an explicit load migration. Retired widget shapes and now-invalid mixed frame connectors are dropped once; legacy line `text` is accepted and ignored.
+- An inline editor inside the canvas must stop pointerdown propagation, otherwise the canvas prevents default and starts a marquee instead of placing the caret.
+- Render the marquee after frames and content; an opaque frame background otherwise hides the selection rectangle when the drag starts inside a frame.
+- Verify sandboxed HTML by asserting rendered iframe content through Playwright `frameLocator`, and confirm a board update re-renders markup without reloading on a related geometry move.
+
 ## Frames, typography and widgets
 
 - Marquee and frame dragging operate on a set of shapes, so every preview and commit must update the whole group atomically. Snapping the primary shape and applying the same delta preserves relative positions without fighting per-shape alignment.

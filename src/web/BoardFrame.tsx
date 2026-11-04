@@ -2,9 +2,9 @@ import {
 	ArrowUpRight,
 	Brush,
 	Circle,
+	CodeXml,
 	Frame,
 	Hand,
-	LayoutGrid,
 	Maximize,
 	Minus,
 	MousePointer2,
@@ -28,7 +28,7 @@ const tools = [
 	{ id: 'line', label: 'Line', shortcut: 'L', icon: Slash },
 	{ id: 'path', label: 'Brush', shortcut: 'P', icon: Brush },
 	{ id: 'note', label: 'Sticky note', shortcut: 'N', icon: StickyNote },
-	{ id: 'widget', label: 'Rich widget', shortcut: 'W', icon: LayoutGrid },
+	{ id: 'html', label: 'HTML card', shortcut: 'W', icon: CodeXml },
 	{ id: 'connector', label: 'Connector', shortcut: 'C', icon: ArrowUpRight },
 ] as const
 
