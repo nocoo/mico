@@ -32,8 +32,8 @@ import {
 	type Tool,
 } from './design'
 import { canRebaseMove } from './move'
-import { PropertiesBar } from './PropertiesBar'
 import { SelectField } from './SelectField'
+import { SelectionPanel } from './SelectionPanel'
 import {
 	boundsOf,
 	expandRect,
@@ -48,7 +48,6 @@ import { UiInput } from './UiInput'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
 import { WidgetCard } from './WidgetCard'
-import { WidgetEditor } from './WidgetEditor'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -58,105 +57,11 @@ const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'co
 
 const randomId = () => crypto.randomUUID()
 
-interface TextDraft {
-	value: string
-	revision: number
-	conflict: boolean
-	saving: boolean
-}
-
-function TextField({
-	shapeId,
-	text,
-	revision,
-	draft,
-	setDrafts,
-	onSave,
-}: {
-	shapeId: string
-	text: string
-	revision: number
-	draft: TextDraft | undefined
-	setDrafts: React.Dispatch<React.SetStateAction<Map<string, TextDraft>>>
-	onSave: (text: string, revision: number) => Promise<boolean>
-}) {
-	const baseline = useRef(revision)
-
-	const save = (expectedRevision: number) => {
-		if (!draft || draft.saving) return
-		const pending = { ...draft, saving: true }
-		setDrafts((current) =>
-			current.get(shapeId) === draft ? new Map(current).set(shapeId, pending) : current,
-		)
-		void onSave(draft.value, expectedRevision).then((success) => {
-			setDrafts((current) => {
-				if (current.get(shapeId) !== pending) return current
-				const next = new Map(current)
-				if (success) next.delete(shapeId)
-				else next.set(shapeId, { ...pending, saving: false, conflict: true })
-				return next
-			})
-		})
-	}
-
-	return (
-		<>
-			<input
-				id="shape-text"
-				value={draft?.value ?? text}
-				disabled={draft?.saving}
-				onFocus={() => {
-					if (!draft) baseline.current = revision
-				}}
-				onChange={(event) => {
-					const value = event.target.value
-					setDrafts((current) =>
-						new Map(current).set(shapeId, {
-							value,
-							revision: current.get(shapeId)?.revision ?? baseline.current,
-							conflict: current.get(shapeId)?.conflict ?? false,
-							saving: false,
-						}),
-					)
-				}}
-				onBlur={() => {
-					if (draft && !draft.conflict) save(draft.revision)
-				}}
-				onKeyDown={(event) => {
-					if (event.key === 'Enter') event.currentTarget.blur()
-				}}
-			/>
-			{draft?.conflict && (
-				<div className="draft-conflict">
-					<span>Draft not saved. Review before replacing board text.</span>
-					<button type="button" disabled={draft.saving} onClick={() => save(revision)}>
-						Save draft
-					</button>
-					<button
-						type="button"
-						disabled={draft.saving}
-						onClick={() => {
-							setDrafts((current) => {
-								const next = new Map(current)
-								next.delete(shapeId)
-								return next
-							})
-						}}
-					>
-						Discard
-					</button>
-				</div>
-			)}
-		</>
-	)
-}
-
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const initialViewFitted = useRef(false)
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
-	const [textDrafts, setTextDrafts] = useState<Map<string, TextDraft>>(() => new Map())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
 		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush' | 'marquee'
@@ -1432,187 +1337,21 @@ export default function App() {
 				onFrame={frameSelection}
 				canFrame={selectedIds.length > 0}
 				toolOptions={toolOptions}
-				properties={
-					selected && (
-						<PropertiesBar
-							key={selected.id}
-							selected={selected}
-							onColorChange={updateSelectedColor}
-							onClose={() => setSelectedIds([])}
-						>
-							{isCanvasShape(selected) &&
-								(selected.type === 'rectangle' ||
-									selected.type === 'ellipse' ||
-									selected.type === 'text' ||
-									selected.type === 'note') && (
-									<div className="property-field">
-										<label className="sr-only" htmlFor="shape-text">
-											Text
-										</label>
-										<TextField
-											key={selected.id}
-											shapeId={selected.id}
-											draft={textDrafts.get(selected.id)}
-											setDrafts={setTextDrafts}
-											text={selected.text ?? ''}
-											revision={board.revision}
-											onSave={(text, revision) =>
-												postOperations(
-													[{ type: 'update', id: selected.id, patch: { text } }],
-													revision,
-												)
-											}
-										/>
-									</div>
-								)}
-							{selected.type === 'widget' && (
-								<WidgetEditor
-									key={selected.id}
-									shape={selected}
-									onPatch={(patch) =>
-										void postOperations([{ type: 'update', id: selected.id, patch }])
-									}
-								/>
-							)}
-							{selected.type === 'text' && (
-								<>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="text-font">
-											Font family
-										</label>
-										<SelectField
-											label="Font family"
-											value={selected.font ?? 'sans'}
-											options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
-											onChange={(font) =>
-												void postOperations([{ type: 'update', id: selected.id, patch: { font } }])
-											}
-										/>
-									</div>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="text-size">
-											Font size
-										</label>
-										<SelectField
-											label="Font size"
-											value={String(selected.fontSize ?? 32)}
-											options={FONT_SIZES.map((size) => ({
-												value: String(size),
-												label: String(size),
-											}))}
-											onChange={(size) =>
-												void postOperations([
-													{ type: 'update', id: selected.id, patch: { fontSize: Number(size) } },
-												])
-											}
-										/>
-									</div>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="text-weight">
-											Font weight
-										</label>
-										<SelectField
-											label="Font weight"
-											value={String(selected.fontWeight ?? 500)}
-											options={FONT_WEIGHTS.map((weight) => ({
-												value: String(weight),
-												label: String(weight),
-											}))}
-											onChange={(weight) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { fontWeight: Number(weight) },
-													},
-												])
-											}
-										/>
-									</div>
-								</>
-							)}
-							{selected.type === 'frame' && (
-								<div className="property-field">
-									<label className="sr-only" htmlFor="frame-title">
-										Frame title
-									</label>
-									<UiInput
-										id="frame-title"
-										defaultValue={selected.title}
-										key={`${selected.id}:${selected.title}`}
-										onBlur={(event) => {
-											const title = event.target.value.trim()
-											if (title && title !== selected.title)
-												void postOperations([{ type: 'update', id: selected.id, patch: { title } }])
-										}}
-										onKeyDown={(event) => {
-											if (event.key === 'Enter') event.currentTarget.blur()
-										}}
-									/>
-								</div>
-							)}
-							{selected.type === 'path' && (
-								<>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="path-brush">
-											Brush style
-										</label>
-										<SelectField
-											label="Brush style"
-											value={selected.brush ?? 'brush'}
-											options={BRUSH_STYLES.map(({ id, label }) => ({ value: id, label }))}
-											onChange={(brush) =>
-												void postOperations([{ type: 'update', id: selected.id, patch: { brush } }])
-											}
-										/>
-									</div>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="path-width">
-											Stroke width
-										</label>
-										<SelectField
-											label="Stroke width"
-											value={String(selected.strokeWidth ?? 4)}
-											options={BRUSH_WIDTHS.map((width) => ({
-												value: String(width),
-												label: `${width}px`,
-											}))}
-											onChange={(width) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { strokeWidth: Number(width) },
-													},
-												])
-											}
-										/>
-									</div>
-								</>
-							)}
-							{isConnector(selected) &&
-								(['from', 'to'] as const).map((endpoint) => (
-									<div className="property-field" key={endpoint}>
-										<label className="sr-only" htmlFor={`connection-${endpoint}`}>
-											{endpoint === 'from' ? 'Source' : 'Target'}
-										</label>
-										<SelectField
-											label={endpoint === 'from' ? 'Source' : 'Target'}
-											value={selected[endpoint]}
-											disabled={!!connection.draft}
-											options={board.shapes
-												.filter(isCanvasShape)
-												.filter(
-													(shape) => shape.id !== selected[endpoint === 'from' ? 'to' : 'from'],
-												)
-												.map((shape) => ({ value: shape.id, label: shape.text || shape.id }))}
-											onChange={(value) => changeEndpoint(endpoint, value)}
-										/>
-									</div>
-								))}
-						</PropertiesBar>
-					)
-				}
+			/>
+
+			<SelectionPanel
+				shape={selected}
+				count={selectedIds.length}
+				shapes={board.shapes}
+				onClose={() => setSelectedIds([])}
+				onPatch={(patch) => {
+					if (!selected) return
+					void postOperations([{ type: 'update', id: selected.id, patch }])
+				}}
+				onColor={updateSelectedColor}
+				onFrame={frameSelection}
+				onDelete={deleteSelected}
+				onReconnect={(endpoint, id) => changeEndpoint(endpoint, id)}
 			/>
 
 			{(tool === 'connector' || connection.draft) && (

@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.6.4
+
+- Move the selection editor into an independent floating Radix Themes card, fully decoupled from the bottom tool dock.
+- Rebuild property rows with consistent labels, inputs, selects and buttons; no more squeezed columns or overlapping controls.
+
 ## v0.6.3
 
 - Give text shapes and rich widgets real hit targets so nested cards inside frames can be selected and dragged.

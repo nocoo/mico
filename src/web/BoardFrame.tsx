@@ -45,7 +45,6 @@ interface BoardFrameProps {
 	wsConnected: boolean
 	revision: number
 	objectCount: number
-	properties?: ReactNode
 	toolOptions?: ReactNode
 	onFrame: () => void
 	canFrame: boolean
@@ -64,7 +63,6 @@ export function BoardFrame({
 	wsConnected,
 	revision,
 	objectCount,
-	properties,
 	toolOptions,
 	onFrame,
 	canFrame,
@@ -135,7 +133,7 @@ export function BoardFrame({
 				role="toolbar"
 				aria-label="Canvas tools"
 				onKeyDown={(event) => {
-					if ((event.target as Element).closest('.selection-properties')) return
+					if ((event.target as Element).closest('.selection-panel')) return
 					if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 					event.preventDefault()
 					const buttons = [
@@ -154,8 +152,6 @@ export function BoardFrame({
 				}}
 			>
 				<div className="dock-main">
-					{properties}
-					{properties && <span className="panel-divider" />}
 					<div className="drawing-tools">
 						{tools.map(({ id, label, shortcut, icon }) => (
 							<div className="tool-slot" key={id}>
