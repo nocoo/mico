@@ -573,4 +573,10 @@ test('identity, dock and properties panels share one surface style', async ({ pa
 	}
 	expect(panelStyles.identity).toEqual(panelStyles.dock)
 	expect(panelStyles.dock).toEqual(panelStyles.properties)
+
+	const idleToolBackgrounds = await page
+		.locator('.drawing-tools .icon-button:not([aria-pressed="true"])')
+		.evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor))
+	expect(idleToolBackgrounds.length).toBeGreaterThan(0)
+	for (const background of idleToolBackgrounds) expect(background).toBe('rgba(0, 0, 0, 0)')
 })
