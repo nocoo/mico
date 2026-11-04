@@ -225,6 +225,15 @@ export function AiPanel({
 		setLectureQueued(0)
 	}, [])
 
+	useEffect(
+		() => () => {
+			lectureQueue.current = []
+			requestSeq.current++
+			requestLock.current = false
+		},
+		[],
+	)
+
 	const pumpLecture = useCallback(() => {
 		if (requestLock.current) return
 		const batch: string[] = []
