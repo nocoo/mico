@@ -2,6 +2,7 @@ import { Theme } from '@radix-ui/themes'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { initializeCandyPalette } from './design'
 import '@radix-ui/themes/styles.css'
 import './styles.css'
 
@@ -22,12 +23,14 @@ window.addEventListener(
 	{ passive: false },
 )
 
+initializeCandyPalette(document.documentElement)
+
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element missing')
 
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
-		<Theme appearance="light" accentColor="indigo" grayColor="slate" radius="medium" scaling="100%">
+		<Theme appearance="light" accentColor="blue" grayColor="slate" radius="medium" scaling="100%">
 			<App />
 		</Theme>
 	</React.StrictMode>,

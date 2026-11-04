@@ -29,27 +29,27 @@
 	--hairline: 1px;
 	--stroke-standard: 1.5px;
 	--stroke-strong: 2px;
-	--accent: #5b5fc7;
-	--accent-hover: #484cb0;
-	--accent-tint: #eeeffb;
-	--ink: #242a38;
-	--ink-secondary: #5c6474;
-	--ink-muted: #687386;
-	--canvas: #f2f3f4;
-	--grid-major: #e6e8eb;
-	--grid-minor: #edeff1;
-	--grid-snap: #4f5bd5;
+	--accent: var(--candy-blue-hover);
+	--accent-hover: var(--candy-blue-hover);
+	--accent-tint: var(--candy-blue-tint);
+	--ink: var(--candy-ink);
+	--ink-secondary: var(--candy-ink-secondary);
+	--ink-muted: var(--candy-ink-muted);
+	--canvas: var(--candy-canvas);
+	--grid-major: var(--candy-grid);
+	--grid-minor: var(--candy-grid);
+	--grid-snap: var(--accent);
 	--surface: #ffffff;
-	--surface-muted: #f0f2f6;
-	--surface-hover: #e9edf4;
-	--border: #dce1ea;
-	--border-strong: #8994a6;
-	--success: #22c55e;
-	--status-glow: rgb(34 197 94 / 0.28);
+	--surface-muted: var(--candy-neutral-tint);
+	--surface-hover: var(--candy-surface-hover);
+	--border: var(--candy-border);
+	--border-strong: var(--candy-border-strong);
+	--success: var(--candy-green-status);
+	--status-glow: color-mix(in srgb, var(--candy-green-status) 28%, transparent);
 	--motion-breath: 2400ms;
-	--warning: #986a18;
-	--danger: #b83535;
-	--tooltip-surface: #242a38;
+	--warning: var(--candy-warning);
+	--danger: var(--candy-danger);
+	--tooltip-surface: var(--candy-ink);
 	--tooltip-ink: #ffffff;
 	--shadow-panel: 0 2px 8px #24304a08, 0 8px 24px #24304a06;
 	--shadow-popover: 0 8px 32px #24304a14;
@@ -180,6 +180,9 @@ svg {
 	min-height: calc(var(--control-size) + var(--space-1));
 	gap: var(--space-05);
 	pointer-events: auto;
+}
+.identity-panel {
+	background: var(--candy-blue-tint);
 }
 .brand {
 	display: flex;
@@ -317,6 +320,7 @@ svg {
 	flex-wrap: nowrap;
 	flex-direction: column;
 	gap: 0;
+	background: var(--candy-neutral-tint);
 }
 .dock-main {
 	display: flex;
@@ -328,6 +332,56 @@ svg {
 }
 .tool-slot {
 	display: contents;
+}
+.tool-slot:is(
+	[data-tool-id="select"],
+	[data-tool-id="hand"],
+	[data-tool-id="rectangle"],
+	[data-tool-id="widget"]
+) {
+	--tool-accent: var(--candy-blue);
+	--tool-tint: var(--candy-blue-tint);
+	--tool-active-ink: var(--surface);
+}
+.tool-slot:is([data-tool-id="ellipse"], [data-tool-id="connector"]) {
+	--tool-accent: var(--candy-green);
+	--tool-tint: var(--candy-green-tint);
+	--tool-active-ink: var(--candy-ink);
+}
+.tool-slot:is([data-tool-id="line"], [data-tool-id="note"]) {
+	--tool-accent: var(--candy-yellow);
+	--tool-tint: var(--candy-yellow-tint);
+	--tool-active-ink: var(--candy-ink);
+}
+.tool-slot[data-tool-id="path"] {
+	--tool-accent: var(--candy-pink);
+	--tool-tint: var(--candy-pink-tint);
+	--tool-active-ink: var(--candy-ink);
+}
+.tool-slot[data-tool-id="text"] {
+	--tool-accent: var(--candy-ink);
+	--tool-tint: var(--candy-neutral-tint);
+	--tool-active-ink: var(--surface);
+}
+.tool-slot .icon-button:not([aria-pressed="true"]):not(:disabled) {
+	background: var(--tool-tint);
+	color: var(--ink);
+	box-shadow: inset 0 0 0 var(--hairline) var(--border);
+}
+.tool-slot .icon-button[aria-pressed="true"],
+.tool-slot .icon-button[aria-pressed="true"]:hover {
+	background: var(--tool-accent);
+	color: var(--tool-active-ink);
+}
+.tool-slot:is(
+		[data-tool-id="ellipse"],
+		[data-tool-id="connector"],
+		[data-tool-id="line"],
+		[data-tool-id="note"],
+		[data-tool-id="path"]
+	)
+	.icon-button[aria-pressed="true"] {
+	box-shadow: inset 0 0 0 var(--stroke-strong) var(--candy-ink);
 }
 .toolbar .panel-divider {
 	flex-basis: var(--space-1);
@@ -444,7 +498,8 @@ svg {
 	color: var(--ink-secondary);
 }
 .marquee {
-	fill: rgb(91 95 199 / 0.08);
+	fill: var(--accent-tint);
+	fill-opacity: 0.35;
 	stroke: var(--accent);
 	stroke-width: var(--hairline);
 	stroke-dasharray: 4 4;
@@ -595,8 +650,8 @@ svg {
 	top: 3px;
 	height: 16px;
 	border-radius: 4px;
-	background: #fde68a;
-	border: var(--hairline) solid #e9c46a;
+	background: var(--candy-yellow-tint);
+	border: var(--hairline) solid var(--candy-yellow);
 }
 .sticky-note {
 	filter: drop-shadow(0 2px 4px rgb(36 42 56 / 0.16));

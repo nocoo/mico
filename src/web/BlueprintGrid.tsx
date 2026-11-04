@@ -2,7 +2,7 @@ import { useId } from 'react'
 import { computeGrid, type GridViewport, gridPathData } from './grid.ts'
 
 const MAJOR_STROKE = 1
-const MINOR_STROKE = 0.75
+const MINOR_STROKE = 1
 const MINOR_DASH_WORLD = 4
 
 export function BlueprintGrid({ viewport }: { viewport: GridViewport }) {

@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Point, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { canRebaseConnector, findSnapTarget, type SnapTarget } from './connections'
+import { CANDY_LAYOUT } from './design'
 
 export interface ConnectionDraft {
 	pointerId: number
@@ -131,7 +132,12 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 			? { type: 'update', id: original.id, patch: endpoints }
 			: {
 					type: 'create',
-					shape: { id: crypto.randomUUID(), type: 'connector', color: '#5c6474', ...endpoints },
+					shape: {
+						id: crypto.randomUUID(),
+						type: 'connector',
+						color: CANDY_LAYOUT.inkSecondary,
+						...endpoints,
+					},
 				}
 		update({ ...current, target, pointer, pending: true })
 		void commit([operation], current.revision, (latest) => {

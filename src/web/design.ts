@@ -12,21 +12,81 @@ export const BRUSH_STYLES = [
 
 export const BRUSH_WIDTHS = [2, 4, 8] as const
 
+export const CANDY_COLORS = {
+	blue: '#3b82f6',
+	green: '#22c55e',
+	yellow: '#facc15',
+	pink: '#f472b6',
+	ink: '#263248',
+} as const
+
+export const CANDY_TINTS = {
+	blue: '#dbeafe',
+	green: '#dcfce7',
+	yellow: '#fef3c7',
+	pink: '#fce7f3',
+	neutral: '#f1f5f9',
+} as const
+
+export const CANDY_LAYOUT = {
+	blueHover: '#2563eb',
+	textPreset: '#1d4ed8',
+	linePreset: '#166534',
+	yellowPreset: '#a16207',
+	pinkPreset: '#9d174d',
+	grid: '#dfe5ec',
+	canvas: '#f8fafc',
+	inkSecondary: '#5b6575',
+	inkMuted: '#5b6575',
+	surfaceHover: '#e2e8f0',
+	border: '#dbe3ef',
+	borderStrong: '#94a3b8',
+	greenStatus: '#15803d',
+	warning: '#a16207',
+	danger: '#be123c',
+} as const
+
+export function initializeCandyPalette(root: HTMLElement): void {
+	const properties: Record<string, string> = {
+		'--candy-blue': CANDY_COLORS.blue,
+		'--candy-blue-hover': CANDY_LAYOUT.blueHover,
+		'--candy-blue-tint': CANDY_TINTS.blue,
+		'--candy-green': CANDY_COLORS.green,
+		'--candy-green-tint': CANDY_TINTS.green,
+		'--candy-yellow': CANDY_COLORS.yellow,
+		'--candy-yellow-tint': CANDY_TINTS.yellow,
+		'--candy-pink': CANDY_COLORS.pink,
+		'--candy-pink-tint': CANDY_TINTS.pink,
+		'--candy-ink': CANDY_COLORS.ink,
+		'--candy-neutral-tint': CANDY_TINTS.neutral,
+		'--candy-grid': CANDY_LAYOUT.grid,
+		'--candy-canvas': CANDY_LAYOUT.canvas,
+		'--candy-ink-secondary': CANDY_LAYOUT.inkSecondary,
+		'--candy-ink-muted': CANDY_LAYOUT.inkMuted,
+		'--candy-green-status': CANDY_LAYOUT.greenStatus,
+		'--candy-surface-hover': CANDY_LAYOUT.surfaceHover,
+		'--candy-border': CANDY_LAYOUT.border,
+		'--candy-border-strong': CANDY_LAYOUT.borderStrong,
+		'--candy-warning': CANDY_LAYOUT.warning,
+		'--candy-danger': CANDY_LAYOUT.danger,
+	}
+	for (const [name, value] of Object.entries(properties)) root.style.setProperty(name, value)
+}
+
 export const SHAPE_COLORS = [
-	{ value: '#5b5fc7', label: 'Indigo' },
-	{ value: '#0f6cbd', label: 'Blue' },
-	{ value: '#107c10', label: 'Green' },
-	{ value: '#b45309', label: 'Amber' },
-	{ value: '#c42b1c', label: 'Red' },
-	{ value: '#242424', label: 'Graphite' },
+	{ value: CANDY_LAYOUT.textPreset, label: 'Blue' },
+	{ value: CANDY_LAYOUT.linePreset, label: 'Green' },
+	{ value: CANDY_LAYOUT.yellowPreset, label: 'Yellow' },
+	{ value: CANDY_LAYOUT.pinkPreset, label: 'Pink' },
+	{ value: CANDY_COLORS.ink, label: 'Ink' },
 ] as const
 
 export const NOTE_COLORS = [
-	{ value: '#fde68a', label: 'Yellow' },
-	{ value: '#fbcfe8', label: 'Pink' },
-	{ value: '#bbf7d0', label: 'Green' },
-	{ value: '#bfdbfe', label: 'Blue' },
-	{ value: '#fed7aa', label: 'Orange' },
+	{ value: CANDY_TINTS.yellow, label: 'Yellow' },
+	{ value: CANDY_TINTS.pink, label: 'Pink' },
+	{ value: CANDY_TINTS.green, label: 'Green' },
+	{ value: CANDY_TINTS.blue, label: 'Blue' },
+	{ value: CANDY_TINTS.neutral, label: 'Neutral' },
 ] as const
 
 export const FONT_OPTIONS = [

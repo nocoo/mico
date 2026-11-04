@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { CanvasShape, Connector, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
+import { CANDY_LAYOUT } from './design'
 import type { ConnectionDraft } from './useConnectionGesture'
 
 interface ConnectionOverlayProps {
@@ -52,7 +53,7 @@ export function ConnectionOverlay({
 					y1={preview.start.y}
 					x2={preview.end.x}
 					y2={preview.end.y}
-					stroke={draft.original?.color ?? '#5c6474'}
+					stroke={draft.original?.color ?? CANDY_LAYOUT.inkSecondary}
 					strokeWidth={2}
 					strokeDasharray={draft.target ? undefined : '8 8'}
 					vectorEffect="non-scaling-stroke"

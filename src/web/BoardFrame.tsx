@@ -154,7 +154,7 @@ export function BoardFrame({
 				<div className="dock-main">
 					<div className="drawing-tools">
 						{tools.map(({ id, label, shortcut, icon }) => (
-							<div className="tool-slot" key={id}>
+							<div className="tool-slot" key={id} data-tool-id={id}>
 								{(id === 'rectangle' || id === 'line') && <span className="panel-divider" />}
 								<IconButton
 									icon={icon}

@@ -20,6 +20,9 @@ import { canRebaseConnector } from './connections'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
+	CANDY_COLORS,
+	CANDY_LAYOUT,
+	CANDY_TINTS,
 	CONTROL_SIZE,
 	FONT_OPTIONS,
 	FONT_SIZES,
@@ -84,7 +87,7 @@ export default function App() {
 		field: 'text' | 'title' | 'widgetTitle'
 		value: string
 	} | null>(null)
-	const [noteColor, setNoteColor] = useState('#fde68a')
+	const [noteColor, setNoteColor] = useState<string>(CANDY_TINTS.yellow)
 	const [textFont, setTextFont] = useState<'sans' | 'serif' | 'hand' | 'mono'>('sans')
 	const [textSize, setTextSize] = useState(32)
 	const [textWeight, setTextWeight] = useState(500)
@@ -414,7 +417,7 @@ export default function App() {
 				y: world.y - textSize,
 				w: 320,
 				h: Math.round(textSize * 1.6),
-				color: '#242424',
+				color: CANDY_LAYOUT.textPreset,
 				text: 'Type something',
 				font: textFont,
 				fontSize: textSize,
@@ -475,7 +478,7 @@ export default function App() {
 				y: world.y - 190,
 				w: 520,
 				h: 380,
-				color: '#5b5fc7',
+				color: CANDY_COLORS.blue,
 				widget: widgetKind,
 				widgetTitle: titles[widgetKind],
 				items: sample,
@@ -514,7 +517,7 @@ export default function App() {
 			y: world.y,
 			w: 0,
 			h: 0,
-			color: tool === 'line' ? '#616161' : '#5b5fc7',
+			color: tool === 'line' ? CANDY_LAYOUT.linePreset : CANDY_COLORS.blue,
 		})
 	}
 
@@ -631,7 +634,7 @@ export default function App() {
 				y: minY,
 				w,
 				h,
-				color: '#242424',
+				color: CANDY_COLORS.ink,
 				points,
 				brush: brushStyle,
 				strokeWidth: brushWidth,
@@ -878,7 +881,7 @@ export default function App() {
 			[
 				{
 					type: 'create',
-					shape: { id: frameId, type: 'frame', ...rect, color: '#5b5fc7', title: 'Frame' },
+					shape: { id: frameId, type: 'frame', ...rect, color: CANDY_COLORS.blue, title: 'Frame' },
 				},
 				...members.map((id) => ({ type: 'update' as const, id, patch: { frameId } })),
 			],
@@ -1498,7 +1501,7 @@ export default function App() {
 							points={brushPoints}
 							brush={brushStyle}
 							strokeWidth={brushWidth}
-							color="#242424"
+							color={CANDY_COLORS.ink}
 							preview
 						/>
 					)}
