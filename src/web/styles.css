@@ -440,6 +440,7 @@ svg {
 }
 .property-field input:not([type]),
 .property-field input[type="text"],
+.property-field textarea,
 .property-field select {
 	width: 100%;
 	height: var(--control-compact);
@@ -798,6 +799,35 @@ svg {
 	color: var(--ink);
 	white-space: pre-wrap;
 }
+.shape-text-input {
+	width: 100%;
+	min-height: calc(var(--control-compact) * 2);
+	resize: vertical;
+	padding-block: var(--space-05);
+	border: var(--hairline) solid var(--border-strong);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	color: var(--ink);
+	font-size: var(--text-ui);
+	line-height: var(--line-body);
+}
+.shape-label {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	height: 100%;
+	min-height: 0;
+	text-align: center;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	word-break: normal;
+	line-height: 1.2;
+	overflow: visible;
+}
+foreignObject:has(> .shape-label) {
+	overflow: visible;
+}
 .typographic-text {
 	min-height: 100%;
 	overflow: visible;
@@ -901,6 +931,14 @@ foreignObject:has(> .typographic-text) {
 	}
 }
 @media (max-width: 480px) {
+	.toolbar {
+		left: 8px;
+		width: calc(100vw - 16px);
+		max-width: none;
+	}
+	.dock-main {
+		width: 100%;
+	}
 	.app {
 		--dock-width: calc(var(--control-size) * 8 + var(--space-2));
 	}
@@ -935,7 +973,19 @@ foreignObject:has(> .typographic-text) {
 	.properties-fields {
 		grid-column: 1 / -1;
 		grid-row: 2;
+		flex-wrap: wrap;
+		align-items: stretch;
 		gap: var(--space-1);
+	}
+	.shape-text-property {
+		flex-basis: 100%;
+	}
+	.label-typography {
+		flex: 1 1 72px;
+		min-width: 72px;
+	}
+	.shape-text-input {
+		min-height: 64px;
 	}
 }
 @media (max-width: 384px) {

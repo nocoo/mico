@@ -24,6 +24,7 @@ import {
 	FONT_STACKS,
 	FONT_WEIGHTS,
 	ICON_SIZE,
+	LINE_WIDTHS,
 	NOTE_COLORS,
 	TEXT_SIZE,
 	type Tool,
@@ -122,8 +123,9 @@ function TextField({
 
 	return (
 		<>
-			<input
+			<textarea
 				id="shape-text"
+				className="shape-text-input"
 				value={draft?.value ?? text}
 				disabled={draft?.saving}
 				onFocus={() => {
@@ -144,7 +146,10 @@ function TextField({
 					if (draft && !draft.conflict) save(draft.revision)
 				}}
 				onKeyDown={(event) => {
-					if (event.key === 'Enter') event.currentTarget.blur()
+					if (event.key === 'Enter' && !event.shiftKey) {
+						event.preventDefault()
+						event.currentTarget.blur()
+					}
 				}}
 			/>
 			{draft?.conflict && (
@@ -167,6 +172,92 @@ function TextField({
 						Discard
 					</button>
 				</div>
+			)}
+		</>
+	)
+}
+
+function ShapeLabel({ shape }: { shape: CanvasShape }) {
+	const textRef = useRef<HTMLDivElement>(null)
+	const [overflow, setOverflow] = useState(false)
+	const font = shape.font ?? 'sans'
+	const fontSize = shape.fontSize ?? 16
+	const fontWeight = shape.fontWeight ?? 500
+	const ellipse = shape.type === 'ellipse'
+	const labelWidth = Math.max(1, ellipse ? shape.w / Math.SQRT2 - 24 : shape.w - 24)
+	const labelHeight = Math.max(1, ellipse ? shape.h / Math.SQRT2 - 24 : shape.h - 24)
+	const labelX = shape.x + (shape.w - labelWidth) / 2
+	const labelY = shape.y + (shape.h - labelHeight) / 2
+	const labelKey = `${shape.text ?? ''}\u0000${font}\u0000${fontSize}\u0000${fontWeight}\u0000${shape.w}\u0000${shape.h}`
+
+	useLayoutEffect(() => {
+		void labelKey
+		const measure = () => {
+			const element = textRef.current
+			if (!element) return
+			let overflowing =
+				element.scrollWidth > element.clientWidth + 1 ||
+				element.scrollHeight > element.clientHeight + 1
+			try {
+				const elementRect = element.getBoundingClientRect()
+				const range = element.ownerDocument.createRange()
+				range.selectNodeContents(element)
+				const rangeRect = range.getBoundingClientRect()
+				overflowing ||=
+					rangeRect.left < elementRect.left - 1 ||
+					rangeRect.right > elementRect.right + 1 ||
+					rangeRect.top < elementRect.top - 1 ||
+					rangeRect.bottom > elementRect.bottom + 1
+			} catch {}
+			setOverflow((current) => (current === overflowing ? current : overflowing))
+		}
+		measure()
+		const observer = textRef.current ? new ResizeObserver(measure) : null
+		if (textRef.current) observer?.observe(textRef.current)
+		void document.fonts?.ready.then(measure)
+		return () => observer?.disconnect()
+	}, [labelKey])
+
+	return (
+		<>
+			<foreignObject
+				className="shape-label-foreign-object"
+				x={labelX}
+				y={labelY}
+				width={Math.max(1, labelWidth)}
+				height={Math.max(1, labelHeight)}
+				pointerEvents="none"
+			>
+				<div
+					ref={textRef}
+					className="shape-label"
+					data-text-overflow={overflow ? 'true' : 'false'}
+					title={
+						overflow ? 'Text exceeds available label space; all text remains visible.' : undefined
+					}
+					style={{
+						fontFamily: FONT_STACKS[font],
+						fontSize: `${fontSize}px`,
+						fontWeight,
+						color: shapeTextColor(shape),
+					}}
+				>
+					{shape.text || ''}
+				</div>
+			</foreignObject>
+			{overflow && (
+				<rect
+					className="shape-label-overflow"
+					x={shape.x + shape.w - 12}
+					y={shape.y + 4}
+					width={8}
+					height={8}
+					rx={4}
+					fill="var(--warning)"
+					stroke="var(--surface)"
+					strokeWidth={1}
+					pointerEvents="none"
+				/>
 			)}
 		</>
 	)
@@ -1200,17 +1291,7 @@ export default function App() {
 							rx={12}
 						/>
 					)}
-					{shape.text && (
-						<text
-							x={shape.x + shape.w / 2}
-							y={shape.y + shape.h / 2}
-							fill={shapeTextColor(shape)}
-							textAnchor="middle"
-							dominantBaseline="middle"
-						>
-							{shape.text}
-						</text>
-					)}
+					{shape.text && <ShapeLabel shape={shape} />}
 				</g>
 			)
 		}
@@ -1237,17 +1318,7 @@ export default function App() {
 							rx={12}
 						/>
 					)}
-					{shape.text && (
-						<text
-							x={shape.x + shape.w / 2}
-							y={shape.y + shape.h / 2}
-							fill={shapeTextColor(shape)}
-							textAnchor="middle"
-							dominantBaseline="middle"
-						>
-							{shape.text}
-						</text>
-					)}
+					{shape.text && <ShapeLabel shape={shape} />}
 				</g>
 			)
 		}
@@ -1394,7 +1465,7 @@ export default function App() {
 					x2={shape.x + shape.w}
 					y2={shape.y + shape.h}
 					stroke={shape.color}
-					strokeWidth={active ? 3 : 2}
+					strokeWidth={shape.strokeWidth ?? (active ? 3 : 2)}
 				/>
 				{active && (
 					<rect
@@ -1557,7 +1628,7 @@ export default function App() {
 									selected.type === 'ellipse' ||
 									selected.type === 'text' ||
 									selected.type === 'note') && (
-									<div className="property-field">
+									<div className="property-field shape-text-property">
 										<label className="sr-only" htmlFor="shape-text">
 											Text
 										</label>
@@ -1586,82 +1657,93 @@ export default function App() {
 									}
 								/>
 							)}
-							{selected.type === 'text' && (
-								<>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="text-font">
-											Font family
-										</label>
-										<select
-											id="text-font"
-											value={selected.font ?? 'sans'}
-											onChange={(event) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { font: event.target.value as 'sans' },
-													},
-												])
-											}
-										>
-											{FONT_OPTIONS.map(({ id, label }) => (
-												<option key={id} value={id}>
-													{label}
-												</option>
-											))}
-										</select>
-									</div>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="text-size">
-											Font size
-										</label>
-										<select
-											id="text-size"
-											value={selected.fontSize ?? 32}
-											onChange={(event) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { fontSize: Number(event.target.value) },
-													},
-												])
-											}
-										>
-											{FONT_SIZES.map((size) => (
-												<option key={size} value={size}>
-													{size}
-												</option>
-											))}
-										</select>
-									</div>
-									<div className="property-field">
-										<label className="sr-only" htmlFor="text-weight">
-											Font weight
-										</label>
-										<select
-											id="text-weight"
-											value={selected.fontWeight ?? 500}
-											onChange={(event) =>
-												void postOperations([
-													{
-														type: 'update',
-														id: selected.id,
-														patch: { fontWeight: Number(event.target.value) },
-													},
-												])
-											}
-										>
-											{FONT_WEIGHTS.map((weight) => (
-												<option key={weight} value={weight}>
-													{weight}
-												</option>
-											))}
-										</select>
-									</div>
-								</>
-							)}
+							{(selected.type === 'text' ||
+								selected.type === 'rectangle' ||
+								selected.type === 'ellipse') &&
+								selected.text && (
+									<>
+										<div className="property-field label-typography">
+											<label className="sr-only" htmlFor="text-font">
+												Font family
+											</label>
+											<select
+												id="text-font"
+												value={selected.font ?? 'sans'}
+												onChange={(event) =>
+													void postOperations([
+														{
+															type: 'update',
+															id: selected.id,
+															patch: { font: event.target.value as 'sans' },
+														},
+													])
+												}
+											>
+												{FONT_OPTIONS.map(({ id, label }) => (
+													<option key={id} value={id}>
+														{label}
+													</option>
+												))}
+											</select>
+										</div>
+										<div className="property-field label-typography">
+											<label className="sr-only" htmlFor="text-size">
+												Font size
+											</label>
+											<select
+												id="text-size"
+												value={selected.fontSize ?? (selected.type === 'text' ? 32 : 16)}
+												onChange={(event) =>
+													void postOperations([
+														{
+															type: 'update',
+															id: selected.id,
+															patch: { fontSize: Number(event.target.value) },
+														},
+													])
+												}
+											>
+												{selected.fontSize !== undefined &&
+													!FONT_SIZES.some((size) => size === selected.fontSize) && (
+														<option value={selected.fontSize}>{selected.fontSize}</option>
+													)}
+												{FONT_SIZES.map((size) => (
+													<option key={size} value={size}>
+														{size}
+													</option>
+												))}
+											</select>
+										</div>
+										<div className="property-field label-typography">
+											<label className="sr-only" htmlFor="text-weight">
+												Font weight
+											</label>
+											<select
+												id="text-weight"
+												value={selected.fontWeight ?? 500}
+												onChange={(event) =>
+													void postOperations([
+														{
+															type: 'update',
+															id: selected.id,
+															patch: { fontWeight: Number(event.target.value) },
+														},
+													])
+												}
+											>
+												{selected.fontWeight !== undefined &&
+													!FONT_WEIGHTS.some((weight) => weight === selected.fontWeight) && (
+														<option value={selected.fontWeight}>{selected.fontWeight}</option>
+													)}
+												{FONT_WEIGHTS.map((weight) => (
+													<option key={weight} value={weight}>
+														{weight}
+													</option>
+												))}
+											</select>
+										</div>
+									</>
+								)}
 							{selected.type === 'frame' && (
 								<div className="property-field">
 									<label className="sr-only" htmlFor="frame-title">
@@ -1680,6 +1762,36 @@ export default function App() {
 											if (event.key === 'Enter') event.currentTarget.blur()
 										}}
 									/>
+								</div>
+							)}
+							{selected.type === 'line' && (
+								<div className="property-field">
+									<label className="sr-only" htmlFor="line-width">
+										Stroke width
+									</label>
+									<select
+										id="line-width"
+										value={selected.strokeWidth ?? 2}
+										onChange={(event) =>
+											void postOperations([
+												{
+													type: 'update',
+													id: selected.id,
+													patch: { strokeWidth: Number(event.target.value) },
+												},
+											])
+										}
+									>
+										{selected.strokeWidth !== undefined &&
+											!LINE_WIDTHS.some((width) => width === selected.strokeWidth) && (
+												<option value={selected.strokeWidth}>{selected.strokeWidth}px</option>
+											)}
+										{LINE_WIDTHS.map((width) => (
+											<option key={width} value={width}>
+												{width}px
+											</option>
+										))}
+									</select>
 								</div>
 							)}
 							{selected.type === 'path' && (
@@ -1725,6 +1837,10 @@ export default function App() {
 												])
 											}
 										>
+											{selected.strokeWidth !== undefined &&
+												!BRUSH_WIDTHS.some((width) => width === selected.strokeWidth) && (
+													<option value={selected.strokeWidth}>{selected.strokeWidth}px</option>
+												)}
 											{BRUSH_WIDTHS.map((width) => (
 												<option key={width} value={width}>
 													{width}px

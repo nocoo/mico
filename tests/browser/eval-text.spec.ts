@@ -238,6 +238,99 @@ test('narrow wrapped dock leaves measured overflow text above the toolbar', asyn
 	expect(layout.textBottom).toBeLessThan(layout.toolbarTop - 8)
 })
 
+test('50-line narrow rectangle label has vertical overflow only and keeps full text through Fit', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const text = Array.from({ length: 50 }, (_, index) => `短行${index + 1}`).join('\n')
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'eval-label-50-lines',
+						type: 'rectangle',
+						x: 160,
+						y: 400,
+						w: 80,
+						h: 60,
+						color: '#183153',
+						fill: '#dbeafe',
+						text,
+						font: 'sans',
+						fontSize: 16,
+						fontWeight: 500,
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+
+	await page.setViewportSize({ width: 390, height: 844 })
+	await page.reload()
+	await expect(page.locator('.canvas')).toHaveAttribute('data-initial-fit-ready', 'true')
+
+	const label = page.locator('[data-shape-id="eval-label-50-lines"] .shape-label')
+	await expect(label).toHaveAttribute('data-text-overflow', 'true')
+	await expect(label).toHaveCSS('height', '36px')
+	await expect(label).toHaveCSS('overflow-wrap', 'anywhere')
+
+	const geometry = await label.evaluate((element) => {
+		const div = element as HTMLDivElement
+		const foreignObject = div.closest('foreignObject') as unknown as SVGForeignObjectElement
+		const foreignRect = foreignObject.getBoundingClientRect()
+		const range = document.createRange()
+		range.selectNodeContents(div)
+		const textRect = range.getBoundingClientRect()
+		return {
+			foreignWidth: foreignRect.width,
+			foreignHeight: foreignRect.height,
+			textWidth: textRect.right - textRect.left,
+			textHeight: textRect.bottom - textRect.top,
+			textLeft: textRect.left,
+			textRight: textRect.right,
+			scrollWidth: div.scrollWidth,
+			clientWidth: div.clientWidth,
+			scrollHeight: div.scrollHeight,
+			clientHeight: div.clientHeight,
+		}
+	})
+
+	expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.clientWidth + 1)
+	expect(geometry.textWidth).toBeLessThanOrEqual(geometry.foreignWidth + 1)
+	expect(geometry.scrollHeight).toBeGreaterThan(geometry.clientHeight)
+	expect(geometry.textHeight).toBeGreaterThan(geometry.foreignHeight)
+
+	await page.getByRole('button', { name: 'Fit board', exact: true }).click()
+	const fitted = await label.evaluate((element) => {
+		const div = element as HTMLDivElement
+		const foreignObject = div.closest('foreignObject') as unknown as SVGForeignObjectElement
+		const foreignRect = foreignObject.getBoundingClientRect()
+		const range = document.createRange()
+		range.selectNodeContents(div)
+		const textRect = range.getBoundingClientRect()
+		return {
+			foreignWidth: foreignRect.width,
+			textWidth: textRect.right - textRect.left,
+			textHeight: textRect.bottom - textRect.top,
+			content: div.textContent,
+		}
+	})
+	expect(fitted.textWidth).toBeLessThanOrEqual(fitted.foreignWidth + 1)
+	expect(fitted.textHeight).toBeGreaterThan(geometry.foreignHeight)
+	expect(fitted.content?.split('\n')).toHaveLength(50)
+
+	const saved = await board(request)
+	const labelShape = saved.shapes.find((shape) => shape.id === 'eval-label-50-lines') as
+		| CanvasShape
+		| undefined
+	expect(labelShape).toMatchObject({ w: 80, h: 60, text })
+})
+
 test('wide glyph overflow contributes to horizontal Fit, marquee, frame and hit bounds', async ({
 	page,
 	request,

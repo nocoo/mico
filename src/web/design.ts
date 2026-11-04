@@ -11,6 +11,7 @@ export const BRUSH_STYLES = [
 ] as const
 
 export const BRUSH_WIDTHS = [2, 4, 8] as const
+export const LINE_WIDTHS = Array.from({ length: 64 }, (_, index) => index + 1)
 
 export const SHAPE_COLORS = [
 	{ value: '#5b5fc7', label: 'Indigo' },
@@ -36,8 +37,8 @@ export const FONT_OPTIONS = [
 	{ id: 'mono', label: 'Mono' },
 ] as const
 
-export const FONT_SIZES = [16, 24, 32, 48] as const
-export const FONT_WEIGHTS = [300, 400, 500, 700] as const
+export const FONT_SIZES = [8, 12, 16, 20, 24, 32, 48, 64, 96, 128, 256] as const
+export const FONT_WEIGHTS = [100, 300, 400, 500, 600, 700, 800, 900] as const
 
 export const FONT_STACKS: Record<(typeof FONT_OPTIONS)[number]['id'], string> = {
 	sans: 'Inter, ui-sans-serif, system-ui, sans-serif',

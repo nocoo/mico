@@ -71,6 +71,68 @@ test('wide glyph overflow contributes actual horizontal derived bounds', () => {
 	assert.equal(original.h, 24)
 })
 
+test('overflowing rectangle and ellipse labels contribute rendered bounds without mutating shapes', () => {
+	const rectangle: Shape = {
+		id: 'label-rect',
+		type: 'rectangle',
+		x: 100,
+		y: 100,
+		w: 80,
+		h: 40,
+		color: '#242424',
+		text: 'Supercalifragilisticexpialidocious',
+		fontSize: 256,
+	}
+	const ellipse: Shape = {
+		id: 'label-ellipse',
+		type: 'ellipse',
+		x: 300,
+		y: 100,
+		w: 80,
+		h: 40,
+		color: '#242424',
+		text: '👨‍👩‍👧‍👦 中文',
+		fontSize: 64,
+	}
+	const elements = [rectangle, ellipse].map((shape) => {
+		const width = shape.type === 'ellipse' ? shape.w / Math.SQRT2 - 24 : shape.w - 24
+		const height = shape.type === 'ellipse' ? shape.h / Math.SQRT2 - 24 : shape.h - 24
+		const labelX = shape.x + (shape.w - width) / 2
+		const labelY = shape.y + (shape.h - height) / 2
+		return {
+			closest: (selector: string) =>
+				selector === 'foreignObject' ? null : { getAttribute: () => shape.id },
+			getBoundingClientRect: () => ({
+				left: labelX,
+				top: labelY,
+				right: labelX + width,
+				bottom: labelY + height,
+				width,
+				height,
+			}),
+			ownerDocument: {
+				createRange: () => ({
+					selectNodeContents: () => undefined,
+					getBoundingClientRect: () => ({
+						left: shape.x - 20,
+						top: shape.y - 10,
+						right: shape.x + shape.w + 20,
+						bottom: shape.y + shape.h + 10,
+					}),
+				}),
+			},
+		}
+	})
+	const root = { querySelectorAll: () => elements } as unknown as ParentNode
+	const original = Object.freeze([Object.freeze(rectangle), Object.freeze(ellipse)])
+	const derived = deriveTextBounds(original, root)
+
+	assert.deepEqual(derived[0], { ...rectangle, x: 80, y: 90, w: 120, h: 60 })
+	assert.deepEqual(derived[1], { ...ellipse, x: 280, y: 90, w: 120, h: 60 })
+	assert.equal(rectangle.x, 100)
+	assert.equal(ellipse.x, 300)
+})
+
 test('absent, shorter and nonfinite measurements keep the stored box', () => {
 	for (const root of [null, rootWith(12), rootWith(Number.NaN), rootWith(100, 'other')]) {
 		assert.deepEqual(deriveTextBounds([text], root), [text])

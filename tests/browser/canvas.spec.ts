@@ -278,14 +278,17 @@ test('rectangle and ellipse fills are explicit and connector paint follows board
 		)
 	expect(paintOrder.indexOf('paint-edge')).toBeLessThan(paintOrder.indexOf('paint-bg'))
 	expect(paintOrder.indexOf('paint-node-b')).toBeLessThan(paintOrder.indexOf('paint-edge'))
-	await expect(page.locator('[data-shape-id="paint-bg"] text')).toHaveAttribute('fill', '#ffffff')
-	await expect(page.locator('[data-shape-id="paint-node-a"] text')).toHaveAttribute(
-		'fill',
-		'#172033',
+	await expect(page.locator('[data-shape-id="paint-bg"] .shape-label')).toHaveCSS(
+		'color',
+		'rgb(255, 255, 255)',
 	)
-	await expect(page.locator('[data-shape-id="paint-node-b"] text')).toHaveAttribute(
-		'fill',
-		'#172033',
+	await expect(page.locator('[data-shape-id="paint-node-a"] .shape-label')).toHaveCSS(
+		'color',
+		'rgb(23, 32, 51)',
+	)
+	await expect(page.locator('[data-shape-id="paint-node-b"] .shape-label')).toHaveCSS(
+		'color',
+		'rgb(23, 32, 51)',
 	)
 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
@@ -318,7 +321,10 @@ test('rectangle and ellipse fills are explicit and connector paint follows board
 		'fill',
 		'none',
 	)
-	await expect(page.locator('[data-shape-id="paint-bg"] text')).toHaveAttribute('fill', '#172033')
+	await expect(page.locator('[data-shape-id="paint-bg"] .shape-label')).toHaveCSS(
+		'color',
+		'rgb(23, 32, 51)',
+	)
 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	const transparentRect = await page
@@ -402,7 +408,207 @@ test('rectangle and ellipse fills are explicit and connector paint follows board
 		'fill',
 		'#b45309',
 	)
-	await expect(page.locator('[data-shape-id="paint-bg"] text')).toHaveAttribute('fill', '#ffffff')
+	await expect(page.locator('[data-shape-id="paint-bg"] .shape-label')).toHaveCSS(
+		'color',
+		'rgb(255, 255, 255)',
+	)
+})
+
+test('rectangle and ellipse labels preserve lines, wrap and expose overflow honestly', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'label-multiline',
+						type: 'rectangle',
+						x: 160,
+						y: 240,
+						w: 300,
+						h: 150,
+						color: '#183153',
+						fill: '#dbeafe',
+						text: '1840—1842\n鸦片战争\nSecond English line with several words',
+						font: 'serif',
+						fontSize: 24,
+						fontWeight: 700,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'label-ellipse',
+						type: 'ellipse',
+						x: 520,
+						y: 240,
+						w: 220,
+						h: 150,
+						color: '#2563eb',
+						fill: '#eff6ff',
+						text: 'Ellipse\nEnglish and Chinese 中文',
+						font: 'sans',
+						fontSize: 20,
+						fontWeight: 600,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'label-overflow',
+						type: 'rectangle',
+						x: 800,
+						y: 240,
+						w: 80,
+						h: 60,
+						color: '#b83535',
+						fill: '#fff1f2',
+						text: 'Supercalifragilisticexpialidocious\n👨‍👩‍👧‍👦\nOne complete line',
+						fontSize: 256,
+						fontWeight: 700,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'custom-line',
+						type: 'line',
+						x: 160,
+						y: 430,
+						w: 240,
+						h: 0,
+						color: '#475569',
+						strokeWidth: 64,
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+	await page.reload()
+	await expect(page.locator('[data-initial-fit-ready="true"]')).toHaveCount(1)
+
+	const rectangleText = page.locator('[data-shape-id="label-multiline"] .shape-label')
+	await expect(rectangleText).toHaveCSS('font-size', '24px')
+	await expect(rectangleText).toHaveCSS('font-weight', '700')
+	await expect(rectangleText).toHaveCSS('text-align', 'center')
+	await expect(rectangleText).toHaveCSS('white-space', 'pre-wrap')
+	await expect(rectangleText).toHaveCSS('overflow-wrap', 'anywhere')
+	const rectangleContent = await rectangleText.textContent()
+	for (const part of ['1840—1842', '鸦片战争', 'Second English line', 'several words']) {
+		expect(rectangleContent).toContain(part)
+	}
+
+	const ellipseText = page.locator('[data-shape-id="label-ellipse"] .shape-label')
+	await expect(ellipseText).toContainText('Ellipse')
+	await expect(ellipseText).toContainText('中文')
+	await expect(ellipseText).toHaveCSS('text-align', 'center')
+
+	const overflowText = page.locator('[data-shape-id="label-overflow"] .shape-label')
+	await expect(overflowText).toHaveAttribute('data-text-overflow', 'true')
+	await expect(page.locator('[data-shape-id="label-overflow"] .shape-label-overflow')).toHaveCount(
+		1,
+	)
+	await expect(overflowText).toContainText('Supercalifragilisticexpialidocious')
+	await expect(overflowText).toContainText('👨‍👩‍👧‍👦')
+	await expect(overflowText).toContainText('One complete line')
+
+	await expect(page.locator('[data-shape-id="custom-line"] line').last()).toHaveAttribute(
+		'stroke-width',
+		'64',
+	)
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.locator('[data-shape-id="label-multiline"] > rect').first().click()
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await page.setViewportSize({ width: 390, height: 844 })
+	await expect(page.getByLabel('Font family')).toBeVisible()
+	await expect(page.getByLabel('Font size')).toBeVisible()
+	await expect(page.getByLabel('Font weight')).toBeVisible()
+	await page.locator('#shape-text').fill('First label line')
+	await page.locator('#shape-text').press('Shift+Enter')
+	await page.locator('#shape-text').press('End')
+	await page.locator('#shape-text').type('Second label line')
+	await page.locator('#shape-text').press('Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'label-multiline'))
+		.toMatchObject({ text: 'First label line\nSecond label line' })
+
+	await page.getByRole('button', { name: 'Fit board', exact: true }).click()
+	const lineBox = await page.locator('[data-shape-id="custom-line"] line').last().boundingBox()
+	if (!lineBox) throw new Error('Expected visible custom line')
+	await page.mouse.click(lineBox.x + lineBox.width / 2, lineBox.y + lineBox.height / 2)
+	await page.getByLabel('Stroke width', { exact: true }).selectOption('3')
+	await expect(page.locator('[data-shape-id="custom-line"] line').last()).toHaveAttribute(
+		'stroke-width',
+		'3',
+	)
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'custom-line')
+			return shape?.type === 'line' ? shape.strokeWidth : undefined
+		})
+		.toBe(3)
+	const revision = (await board(request)).revision
+	const fractional = await request.post('/api/operations', {
+		data: {
+			expectedRevision: revision,
+			operations: [{ type: 'update', id: 'custom-line', patch: { strokeWidth: 2.5 } }],
+		},
+	})
+	expect(fractional.ok()).toBe(true)
+	await expect(page.getByLabel('Stroke width', { exact: true })).toHaveValue('2.5')
+})
+
+test('narrow text properties keep typography controls accessible', async ({ page, request }) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'narrow-typography',
+						type: 'text',
+						x: 160,
+						y: 400,
+						w: 240,
+						h: 48,
+						color: '#242424',
+						text: '窄屏文字标签',
+						font: 'sans',
+						fontSize: 24,
+						fontWeight: 600,
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+
+	await page.setViewportSize({ width: 390, height: 844 })
+	await page.reload()
+	await expect(page.locator('.canvas')).toHaveAttribute('data-initial-fit-ready', 'true')
+	await page.getByRole('button', { name: 'Fit board', exact: true }).click()
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const textBox = await page
+		.locator('[data-shape-id="narrow-typography"] .text-hit-target')
+		.boundingBox()
+	if (!textBox) throw new Error('Expected visible narrow text')
+	await page.mouse.click(textBox.x + textBox.width / 2, textBox.y + textBox.height / 2)
+
+	for (const label of ['Font family', 'Font size', 'Font weight']) {
+		await expect(page.getByLabel(label)).toBeVisible()
+		const box = await page.getByLabel(label).boundingBox()
+		if (!box) throw new Error(`Missing narrow ${label} control`)
+		expect(box.x).toBeGreaterThanOrEqual(0)
+		expect(box.x + box.width).toBeLessThanOrEqual(390)
+	}
 })
 
 test('node edge hits win near existing connector endpoints and midsegments stay selectable', async ({
@@ -672,10 +878,13 @@ test('notes, typographic text and frames are editable and move together', async 
 	if (!note || note.type !== 'note') throw new Error('Expected a note')
 	expect(note).toMatchObject({ color: '#fbcfe8', text: 'Note' })
 	await page.locator('#shape-text').fill('Remember this')
+	await page.locator('#shape-text').press('Shift+Enter')
+	await page.locator('#shape-text').press('End')
+	await page.locator('#shape-text').type(' on two lines')
 	await page.locator('#shape-text').press('Enter')
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === note.id))
-		.toMatchObject({ text: 'Remember this' })
+		.toMatchObject({ text: 'Remember this\n on two lines' })
 
 	await page.getByRole('button', { name: 'Text', exact: true }).click()
 	await page.getByLabel('Font family').selectOption('hand')

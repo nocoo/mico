@@ -643,6 +643,111 @@ test('frames hold named members, reject nesting and ungroup on delete', () => {
 	}
 })
 
+test('shape labels accept typography and lines accept stroke width', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	try {
+		const created = store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'label-rect',
+						type: 'rectangle',
+						x: 10,
+						y: 20,
+						w: 180,
+						h: 80,
+						color: '#183153',
+						fill: '#fef3c7',
+						text: '1840—1842\n鸦片战争',
+						font: 'serif',
+						fontSize: 24,
+						fontWeight: 700,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'label-ellipse',
+						type: 'ellipse',
+						x: 220,
+						y: 20,
+						w: 120,
+						h: 80,
+						color: '#2563eb',
+						text: 'English label',
+						font: 'sans',
+						fontSize: 16,
+						fontWeight: 500,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'custom-line',
+						type: 'line',
+						x: 10,
+						y: 120,
+						w: 100,
+						h: 20,
+						color: '#475569',
+						strokeWidth: 8,
+					},
+				},
+			],
+		})
+		assert.equal(created.shapes.length, 3)
+		assert.deepEqual(created.shapes[0], {
+			id: 'label-rect',
+			type: 'rectangle',
+			x: 10,
+			y: 20,
+			w: 180,
+			h: 80,
+			color: '#183153',
+			fill: '#fef3c7',
+			text: '1840—1842\n鸦片战争',
+			font: 'serif',
+			fontSize: 24,
+			fontWeight: 700,
+		})
+
+		const updated = store.apply({
+			operations: [
+				{
+					type: 'update',
+					id: 'label-rect',
+					patch: { fontSize: 32, fontWeight: 600 },
+				},
+				{ type: 'update', id: 'custom-line', patch: { strokeWidth: 64 } },
+			],
+		})
+		assert.deepEqual(updated.shapes[0], {
+			...created.shapes[0],
+			fontSize: 32,
+			fontWeight: 600,
+		})
+		assert.equal(updated.shapes[2].type === 'line' ? updated.shapes[2].strokeWidth : undefined, 64)
+
+		for (const operations of [
+			[{ type: 'update', id: 'label-rect', patch: { strokeWidth: 8 } }],
+			[{ type: 'update', id: 'custom-line', patch: { strokeWidth: 65 } }],
+			[{ type: 'update', id: 'custom-line', patch: { font: 'hand' } }],
+			[{ type: 'update', id: 'label-ellipse', patch: { fontSize: 4 } }],
+		] as const) {
+			assert.throws(
+				() => store.apply({ operations: [...operations] }),
+				(error: unknown) => error instanceof OperationError && error.status === 400,
+				JSON.stringify(operations),
+			)
+		}
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('rectangle and ellipse fills persist atomically and are transparent or hex only', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))

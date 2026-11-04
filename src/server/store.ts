@@ -1,15 +1,7 @@
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type {
-	Board,
-	BrushStyle,
-	Connector,
-	Operation,
-	Shape,
-	WidgetItem,
-	WidgetKind,
-} from '../shared/types.ts'
+import type { Board, BrushStyle, Connector, Operation, Shape, WidgetKind } from '../shared/types.ts'
 import { ANCHOR_COUNTS } from '../shared/types.ts'
 
 export class OperationError extends Error {
@@ -122,7 +114,7 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		!hasExactKeys(
 			value,
 			['id', 'type', 'x', 'y', 'w', 'h', 'color'],
-			['text', 'frameId', 'font', 'fontSize', 'fontWeight', 'fill'],
+			['text', 'frameId', 'font', 'fontSize', 'fontWeight', 'fill', 'strokeWidth'],
 		)
 	) {
 		invalid('invalid canvas shape')
@@ -165,22 +157,32 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 	}
 	for (const key of ['font', 'fontSize', 'fontWeight']) {
 		if (!Object.hasOwn(value, key)) continue
-		if (value.type !== 'text') invalid(`${key} is only valid for text shapes`)
+		if (value.type !== 'text' && value.type !== 'rectangle' && value.type !== 'ellipse') {
+			invalid(`${key} is only valid for text, rectangle and ellipse shapes`)
+		}
 	}
 	if (Object.hasOwn(value, 'font')) {
 		const font = value.font
 		if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
-			invalid('text font must be sans, serif, hand or mono')
+			invalid('shape font must be sans, serif, hand or mono')
 		}
 	}
 	if (Object.hasOwn(value, 'fontSize')) {
 		if (!validFiniteNumber(value.fontSize) || value.fontSize < 8 || value.fontSize > 256) {
-			invalid('text fontSize must be between 8 and 256')
+			invalid('shape fontSize must be between 8 and 256')
 		}
 	}
 	if (Object.hasOwn(value, 'fontWeight')) {
 		if (!validFiniteNumber(value.fontWeight) || value.fontWeight < 100 || value.fontWeight > 900) {
-			invalid('text fontWeight must be between 100 and 900')
+			invalid('shape fontWeight must be between 100 and 900')
+		}
+	}
+	if (Object.hasOwn(value, 'strokeWidth')) {
+		if (value.type !== 'line' && value.type !== 'path') {
+			invalid('strokeWidth is only valid for line and path shapes')
+		}
+		if (!validStrokeWidth(value.strokeWidth)) {
+			invalid('strokeWidth must be between 1 and 64')
 		}
 	}
 }
@@ -335,7 +337,9 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 			? connectorKeys
 			: target.type === 'path'
 				? new Set([...canvasKeys, 'points', 'brush', 'strokeWidth'])
-				: canvasKeys
+				: target.type === 'line'
+					? new Set([...canvasKeys, 'strokeWidth'])
+					: canvasKeys
 
 	for (const key of Object.keys(patch)) {
 		if (!allowed.has(key)) {
@@ -396,25 +400,40 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		}
 		if (Object.hasOwn(patch, 'font')) {
 			const font = patch.font
-			if (target.type !== 'text') invalid('font is only valid for text shapes')
+			if (target.type !== 'text' && target.type !== 'rectangle' && target.type !== 'ellipse') {
+				invalid('font is only valid for text, rectangle and ellipse shapes')
+			}
 			if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
-				invalid('text font must be sans, serif, hand or mono')
+				invalid('shape font must be sans, serif, hand or mono')
 			}
 		}
 		if (Object.hasOwn(patch, 'fontSize')) {
-			if (target.type !== 'text') invalid('fontSize is only valid for text shapes')
+			if (target.type !== 'text' && target.type !== 'rectangle' && target.type !== 'ellipse') {
+				invalid('fontSize is only valid for text, rectangle and ellipse shapes')
+			}
 			if (!validFiniteNumber(patch.fontSize) || patch.fontSize < 8 || patch.fontSize > 256) {
-				invalid('text fontSize must be between 8 and 256')
+				invalid('shape fontSize must be between 8 and 256')
 			}
 		}
 		if (Object.hasOwn(patch, 'fontWeight')) {
-			if (target.type !== 'text') invalid('fontWeight is only valid for text shapes')
+			if (target.type !== 'text' && target.type !== 'rectangle' && target.type !== 'ellipse') {
+				invalid('fontWeight is only valid for text, rectangle and ellipse shapes')
+			}
 			if (
 				!validFiniteNumber(patch.fontWeight) ||
 				patch.fontWeight < 100 ||
 				patch.fontWeight > 900
 			) {
-				invalid('text fontWeight must be between 100 and 900')
+				invalid('shape fontWeight must be between 100 and 900')
+			}
+		}
+		if (Object.hasOwn(patch, 'strokeWidth')) {
+			if (target.type === 'line') {
+				if (!validStrokeWidth(patch.strokeWidth)) {
+					invalid('line strokeWidth must be between 1 and 64')
+				}
+			} else if (target.type !== 'path') {
+				invalid('strokeWidth is only valid for line and path shapes')
 			}
 		}
 		if (target.type === 'path') {
