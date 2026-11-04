@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add multiple saved canvases with names, timestamps and generated SVG previews; the top-left Canvases panel creates, switches, renames and deletes them.
+- Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.
+- Add full canvas management to the agent API and CLI, including per-canvas operations, `--canvas` targeting, state snapshots and WebSocket canvas events.
+- Migrate existing single-board databases to a canvas named “My canvas” automatically.
+
 ## v0.6.5
 
 - Move the selection editor to a fixed right-side inspector rail on desktop, only falling back to a bottom sheet on narrow screens.

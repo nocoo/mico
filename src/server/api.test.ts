@@ -53,12 +53,18 @@ async function api(
 	}
 }
 
-async function apply(url: string, operations: unknown[], expectedRevision?: number) {
+async function apply(
+	url: string,
+	operations: unknown[],
+	expectedRevision?: number,
+	canvasId?: string,
+) {
 	return api(url, '/api/operations', {
 		method: 'POST',
 		body: JSON.stringify({
 			operations,
 			...(expectedRevision === undefined ? {} : { expectedRevision }),
+			...(canvasId === undefined ? {} : { canvasId }),
 		}),
 	})
 }
@@ -285,6 +291,133 @@ test('every shape type round-trips through one batch', async () => {
 
 		const fetched = await api(url, '/api/board')
 		assert.deepEqual(fetched.body, board)
+	})
+})
+
+test('canvas lifecycle, active switching and per-canvas operations', async () => {
+	await withDaemon(async (url) => {
+		const state = await api(url, '/api/state')
+		assert.equal(state.status, 200)
+		const initial = state.body as {
+			stateVersion: number
+			activeCanvasId: string
+			canvases: Array<{ id: string; name: string; preview?: string }>
+			board: Board
+		}
+		assert.equal(typeof initial.stateVersion, 'number')
+		const initialVersion = initial.stateVersion
+		assert.equal(initial.activeCanvasId, 'main')
+		assert.equal(initial.canvases.length, 1)
+		assert.equal(initial.canvases[0].name, 'My canvas')
+		assert.match(initial.canvases[0].preview ?? '', /^data:image\/svg\+xml;base64,/)
+		assert.deepEqual(initial.board, { revision: 0, shapes: [] })
+
+		const created = await api(url, '/api/canvases', {
+			method: 'POST',
+			body: JSON.stringify({ name: 'Second canvas', activate: true }),
+		})
+		assert.equal(created.status, 200)
+		const second = created.body as {
+			stateVersion: number
+			activeCanvasId: string
+			canvases: Array<{ id: string; name: string }>
+			board: Board
+			createdCanvasId: string
+		}
+		assert.ok(second.stateVersion > initialVersion)
+		assert.equal(second.activeCanvasId, second.createdCanvasId)
+		assert.equal(second.canvases.length, 2)
+		assert.deepEqual(second.board, { revision: 0, shapes: [] })
+
+		const list = await api(url, '/api/canvases')
+		assert.equal(list.status, 200)
+		assert.equal((list.body as { canvases: unknown[] }).canvases.length, 2)
+		assert.equal(typeof (list.body as { stateVersion: number }).stateVersion, 'number')
+		const lightState = await api(url, '/api/state?previews=0')
+		assert.equal(lightState.status, 200)
+		assert.equal(
+			(lightState.body as { canvases: Array<{ preview?: string }> }).canvases.every(
+				(canvas) => canvas.preview === undefined,
+			),
+			true,
+		)
+
+		const detail = await api(url, `/api/canvases/${second.createdCanvasId}`)
+		assert.equal(detail.status, 200)
+		assert.equal((detail.body as { canvas: { name: string } }).canvas.name, 'Second canvas')
+
+		const renamed = await api(url, `/api/canvases/${second.createdCanvasId}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ name: 'Renamed canvas' }),
+		})
+		assert.equal(renamed.status, 200)
+		assert.ok(
+			(renamed.body as { canvases: Array<{ id: string; name: string }> }).canvases.some(
+				(canvas) => canvas.id === second.createdCanvasId && canvas.name === 'Renamed canvas',
+			),
+		)
+
+		const written = await apply(
+			url,
+			[
+				{
+					type: 'create',
+					shape: {
+						id: 'targeted-shape',
+						type: 'note',
+						x: 10,
+						y: 10,
+						w: 80,
+						h: 80,
+						color: '#fff8d4',
+						text: 'Targeted',
+					},
+				},
+			],
+			undefined,
+			second.createdCanvasId,
+		)
+		assert.equal(written.status, 200)
+		assert.equal((written.body as Board).revision, 1)
+		const afterTarget = (await api(url, '/api/state')).body as {
+			activeCanvasId: string
+			board: Board
+		}
+		assert.equal(afterTarget.activeCanvasId, second.createdCanvasId)
+		assert.deepEqual(
+			afterTarget.board.shapes.map((shape) => shape.id),
+			['targeted-shape'],
+		)
+
+		const activated = await api(url, '/api/active-canvas', {
+			method: 'PUT',
+			body: JSON.stringify({ id: 'main' }),
+		})
+		assert.equal(activated.status, 200)
+		assert.equal((activated.body as { activeCanvasId: string }).activeCanvasId, 'main')
+		assert.deepEqual((activated.body as { board: Board }).board.shapes, [])
+
+		const deleted = await api(url, `/api/canvases/${second.createdCanvasId}`, { method: 'DELETE' })
+		assert.equal(deleted.status, 200)
+		assert.equal((deleted.body as { canvases: unknown[] }).canvases.length, 1)
+
+		for (const [method, path, body] of [
+			['POST', '/api/canvases', JSON.stringify({ name: '', activate: true })],
+			['POST', '/api/canvases', JSON.stringify({ activate: 'yes' })],
+			['POST', '/api/canvases', JSON.stringify({ name: 'x', extra: true })],
+			['PATCH', `/api/canvases/${second.createdCanvasId}`, JSON.stringify({ title: 'nope' })],
+			['PUT', '/api/active-canvas', JSON.stringify({})],
+		] as const) {
+			const rejected = await api(url, path, { method, body })
+			assert.equal(rejected.status, 400, `${method} ${path} ${body}`)
+			assertError(rejected, 400, 'INVALID_REQUEST', `${method} ${path}`)
+		}
+
+		const missing = await api(url, '/api/canvases/missing')
+		assert.equal(missing.status, 404)
+		const last = await api(url, '/api/canvases/main', { method: 'DELETE' })
+		assert.equal(last.status, 400)
+		assert.equal((last.body as { error: string }).error, 'LAST_CANVAS')
 	})
 })
 
@@ -632,7 +765,10 @@ test('HTTP hardening covers origins, hosts, preflight and unknown endpoints', as
 		const preflight = await api(url, '/api/operations', { method: 'OPTIONS' })
 		assert.equal(preflight.status, 204)
 		assert.equal(preflight.headers.get('access-control-allow-origin'), DEV_ORIGIN)
-		assert.equal(preflight.headers.get('access-control-allow-methods'), 'GET, POST, OPTIONS')
+		assert.equal(
+			preflight.headers.get('access-control-allow-methods'),
+			'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+		)
 		assert.equal(preflight.headers.get('access-control-allow-headers'), 'Content-Type')
 
 		const unknownPreflight = await api(url, '/api/unknown', { method: 'OPTIONS' })

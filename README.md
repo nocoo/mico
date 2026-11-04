@@ -1,6 +1,6 @@
 # Mico
 
-A local-first canvas experiment where people and local agents edit the same board. The browser renders the canvas; the daemon owns the board and stores it in SQLite; the CLI gives agents direct access to the same operations.
+A local-first canvas experiment where people and local agents edit the same boards. The browser renders the canvas; the daemon owns a collection of named canvases and stores them in SQLite; the CLI and HTTP API give agents complete access to the same boards, canvases and operations.
 
 ## Requirements
 
@@ -20,13 +20,15 @@ In another terminal:
 pnpm dev
 ```
 
-Open <https://mico.dev.hexly.ai/>. Caddy proxies to Vite on `127.0.0.1:7063`; Vite proxies `/api` (including WebSocket upgrades) to the loopback-only daemon on `127.0.0.1:37063`. The browser uses same-origin HTTPS/WSS, never mixed-content loopback requests. The daemon stores its board in `.mico/board.sqlite`.
+Open <https://mico.dev.hexly.ai/>. Caddy proxies to Vite on `127.0.0.1:7063`; Vite proxies `/api` (including WebSocket upgrades) to the loopback-only daemon on `127.0.0.1:37063`. The browser uses same-origin HTTPS/WSS, never mixed-content loopback requests. The daemon stores all canvases in `.mico/board.sqlite`; a database created by an older single-board version is migrated to a canvas named “My canvas” on first start.
 
 Vite hot-reloads frontend changes; `pnpm daemon` watches daemon source changes and restarts automatically. API and CLI writes update open canvases live over WebSocket, with automatic reconnection and a three-second polling fallback. `MICO_PORT` overrides the daemon port for the daemon, CLI, and Vite proxy; set it consistently in both terminals. `MICO_DB_PATH` overrides the database path.
 
 Port allocation: development `7063`, E2E `17063`, browser/BDD `27063`, internal daemon `37063`. Automated tests must use an isolated database and loopback endpoint, not the daily board. The shared Caddy mapping lives in `workflow/caddy/Caddyfile` and the active machine's `/opt/homebrew/etc/Caddyfile`; the existing `*.dev.hexly.ai` certificate covers this hostname.
 
-The canvas supports panning, zooming, rectangles, ellipses, typographic text, lines, freehand brush strokes, sticky notes, frames, HTML cards, connectors, dragging, snapping, marquee selection, color and deletion. Boards fit the viewport on first load; click Fit or press F to fit all objects again.
+The canvas supports multiple named canvases, panning, zooming, rectangles, ellipses, typographic text, lines, freehand brush strokes, sticky notes, frames, HTML cards, connectors, dragging, snapping, marquee selection, color and deletion. Boards fit the viewport on first load; click Fit or press F to fit all objects again.
+
+The Canvases button beside the logo opens a panel listing every canvas with its name, last-updated time and a generated preview. Create, switch, rename and delete canvases there; the active canvas is shared by every connected browser, the API and the CLI, so an agent can leave work on one canvas and a person can switch to it. Deleting the final canvas is blocked. Switching canvas clears transient selection and fits the new board; reloading the page keeps the active canvas.
 
 Drag on empty canvas with Select to marquee several objects, then Delete removes them atomically. Frame selection wraps the current selection in a named container with 32px padding. A frame is a plain container: it cannot hold another frame, it never becomes a connector endpoint for regular shapes, and its body is not clickable. Select and drag it through its top-left label; the members travel with it. Drawing a shape, line, brush stroke, sticky note or HTML card fully inside a frame automatically makes it a member, dragging an object into a frame joins it, and dragging it fully outside detaches it. Deleting a frame releases its members without deleting content. Sticky notes (N) use a five-colour palette and multi-line text. Text (T) has no box; choose Hand, Serif, Sans or Mono with 16/24/32/48px sizes and 300/400/500/700 weights for editorial layouts.
 
@@ -38,21 +40,31 @@ Dragging an object snaps its origin to the visible 16px grid and aligns left/rig
 
 The interface uses a single iPhone 5C-inspired candy palette: vivid shell colours for accents and outlines, readable companion tones for typographic text, and a pale tint family for notes, shape fills, frames and the canvas background. Every palette value lives in `src/web/design.ts` and is exposed as a CSS custom property, so components and stylesheets share one source of truth. The canvas has a light neutral background and a blueprint grid: a solid line every 64px with four dashed 16px cells between solid lines at 100% zoom. Solid and dashed lines share the same color and width; the grid follows world pan and zoom, and dashed detail fades at low zoom to avoid moiré.
 
-The identity panel shows only the logo and a breathing connection light, and the unified bottom dock is fixed in screen space: canvas pan and zoom never resize, move or hide them. Drawing tools, zoom/reset, Fit and the selected object's properties share one dock; narrow viewports wrap its controls instead of clipping them. The color panel opens above the dock. Controls use fixed 40px height, 20px icons and 14px text on a four-pixel spacing system: dock padding, gaps, dividers, property columns and selection insets are all multiples of four. The dock sizes to its content, grows when an object is selected, and keeps a four-pixel gap between buttons. Lucide icons keep hover-only shortcut hints. Toolbar arrow keys move focus; Enter selects a tool.
+The identity panel holds the logo, the Canvases button and a breathing connection light. The unified bottom dock is fixed in screen space, and the selected object's properties open in a right-side panel; narrow viewports move that panel above the dock and wrap the dock controls instead of clipping them. Canvas pan and zoom never resize or move these panels. Controls use fixed 40px height, 20px icons and 14px text on a four-pixel spacing system: dock padding, gaps, dividers, property columns and selection insets are all multiples of four. The dock sizes to its content and keeps a four-pixel gap between buttons. Lucide icons provide every functional glyph, with hover-only shortcut hints; toolbar arrow keys move focus and Enter selects a tool.
 
 ## Agent CLI
 
 Commands write JSON to standard output; errors go to standard error and return a nonzero exit code. The CLI talks directly to the local daemon without a model provider or cloud service.
 
 ```sh
+node src/cli/index.ts canvas list
+node src/cli/index.ts canvas list --preview
+node src/cli/index.ts canvas create --name "Research" --use
+node src/cli/index.ts canvas use <id>
+node src/cli/index.ts canvas rename <id> "New name"
+node src/cli/index.ts canvas delete <id>
+node src/cli/index.ts canvas get <id>
 node src/cli/index.ts board get
-node src/cli/index.ts shape create '{"type":"rectangle","x":100,"y":100,"w":180,"h":80,"color":"#5b5fc7","text":"Hello"}'
+node src/cli/index.ts board get --canvas <id>
+node src/cli/index.ts shape create '{"type":"rectangle","x":100,"y":100,"w":180,"h":80,"color":"#5b5fc7","text":"Hello"}' --canvas <id>
 node src/cli/index.ts shape update <id> '{"x":300,"y":200}'
 node src/cli/index.ts shape delete <id>
-node src/cli/index.ts batch examples/architecture.json
+node src/cli/index.ts batch examples/architecture.json --canvas <id>
 node examples/distributed-architecture.ts | node src/cli/index.ts batch -
 node examples/sketch.ts | node src/cli/index.ts batch -
 ```
+
+Canvas and shape commands default to the active canvas. `--canvas <id>` targets another canvas without switching away from the current one; the response still contains that canvas's board. `canvas list` omits the large preview data URLs unless `--preview` is passed.
 
 The distributed-commerce example adds 20 services and clients, 27 connectors, and six headings to the right of the original Mico diagram without deleting existing objects. Its fixed `commerce-` IDs make duplicate application fail atomically. Click Fit after adding it to an open board.
 
@@ -60,7 +72,23 @@ The distributed-commerce example adds 20 services and clients, 27 connectors, an
 
 A canvas shape has `id`, `type` (`rectangle`, `ellipse`, `text`, `line`, `note`, `path`, `frame`, or `html`), `x`, `y`, `w`, `h`, `color` (six-digit hex), and optional `text`. For a line, `w` and `h` are signed offsets to its endpoint. A `frame` has a required non-empty `title` of at most 120 characters and no `frameId`; it cannot nest. An `html` card has a required `title` and `html` (up to 200 000 characters) and may carry `frameId` to sit inside a frame. Regular shapes and cards may carry `frameId` naming an existing frame; only frames can be referenced. A connector has `id`, `type: "connector"`, `from` and `to` shape IDs, and `color`; both endpoints must be frames or both must be non-frames. A `path` shape has `points` (2–4096 points relative to its `x`/`y`, inside its `w`/`h` bounds), `brush` (`pencil`, `marker`, `brush`) and `strokeWidth` (1–64). Paths use the same anchors, dragging and snapping as other shapes. Validation rejects out-of-bounds points or unknown brushes atomically with the rest of the batch. Optional `fromAnchor` and `toAnchor` pin either endpoint to an exact anchor index: boxes/text/notes/HTML cards/frames have 12 anchors, lines have five. Pins must be non-negative integers inside the referenced node's anchor range; invalid pins reject the entire batch. Unpinned endpoints use automatic nearest-outward routing. Pinned attachments follow their nodes as they move.
 
-Browser page zoom is disabled with a viewport lock plus keyboard/gesture interception; canvas zoom remains separate. The daemon exposes `GET /api/live` (status and manifest-derived version), `GET /api/board`, `POST /api/operations`, and a WebSocket at `/api/events`. A batch is validated and persisted atomically. An optional `expectedRevision` rejects writes based on stale board state. WebSocket subscribers receive the complete current board on connection and after each mutation.
+Browser page zoom is disabled with a viewport lock plus keyboard/gesture interception; canvas zoom remains separate.
+
+The daemon exposes:
+
+- `GET /api/live` — status and the manifest-derived version.
+- `GET /api/state` — `{stateVersion, activeCanvasId, canvases, board}` for the active canvas; ideal for agents and initial loads. Add `?previews=0` to omit previews from the summaries while polling.
+- `GET /api/canvases` — `{stateVersion, activeCanvasId, canvases}`. Each summary has `id`, `name`, `revision`, `createdAt`, `updatedAt` and a bounded 160×100 SVG data-URL `preview`; add `?previews=0` to omit previews.
+- `POST /api/canvases` — `{name?, activate?}`; returns the updated state plus `createdCanvasId`.
+- `GET /api/canvases/:id` — `{canvas, board}` for one canvas.
+- `PATCH /api/canvases/:id` — `{name}`; returns the updated state.
+- `DELETE /api/canvases/:id` — removes the canvas and returns the updated state. Deleting the last canvas is rejected with `LAST_CANVAS`.
+- `PUT /api/active-canvas` — `{id}`; switches the shared active canvas and returns the updated state.
+- `GET /api/board` — the active canvas's `{revision, shapes}`.
+- `POST /api/operations` — `{operations, expectedRevision?, canvasId?}`; defaults to the active canvas and can target any canvas without switching. Returns that canvas's board.
+- `GET /api/events` — WebSocket events. On connect and after canvas create/rename/delete/switch the daemon sends `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`; after operations it sends `{type: "board", canvasId, canvas, board}`. `stateVersion` increases on canvas metadata changes so clients can ignore delayed snapshots; clients update preview metadata from `canvas` and only apply `board` when `canvasId` is their active canvas.
+
+A batch is validated and persisted atomically per canvas. An optional `expectedRevision` rejects writes based on stale canvas state. A canvas name is trimmed, 1–80 characters, and rejected if it contains control characters.
 
 ## Verification
 
@@ -77,8 +105,8 @@ pnpm build
 
 Testing layers, isolation rules, the agent API contract and the coverage map live in [`docs/testing.md`](docs/testing.md).
 
-Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers tool buttons and shortcuts, every drawing primitive, dock options, panel edits, inline text editing, frame label selection and member travel, automatic frame membership on draw and drag, frame-only connectors, HTML card rendering and title editing, drag snapping with alignment guides, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its color panel visible at narrow and wide widths.
+Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers canvas creation, switching, renaming, deletion, previews and AI-targeted canvas operations; tool buttons and shortcuts, every drawing primitive, dock options, panel edits, inline text editing, frame label selection and member travel, automatic frame membership on draw and drag, frame-only connectors, HTML card rendering and title editing, drag snapping with alignment guides, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its color panel visible at narrow and wide widths.
 
 ## MVP limits
 
-This is a single local board, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet.
+This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet.

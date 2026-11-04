@@ -1,8 +1,20 @@
+import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
-import type { Board, BrushStyle, Connector, Operation, Shape, ShapeType } from '../shared/types.ts'
+import type {
+	Board,
+	BrushStyle,
+	CanvasDetail,
+	CanvasSnapshot,
+	CanvasSummary,
+	Connector,
+	Operation,
+	Shape,
+	ShapeType,
+} from '../shared/types.ts'
 import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
+import { canvasPreview } from './preview.ts'
 
 export class OperationError extends Error {
 	readonly status: number
@@ -360,65 +372,262 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 	}
 }
 
+interface CanvasRow {
+	id: string
+	name: string
+	revision: number
+	shapes: string
+	created_at: string
+	updated_at: string
+}
+
+const DEFAULT_CANVAS_ID = 'main'
+const DEFAULT_CANVAS_NAME = 'My canvas'
+const MAX_CANVAS_NAME = 80
+const MAX_CANVAS_ID = 120
+
+function validCanvasName(value: unknown): string {
+	if (typeof value !== 'string') invalid('canvas name must be a string')
+	const name = value.trim()
+	if (name.length === 0 || name.length > MAX_CANVAS_NAME) {
+		invalid(`canvas name must be between 1 and ${MAX_CANVAS_NAME} characters`)
+	}
+	for (const character of name) {
+		const code = character.codePointAt(0) ?? 0
+		if (code < 0x20 || code === 0x7f) invalid('canvas name must not contain control characters')
+	}
+	return name
+}
+
+function validCanvasId(value: unknown): string {
+	if (typeof value !== 'string' || value.length === 0 || value.length > MAX_CANVAS_ID) {
+		invalid(`canvas id must be a non-empty string of at most ${MAX_CANVAS_ID} characters`)
+	}
+	return value
+}
+
 export class BoardStore {
 	readonly db: DatabaseSync
-	private board: Board
 
 	constructor(dbPath: string) {
 		const resolvedPath = resolve(dbPath)
 		mkdirSync(dirname(resolvedPath), { recursive: true })
-		this.db = new DatabaseSync(resolvedPath)
+		this.db = new DatabaseSync(resolvedPath, { timeout: 1000 })
 		this.db.exec(`
-			CREATE TABLE IF NOT EXISTS board (
-				id INTEGER PRIMARY KEY CHECK (id = 1),
+			CREATE TABLE IF NOT EXISTS canvases (
+				id TEXT PRIMARY KEY,
+				name TEXT NOT NULL,
 				revision INTEGER NOT NULL,
-				shapes TEXT NOT NULL
-			)
+				shapes TEXT NOT NULL,
+				created_at TEXT NOT NULL,
+				updated_at TEXT NOT NULL
+			);
+			CREATE TABLE IF NOT EXISTS settings (
+				key TEXT PRIMARY KEY,
+				value TEXT NOT NULL
+			);
 		`)
-		this.board = this.load()
+		this.migrateLegacyBoard()
+		this.ensureCanvas()
 	}
 
-	private load(): Board {
-		const row = this.db.prepare('SELECT revision, shapes FROM board WHERE id = 1').get() as
-			| { revision: number; shapes: string }
-			| undefined
-		if (!row) {
-			const initial: Board = { revision: 0, shapes: [] }
-			this.db
-				.prepare('INSERT INTO board (id, revision, shapes) VALUES (1, ?, ?)')
-				.run(initial.revision, JSON.stringify(initial.shapes))
-			return initial
+	private migrateLegacyBoard(): void {
+		const legacy = this.db
+			.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board'")
+			.get()
+		if (!legacy) return
+		this.db.exec('BEGIN IMMEDIATE')
+		try {
+			const row = this.db.prepare('SELECT revision, shapes FROM board WHERE id = 1').get() as
+				| { revision: number; shapes: string }
+				| undefined
+			const existing = this.db.prepare('SELECT COUNT(*) AS count FROM canvases').get() as {
+				count: number
+			}
+			if (existing.count === 0 && row) {
+				const now = new Date().toISOString()
+				this.db
+					.prepare(
+						'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+					)
+					.run(DEFAULT_CANVAS_ID, DEFAULT_CANVAS_NAME, row.revision, row.shapes, now, now)
+				this.setSetting('activeCanvasId', DEFAULT_CANVAS_ID)
+			}
+			this.db.exec('DROP TABLE board')
+			this.db.exec('COMMIT')
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
 		}
+	}
 
+	private ensureCanvas(): void {
+		const count = this.db.prepare('SELECT COUNT(*) AS count FROM canvases').get() as {
+			count: number
+		}
+		if (count.count === 0) {
+			const now = new Date().toISOString()
+			this.db
+				.prepare(
+					'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, 0, ?, ?, ?)',
+				)
+				.run(DEFAULT_CANVAS_ID, DEFAULT_CANVAS_NAME, '[]', now, now)
+		}
+		const active = this.getSetting('activeCanvasId')
+		if (!active || !this.findRow(active)) {
+			const first = this.db
+				.prepare(
+					'SELECT id FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
+				)
+				.get() as { id: string } | undefined
+			if (first) this.setSetting('activeCanvasId', first.id)
+		}
+	}
+
+	private getSetting(key: string): string | undefined {
+		const row = this.db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
+			| { value: string }
+			| undefined
+		return row?.value
+	}
+
+	getStateVersion(): number {
+		const raw = this.getSetting('stateVersion')
+		const version = raw === undefined ? 0 : Number(raw)
+		return Number.isInteger(version) && version >= 0 ? version : 0
+	}
+
+	private bumpStateVersion(): number {
+		this.db
+			.prepare(
+				"INSERT INTO settings (key, value) VALUES ('stateVersion', '1') ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1",
+			)
+			.run()
+		return this.getStateVersion()
+	}
+
+	private setSetting(key: string, value: string): void {
+		this.db
+			.prepare(
+				'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+			)
+			.run(key, value)
+	}
+
+	private findRow(id: string): CanvasRow | undefined {
+		return this.db.prepare('SELECT * FROM canvases WHERE id = ?').get(id) as CanvasRow | undefined
+	}
+
+	private requireRow(id: string): CanvasRow {
+		const row = this.findRow(id)
+		if (!row) throw new OperationError(404, 'NOT_FOUND', `canvas not found: ${id}`)
+		return row
+	}
+
+	private parseRow(row: CanvasRow, persistMigration = false): Board {
 		let parsed: unknown
 		try {
 			parsed = JSON.parse(row.shapes)
 		} catch {
-			throw new Error('Invalid board JSON in SQLite')
+			throw new Error('Invalid canvas JSON in SQLite')
 		}
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
 		validateBoardState(board)
-		if (migrated.changed) {
+		if (migrated.changed && persistMigration) {
 			this.db
-				.prepare('UPDATE board SET shapes = ? WHERE id = 1')
-				.run(JSON.stringify(migrated.shapes))
+				.prepare('UPDATE canvases SET shapes = ? WHERE id = ?')
+				.run(JSON.stringify(migrated.shapes), row.id)
 		}
 		return board
 	}
 
-	getBoard(): Board {
-		this.board = this.load()
-		return cloneBoard(this.board)
+	private summaryOf(row: CanvasRow, includePreview = true): CanvasSummary {
+		const summary: CanvasSummary = {
+			id: row.id,
+			name: row.name,
+			revision: row.revision,
+			createdAt: row.created_at,
+			updatedAt: row.updated_at,
+		}
+		if (includePreview) summary.preview = canvasPreview(this.parseRow(row).shapes)
+		return summary
+	}
+
+	private readState(includePreviews: boolean): CanvasSnapshot {
+		this.db.exec('BEGIN DEFERRED')
+		try {
+			const stateVersion = this.getStateVersion()
+			const rows = this.db
+				.prepare('SELECT * FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC')
+				.all() as unknown as CanvasRow[]
+			const configured = this.getSetting('activeCanvasId')
+			const active = rows.find((row) => row.id === configured) ?? rows[0]
+			if (!active) throw new Error('No canvas exists')
+			const canvases = rows.map((row) => this.summaryOf(row, includePreviews))
+			const board = this.parseRow(active)
+			this.db.exec('COMMIT')
+			return { stateVersion, activeCanvasId: active.id, canvases, board }
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
+		}
+	}
+
+	getActiveCanvasId(): string {
+		const active = this.getSetting('activeCanvasId')
+		if (active && this.findRow(active)) return active
+		this.ensureCanvas()
+		return this.getSetting('activeCanvasId') ?? DEFAULT_CANVAS_ID
+	}
+
+	listCanvases(includePreviews = true): CanvasSnapshot['canvases'] {
+		return this.readState(includePreviews).canvases
+	}
+
+	getCanvasList(includePreviews = true): {
+		stateVersion: number
+		activeCanvasId: string
+		canvases: CanvasSummary[]
+	} {
+		const { stateVersion, activeCanvasId, canvases } = this.readState(includePreviews)
+		return { stateVersion, activeCanvasId, canvases }
+	}
+
+	getCanvasSummary(id: string): CanvasSummary {
+		return this.summaryOf(this.requireRow(validCanvasId(id)))
+	}
+
+	getState(includePreviews = true): CanvasSnapshot {
+		return this.readState(includePreviews)
+	}
+
+	getBoard(canvasId?: string): Board {
+		const id = canvasId === undefined ? this.getActiveCanvasId() : validCanvasId(canvasId)
+		return cloneBoard(this.parseRow(this.requireRow(id), true))
+	}
+
+	getCanvas(canvasId: string): CanvasDetail {
+		const id = validCanvasId(canvasId)
+		const row = this.requireRow(id)
+		return { canvas: this.summaryOf(row), board: this.parseRow(row) }
 	}
 
 	apply(request: unknown): Board {
-		this.board = this.load()
+		return this.applyRequest(request).board
+	}
+
+	applyRequest(request: unknown): { canvasId: string; canvas: CanvasSummary; board: Board } {
 		if (!isObject(request)) invalid('request must be an object')
-		if (!hasExactKeys(request, ['operations'], ['expectedRevision'])) {
+		if (!hasExactKeys(request, ['operations'], ['expectedRevision', 'canvasId'])) {
 			invalid('invalid operation request')
 		}
 		if (!Array.isArray(request.operations)) invalid('operations must be an array')
+		const canvasId = Object.hasOwn(request, 'canvasId')
+			? validCanvasId(request.canvasId)
+			: this.getActiveCanvasId()
+		const row = this.requireRow(canvasId)
+		const board = this.parseRow(row)
 		if (Object.hasOwn(request, 'expectedRevision')) {
 			if (!Number.isInteger(request.expectedRevision) || (request.expectedRevision as number) < 0) {
 				throw new OperationError(
@@ -427,16 +636,16 @@ export class BoardStore {
 					'expectedRevision must be a non-negative integer',
 				)
 			}
-			if (request.expectedRevision !== this.board.revision) {
+			if (request.expectedRevision !== board.revision) {
 				throw new OperationError(
 					409,
 					'REVISION_CONFLICT',
-					'Board revision does not match expectedRevision',
+					'Canvas revision does not match expectedRevision',
 				)
 			}
 		}
 
-		const next = cloneBoard(this.board)
+		const next = cloneBoard(board)
 		const cascaded = new Set<string>()
 		for (const operation of request.operations as Operation[]) {
 			if (!isObject(operation)) invalid('operation must be an object')
@@ -514,20 +723,109 @@ export class BoardStore {
 
 		validateBoardState(next)
 		if (request.operations.length > 0) next.revision += 1
-
+		const updatedAt = new Date().toISOString()
 		const result = this.db
-			.prepare('UPDATE board SET revision = ?, shapes = ? WHERE id = 1 AND revision = ?')
-			.run(next.revision, JSON.stringify(next.shapes), this.board.revision)
+			.prepare(
+				'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ?',
+			)
+			.run(next.revision, JSON.stringify(next.shapes), updatedAt, canvasId, board.revision)
 		if (Number(result.changes) !== 1) {
-			this.board = this.load()
 			throw new OperationError(
 				409,
 				'REVISION_CONFLICT',
-				'Board revision changed during the operation',
+				'Canvas revision changed during the operation',
 			)
 		}
-		this.board = next
-		return this.getBoard()
+		const updatedRow = this.requireRow(canvasId)
+		return {
+			canvasId,
+			canvas: this.summaryOf(updatedRow),
+			board: cloneBoard(next),
+		}
+	}
+
+	createCanvas(name?: unknown, activate = false): { state: CanvasSnapshot; canvas: CanvasSummary } {
+		const canvasName = name === undefined ? 'Untitled canvas' : validCanvasName(name)
+		const id = randomUUID()
+		const now = new Date().toISOString()
+		this.db.exec('BEGIN IMMEDIATE')
+		try {
+			this.db
+				.prepare(
+					'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, 0, ?, ?, ?)',
+				)
+				.run(id, canvasName, '[]', now, now)
+			if (activate) this.setSetting('activeCanvasId', id)
+			this.bumpStateVersion()
+			this.db.exec('COMMIT')
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
+		}
+		const state = this.getState()
+		const canvas = state.canvases.find((candidate) => candidate.id === id)
+		if (!canvas) throw new Error('Created canvas is missing from the state')
+		return { state, canvas }
+	}
+
+	renameCanvas(canvasId: string, name: unknown): CanvasSnapshot {
+		const id = validCanvasId(canvasId)
+		const canvasName = validCanvasName(name)
+		this.db.exec('BEGIN IMMEDIATE')
+		try {
+			this.requireRow(id)
+			this.db.prepare('UPDATE canvases SET name = ? WHERE id = ?').run(canvasName, id)
+			this.bumpStateVersion()
+			this.db.exec('COMMIT')
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
+		}
+		return this.getState()
+	}
+
+	deleteCanvas(canvasId: string): CanvasSnapshot {
+		const id = validCanvasId(canvasId)
+		this.db.exec('BEGIN IMMEDIATE')
+		try {
+			this.requireRow(id)
+			const count = this.db.prepare('SELECT COUNT(*) AS count FROM canvases').get() as {
+				count: number
+			}
+			if (count.count <= 1) {
+				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
+			}
+			this.db.prepare('DELETE FROM canvases WHERE id = ?').run(id)
+			if (this.getSetting('activeCanvasId') === id) {
+				const next = this.db
+					.prepare(
+						'SELECT id FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
+					)
+					.get() as { id: string } | undefined
+				if (next) this.setSetting('activeCanvasId', next.id)
+			}
+			this.bumpStateVersion()
+			this.db.exec('COMMIT')
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
+		}
+		return this.getState()
+	}
+
+	activateCanvas(canvasId: string): CanvasSnapshot {
+		const id = validCanvasId(canvasId)
+		this.db.exec('BEGIN IMMEDIATE')
+		try {
+			this.requireRow(id)
+			this.setSetting('activeCanvasId', id)
+			this.bumpStateVersion()
+			this.db.exec('COMMIT')
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
+		}
+		return this.getState()
 	}
 
 	close(): void {

@@ -10,7 +10,7 @@ import { test } from 'node:test'
 import WebSocket from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { DEV_ORIGIN } from '../shared/config.ts'
-import type { Board } from '../shared/types.ts'
+import type { Board, ServerEvent } from '../shared/types.ts'
 import { createDaemon, type Daemon } from './index.ts'
 
 const WAIT_MS = 5000
@@ -74,7 +74,9 @@ test('HTTPS-origin subscribers receive API writes and reconnect to the latest bo
 		let reconnected: WebSocket | undefined
 		try {
 			const [initial] = await once(socket, 'message', { signal: AbortSignal.timeout(WAIT_MS) })
-			assert.deepEqual(JSON.parse(initial.toString()), { revision: 0, shapes: [] })
+			const initialEvent = JSON.parse(initial.toString()) as ServerEvent
+			assert.equal(initialEvent.type, 'snapshot')
+			assert.deepEqual(initialEvent.board, { revision: 0, shapes: [] })
 			const live = await fetch(`${url}/api/live`, { headers })
 			assert.equal(live.status, 200)
 			assert.deepEqual(await live.json(), { status: 'ok', version: manifest.version })
@@ -110,14 +112,18 @@ test('HTTPS-origin subscribers receive API writes and reconnect to the latest bo
 			assert.equal(response.status, 200)
 			const board = await response.json()
 			const [message] = await event
-			assert.deepEqual(JSON.parse(message.toString()), board)
+			const boardEvent = JSON.parse(message.toString()) as ServerEvent
+			assert.equal(boardEvent.type, 'board')
+			assert.deepEqual(boardEvent.board, board)
 			socket.close()
 			await once(socket, 'close', { signal: AbortSignal.timeout(WAIT_MS) })
 			reconnected = new WebSocket(`${url.replace('http:', 'ws:')}/api/events`, { headers })
 			const [snapshot] = await once(reconnected, 'message', {
 				signal: AbortSignal.timeout(WAIT_MS),
 			})
-			assert.deepEqual(JSON.parse(snapshot.toString()), board)
+			const snapshotEvent = JSON.parse(snapshot.toString()) as ServerEvent
+			assert.equal(snapshotEvent.type, 'snapshot')
+			assert.deepEqual(snapshotEvent.board, board)
 		} finally {
 			socket.terminate()
 			reconnected?.terminate()
@@ -159,6 +165,7 @@ test('invalid browser origins and malformed WebSocket frames are isolated', asyn
 				blocked = new WebSocket(`ws://127.0.0.1:${port}/api/events`, {
 					headers: { origin: DEV_ORIGIN },
 				})
+				blocked.on('error', () => {})
 				const [code] = await once(blocked, 'close', { signal: AbortSignal.timeout(WAIT_MS) })
 				assert.equal(code, 1011)
 			} finally {
@@ -177,7 +184,7 @@ test('invalid browser origins and malformed WebSocket frames are isolated', asyn
 
 interface LiveSocket {
 	socket: WebSocket
-	next(label?: string): Promise<Board>
+	next(label?: string): Promise<ServerEvent>
 }
 
 function liveSocket(url: string): LiveSocket {
@@ -185,14 +192,14 @@ function liveSocket(url: string): LiveSocket {
 	return {
 		socket,
 		next: (label = 'board') =>
-			new Promise<Board>((resolve, reject) => {
+			new Promise<ServerEvent>((resolve, reject) => {
 				const timer = setTimeout(() => {
 					cleanup()
 					reject(new Error(`timed out waiting for ${label}`))
 				}, WAIT_MS)
 				const onMessage = (data: WebSocket.RawData) => {
 					cleanup()
-					resolve(JSON.parse(data.toString()) as Board)
+					resolve(JSON.parse(data.toString()) as ServerEvent)
 				}
 				const onError = (error: Error) => {
 					cleanup()
@@ -266,8 +273,10 @@ test('WebSocket rejects foreign origins and broadcasts create, update and delete
 		try {
 			const initialFirst = first.next('initial-1')
 			const initialSecond = second.next('initial-2')
-			assert.deepEqual(await initialFirst, { revision: 0, shapes: [] })
-			assert.deepEqual(await initialSecond, { revision: 0, shapes: [] })
+			for (const event of [await initialFirst, await initialSecond]) {
+				assert.equal(event.type, 'snapshot')
+				assert.deepEqual(event.board, { revision: 0, shapes: [] })
+			}
 
 			const createFirst = first.next('create-1')
 			const createSecond = second.next('create-2')
@@ -294,8 +303,10 @@ test('WebSocket rejects foreign origins and broadcasts create, update and delete
 			})
 			assert.equal(created.status, 200)
 			const afterCreate = (await created.json()) as Board
-			assert.deepEqual(await createFirst, afterCreate)
-			assert.deepEqual(await createSecond, afterCreate)
+			for (const event of [await createFirst, await createSecond]) {
+				assert.equal(event.type, 'board')
+				assert.deepEqual(event.board, afterCreate)
+			}
 
 			const updateFirst = first.next('update-1')
 			const updateSecond = second.next('update-2')
@@ -308,8 +319,10 @@ test('WebSocket rejects foreign origins and broadcasts create, update and delete
 			})
 			assert.equal(updated.status, 200)
 			const afterUpdate = (await updated.json()) as Board
-			assert.deepEqual(await updateFirst, afterUpdate)
-			assert.deepEqual(await updateSecond, afterUpdate)
+			for (const event of [await updateFirst, await updateSecond]) {
+				assert.equal(event.type, 'board')
+				assert.deepEqual(event.board, afterUpdate)
+			}
 
 			const counts = { first: 0, second: 0 }
 			const countFirst = () => {
@@ -341,8 +354,10 @@ test('WebSocket rejects foreign origins and broadcasts create, update and delete
 			})
 			assert.equal(barrier.status, 200)
 			const barrierBoard = (await barrier.json()) as Board
-			assert.deepEqual(await barrierFirst, barrierBoard)
-			assert.deepEqual(await barrierSecond, barrierBoard)
+			for (const event of [await barrierFirst, await barrierSecond]) {
+				assert.equal(event.type, 'board')
+				assert.deepEqual(event.board, barrierBoard)
+			}
 			first.socket.off('message', countFirst)
 			second.socket.off('message', countSecond)
 			assert.deepEqual(counts, { first: 1, second: 1 })
@@ -356,8 +371,49 @@ test('WebSocket rejects foreign origins and broadcasts create, update and delete
 			})
 			assert.equal(deleted.status, 200)
 			const afterDelete = (await deleted.json()) as Board
-			assert.deepEqual(await deleteFirst, afterDelete)
-			assert.deepEqual(await deleteSecond, afterDelete)
+			for (const event of [await deleteFirst, await deleteSecond]) {
+				assert.equal(event.type, 'board')
+				assert.deepEqual(event.board, afterDelete)
+			}
+
+			const createCanvasFirst = first.next('canvas-create-1')
+			const createCanvasSecond = second.next('canvas-create-2')
+			const createdCanvas = await fetch(`${url}/api/canvases`, {
+				method: 'POST',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name: 'Live canvas', activate: true }),
+			})
+			assert.equal(createdCanvas.status, 200)
+			const createdCanvasState = (await createdCanvas.json()) as {
+				activeCanvasId: string
+				createdCanvasId: string
+				canvases: unknown[]
+				board: Board
+			}
+			assert.equal(createdCanvasState.activeCanvasId, createdCanvasState.createdCanvasId)
+			assert.equal(createdCanvasState.canvases.length, 2)
+			assert.deepEqual(createdCanvasState.board, { revision: 0, shapes: [] })
+			for (const event of [await createCanvasFirst, await createCanvasSecond]) {
+				assert.equal(event.type, 'snapshot')
+				assert.equal(event.activeCanvasId, createdCanvasState.createdCanvasId)
+				assert.equal(event.canvases.length, 2)
+			}
+
+			const activateFirst = first.next('canvas-activate-1')
+			const activateSecond = second.next('canvas-activate-2')
+			const activated = await fetch(`${url}/api/active-canvas`, {
+				method: 'PUT',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id: 'main' }),
+			})
+			assert.equal(activated.status, 200)
+			const activatedState = (await activated.json()) as { activeCanvasId: string; board: Board }
+			assert.equal(activatedState.activeCanvasId, 'main')
+			for (const event of [await activateFirst, await activateSecond]) {
+				assert.equal(event.type, 'snapshot')
+				assert.equal(event.activeCanvasId, 'main')
+				assert.deepEqual(event.board, activatedState.board)
+			}
 		} finally {
 			first.socket.terminate()
 			second.socket.terminate()

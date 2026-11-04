@@ -81,6 +81,31 @@ export interface Board {
 	shapes: Shape[]
 }
 
+export interface CanvasSummary {
+	id: string
+	name: string
+	revision: number
+	createdAt: string
+	updatedAt: string
+	preview?: string
+}
+
+export interface CanvasSnapshot {
+	stateVersion: number
+	activeCanvasId: string
+	canvases: CanvasSummary[]
+	board: Board
+}
+
+export interface CanvasDetail {
+	canvas: CanvasSummary
+	board: Board
+}
+
+export type ServerEvent =
+	| ({ type: 'snapshot' } & CanvasSnapshot)
+	| { type: 'board'; canvasId: string; canvas: CanvasSummary; board: Board }
+
 export type Operation =
 	| { type: 'create'; shape: Shape }
 	| {

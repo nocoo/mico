@@ -1,18 +1,18 @@
 # Automated testing
 
-Mico has one board but three interfaces over it: the browser canvas, the HTTP API, and the agent CLI. Tests are layered so a defect is caught at the cheapest layer that can see it, while the agent-facing API keeps an explicit contract of its own.
+Mico has a collection of canvases but three interfaces over them: the browser canvas, the HTTP API, and the agent CLI. Tests are layered so a defect is caught at the cheapest layer that can see it, while the agent-facing API keeps an explicit contract of its own.
 
 ## Layers
 
-| Layer               | Files                                                                                      | What it proves                                                                                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Pure logic          | `src/web/{anchors,brush,connections,containers,grid,move,selection,snap,viewport}.test.ts` | Geometry, containment, snapping, connector anchors and classes, brush sampling. No DOM, no database.                                                           |
-| Store contract      | `src/server/store.test.ts`                                                                 | Shape schema, atomic batches, revision conflicts, frame membership rules, delete cascades, SQLite persistence, legacy cleanup.                                 |
-| HTTP API contract   | `src/server/api.test.ts`, `src/server/index.test.ts`                                       | Status codes and error envelopes, every shape type over the wire, patch scoping, revision guards, CORS/host/preflight, WebSocket snapshots and broadcasts.     |
-| CLI                 | `src/cli/index.test.ts`                                                                    | Every `mico` command against a real daemon on an ephemeral port, generated ids, stdin/file batches, conflict and usage failures.                               |
-| Agent examples      | `scripts/examples.test.ts`                                                                 | The JSON/TypeScript batches shipped for agents still validate and apply, including the frame + HTML dashboard example. Duplicate application fails explicitly. |
-| Browser interaction | `tests/browser/canvas.spec.ts`, `tests/browser/controls.spec.ts`                           | Real pointer and keyboard input for tools, options, panels, selection, dragging, membership, connectors, HTML rendering, zoom and fit.                         |
-| Ops fixtures        | `scripts/eval-fixture.test.ts`                                                             | Eval capture paths, identities, locks and artifact retention.                                                                                                  |
+| Layer               | Files                                                                                                         | What it proves                                                                                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pure logic          | `src/web/{anchors,brush,canvasState,connections,containers,design,grid,move,selection,snap,viewport}.test.ts` | Geometry, containment, snapping, connector anchors and classes, brush sampling, palette/token contract. No DOM, no database.                                                                |
+| Store contract      | `src/server/store.test.ts`, `src/server/preview.test.ts`                                                      | Canvas CRUD and switching, per-canvas revisions, shape schema, atomic batches, frame rules, delete cascades, SQLite migration, previews, legacy cleanup.                                    |
+| HTTP API contract   | `src/server/api.test.ts`, `src/server/index.test.ts`                                                          | Canvas CRUD and state snapshots, status codes and error envelopes, every shape type over the wire, patch scoping, revision guards, CORS/host/preflight, WebSocket snapshots and broadcasts. |
+| CLI                 | `src/cli/index.test.ts`                                                                                       | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures.               |
+| Agent examples      | `scripts/examples.test.ts`                                                                                    | The JSON/TypeScript batches shipped for agents still validate and apply, including the frame + HTML dashboard example. Duplicate application fails explicitly.                              |
+| Browser interaction | `tests/browser/canvas.spec.ts`, `tests/browser/canvases.spec.ts`, `tests/browser/controls.spec.ts`            | Canvas panel switching/rename/delete/previews, real pointer and keyboard input, panels, selection, dragging, membership, connectors, HTML rendering, zoom and fit.                          |
+| Ops fixtures        | `scripts/eval-fixture.test.ts`                                                                                | Eval capture paths, identities, locks and artifact retention.                                                                                                                               |
 
 ## Commands
 
@@ -45,7 +45,9 @@ pnpm build
 
 ## Agent API contract
 
-`POST /api/operations` accepts `{ operations, expectedRevision? }`. A batch is validated and persisted atomically; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.
+`GET /api/state` returns `{stateVersion, activeCanvasId, canvases, board}`; `?previews=0` omits previews, and `stateVersion` orders delayed snapshots. Canvas summaries carry `id`, `name`, `revision`, `createdAt`, `updatedAt` and a 160×100 SVG data-URL preview. Canvas management uses `GET/POST /api/canvases` (also supports `?previews=0`), `GET/PATCH/DELETE /api/canvases/:id` and `PUT /api/active-canvas`; every metadata response is the updated state snapshot. The last canvas cannot be deleted (`LAST_CANVAS`).
+
+`POST /api/operations` accepts `{ operations, expectedRevision?, canvasId? }`. It defaults to the active canvas and can target any canvas without switching. A batch is validated and persisted atomically per canvas; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.
 
 - `create` carries a complete shape. `update` carries `{ id, patch }`; patch keys are scoped per shape type. `delete` removes the shape, its connectors and releases frame members.
 - Shape types: `rectangle`, `ellipse`, `text`, `line`, `note`, `path`, `frame`, `html`, `connector`.
@@ -53,27 +55,29 @@ pnpm build
 - `html` needs a title and markup up to 200 000 characters; it may sit inside a frame but can never be the target of `frameId`.
 - Regular shapes carry optional `frameId` naming an existing frame. Connector endpoints must both be frames or both be non-frames; anchor pins are range-checked per type.
 - Errors use `{ error, message }`: `INVALID_REQUEST` (400), `INVALID_JSON` (400), `DUPLICATE_ID` (400), `NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `FORBIDDEN_HOST`/`FORBIDDEN_ORIGIN` (403), `REVISION_CONFLICT` (409), `PAYLOAD_TOO_LARGE` (413) and `INTERNAL_ERROR` (500). Bodies above 1 MB are drained so the client receives an explicit 413 instead of a reset connection.
-- `GET /api/board` returns `{ revision, shapes }`. A WebSocket at `/api/events` sends the full board on connect and after every successful mutation; rejected batches and foreign origins never broadcast.
+- `GET /api/board` returns the active `{ revision, shapes }`. The WebSocket at `/api/events` sends a `snapshot` on connect and after canvas create/rename/delete/switch, and a `board` event after operations: `{ type: "board", canvasId, canvas, board }`. Rejected batches and foreign origins never broadcast.
 
 Agent examples are executable specifications: `examples/architecture.json`, `examples/agent-canvas-map.json`, `examples/sketch.ts`, `examples/distributed-architecture.ts`, and `examples/frame-dashboard.ts`. Update an example together with the API and its test.
 
 ## Coverage map
 
-| Area                                | Primary coverage                                                                              |
-| ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| Tool buttons and shortcuts          | `controls.spec.ts` keyboard/tool tests, `canvas.spec.ts` toolbar test                         |
-| Shape creation by drag/click        | `controls.spec.ts` primitive tests, `canvas.spec.ts` note/text/brush tests                    |
-| Dock options (colors, brush, fonts) | `controls.spec.ts` option and panel tests                                                     |
-| Selection, marquee, delete          | `canvas.spec.ts` marquee/snap tests, `controls.spec.ts` keyboard test                         |
-| Properties panel                    | `controls.spec.ts` panel test, `canvas.spec.ts` note/text/html/frame edits                    |
-| Frame label, membership, travel     | `canvas.spec.ts` frame tests, `controls.spec.ts` membership test, `containers.test.ts`        |
-| Connector creation/rebind/classes   | `canvas.spec.ts` connector tests, `connections.test.ts`, `api.test.ts`                        |
-| HTML cards                          | `controls.spec.ts`, `canvas.spec.ts` HTML test, `store.test.ts`, `api.test.ts`, examples test |
-| Pan/zoom/fit                        | `controls.spec.ts` zoom test, `canvas.spec.ts` grid/viewport test                             |
-| Store schema and atomicity          | `store.test.ts`, `api.test.ts`                                                                |
-| HTTP/WebSocket contract             | `api.test.ts`, `index.test.ts`                                                                |
-| CLI                                 | `index.test.ts`                                                                               |
-| Agent examples                      | `examples.test.ts`                                                                            |
+| Area                                | Primary coverage                                                                                                             |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Tool buttons and shortcuts          | `controls.spec.ts` keyboard/tool tests, `canvas.spec.ts` toolbar test                                                        |
+| Shape creation by drag/click        | `controls.spec.ts` primitive tests, `canvas.spec.ts` note/text/brush tests                                                   |
+| Dock options (colors, brush, fonts) | `controls.spec.ts` option and panel tests                                                                                    |
+| Selection, marquee, delete          | `canvas.spec.ts` marquee/snap tests, `controls.spec.ts` keyboard test                                                        |
+| Properties panel                    | `controls.spec.ts` panel test, `canvas.spec.ts` note/text/html/frame edits                                                   |
+| Frame label, membership, travel     | `canvas.spec.ts` frame tests, `controls.spec.ts` membership test, `containers.test.ts`                                       |
+| Connector creation/rebind/classes   | `canvas.spec.ts` connector tests, `connections.test.ts`, `api.test.ts`                                                       |
+| HTML cards                          | `controls.spec.ts`, `canvas.spec.ts` HTML test, `store.test.ts`, `api.test.ts`, examples test                                |
+| Pan/zoom/fit                        | `controls.spec.ts` zoom test, `canvas.spec.ts` grid/viewport test                                                            |
+| Canvas management and previews      | `canvases.spec.ts`, `canvasState.test.ts`, `store.test.ts`, `preview.test.ts`, `api.test.ts`, `index.test.ts` (HTTP and CLI) |
+| Palette and tokens                  | `design.test.ts`, `controls.spec.ts` panel/default-colour checks                                                             |
+| Store schema and atomicity          | `store.test.ts`, `api.test.ts`                                                                                               |
+| HTTP/WebSocket contract             | `api.test.ts`, `index.test.ts`                                                                                               |
+| CLI                                 | `src/cli/index.test.ts`                                                                                                      | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures. |
+| Agent examples                      | `examples.test.ts`                                                                                                           |
 
 ## Known gaps
 

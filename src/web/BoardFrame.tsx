@@ -5,6 +5,7 @@ import {
 	CodeXml,
 	Frame,
 	Hand,
+	Layers,
 	Maximize,
 	Minus,
 	MousePointer2,
@@ -49,6 +50,8 @@ interface BoardFrameProps {
 	toolOptions?: ReactNode
 	onFrame: () => void
 	canFrame: boolean
+	canvasesOpen: boolean
+	onToggleCanvases: () => void
 }
 
 export function BoardFrame({
@@ -67,6 +70,8 @@ export function BoardFrame({
 	toolOptions,
 	onFrame,
 	canFrame,
+	canvasesOpen,
+	onToggleCanvases,
 }: BoardFrameProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
@@ -104,6 +109,15 @@ export function BoardFrame({
 						<PenTool className="brand-mark" strokeWidth={2.25} aria-hidden="true" />
 						<strong>mico</strong>
 					</div>
+					<IconButton
+						icon={Layers}
+						label="Canvases"
+						active={canvasesOpen}
+						aria-pressed={canvasesOpen}
+						aria-expanded={canvasesOpen}
+						onClick={onToggleCanvases}
+						data-canvas-toggle="true"
+					/>
 					<span
 						className={`status ${status}`}
 						role="status"

@@ -197,6 +197,7 @@ svg {
 	display: flex;
 	align-items: center;
 	gap: var(--space-05);
+	width: calc(var(--control-size) + var(--space-05) + var(--space-6));
 	white-space: nowrap;
 }
 .brand-mark {
@@ -206,6 +207,7 @@ svg {
 	color: var(--accent);
 }
 .brand strong {
+	width: var(--space-6);
 	font-size: var(--type-brand);
 	font-weight: var(--weight-bold);
 	line-height: var(--line-heading);
@@ -791,6 +793,149 @@ svg {
 	pointer-events: auto;
 }
 
+.canvas-panel {
+	position: fixed;
+	top: calc(var(--frame-inset) + var(--control-size) + var(--space-2) + var(--space-15));
+	left: var(--frame-inset);
+	z-index: 40;
+	display: flex;
+	flex-direction: column;
+	width: min(340px, calc(100vw - var(--frame-inset) * 2));
+	max-height: calc(
+		100dvh -
+		var(--frame-inset) *
+		2 -
+		var(--control-size) -
+		var(--space-2) -
+		var(--space-15)
+	);
+	padding: 0;
+	overflow: hidden;
+}
+.canvas-panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	gap: var(--space-1);
+	padding: var(--space-15) var(--space-15) var(--space-1);
+	border-bottom: var(--hairline) solid var(--border);
+}
+.canvas-panel-heading {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-1);
+	min-width: 0;
+}
+.canvas-panel-title {
+	font-size: var(--type-body);
+	font-weight: var(--weight-semibold);
+}
+.canvas-panel-count {
+	color: var(--ink-muted);
+	font-size: var(--type-caption);
+}
+.canvas-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-05);
+	min-height: 0;
+	margin: 0;
+	padding: var(--space-1);
+	overflow-y: auto;
+	list-style: none;
+}
+.canvas-item {
+	display: flex;
+	align-items: center;
+	gap: var(--space-05);
+	padding: var(--space-05);
+	border-radius: var(--radius-control);
+}
+.canvas-item.active {
+	background: var(--accent-tint);
+}
+.canvas-switch {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	gap: var(--space-1);
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--ink);
+	text-align: left;
+}
+.canvas-switch-editing {
+	cursor: default;
+}
+.canvas-preview {
+	flex: 0 0 64px;
+	width: 64px;
+	height: 40px;
+	border: var(--hairline) solid var(--border);
+	border-radius: calc(var(--radius-control) - 2px);
+	object-fit: cover;
+	background: var(--surface-muted);
+}
+.canvas-preview-empty {
+	display: block;
+}
+.canvas-copy {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	gap: var(--space-05);
+}
+.canvas-name {
+	overflow: hidden;
+	color: var(--ink);
+	font-size: var(--type-body);
+	font-weight: var(--weight-medium);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.canvas-time {
+	color: var(--ink-muted);
+	font-size: var(--type-caption);
+	line-height: var(--line-caption);
+}
+.canvas-name-input {
+	width: 100%;
+	height: var(--space-3);
+	margin: 0;
+	padding: 0 var(--space-1);
+	border: var(--hairline) solid var(--accent);
+	border-radius: calc(var(--radius-control) - 2px);
+	background: var(--surface);
+	color: var(--ink);
+	font-size: var(--type-body);
+	outline: none;
+}
+.canvas-active {
+	flex: 0 0 auto;
+	color: var(--accent);
+}
+.canvas-actions {
+	display: flex;
+	flex: 0 0 auto;
+	gap: var(--space-05);
+	opacity: 0;
+}
+.canvas-item:hover .canvas-actions,
+.canvas-item:focus-within .canvas-actions {
+	opacity: 1;
+}
+.canvas-actions .danger {
+	color: var(--danger);
+}
+@media (hover: none) {
+	.canvas-actions {
+		opacity: 1;
+	}
+}
 .selection-panel {
 	position: fixed;
 	top: calc(var(--frame-inset) + var(--space-8) + var(--space-2));

@@ -54,6 +54,8 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 		if (!draftRef.current?.pending) update(null)
 	}, [update])
 
+	const reset = useCallback(() => update(null), [update])
+
 	const begin = (source: CanvasShape, pointer: Point, pointerId: number) => {
 		if (draftRef.current?.pending) return false
 		update({
@@ -166,5 +168,5 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 				}
 			: null
 
-	return { draft, preview, fixedShape, targetShape, begin, reconnect, move, finish, cancel }
+	return { draft, preview, fixedShape, targetShape, begin, reconnect, move, finish, cancel, reset }
 }

@@ -64,6 +64,30 @@ function sendError(
 	sendJson(res, status, { error: code, message }, origin)
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function exactKeys(value: Record<string, unknown>, optional: string[] = []): boolean {
+	const allowed = new Set(optional)
+	return Object.keys(value).every((key) => allowed.has(key))
+}
+
+function invalid(message: string): never {
+	throw new OperationError(400, 'INVALID_REQUEST', message)
+}
+
+function knownPath(pathname: string): boolean {
+	const segments = pathname.split('/').filter(Boolean)
+	if (segments[0] !== 'api') return false
+	if (segments.length === 2) {
+		return ['live', 'state', 'board', 'operations', 'events', 'canvases', 'active-canvas'].includes(
+			segments[1],
+		)
+	}
+	return segments.length === 3 && segments[1] === 'canvases'
+}
+
 export interface Daemon {
 	server: ReturnType<typeof createServer>
 	store: BoardStore
@@ -75,11 +99,32 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 	const port = options.port ?? parsePort()
 	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
+	const wss = new WebSocketServer({ noServer: true })
 
 	function isAllowedHost(host: string | undefined): boolean {
 		const address = server.address()
 		const listeningPort = address && typeof address !== 'string' ? address.port : port
 		return host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`
+	}
+
+	const broadcast = (event: unknown): void => {
+		const payload = JSON.stringify(event)
+		for (const client of wss.clients) {
+			if (client.readyState === WebSocket.OPEN) client.send(payload)
+		}
+	}
+
+	const broadcastState = (state = store.getState()): void => {
+		broadcast({ type: 'snapshot', ...state })
+	}
+
+	const replyError = (res: ServerResponse, error: unknown, origin?: string): void => {
+		if (error instanceof OperationError) {
+			sendError(res, error.status, error.code, error.message, origin)
+			return
+		}
+		console.error(error)
+		sendError(res, 500, 'INTERNAL_ERROR', 'Internal server error', origin)
 	}
 
 	const server = createServer(async (req, res) => {
@@ -95,27 +140,33 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 		}
 
 		let pathname: string
+		let requestUrl: URL
 		try {
-			pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
+			requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1')
+			pathname = requestUrl.pathname
 		} catch {
 			sendError(res, 400, 'INVALID_REQUEST', 'Invalid request URL', origin)
 			return
 		}
+		const includePreviews = requestUrl.searchParams.get('previews') !== '0'
+
+		const segments = pathname.split('/').filter(Boolean)
+		const isPath = (...parts: string[]) =>
+			segments.length === parts.length && parts.every((part, index) => segments[index] === part)
+		const canvasId =
+			segments[0] === 'api' && segments[1] === 'canvases' && segments.length === 3
+				? segments[2]
+				: null
 
 		if (req.method === 'OPTIONS') {
-			if (
-				pathname !== '/api/live' &&
-				pathname !== '/api/board' &&
-				pathname !== '/api/operations' &&
-				pathname !== '/api/events'
-			) {
+			if (!knownPath(pathname)) {
 				sendError(res, 404, 'NOT_FOUND', 'Endpoint not found', origin)
 				return
 			}
 			if (origin && ALLOWED_ORIGINS.has(origin)) {
 				res.setHeader('Access-Control-Allow-Origin', origin)
 				res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
-				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 				res.setHeader('Vary', 'Origin')
 			}
 			res.writeHead(204)
@@ -123,73 +174,138 @@ export function createDaemon(options: { port?: number; dbPath?: string } = {}): 
 			return
 		}
 
-		if (pathname === '/api/live') {
-			if (req.method !== 'GET') {
-				res.setHeader('Allow', 'GET, OPTIONS')
-				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
-				return
-			}
-			sendJson(res, 200, { status: 'ok', version: manifest.version }, origin)
-			return
-		}
-
-		if (pathname === '/api/board') {
-			if (req.method !== 'GET') {
-				res.setHeader('Allow', 'GET, OPTIONS')
-				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
-				return
-			}
-			try {
-				sendJson(res, 200, store.getBoard(), origin)
-			} catch (error) {
-				console.error(error)
-				sendError(res, 500, 'INTERNAL_ERROR', 'Could not read the board', origin)
-			}
-			return
-		}
-
-		if (pathname === '/api/operations') {
-			if (req.method !== 'POST') {
-				res.setHeader('Allow', 'POST, OPTIONS')
-				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
-				return
-			}
-			try {
-				const request = await readJson(req)
-				const board = store.apply(request)
-				broadcast(JSON.stringify(board))
-				sendJson(res, 200, board, origin)
-			} catch (error) {
-				if (error instanceof OperationError) {
-					sendError(res, error.status, error.code, error.message, origin)
+		try {
+			if (isPath('api', 'live')) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				console.error(error)
-				sendError(res, 500, 'INTERNAL_ERROR', 'Internal server error', origin)
+				sendJson(res, 200, { status: 'ok', version: manifest.version }, origin)
+				return
 			}
+
+			if (isPath('api', 'state')) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendJson(res, 200, store.getState(includePreviews), origin)
+				return
+			}
+
+			if (isPath('api', 'board')) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendJson(res, 200, store.getBoard(), origin)
+				return
+			}
+
+			if (isPath('api', 'canvases')) {
+				if (req.method === 'GET') {
+					sendJson(res, 200, store.getCanvasList(includePreviews), origin)
+					return
+				}
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'GET, POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const body = await readJson(req)
+				if (body !== undefined && !isRecord(body)) invalid('request must be an object')
+				const record = isRecord(body) ? body : {}
+				if (!exactKeys(record, ['name', 'activate'])) invalid('invalid canvas request')
+				if (record.activate !== undefined && typeof record.activate !== 'boolean') {
+					invalid('activate must be a boolean')
+				}
+				const created = store.createCanvas(record.name, record.activate === true)
+				broadcastState(created.state)
+				sendJson(res, 200, { ...created.state, createdCanvasId: created.canvas.id }, origin)
+				return
+			}
+
+			if (canvasId !== null) {
+				if (req.method === 'GET') {
+					sendJson(res, 200, store.getCanvas(canvasId), origin)
+					return
+				}
+				if (req.method === 'PATCH') {
+					const body = await readJson(req)
+					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('invalid canvas request')
+					const state = store.renameCanvas(canvasId, body.name)
+					broadcastState(state)
+					sendJson(res, 200, state, origin)
+					return
+				}
+				if (req.method === 'DELETE') {
+					const state = store.deleteCanvas(canvasId)
+					broadcastState(state)
+					sendJson(res, 200, state, origin)
+					return
+				}
+				res.setHeader('Allow', 'GET, PATCH, DELETE, OPTIONS')
+				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+				return
+			}
+
+			if (isPath('api', 'active-canvas')) {
+				if (req.method !== 'PUT') {
+					res.setHeader('Allow', 'PUT, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const body = await readJson(req)
+				if (!isRecord(body) || !exactKeys(body, ['id'])) invalid('invalid active canvas request')
+				if (typeof body.id !== 'string') invalid('canvas id must be a string')
+				const state = store.activateCanvas(body.id)
+				broadcastState(state)
+				sendJson(res, 200, state, origin)
+				return
+			}
+
+			if (isPath('api', 'operations')) {
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const result = store.applyRequest(await readJson(req))
+				broadcast({
+					type: 'board',
+					canvasId: result.canvasId,
+					canvas: result.canvas,
+					board: result.board,
+				})
+				sendJson(res, 200, result.board, origin)
+				return
+			}
+		} catch (error) {
+			replyError(res, error, origin)
 			return
 		}
 
-		if (req.method === 'GET' || req.method === 'POST') {
+		if (
+			req.method === 'GET' ||
+			req.method === 'POST' ||
+			req.method === 'PUT' ||
+			req.method === 'PATCH' ||
+			req.method === 'DELETE'
+		) {
 			sendError(res, 404, 'NOT_FOUND', 'Endpoint not found', origin)
 			return
 		}
-		res.setHeader('Allow', 'GET, POST, OPTIONS')
+		res.setHeader('Allow', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 		sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 	})
-
-	const wss = new WebSocketServer({ noServer: true })
-
-	const broadcast = (payload: string): void => {
-		for (const client of wss.clients) {
-			if (client.readyState === WebSocket.OPEN) client.send(payload)
-		}
-	}
 
 	wss.on('connection', (socket: WebSocket) => {
 		socket.on('error', () => socket.terminate())
 		try {
-			socket.send(JSON.stringify(store.getBoard()))
+			socket.send(JSON.stringify({ type: 'snapshot', ...store.getState() }))
 		} catch (error) {
 			console.error(error)
 			socket.close(1011, 'Could not read the board')

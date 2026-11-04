@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { BoardStore, OperationError } from './store.ts'
 
@@ -450,7 +451,7 @@ test('boards with out of range anchor pins fail to load', () => {
 				},
 			],
 		})
-		store.db.prepare('UPDATE board SET shapes = ? WHERE id = 1').run(
+		store.db.prepare("UPDATE canvases SET shapes = ? WHERE id = 'main'").run(
 			JSON.stringify([
 				{ id: 'a', type: 'rectangle', x: 0, y: 0, w: 100, h: 80, color: '#123456' },
 				{ id: 'b', type: 'rectangle', x: 300, y: 0, w: 100, h: 80, color: '#123456' },
@@ -465,7 +466,7 @@ test('boards with out of range anchor pins fail to load', () => {
 			]),
 		)
 		store.close()
-		assert.throws(() => new BoardStore(dbPath))
+		assert.throws(() => new BoardStore(dbPath).getBoard())
 	} finally {
 		rmSync(directory, { recursive: true, force: true })
 	}
@@ -978,14 +979,14 @@ test('legacy widget shapes and incompatible connectors are dropped on load', () 
 	]
 	try {
 		store.db
-			.prepare('UPDATE board SET revision = ?, shapes = ? WHERE id = 1')
+			.prepare("UPDATE canvases SET revision = ?, shapes = ? WHERE id = 'main'")
 			.run(7, JSON.stringify(legacy))
 		assert.deepEqual(
 			store.getBoard().shapes.map((shape) => shape.id),
 			['kept', 'legacy-frame'],
 		)
 		assert.equal(store.getBoard().revision, 7)
-		const row = store.db.prepare('SELECT shapes FROM board WHERE id = 1').get() as {
+		const row = store.db.prepare("SELECT shapes FROM canvases WHERE id = 'main'").get() as {
 			shapes: string
 		}
 		assert.deepEqual(
@@ -994,6 +995,206 @@ test('legacy widget shapes and incompatible connectors are dropped on load', () 
 		)
 	} finally {
 		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('canvases are isolated, switchable and managed', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	try {
+		const initial = store.getState()
+		assert.equal(typeof initial.stateVersion, 'number')
+		const initialVersion = initial.stateVersion
+		assert.equal(initial.activeCanvasId, 'main')
+		assert.equal(initial.canvases.length, 1)
+		assert.equal(initial.canvases[0].name, 'My canvas')
+		assert.match(initial.canvases[0].preview ?? '', /^data:image\/svg\+xml;base64,/)
+		assert.ok(!Number.isNaN(Date.parse(initial.canvases[0].updatedAt)))
+
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'main-shape',
+						type: 'rectangle',
+						x: 0,
+						y: 0,
+						w: 80,
+						h: 40,
+						color: '#123456',
+					},
+				},
+			],
+		})
+		const mainPreview = store.getCanvasSummary('main').preview
+		const created = store.createCanvas('Second canvas', true)
+		const emptyPreview = created.canvas.preview
+		assert.ok(created.state.stateVersion > initialVersion)
+		assert.equal(created.state.activeCanvasId, created.canvas.id)
+		assert.equal(created.canvas.name, 'Second canvas')
+		assert.deepEqual(created.state.board, { revision: 0, shapes: [] })
+		assert.deepEqual(
+			store.getBoard('main').shapes.map((shape) => shape.id),
+			['main-shape'],
+		)
+
+		const written = store.applyRequest({
+			canvasId: created.canvas.id,
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'second-shape', type: 'note', x: 0, y: 0, w: 80, h: 80, color: '#fff8d4' },
+				},
+			],
+		})
+		assert.equal(written.canvasId, created.canvas.id)
+		assert.equal(written.board.revision, 1)
+		assert.equal(store.getActiveCanvasId(), created.canvas.id)
+		assert.deepEqual(
+			store.getBoard('main').shapes.map((shape) => shape.id),
+			['main-shape'],
+		)
+		assert.deepEqual(
+			store.getBoard(created.canvas.id).shapes.map((shape) => shape.id),
+			['second-shape'],
+		)
+		assert.notEqual(store.getCanvasSummary(created.canvas.id).preview, emptyPreview)
+		assert.equal(store.getCanvasSummary('main').preview, mainPreview)
+
+		const renamed = store.renameCanvas(created.canvas.id, 'Renamed canvas')
+		assert.equal(
+			renamed.canvases.find((canvas) => canvas.id === created.canvas.id)?.name,
+			'Renamed canvas',
+		)
+		assert.equal(renamed.activeCanvasId, created.canvas.id)
+		const detail = store.getCanvas(created.canvas.id)
+		assert.equal(detail.canvas.name, 'Renamed canvas')
+		assert.equal(detail.board.revision, 1)
+
+		const activated = store.activateCanvas('main')
+		assert.ok(activated.stateVersion > renamed.stateVersion)
+		assert.equal(activated.activeCanvasId, 'main')
+		assert.equal(activated.board.revision, 1)
+		assert.deepEqual(
+			activated.board.shapes.map((shape) => shape.id),
+			['main-shape'],
+		)
+
+		const deleted = store.deleteCanvas('main')
+		assert.ok(deleted.stateVersion > activated.stateVersion)
+		assert.equal(deleted.activeCanvasId, created.canvas.id)
+		assert.deepEqual(
+			deleted.canvases.map((canvas) => canvas.name),
+			['Renamed canvas'],
+		)
+		assert.throws(
+			() => store.deleteCanvas(created.canvas.id),
+			(error: unknown) => error instanceof OperationError && error.code === 'LAST_CANVAS',
+		)
+
+		const fallback = store.createCanvas()
+		assert.equal(fallback.canvas.name, 'Untitled canvas')
+		assert.equal(fallback.state.activeCanvasId, created.canvas.id)
+		assert.throws(
+			() => store.apply({ canvasId: 'missing', operations: [] }),
+			(error: unknown) => error instanceof OperationError && error.status === 404,
+		)
+		assert.throws(
+			() => store.createCanvas('   '),
+			(error: unknown) => error instanceof OperationError && error.status === 400,
+		)
+		assert.throws(
+			() => store.renameCanvas(created.canvas.id, 'x'.repeat(81)),
+			(error: unknown) => error instanceof OperationError && error.status === 400,
+		)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('a legacy single-board database migrates to a canvas', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const legacy = new DatabaseSync(dbPath)
+	legacy.exec(
+		'CREATE TABLE board (id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL, shapes TEXT NOT NULL)',
+	)
+	legacy
+		.prepare('INSERT INTO board (id, revision, shapes) VALUES (1, ?, ?)')
+		.run(
+			3,
+			JSON.stringify([
+				{ id: 'legacy-shape', type: 'rectangle', x: 10, y: 20, w: 100, h: 50, color: '#123456' },
+			]),
+		)
+	legacy.close()
+
+	const store = new BoardStore(dbPath)
+	try {
+		const state = store.getState()
+		assert.equal(state.activeCanvasId, 'main')
+		assert.equal(state.canvases.length, 1)
+		assert.equal(state.canvases[0].name, 'My canvas')
+		assert.equal(state.board.revision, 3)
+		assert.deepEqual(
+			state.board.shapes.map((shape) => shape.id),
+			['legacy-shape'],
+		)
+		const old = store.db
+			.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board'")
+			.get()
+		assert.equal(old, undefined)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('active canvas and its content persist across reopen', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	let canvasId = ''
+	try {
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'main-note', type: 'note', x: 0, y: 0, w: 80, h: 80, color: '#fff8d4' },
+				},
+			],
+		})
+		const created = store.createCanvas('Persisted canvas', true)
+		canvasId = created.canvas.id
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'second-note', type: 'note', x: 10, y: 10, w: 80, h: 80, color: '#ffe9f0' },
+				},
+			],
+		})
+	} finally {
+		store.close()
+	}
+	const reopened = new BoardStore(dbPath)
+	try {
+		const state = reopened.getState()
+		assert.equal(state.activeCanvasId, canvasId)
+		assert.equal(state.board.shapes[0].id, 'second-note')
+		assert.deepEqual(state.canvases.map((canvas) => canvas.name).sort(), [
+			'My canvas',
+			'Persisted canvas',
+		])
+		assert.deepEqual(
+			reopened.getBoard('main').shapes.map((shape) => shape.id),
+			['main-note'],
+		)
+	} finally {
+		reopened.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })

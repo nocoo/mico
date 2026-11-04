@@ -5,17 +5,22 @@ import type {
 	Board,
 	BrushStyle,
 	CanvasShape,
+	CanvasSnapshot,
+	CanvasSummary,
 	Connector,
 	Operation,
 	Point,
+	ServerEvent,
 	Shape,
 } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
 import { BrushStroke } from './BrushStroke'
+import { CanvasPanel } from './CanvasPanel'
 import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
+import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
 import {
@@ -62,7 +67,6 @@ const randomId = () => crypto.randomUUID()
 
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
-	const initialViewFitted = useRef(false)
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
@@ -80,6 +84,13 @@ export default function App() {
 	const dragTokenRef = useRef(0)
 
 	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
+	const [canvases, setCanvases] = useState<CanvasSummary[]>([])
+	const [activeCanvasId, setActiveCanvasId] = useState('')
+	const activeCanvasIdRef = useRef('')
+	const stateVersionRef = useRef(-1)
+	const boardCacheRef = useRef<Map<string, Board>>(new Map())
+	const connectionResetRef = useRef<() => void>(() => {})
+	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -116,48 +127,93 @@ export default function App() {
 		window.setTimeout(() => setNotice((current) => (current === message ? '' : current)), 2600)
 	}, [])
 
+	const cancelInteractionRef = useRef<() => void>(() => {})
+
 	const applyBoard = useCallback((next: Board) => {
 		if (next.revision < revisionRef.current) return
 		revisionRef.current = next.revision
 		boardRef.current = next
+		rememberBoard(boardCacheRef.current, activeCanvasIdRef.current, next)
 		setBoard(next)
-		if (!initialViewFitted.current) {
-			const rect = svgRef.current?.getBoundingClientRect()
-			if (rect) {
-				setViewport(fitViewport(next.shapes, rect.width, rect.height))
-				initialViewFitted.current = true
-			}
-		}
 		setSelectedIds((current) =>
 			current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 		)
 	}, [])
 
+	const mergeCanvas = useCallback((summary: CanvasSummary) => {
+		setCanvases((current) => upsertCanvasSummary(current, summary))
+	}, [])
+
+	const applySnapshot = useCallback((snapshot: CanvasSnapshot) => {
+		if (snapshot.stateVersion < stateVersionRef.current) return
+		stateVersionRef.current = snapshot.stateVersion
+		const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
+		activeCanvasIdRef.current = snapshot.activeCanvasId
+		setActiveCanvasId(snapshot.activeCanvasId)
+		setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
+		const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
+		for (const id of boardCacheRef.current.keys()) {
+			if (!liveIds.has(id)) boardCacheRef.current.delete(id)
+		}
+		rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
+		if (!switching && snapshot.board.revision < revisionRef.current) return
+		revisionRef.current = snapshot.board.revision
+		boardRef.current = snapshot.board
+		setBoard(snapshot.board)
+		if (switching) {
+			cancelInteractionRef.current()
+			connectionResetRef.current()
+			setSelectedIds([])
+			setEditing(null)
+			setMarquee(null)
+			setGuides([])
+			setDragPreviews(new Map())
+			setCreation(null)
+			setBrushPoints(null)
+			const rect = svgRef.current?.getBoundingClientRect()
+			if (rect) setViewport(fitViewport(snapshot.board.shapes, rect.width, rect.height))
+			return
+		}
+		setSelectedIds((current) =>
+			current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
+		)
+	}, [])
+
 	const postOperations = useCallback(
 		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
+			const targetCanvasId = activeCanvasIdRef.current
 			const result = operationQueue.current.then(async () => {
 				try {
-					if (canRebase && !canRebase(boardRef.current)) {
+					if (!targetCanvasId) return false
+					const targetBoard = boardCacheRef.current.get(targetCanvasId) ?? boardRef.current
+					if (canRebase && !canRebase(targetBoard)) {
 						announce('Object changed during drag')
 						return false
 					}
 					const revision = canRebase
-						? revisionRef.current
-						: (expectedRevision ?? revisionRef.current)
+						? targetBoard.revision
+						: (expectedRevision ?? targetBoard.revision)
 					const response = await fetch('/api/operations', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
 						signal: AbortSignal.timeout(10000),
-						body: JSON.stringify({ operations, expectedRevision: revision }),
+						body: JSON.stringify({
+							operations,
+							expectedRevision: revision,
+							canvasId: targetCanvasId,
+						}),
 					})
 					if (!response.ok) {
-						const current = await fetch('/api/board', { signal: AbortSignal.timeout(10000) })
-						if (current.ok) applyBoard((await current.json()) as Board)
+						const current = await fetch('/api/state?previews=0', {
+							signal: AbortSignal.timeout(10000),
+						})
+						if (current.ok) applySnapshot((await current.json()) as CanvasSnapshot)
 						announce(`Operation failed: HTTP ${response.status}`)
 						return false
 					}
 					const next = (await response.json()) as Board
-					applyBoard(next)
+					rememberBoard(boardCacheRef.current, targetCanvasId, next)
+					if (targetCanvasId === activeCanvasIdRef.current) applyBoard(next)
 					setApiConnected(true)
 					return true
 				} catch (error) {
@@ -169,7 +225,7 @@ export default function App() {
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[announce, applyBoard],
+		[announce, applyBoard, applySnapshot],
 	)
 
 	const connection = useConnectionGesture(board, viewport.zoom, postOperations)
@@ -177,13 +233,15 @@ export default function App() {
 	useEffect(() => {
 		let stopped = false
 
-		const fetchBoard = async () => {
+		const fetchState = async (includePreviews: boolean) => {
 			try {
-				const response = await fetch('/api/board', { signal: AbortSignal.timeout(10000) })
+				const response = await fetch(`/api/state${includePreviews ? '' : '?previews=0'}`, {
+					signal: AbortSignal.timeout(10000),
+				})
 				if (!response.ok) throw new Error(`HTTP ${response.status}`)
-				const next = (await response.json()) as Board
+				const snapshot = (await response.json()) as CanvasSnapshot
 				if (!stopped) {
-					applyBoard(next)
+					applySnapshot(snapshot)
 					setApiConnected(true)
 				}
 			} catch {
@@ -191,8 +249,8 @@ export default function App() {
 			}
 		}
 
-		fetchBoard()
-		const poll = window.setInterval(fetchBoard, 3000)
+		void fetchState(true)
+		const poll = window.setInterval(() => void fetchState(false), 3000)
 
 		let socket: WebSocket | null = null
 		let retry: number | null = null
@@ -207,8 +265,14 @@ export default function App() {
 			current.onmessage = (event) => {
 				if (stopped) return
 				try {
-					const next = JSON.parse(event.data) as Board
-					applyBoard(next)
+					const message = JSON.parse(event.data) as ServerEvent
+					if (message.type === 'snapshot') {
+						applySnapshot(message)
+					} else if (message.type === 'board') {
+						rememberBoard(boardCacheRef.current, message.canvasId, message.board)
+						mergeCanvas(message.canvas)
+						if (message.canvasId === activeCanvasIdRef.current) applyBoard(message.board)
+					}
 					setApiConnected(true)
 				} catch {
 					announce('Invalid board event')
@@ -230,7 +294,7 @@ export default function App() {
 			if (retry) window.clearTimeout(retry)
 			socket?.close()
 		}
-	}, [announce, applyBoard])
+	}, [announce, applyBoard, applySnapshot, mergeCanvas])
 
 	const clientToWorld = (clientX: number, clientY: number) => {
 		const rect = svgRef.current?.getBoundingClientRect()
@@ -300,6 +364,90 @@ export default function App() {
 	}, [clearDragPreview, connection.cancel])
 
 	useEffect(() => {
+		cancelInteractionRef.current = cancelInteraction
+	}, [cancelInteraction])
+
+	useEffect(() => {
+		connectionResetRef.current = connection.reset
+	}, [connection.reset])
+
+	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
+
+	const refreshCanvases = useCallback(async () => {
+		try {
+			const response = await fetch('/api/canvases', { signal: AbortSignal.timeout(10000) })
+			if (!response.ok) return
+			const data = (await response.json()) as {
+				stateVersion: number
+				canvases: CanvasSummary[]
+			}
+			if (data.stateVersion < stateVersionRef.current) return
+			stateVersionRef.current = data.stateVersion
+			setCanvases((current) => mergeSnapshotCanvases(current, data.canvases))
+		} catch {
+			// The poll and WebSocket keep the list fresh if this request fails.
+		}
+	}, [])
+
+	const toggleCanvasPanel = () => {
+		setCanvasPanelOpen((open) => {
+			if (!open) void refreshCanvases()
+			return !open
+		})
+	}
+
+	const requestCanvas = async (path: string, init: RequestInit) => {
+		try {
+			const response = await fetch(path, {
+				...init,
+				headers: { 'Content-Type': 'application/json' },
+				signal: AbortSignal.timeout(10000),
+			})
+			if (!response.ok) {
+				let message = `Canvas request failed: HTTP ${response.status}`
+				try {
+					const body = (await response.json()) as { message?: string }
+					if (body.message) message = body.message
+				} catch {
+					// Keep the status fallback.
+				}
+				announce(message)
+				return
+			}
+			applySnapshot((await response.json()) as CanvasSnapshot)
+			setApiConnected(true)
+		} catch (error) {
+			setApiConnected(false)
+			announce(error instanceof Error ? error.message : 'Canvas request failed')
+		}
+	}
+
+	const createCanvas = () => {
+		void requestCanvas('/api/canvases', {
+			method: 'POST',
+			body: JSON.stringify({ name: `Canvas ${canvases.length + 1}`, activate: true }),
+		})
+	}
+
+	const switchCanvas = (id: string) => {
+		void requestCanvas('/api/active-canvas', {
+			method: 'PUT',
+			body: JSON.stringify({ id }),
+		})
+	}
+
+	const renameCanvas = (id: string, name: string) => {
+		void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, {
+			method: 'PATCH',
+			body: JSON.stringify({ name }),
+		})
+	}
+
+	const deleteCanvas = (id: string) => {
+		void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, { method: 'DELETE' })
+	}
+
+	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
 			if (event.key === 'Escape') {
@@ -309,6 +457,9 @@ export default function App() {
 			}
 			if (target.closest('input, textarea, select, [contenteditable="true"]')) return
 			if (event.metaKey || event.ctrlKey || event.altKey) return
+			const interactive = target.closest('button, a[href], [role="button"]')
+			const canvasControl = target.closest('.drawing-tools button, .view-controls button')
+			if (event.code === 'Space' && interactive && !canvasControl) return
 
 			if (event.code === 'Space') {
 				event.preventDefault()
@@ -1292,6 +1443,19 @@ export default function App() {
 				onFrame={frameSelection}
 				canFrame={selectedIds.length > 0}
 				toolOptions={toolOptions}
+				canvasesOpen={canvasPanelOpen}
+				onToggleCanvases={toggleCanvasPanel}
+			/>
+
+			<CanvasPanel
+				open={canvasPanelOpen}
+				canvases={canvases}
+				activeCanvasId={activeCanvasId}
+				onClose={closeCanvasPanel}
+				onCreate={createCanvas}
+				onSwitch={switchCanvas}
+				onRename={renameCanvas}
+				onDelete={deleteCanvas}
 			/>
 
 			{tool === 'select' && (

@@ -245,3 +245,113 @@ test('CLI reports usage, invalid input and unreachable daemons', async () => {
 		assert.equal(missingFile.code, 1)
 	})
 })
+
+test('CLI manages canvases and targets a specific canvas', async () => {
+	await withDaemon(async (port) => {
+		const list = await runCli(port, ['canvas', 'list'])
+		assert.equal(list.code, 0)
+		const listed = JSON.parse(list.stdout) as {
+			activeCanvasId: string
+			canvases: Array<{ id: string; name: string; preview?: string }>
+		}
+		assert.equal(listed.activeCanvasId, 'main')
+		assert.equal(listed.canvases[0].name, 'My canvas')
+		assert.equal(listed.canvases[0].preview, undefined)
+
+		const preview = await runCli(port, ['canvas', 'list', '--preview'])
+		assert.equal(preview.code, 0)
+		assert.match(
+			(JSON.parse(preview.stdout) as { canvases: Array<{ preview: string }> }).canvases[0].preview,
+			/^data:image\/svg\+xml;base64,/,
+		)
+
+		const created = await runCli(port, ['canvas', 'create', '--name', 'Agent canvas', '--use'])
+		assert.equal(created.code, 0)
+		const state = JSON.parse(created.stdout) as {
+			activeCanvasId: string
+			createdCanvasId: string
+			canvases: Array<{ id: string; name: string }>
+		}
+		assert.equal(state.activeCanvasId, state.createdCanvasId)
+		assert.equal(state.canvases.length, 2)
+		assert.equal(
+			state.canvases.find((canvas) => canvas.id === state.createdCanvasId)?.name,
+			'Agent canvas',
+		)
+
+		const renamed = await runCli(port, [
+			'canvas',
+			'rename',
+			state.createdCanvasId,
+			'Renamed canvas',
+		])
+		assert.equal(renamed.code, 0)
+		assert.ok(
+			(
+				JSON.parse(renamed.stdout) as { canvases: Array<{ id: string; name: string }> }
+			).canvases.some(
+				(canvas) => canvas.id === state.createdCanvasId && canvas.name === 'Renamed canvas',
+			),
+		)
+
+		const used = await runCli(port, ['canvas', 'use', 'main'])
+		assert.equal(used.code, 0)
+		assert.equal((JSON.parse(used.stdout) as { activeCanvasId: string }).activeCanvasId, 'main')
+
+		const targeted = await runCli(port, [
+			'shape',
+			'create',
+			JSON.stringify({
+				id: 'cli-target-note',
+				type: 'note',
+				x: 0,
+				y: 0,
+				w: 80,
+				h: 80,
+				color: '#fff8d4',
+				text: 'Targeted',
+			}),
+			'--canvas',
+			state.createdCanvasId,
+		])
+		assert.equal(targeted.code, 0)
+		assert.deepEqual(
+			(JSON.parse(targeted.stdout) as Board).shapes.map((shape) => shape.id),
+			['cli-target-note'],
+		)
+
+		const activeBoard = await runCli(port, ['board', 'get'])
+		assert.equal(activeBoard.code, 0)
+		assert.deepEqual((JSON.parse(activeBoard.stdout) as Board).shapes, [])
+		const targetedBoard = await runCli(port, ['board', 'get', '--canvas', state.createdCanvasId])
+		assert.equal(targetedBoard.code, 0)
+		assert.deepEqual(
+			(JSON.parse(targetedBoard.stdout) as Board).shapes.map((shape) => shape.id),
+			['cli-target-note'],
+		)
+
+		const detail = await runCli(port, ['canvas', 'get', state.createdCanvasId])
+		assert.equal(detail.code, 0)
+		assert.deepEqual(
+			(JSON.parse(detail.stdout) as { board: Board }).board.shapes.map((shape) => shape.id),
+			['cli-target-note'],
+		)
+
+		const deleted = await runCli(port, ['canvas', 'delete', state.createdCanvasId])
+		assert.equal(deleted.code, 0)
+		assert.equal((JSON.parse(deleted.stdout) as { canvases: unknown[] }).canvases.length, 1)
+		const last = await runCli(port, ['canvas', 'delete', 'main'])
+		assert.equal(last.code, 1)
+		assert.match(last.stderr, /LAST_CANVAS/)
+
+		const emptyTarget = await runCli(port, ['shape', 'delete', 'x', '--canvas='])
+		assert.equal(emptyTarget.code, 1)
+		assert.match(emptyTarget.stderr, /requires a value/)
+		const misspelled = await runCli(port, ['batch', '-', '--canavs', 'x'], '[]')
+		assert.equal(misspelled.code, 1)
+		assert.match(misspelled.stderr, /Usage:/)
+		const listTypo = await runCli(port, ['canvas', 'list', '--nope'])
+		assert.equal(listTypo.code, 1)
+		assert.match(listTypo.stderr, /Usage:/)
+	})
+})

@@ -4,6 +4,20 @@
 
 - A source-only investigator read the live board database despite being told not to access it. Give delegated investigations an isolated checkout without the daily board instead of relying on prompt instructions alone.
 
+## Multi-canvas storage and switching
+
+- A shared active canvas needs server-side ordering, not just per-board revisions. Persist a monotonic stateVersion with metadata changes, return it in every snapshot/list response, and ignore older snapshots; otherwise a delayed poll or metadata response silently reverts a newer switch.
+- Read a canvas snapshot in one SQLite read transaction, and commit active id and stateVersion together in one write transaction. Consistent counters alone do not make a mixed snapshot consistent.
+- Summary freshness is per canvas revision, not updatedAt: two writes can share a millisecond. Merge previews/names by revision first and preserve names across delayed board events.
+- Queued operations must capture their target canvas and keep a per-canvas board cache. A switch must not discard already committed edits; a slow first save plus a switch must still let later edits finish on the original canvas.
+- Explicit expectedRevision must remain explicit for operations without a rebase check. Using the latest cached revision for everything lets a queued frame action overwrite a remote edit; only canRebase operations may move to the latest revision after validating identity.
+- Switching must clear a pending connection draft without cancelling its server save. A separate reset path is needed because Escape and canvas switches have different semantics.
+- Preview thumbnails need a hard budget: sample paths, cap shapes and strip XML-illegal control characters. Polling should request preview-free state; full previews belong to initial load and panel refresh.
+- Holding a request after it was sent does not block the frontend operation queue. Queue-race tests must hold an earlier response, enqueue the operation under test, mutate remotely, then release the earlier response and inspect the queued request.
+- A "pending save" test must forward the held request to the real server and assert the persisted result; a fabricated success response can prove nothing and hide a lost write.
+- Global Space pan and native button activation conflict. Keep Space for canvas/navigation buttons but let panel, dialog and property buttons receive native Space; do not paper over the real focus path in tests by blurring.
+- Reserving the dashboard area for the new Canvases button required a fixed, four-pixel-aligned brand width; otherwise the toolbar-alignment test legitimately fails.
+
 ## Automated test architecture
 
 - A WebSocket broadcast is sent before the HTTP response body is read. Attach the next-message listener before issuing the mutation, or the assertion waits for a message that was already delivered.
