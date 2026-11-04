@@ -85,7 +85,6 @@ export class Pcm16Resampler {
 		const output: number[] = []
 		while (this.position < this.consumed) {
 			const leftIndex = Math.floor(this.position)
-			const fraction = this.position - leftIndex
 			if (leftIndex === this.consumed - 1) {
 				output.push(floatToPcm16(this.previous))
 				this.position += this.ratio
@@ -137,7 +136,7 @@ registerProcessor('mico-microphone', MicoMicrophoneProcessor)
 
 export async function openMicrophone(
 	onPcm: (pcm: Int16Array) => void,
-	onEnded: () => void,
+	onEnded: (error?: Error) => void,
 ): Promise<{ stop(): Promise<void> }> {
 	const mediaDevices = typeof navigator === 'undefined' ? undefined : navigator.mediaDevices
 	if (!mediaDevices?.getUserMedia) throw new Error('Microphone capture is not supported')
@@ -147,12 +146,14 @@ export async function openMicrophone(
 		audio: { channelCount: { ideal: 1 } },
 	})
 
-	const tracks = typeof stream.getAudioTracks === 'function' ? stream.getAudioTracks() : stream.getTracks()
+	const tracks =
+		typeof stream.getAudioTracks === 'function' ? stream.getAudioTracks() : stream.getTracks()
 	let context: AudioContext | null = null
 	let source: MediaStreamAudioSourceNode | null = null
 	let worklet: AudioWorkletNode | null = null
 	let gain: GainNode | null = null
 	let stopped = false
+	let tracksStopped = false
 	let stopping = false
 	let ended = false
 	let pcmCarry = new Int16Array()
@@ -169,6 +170,16 @@ export async function openMicrophone(
 		const partial = pcmCarry
 		pcmCarry = new Int16Array()
 		onPcm(partial)
+	}
+
+	const stopTracks = () => {
+		if (tracksStopped) return
+		tracksStopped = true
+		for (const track of tracks) {
+			try {
+				track.stop()
+			} catch {}
+		}
 	}
 
 	const cleanupResources = () => {
@@ -188,11 +199,7 @@ export async function openMicrophone(
 		source = null
 		worklet = null
 		gain = null
-		for (const track of tracks) {
-			try {
-				track.stop()
-			} catch {}
-		}
+		stopTracks()
 		if (context) {
 			const closing = context
 			context = null
@@ -204,7 +211,10 @@ export async function openMicrophone(
 	}
 
 	const flushWorklet = async (): Promise<void> => {
-		if (!worklet) throw new Error('Microphone worklet is unavailable; the final audio segment may be incomplete')
+		if (!worklet)
+			throw new Error(
+				'Microphone worklet is unavailable; the final audio segment may be incomplete',
+			)
 		await new Promise<void>((resolve, reject) => {
 			let settled = false
 			let timeout: ReturnType<typeof setTimeout> | null = null
@@ -227,7 +237,12 @@ export async function openMicrophone(
 			workletFlushResolve = finishResolve
 			workletFlushReject = finishReject
 			timeout = setTimeout(
-				() => finishReject(new Error('Timed out waiting for microphone tail flush; the final audio segment may be incomplete')),
+				() =>
+					finishReject(
+						new Error(
+							'Timed out waiting for microphone tail flush; the final audio segment may be incomplete',
+						),
+					),
 				250,
 			)
 			try {
@@ -245,14 +260,18 @@ export async function openMicrophone(
 	const unexpectedEnd = () => {
 		if (stopping || stopped || ended) return
 		ended = true
+		stopTracks()
 		void (async () => {
+			let failure: Error | undefined
 			try {
 				await flushWorklet()
 				flushCaptureTail?.()
+			} catch (error) {
+				failure = error instanceof Error ? error : new Error('Microphone tail flush failed')
 			} finally {
 				stopped = true
 				cleanupResources()
-				onEnded()
+				onEnded(failure)
 			}
 		})()
 	}
@@ -262,6 +281,7 @@ export async function openMicrophone(
 		if (stopped || ended) return Promise.resolve()
 		stopPromise = (async () => {
 			stopping = true
+			stopTracks()
 			try {
 				await flushWorklet()
 			} catch (error) {
@@ -339,7 +359,12 @@ export async function openMicrophone(
 				AudioWorkletNode?: typeof AudioWorkletNode
 			}
 		).AudioWorkletNode
-		if (!context.audioWorklet || !WorkletConstructor || typeof Blob === 'undefined' || typeof URL === 'undefined') {
+		if (
+			!context.audioWorklet ||
+			!WorkletConstructor ||
+			typeof Blob === 'undefined' ||
+			typeof URL === 'undefined'
+		) {
 			throw new Error('AudioWorklet microphone capture is not supported')
 		}
 
@@ -355,15 +380,17 @@ export async function openMicrophone(
 			})
 			worklet.port.onmessage = (event: MessageEvent<unknown>) => {
 				if (stopped) return
-				const data = event.data as
-					| ArrayBuffer
-					| { type?: string; buffer?: ArrayBuffer }
-					| null
+				const data = event.data as ArrayBuffer | { type?: string; buffer?: ArrayBuffer } | null
 				if (data instanceof ArrayBuffer) {
 					drainInput(new Float32Array(data))
 					return
 				}
-				if (data && typeof data === 'object' && data.type === 'pcm' && data.buffer instanceof ArrayBuffer) {
+				if (
+					data &&
+					typeof data === 'object' &&
+					data.type === 'pcm' &&
+					data.buffer instanceof ArrayBuffer
+				) {
 					drainInput(new Float32Array(data.buffer))
 				}
 				if (data && typeof data === 'object' && data.type === 'flushed') {
@@ -373,7 +400,9 @@ export async function openMicrophone(
 			worklet.onprocessorerror = () => {
 				if (stopping) {
 					workletFlushReject?.(
-						new Error('Microphone worklet processor failed while flushing; the final audio segment may be incomplete'),
+						new Error(
+							'Microphone worklet processor failed while flushing; the final audio segment may be incomplete',
+						),
 					)
 					return
 				}

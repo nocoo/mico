@@ -69,7 +69,10 @@ export class MaiClient {
 						audio: {
 							input: {
 								format: { type: 'audio/pcm', rate: 16000 },
-								transcription: { model: this.model, language: this.language },
+								transcription: {
+									model: this.model,
+									...(this.language ? { language: this.language } : {}),
+								},
 								turn_detection: null,
 								noise_reduction: null,
 							},

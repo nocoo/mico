@@ -16,6 +16,7 @@ export interface LessonSegment {
 
 interface LessonPanelProps {
 	active: boolean
+	suspend: boolean
 	initialClipId?: string
 	onClipChange?: (id: string) => void
 	aiBusy: boolean
@@ -119,6 +120,7 @@ function newRuntime(): Runtime {
 
 export function LessonPanel({
 	active,
+	suspend,
 	initialClipId,
 	onClipChange,
 	aiBusy,
@@ -186,6 +188,25 @@ export function LessonPanel({
 			cancelled = true
 		}
 	}, [])
+
+	useEffect(() => {
+		if (!suspend) return
+		const rt = runtime.current
+		if (rt.starting) {
+			rt.generation++
+			rt.starting = false
+			rt.client?.close()
+			rt.client = null
+			setPhase('paused')
+		}
+		if (rt.player?.playing) {
+			rt.player.pause()
+			if (rt.timer !== null) window.clearTimeout(rt.timer)
+			rt.timer = null
+			setPhase('paused')
+			setVad({ db: -90, speaking: false })
+		}
+	}, [suspend])
 
 	const waveDataRef = useRef({ peaks, progress, segments, duration })
 	waveDataRef.current = { peaks, progress, segments, duration }

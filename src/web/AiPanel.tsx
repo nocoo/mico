@@ -7,7 +7,6 @@ import {
 	Hourglass,
 	LoaderCircle,
 	MessageSquare,
-	Mic,
 	MousePointer2,
 	PlayCircle,
 	Settings,
@@ -15,13 +14,13 @@ import {
 	TriangleAlert,
 	X,
 } from 'lucide-react'
-import type { CSSProperties, FormEvent, KeyboardEvent } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../shared/summaryPrompt'
 import { AiSettings } from './AiSettings'
-import { formatDuration } from './aiAudio'
 import { IconButton } from './IconButton'
 import { LessonPanel, type LessonSegment } from './LessonPanel'
+import { MicrophonePanel } from './MicrophonePanel'
 import { isWaitReply, type LessonClip, lectureSegmentText } from './stt/transcript'
 
 interface AiPanelProps {
@@ -37,8 +36,6 @@ interface AiPanelProps {
 }
 
 type AiTab = 'chat' | 'lesson' | 'audio' | 'settings'
-
-const WAVE_BARS = [0, 1, 2, 3, 4, 5, 6]
 
 const QUICK_PROMPTS = [
 	{
@@ -195,8 +192,6 @@ export function AiPanel({
 }: AiPanelProps) {
 	const [tab, setTab] = useState<AiTab>('chat')
 	const [draft, setDraft] = useState('')
-	const [listening, setListening] = useState(false)
-	const [elapsed, setElapsed] = useState(0)
 	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
 	const composerRef = useRef<HTMLTextAreaElement>(null)
@@ -333,7 +328,7 @@ export function AiPanel({
 	}, [open, initialPrompt, onInitialPromptConsumed, send])
 
 	const enqueueLecture = useCallback(
-		(segment: LessonSegment, clip: LessonClip) => {
+		(segment: LessonSegment, clip: Pick<LessonClip, 'subject' | 'title'>) => {
 			lectureQueue.current.push(
 				lectureSegmentText(clip, segment.id, segment.start, segment.end, segment.text),
 			)
@@ -366,6 +361,13 @@ export function AiPanel({
 	const endSession = useCallback(() => {
 		setSessionEnded(true)
 	}, [])
+
+	const startMicrophone = useCallback(() => {
+		clearError()
+		setSessionEnded(false)
+		setSummaryDone(false)
+		summaryAttempted.current = false
+	}, [clearError])
 
 	useEffect(() => {
 		if (!sessionEnded || error || busy || summaryDone || summaryRequesting) return
@@ -426,21 +428,6 @@ export function AiPanel({
 		wasOpen.current = open
 	}, [open])
 
-	useEffect(() => {
-		if (open) return
-		setListening(false)
-	}, [open])
-
-	useEffect(() => {
-		if (tab !== 'audio') setListening(false)
-	}, [tab])
-
-	useEffect(() => {
-		if (!listening) return
-		const timer = window.setInterval(() => setElapsed((seconds) => seconds + 1), 1000)
-		return () => window.clearInterval(timer)
-	}, [listening])
-
 	// biome-ignore lint/correctness/useExhaustiveDependencies: new messages and a re-shown log must scroll to the end
 	useEffect(() => {
 		const list = messagesRef.current
@@ -461,15 +448,6 @@ export function AiPanel({
 		if (!field) return
 		field.focus()
 	}, [open])
-
-	const toggleListening = () => {
-		if (listening) {
-			setListening(false)
-			return
-		}
-		setElapsed(0)
-		setListening(true)
-	}
 
 	const focusTab = (event: KeyboardEvent<HTMLDivElement>) => {
 		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -684,6 +662,7 @@ export function AiPanel({
 				<LessonPanel
 					key={canvasId}
 					active={open && tab === 'lesson'}
+					suspend={open && tab === 'audio'}
 					initialClipId={lessonClipId}
 					onClipChange={setLessonClipId}
 					aiBusy={busy}
@@ -712,32 +691,29 @@ export function AiPanel({
 				aria-labelledby="ai-tab-audio"
 				hidden={tab !== 'audio'}
 			>
-				<div className="ai-audio-stage">
-					<button
-						type="button"
-						className="ai-mic"
-						aria-pressed={listening}
-						aria-label={listening ? 'Stop recording' : 'Start recording'}
-						onClick={toggleListening}
-					>
-						<span className="ai-mic-rings" aria-hidden="true" />
-						<Mic size={56} strokeWidth={1.5} aria-hidden="true" />
-						<span className={`ai-wave ${listening ? 'listening' : ''}`} aria-hidden="true">
-							{WAVE_BARS.map((bar) => (
-								<span key={bar} style={{ '--bar': bar } as CSSProperties} />
-							))}
-						</span>
-					</button>
-				</div>
-				<div className="ai-audio-copy">
-					<strong>{listening ? 'Listening…' : 'Talk to Mico'}</strong>
-					<span className="ai-audio-timer">
-						{listening
-							? formatDuration(elapsed)
-							: 'Tap the microphone to start a voice conversation.'}
-					</span>
-				</div>
-				<p className="ai-audio-note">Voice capture is not connected yet.</p>
+				<MicrophonePanel
+					key={canvasId}
+					active={open && tab === 'audio'}
+					aiBusy={busy}
+					aiQueued={lectureQueued}
+					aiError={Boolean(error)}
+					onStart={startMicrophone}
+					onSegment={(segment) =>
+						enqueueLecture(segment, { subject: 'Live speech', title: 'Microphone' })
+					}
+					onSessionEnd={endSession}
+					onCreateCanvas={onCreateCanvas}
+					onSummary={requestSummary}
+					summaryRequesting={summaryRequesting}
+					canSummarize={
+						sessionEnded &&
+						!busy &&
+						lectureQueued === 0 &&
+						messages.length > 0 &&
+						!summaryDone &&
+						!summaryRequesting
+					}
+				/>
 			</div>
 
 			<div

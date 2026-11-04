@@ -57,18 +57,19 @@ test('the live tab loads the session catalogue and playback controls', async ({ 
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('tab', { name: 'Live' }).click()
 	await expect(panel.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true')
-	await expect(panel.getByText('Live transcript')).toBeVisible()
-	await expect(panel.getByRole('button', { name: /Play lecture/ })).toBeVisible()
-	await expect(panel.getByRole('button', { name: 'New canvas' })).toBeVisible()
-	await expect(panel.getByRole('button', { name: 'Create session summary' })).toBeVisible()
-	await expect(panel.locator('.lesson-wave')).toBeVisible()
-	await expect(panel.getByText('Confirmed segments')).toBeVisible()
-	const lesson = panel.locator('.lesson')
+	const live = panel.getByRole('tabpanel', { name: 'Live' })
+	await expect(live.getByText('Live transcript')).toBeVisible()
+	await expect(live.getByRole('button', { name: /Play lecture/ })).toBeVisible()
+	await expect(live.getByRole('button', { name: 'New canvas' })).toBeVisible()
+	await expect(live.getByRole('button', { name: 'Create session summary' })).toBeVisible()
+	await expect(live.locator('.lesson-wave')).toBeVisible()
+	await expect(live.getByText('Confirmed segments')).toBeVisible()
+	const lesson = live.locator('.lesson')
 	await expect
 		.poll(() => lesson.evaluate((el) => el.scrollHeight - el.clientHeight))
 		.toBeLessThanOrEqual(1)
 	const panelBox = await panel.boundingBox()
-	const segmentsBox = await panel.locator('.lesson-segments').boundingBox()
+	const segmentsBox = await live.locator('.lesson-segments').boundingBox()
 	if (!panelBox || !segmentsBox) throw new Error('Missing live panel layout')
 	expect(panelBox.height).toBe(700)
 	expect(panelBox.y + panelBox.height - segmentsBox.y - segmentsBox.height).toBeLessThan(20)
@@ -241,7 +242,7 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 	await expect(composer).toHaveValue('Keep this draft')
 })
 
-test('the audio tab fills the dialog with a recording microphone', async ({ page }) => {
+test('the audio tab preserves the microphone layout', async ({ page }) => {
 	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('tab', { name: 'Audio' }).click()
@@ -250,31 +251,19 @@ test('the audio tab fills the dialog with a recording microphone', async ({ page
 
 	const mic = panel.getByRole('button', { name: 'Start recording' })
 	await expect(mic).toBeVisible()
+	await expect(mic).toHaveAttribute('aria-pressed', 'false')
 	const box = await mic.boundingBox()
 	const panelBox = await panel.boundingBox()
 	if (!box || !panelBox) throw new Error('Missing microphone or panel box')
-	expect(box.height).toBeGreaterThan(panelBox.height * 0.35)
-
-	await mic.click()
-	await expect(panel.getByRole('button', { name: 'Stop recording' })).toHaveAttribute(
-		'aria-pressed',
-		'true',
-	)
-	await expect(panel.getByText('Listening…')).toBeVisible()
-	await expect(panel.locator('.ai-audio-timer')).not.toHaveText('0:00', { timeout: 4000 })
-
-	await panel.getByRole('button', { name: 'Stop recording' }).click()
-	await expect(panel.getByRole('button', { name: 'Start recording' })).toHaveAttribute(
-		'aria-pressed',
-		'false',
-	)
-	await expect(panel.getByText('Talk to Mico')).toBeVisible()
+	expect(box.height).toBeGreaterThanOrEqual(28)
+	expect(box.height).toBeLessThan(48)
 
 	await page.setViewportSize({ width: 667, height: 375 })
 	await expect(panel).toBeVisible()
 	const compactBox = await panel.getByRole('button', { name: 'Start recording' }).boundingBox()
 	if (!compactBox) throw new Error('Missing compact microphone')
-	expect(compactBox.height).toBeGreaterThan(70)
+	expect(compactBox.height).toBeGreaterThanOrEqual(28)
+	expect(compactBox.height).toBeLessThan(48)
 
 	await panel.getByRole('tab', { name: 'Chat' }).click()
 	const shortComposer = panel.getByRole('textbox', { name: COMPOSER })

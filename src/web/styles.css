@@ -1317,145 +1317,29 @@ svg {
 .ai-audio {
 	display: flex;
 	flex: 1;
-	flex-direction: column;
+	min-height: 0;
+}
+.microphone-controls {
+	display: flex;
 	align-items: center;
-	justify-content: center;
-	gap: var(--space-3);
-	min-height: 0;
-	padding: var(--space-3) var(--space-2);
-	text-align: center;
-}
-.ai-audio-stage {
-	display: grid;
-	place-items: center;
-	flex: 1;
-	width: 100%;
-	min-height: 0;
-}
-.ai-mic {
-	position: relative;
-	display: grid;
-	place-items: center;
-	height: min(300px, 82%);
-	aspect-ratio: 1;
-	padding: 0;
-	border: 0;
-	border-radius: 50%;
-	background: radial-gradient(circle at 32% 26%, var(--candy-blue), var(--candy-blue-stroke));
-	box-shadow:
-		0 10px 30px color-mix(in srgb, var(--candy-blue) 35%, transparent),
-		inset 0 -4px 12px color-mix(in srgb, var(--ink) 18%, transparent);
-	color: var(--surface);
-	transition:
-		background var(--motion-fast),
-		box-shadow var(--motion-fast),
-		transform var(--motion-fast);
-}
-.ai-mic:hover {
-	transform: scale(1.02);
-}
-.ai-mic:active {
-	transform: scale(0.98);
-}
-.ai-mic[aria-pressed="true"] {
-	background: radial-gradient(circle at 32% 26%, var(--candy-pink), var(--candy-pink-stroke));
-	box-shadow:
-		0 10px 30px color-mix(in srgb, var(--candy-pink) 38%, transparent),
-		inset 0 -4px 12px color-mix(in srgb, var(--ink) 18%, transparent);
-	color: var(--ink);
-}
-.ai-mic > svg {
-	width: 34%;
-	height: 34%;
-}
-.ai-mic-rings {
-	position: absolute;
-	inset: 0;
-	border-radius: 50%;
-	pointer-events: none;
-}
-.ai-mic-rings::before,
-.ai-mic-rings::after {
-	content: "";
-	position: absolute;
-	inset: 0;
-	border: var(--stroke-strong) solid color-mix(in srgb, var(--candy-blue) 45%, transparent);
-	border-radius: 50%;
-	opacity: 0;
-}
-.ai-mic[aria-pressed="true"] .ai-mic-rings::before,
-.ai-mic[aria-pressed="true"] .ai-mic-rings::after {
-	border-color: color-mix(in srgb, var(--candy-pink) 55%, transparent);
-	animation: ai-ripple 2s ease-out infinite;
-}
-.ai-mic[aria-pressed="true"] .ai-mic-rings::after {
-	animation-delay: 1s;
-}
-@keyframes ai-ripple {
-	0% {
-		opacity: 0.8;
-		transform: scale(1);
-	}
-	100% {
-		opacity: 0;
-		transform: scale(1.35);
-	}
-}
-.ai-wave {
-	position: absolute;
-	bottom: 19%;
-	display: flex;
-	align-items: flex-end;
-	gap: 4px;
-	height: 18px;
-}
-.ai-wave > span {
-	width: 3px;
-	height: 8px;
-	border-radius: var(--radius-pill);
-	background: currentColor;
-	opacity: 0.7;
-	transform-origin: center bottom;
-}
-.ai-wave > span:nth-child(odd) {
-	height: 12px;
-}
-.ai-wave.listening > span {
-	animation: ai-wave 900ms ease-in-out infinite;
-	animation-delay: calc(var(--bar) * 90ms);
-	opacity: 0.9;
-}
-@keyframes ai-wave {
-	0%,
-	100% {
-		transform: scaleY(0.5);
-	}
-	50% {
-		transform: scaleY(1.8);
-	}
-}
-.ai-audio-copy {
-	display: flex;
-	flex-direction: column;
-	gap: var(--space-05);
-	color: var(--ink-secondary);
-	font-size: var(--type-body);
-	line-height: var(--line-body);
-}
-.ai-audio-copy strong {
-	color: var(--ink);
-	font-size: var(--type-heading);
-	font-weight: var(--weight-semibold);
-	line-height: var(--line-body);
+	gap: var(--space-1);
 }
 .ai-audio-timer {
+	color: var(--ink-secondary);
+	font-size: var(--type-caption);
 	font-variant-numeric: tabular-nums;
 }
-.ai-audio-note {
+.microphone-error,
+.microphone-note {
 	margin: 0;
-	color: var(--ink-muted);
 	font-size: var(--type-caption);
 	line-height: var(--line-caption);
+}
+.microphone-error {
+	color: var(--danger);
+}
+.microphone-note {
+	color: var(--ink-muted);
 }
 @media (min-width: 769px) {
 	.app.ai-open .selection-panel {
@@ -1482,43 +1366,16 @@ svg {
 		);
 	}
 }
-@media (max-height: 560px) {
-	.ai-audio {
-		gap: var(--space-1);
-		padding: var(--space-2);
-	}
-	.ai-audio-copy strong {
-		font-size: var(--type-body);
-		line-height: var(--line-body);
-	}
-	.ai-audio-note {
-		display: none;
-	}
-}
 @media (max-height: 440px) {
-	.ai-audio {
-		gap: 0;
-		padding: var(--space-1);
-	}
-	.ai-audio-copy {
-		display: none;
-	}
 	.ai-messages {
 		gap: var(--space-1);
 		padding: var(--space-1);
 	}
-	.ai-mic {
-		min-height: 72px;
-	}
 }
 @media (prefers-reduced-motion: reduce) {
-	.ai-mic[aria-pressed="true"] .ai-mic-rings::before,
-	.ai-mic[aria-pressed="true"] .ai-mic-rings::after,
-	.ai-wave.listening > span,
 	.ai-typing > span {
 		animation: none;
 	}
-	.ai-mic,
 	.ai-tab {
 		transition: none;
 	}

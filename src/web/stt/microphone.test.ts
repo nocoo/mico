@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { Pcm16Resampler, openMicrophone, resamplePcm16 } from './microphone.ts'
+import { openMicrophone, Pcm16Resampler, resamplePcm16 } from './microphone.ts'
 
 function closeTo(actual: number, expected: number, tolerance = 1): void {
-	assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`)
+	assert.ok(
+		Math.abs(actual - expected) <= tolerance,
+		`${actual} is not within ${tolerance} of ${expected}`,
+	)
 }
 
 test('PCM resampling preserves same-rate samples', () => {
@@ -17,11 +20,7 @@ test('PCM resampling preserves same-rate samples', () => {
 	closeTo(output[4], 32767)
 })
 
-function pushChunks(
-	input: Float32Array,
-	inputRate: number,
-	chunkSizes: number[],
-): Int16Array {
+function pushChunks(input: Float32Array, inputRate: number, chunkSizes: number[]): Int16Array {
 	const resampler = new Pcm16Resampler(inputRate, 16000)
 	const chunks: Int16Array[] = []
 	for (let offset = 0, chunk = 0; offset < input.length; chunk++) {
@@ -184,10 +183,8 @@ function installCaptureMocks(track: MockTrack, context: MockContext): void {
 	})
 	Object.defineProperty(globalThis, 'AudioContext', {
 		configurable: true,
-		value: class {
-			constructor() {
-				return context
-			}
+		value: function MockAudioContext() {
+			return context
 		},
 	})
 	Object.defineProperty(globalThis, 'AudioWorkletNode', {
@@ -206,19 +203,26 @@ test('async stop flushes Worklet tail before resource cleanup', async () => {
 	const track = new MockTrack()
 	const context = new MockContext()
 	installCaptureMocks(track, context)
-	const worklet = MockWorkletNode.instances
 	const delivered: Int16Array[] = []
 	let ended = 0
 
 	try {
-		const capture = await openMicrophone((pcm) => delivered.push(pcm), () => ended++)
+		const capture = await openMicrophone(
+			(pcm) => delivered.push(pcm),
+			() => ended++,
+		)
 		const mockWorklet = MockWorkletNode.instances[0]
 		mockWorklet.port.tailLength = 1023
-		await capture.stop()
+		const stopped = capture.stop()
+		assert.equal(track.stopCalls, 1)
+		await stopped
 
 		assert.ok(delivered.length > 0)
 		assert.equal(delivered.at(-1)?.length, 341)
-		assert.equal(delivered.reduce((length, pcm) => length + pcm.length, 0), 341)
+		assert.equal(
+			delivered.reduce((length, pcm) => length + pcm.length, 0),
+			341,
+		)
 		assert.equal(track.stopCalls, 1)
 		assert.equal(context.closeCalls, 1)
 		assert.equal(ended, 0)
@@ -253,10 +257,32 @@ test('track ended flushes Worklet tail before onEnded', async () => {
 
 		assert.ok(delivered.length > 0)
 		assert.equal(delivered.at(-1)?.length, 341)
-		assert.equal(delivered.reduce((length, pcm) => length + pcm.length, 0), 341)
+		assert.equal(
+			delivered.reduce((length, pcm) => length + pcm.length, 0),
+			341,
+		)
 		assert.equal(track.stopCalls, 1)
 		assert.equal(context.closeCalls, 1)
 		assert.equal(ended, 1)
+	} finally {
+		cleanupCaptureMocks()
+	}
+})
+
+test('unexpected end reports a failed tail flush', async () => {
+	const track = new MockTrack()
+	const context = new MockContext()
+	installCaptureMocks(track, context)
+	try {
+		const result = new Promise<Error | undefined>((resolve) => {
+			void openMicrophone(() => {}, resolve).then(() => {
+				MockWorkletNode.instances[0].port.flushMode = 'error'
+				track.dispatchEnded()
+			})
+		})
+		assert.match((await result)?.message ?? '', /Could not request the microphone tail flush/)
+		assert.equal(track.stopCalls, 1)
+		assert.equal(context.closeCalls, 1)
 	} finally {
 		cleanupCaptureMocks()
 	}
@@ -269,7 +295,10 @@ test('stop rejects after Worklet flush timeout and releases resources', async ()
 	let ended = 0
 
 	try {
-		const capture = await openMicrophone(() => {}, () => ended++)
+		const capture = await openMicrophone(
+			() => {},
+			() => ended++,
+		)
 		MockWorkletNode.instances[0].port.flushMode = 'timeout'
 
 		await assert.rejects(capture.stop(), /Timed out waiting for microphone tail flush/)
@@ -288,10 +317,16 @@ test('stop rejects after Worklet flush delivery error and releases resources', a
 	let ended = 0
 
 	try {
-		const capture = await openMicrophone(() => {}, () => ended++)
+		const capture = await openMicrophone(
+			() => {},
+			() => ended++,
+		)
 		MockWorkletNode.instances[0].port.flushMode = 'error'
 
-		await assert.rejects(capture.stop(), /Could not request the microphone tail flush: mock worklet delivery failure/)
+		await assert.rejects(
+			capture.stop(),
+			/Could not request the microphone tail flush: mock worklet delivery failure/,
+		)
 		assert.equal(track.stopCalls, 1)
 		assert.equal(context.closeCalls, 1)
 		assert.equal(ended, 0)
@@ -307,7 +342,10 @@ test('capture emits 1600-sample frames and a final partial frame', async () => {
 	const delivered: Int16Array[] = []
 
 	try {
-		const capture = await openMicrophone((pcm) => delivered.push(pcm), () => {})
+		const capture = await openMicrophone(
+			(pcm) => delivered.push(pcm),
+			() => {},
+		)
 		const mockWorklet = MockWorkletNode.instances[0]
 		mockWorklet.port.tailLength = 0
 		for (let index = 0; index < 5; index++) mockWorklet.deliverPcm(1024)
@@ -316,7 +354,10 @@ test('capture emits 1600-sample frames and a final partial frame', async () => {
 		assert.equal(delivered.length, 2)
 		assert.equal(delivered[0].length, 1600)
 		assert.equal(delivered[1].length, 107)
-		assert.equal(delivered.reduce((length, pcm) => length + pcm.length, 0), 1707)
+		assert.equal(
+			delivered.reduce((length, pcm) => length + pcm.length, 0),
+			1707,
+		)
 	} finally {
 		cleanupCaptureMocks()
 	}
@@ -328,7 +369,13 @@ test('unsupported AudioWorklet rejects and releases the stream', async () => {
 	installCaptureMocks(track, context)
 
 	try {
-		await assert.rejects(openMicrophone(() => {}, () => {}), /AudioWorklet microphone capture is not supported/)
+		await assert.rejects(
+			openMicrophone(
+				() => {},
+				() => {},
+			),
+			/AudioWorklet microphone capture is not supported/,
+		)
 		assert.equal(track.stopCalls, 1)
 		assert.equal(context.closeCalls, 1)
 	} finally {
