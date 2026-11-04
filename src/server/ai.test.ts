@@ -304,6 +304,15 @@ test('updates are rejected after a concurrent board change and recover after a r
 		const label = store.getBoard().shapes.find((shape) => shape.id === 'label')
 		assert.equal(label?.type === 'text' ? label.text : null, 'Before')
 
+		await run(tools.add_notes, {
+			notes: [{ id: 'unread', x: 600, y: 10, text: 'Unrelated addition' }],
+		})
+		const stillStale = (await run(tools.update_shapes, {
+			updates: [{ id: 'label', patch: { text: 'Still stale' } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(stillStale.ok, false)
+		assert.equal(stillStale.error, 'REVISION_CONFLICT')
+
 		await run(tools.get_board, {})
 		const retried = (await run(tools.update_shapes, {
 			updates: [{ id: 'label', patch: { text: 'After' } }],
@@ -380,6 +389,22 @@ test('line and path digests keep direction and sampled geometry', () => {
 		{ x: 100, y: 80 },
 		{ x: 150, y: 100 },
 	])
+
+	const longPath = digestShape({
+		id: 'long',
+		type: 'path',
+		x: 0,
+		y: 0,
+		w: 199,
+		h: 199,
+		color: '#2b3038',
+		points: Array.from({ length: 200 }, (_, index) => ({ x: index, y: index })),
+		brush: 'brush',
+		strokeWidth: 4,
+	})
+	assert.equal(longPath.samples?.length, 8)
+	assert.deepEqual(longPath.samples?.[0], { x: 0, y: 0 })
+	assert.deepEqual(longPath.samples?.at(-1), { x: 199, y: 199 })
 })
 
 test('note tints are accepted when updating a note', async () => {

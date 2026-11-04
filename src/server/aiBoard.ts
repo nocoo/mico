@@ -109,11 +109,21 @@ export function digestShape(shape: Shape, includeHtml = false, detailed = false)
 		const points = shape.points ?? []
 		digest.points = points.length
 		const limit = detailed ? 32 : 8
-		const step = Math.max(1, Math.ceil(points.length / limit))
-		digest.samples = points
-			.filter((_, index) => index % step === 0 || index === points.length - 1)
-			.slice(0, limit)
-			.map((point) => ({ x: round(shape.x + point.x), y: round(shape.y + point.y) }))
+		const interiorLimit = Math.max(0, limit - 2)
+		const step = Math.max(1, Math.ceil(Math.max(0, points.length - 2) / Math.max(1, interiorLimit)))
+		const interior: { x: number; y: number }[] = []
+		for (
+			let index = step;
+			index < points.length - 1 && interior.length < interiorLimit;
+			index += step
+		) {
+			interior.push(points[index])
+		}
+		const sampled = [points[0], ...interior, points[points.length - 1]]
+		digest.samples = sampled.map((point) => ({
+			x: round(shape.x + point.x),
+			y: round(shape.y + point.y),
+		}))
 	}
 	if (shape.type === 'html') {
 		const html = shape.html ?? ''

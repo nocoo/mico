@@ -150,7 +150,7 @@ export function createCanvasTools(input: Omit<ToolContext, 'revision'> & { revis
 	const applyOperations = (operations: Operation[]) => {
 		context.revision = observedRevision
 		const reply = apply(context, operations, observedRevision)
-		if (reply.ok) observedRevision = reply.revision
+		if (reply.ok) observedRevision += 1
 		return reply
 	}
 	return {
