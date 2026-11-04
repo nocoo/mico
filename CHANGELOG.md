@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.6.3
+
+- Give text shapes and rich widgets real hit targets so nested cards inside frames can be selected and dragged.
+- Double-click text, notes, frames and rich widgets to edit their text directly on the canvas; Escape cancels and blur or Enter commits.
+
 ## v0.6.2
 
 - Unify frame and rich-widget headers into one floating pill above the card: colored kind icon, title and grip handle with an 8px gap.

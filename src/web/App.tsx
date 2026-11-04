@@ -176,6 +176,11 @@ export default function App() {
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
 	const [marquee, setMarquee] = useState<Rect | null>(null)
+	const [editing, setEditing] = useState<{
+		id: string
+		field: 'text' | 'title' | 'widgetTitle'
+		value: string
+	} | null>(null)
 	const [noteColor, setNoteColor] = useState('#fde68a')
 	const [textFont, setTextFont] = useState<'sans' | 'serif' | 'hand' | 'mono'>('sans')
 	const [textSize, setTextSize] = useState(32)
@@ -847,6 +852,25 @@ export default function App() {
 		}
 	}
 
+	const beginInlineEdit = (shape: CanvasShape) => {
+		if (
+			shape.type !== 'frame' &&
+			shape.type !== 'widget' &&
+			shape.type !== 'text' &&
+			shape.type !== 'note'
+		)
+			return
+		const field =
+			shape.type === 'frame' ? 'title' : shape.type === 'widget' ? 'widgetTitle' : 'text'
+		const value =
+			field === 'title'
+				? (shape.title ?? '')
+				: field === 'widgetTitle'
+					? (shape.widgetTitle ?? '')
+					: (shape.text ?? '')
+		setEditing({ id: shape.id, field, value })
+	}
+
 	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
 		if (interactionRef.current) {
 			event.stopPropagation()
@@ -876,7 +900,6 @@ export default function App() {
 
 		const world = clientToWorld(event.clientX, event.clientY)
 		if (isCanvasShape(shape)) {
-			event.preventDefault()
 			svgRef.current?.setPointerCapture(event.pointerId)
 			const group =
 				shape.type === 'frame'
@@ -1015,6 +1038,25 @@ export default function App() {
 		const common = {
 			className: 'canvas-shape',
 			'data-shape-id': shape.id,
+			onDoubleClick: (event: React.MouseEvent<SVGGElement>) => {
+				event.stopPropagation()
+				if (
+					shape.type !== 'frame' &&
+					shape.type !== 'widget' &&
+					shape.type !== 'text' &&
+					shape.type !== 'note'
+				)
+					return
+				const field =
+					shape.type === 'frame' ? 'title' : shape.type === 'widget' ? 'widgetTitle' : 'text'
+				const value =
+					field === 'title'
+						? (shape.title ?? '')
+						: field === 'widgetTitle'
+							? (shape.widgetTitle ?? '')
+							: (shape.text ?? '')
+				setEditing({ id: shape.id, field, value })
+			},
 			style: {
 				cursor:
 					tool === 'hand' || spacePressed || isPanning ? (isPanning ? 'grabbing' : 'grab') : 'move',
@@ -1098,6 +1140,7 @@ export default function App() {
 		if (shape.type === 'widget') {
 			return (
 				<g key={shape.id} {...common}>
+					<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} fill="transparent" />
 					<WidgetCard shape={shape} />
 					{active && (
 						<rect
@@ -1185,6 +1228,7 @@ export default function App() {
 			const font = shape.font ?? 'sans'
 			return (
 				<g key={shape.id} {...common}>
+					<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} fill="transparent" />
 					{active && (
 						<rect
 							className="selection"
@@ -1598,6 +1642,12 @@ export default function App() {
 					event.preventDefault()
 					zoomAt(viewport.zoom * Math.exp(-event.deltaY * 0.0015), event.clientX, event.clientY)
 				}}
+				onDoubleClick={(event) => {
+					const element = document.elementFromPoint(event.clientX, event.clientY)
+					const id = element?.closest('[data-shape-id]')?.getAttribute('data-shape-id')
+					const shape = id ? visibleShapes.find((candidate) => candidate.id === id) : undefined
+					if (shape && isCanvasShape(shape)) beginInlineEdit(shape)
+				}}
 				aria-label="Infinite canvas"
 				style={{
 					cursor: isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default',
@@ -1624,6 +1674,72 @@ export default function App() {
 					data-world-layer="true"
 					transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
 				>
+					{editing &&
+						(() => {
+							const target = visibleShapes.find((shape) => shape.id === editing.id) as
+								| CanvasShape
+								| undefined
+							if (!target) return null
+							const frame = target.type === 'frame' || target.type === 'widget'
+							const box = frame
+								? { x: target.x, y: target.y - 48, w: Math.min(target.w, 360), h: 36 }
+								: target.type === 'note'
+									? { x: target.x + 12, y: target.y + 12, w: target.w - 24, h: target.h - 24 }
+									: { x: target.x, y: target.y, w: target.w, h: target.h }
+							const multiline = target.type === 'text' || target.type === 'note'
+							const style =
+								target.type === 'text'
+									? {
+											fontFamily: FONT_STACKS[target.font ?? 'sans'],
+											fontSize: `${target.fontSize ?? 32}px`,
+											fontWeight: target.fontWeight ?? 500,
+										}
+									: undefined
+							const commit = (value: string) => {
+								if (value !== editing.value) {
+									void postOperations([
+										{ type: 'update', id: editing.id, patch: { [editing.field]: value } },
+									])
+								}
+								setEditing(null)
+							}
+							return (
+								<foreignObject
+									x={box.x}
+									y={box.y}
+									width={box.w}
+									height={box.h}
+									className="inline-editor"
+								>
+									{multiline ? (
+										<textarea
+											ref={(node) => node?.focus()}
+											defaultValue={editing.value}
+											style={style}
+											onBlur={(event) => commit(event.target.value)}
+											onKeyDown={(event) => {
+												event.stopPropagation()
+												if (event.key === 'Escape') setEditing(null)
+												if (event.key === 'Enter' && (event.metaKey || event.ctrlKey))
+													commit(event.currentTarget.value)
+											}}
+										/>
+									) : (
+										<input
+											ref={(node) => node?.focus()}
+											defaultValue={editing.value}
+											style={style}
+											onBlur={(event) => commit(event.target.value)}
+											onKeyDown={(event) => {
+												event.stopPropagation()
+												if (event.key === 'Escape') setEditing(null)
+												if (event.key === 'Enter') commit(event.currentTarget.value)
+											}}
+										/>
+									)}
+								</foreignObject>
+							)
+						})()}
 					{marquee && (
 						<rect
 							className="marquee"

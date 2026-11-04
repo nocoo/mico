@@ -971,3 +971,21 @@ svg {
 	flex: 0 0 auto;
 	color: var(--ink-muted);
 }
+
+.inline-editor {
+	overflow: visible;
+}
+.inline-editor textarea,
+.inline-editor input {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 6px 8px;
+	border: var(--stroke-strong) solid var(--accent);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	color: var(--ink);
+	outline: none;
+	resize: none;
+	pointer-events: auto;
+}

@@ -399,7 +399,9 @@ test('notes, typographic text and frames are editable and move together', async 
 	const ink = page.locator('[data-shape-id="' + heading?.id + '"] .typographic-text')
 	await expect(ink).toHaveCount(1)
 	await expect(
-		page.locator('[data-shape-id="' + heading?.id + '"] > rect:not(.selection)'),
+		page.locator(
+			'[data-shape-id="' + heading?.id + '"] > rect:not(.selection):not([fill="transparent"])',
+		),
 	).toHaveCount(0)
 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
@@ -536,6 +538,130 @@ test('rich widgets sit in isolated cards with editable items', async ({ page, re
 	await expect
 		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
 		.toBe(1)
+})
+
+test('nested widgets stay draggable and text edits inline on double click', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'nest-frame',
+						type: 'frame',
+						x: 200,
+						y: 200,
+						w: 720,
+						h: 460,
+						color: '#5b5fc7',
+						title: 'Nested',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'nest-widget',
+						type: 'widget',
+						x: 240,
+						y: 280,
+						w: 460,
+						h: 320,
+						color: '#0f6cbd',
+						widget: 'todo',
+						widgetTitle: 'Inside frame',
+						frameId: 'nest-frame',
+						items: [{ id: 'n1', title: 'Task one', done: false }],
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'nest-text',
+						type: 'text',
+						x: 260,
+						y: 640,
+						w: 320,
+						h: 48,
+						color: '#242424',
+						text: 'Inline',
+						font: 'sans',
+						fontSize: 32,
+						fontWeight: 500,
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+	await page.reload()
+	await page.locator('.status[aria-label="Live"]').waitFor()
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	const view = await page.locator('[data-world-layer]').evaluate((element) => {
+		const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
+		if (!matrix) throw new Error('Missing transform')
+		return { x: matrix.e, y: matrix.f, zoom: matrix.a }
+	})
+	const screen = (x: number, y: number) => ({
+		x: view.x + x * view.zoom,
+		y: view.y + y * view.zoom,
+	})
+
+	const widgetPoint = screen(470, 440)
+	await page.mouse.dblclick(widgetPoint.x, widgetPoint.y)
+	const editor = page.locator('.inline-editor input')
+	await expect(editor).toBeVisible()
+	await editor.fill('Renamed board')
+	await editor.press('Enter')
+	await expect
+		.poll(
+			async () =>
+				(
+					(await board(request)).shapes.find((shape) => shape.id === 'nest-widget') as
+						| CanvasShape
+						| undefined
+				)?.widgetTitle,
+		)
+		.toBe('Renamed board')
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.mouse.move(widgetPoint.x, widgetPoint.y)
+	await page.mouse.down()
+	await page.mouse.move(widgetPoint.x + 96, widgetPoint.y + 48, { steps: 6 })
+	await page.mouse.up()
+	await expect
+		.poll(
+			async () =>
+				(
+					(await board(request)).shapes.find((shape) => shape.id === 'nest-widget') as
+						| CanvasShape
+						| undefined
+				)?.x,
+		)
+		.not.toBe(240)
+	const moved = (await board(request)).shapes.find((shape) => shape.id === 'nest-widget')
+	expect(moved?.type !== 'connector' ? moved?.frameId : undefined).toBe('nest-frame')
+
+	const textPoint = screen(420, 664)
+	await page.mouse.dblclick(textPoint.x, textPoint.y)
+	const textEditor = page.locator('.inline-editor textarea')
+	await expect(textEditor).toBeVisible()
+	await textEditor.fill('Edited inline')
+	await page.keyboard.press('Control+Enter')
+	await expect
+		.poll(
+			async () =>
+				(
+					(await board(request)).shapes.find((shape) => shape.id === 'nest-text') as
+						| CanvasShape
+						| undefined
+				)?.text,
+		)
+		.toBe('Edited inline')
 })
 
 test('freehand brush draws a persisted tapered path and API sketches render', async ({
