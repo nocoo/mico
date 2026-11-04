@@ -39,6 +39,7 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 
 	useEffect(() => {
 		if (!open) return
+		pointerInside.current = true
 		const onPointerDown = (event: PointerEvent) => {
 			const target = event.target
 			if (!(target instanceof Node)) return
@@ -48,10 +49,7 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 			)
 		}
 		const onKeyDown = (event: globalThis.KeyboardEvent) => {
-			if (event.key !== 'Escape') return
-			const active = document.activeElement
-			const focusInside = active instanceof Node && panelRef.current?.contains(active)
-			if (!focusInside && !pointerInside.current) return
+			if (event.key !== 'Escape' || !pointerInside.current) return
 			event.stopPropagation()
 			onClose()
 		}

@@ -1130,7 +1130,7 @@ svg {
 	position: fixed;
 	top: var(--ai-panel-top);
 	right: var(--frame-inset);
-	z-index: 45;
+	z-index: 35;
 	display: flex;
 	flex-direction: column;
 	width: var(--ai-panel-width);
@@ -1478,6 +1478,9 @@ svg {
 	.app {
 		--ai-panel-width: calc(100vw - var(--frame-inset) * 2);
 	}
+	.app.ai-open .selection-panel {
+		display: none;
+	}
 	.ai-panel {
 		height: min(
 			560px,
@@ -1493,6 +1496,7 @@ svg {
 }
 @media (max-height: 560px) {
 	.ai-panel {
+		z-index: 15;
 		height: min(calc(100dvh - var(--ai-panel-top) - var(--space-2)), 560px);
 	}
 	.ai-audio {
