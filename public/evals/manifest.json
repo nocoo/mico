@@ -213,7 +213,7 @@
 			"title": "ランチメニュー刷新と試験営業",
 			"voice": "ja-JP-KeitaNeural",
 			"script": "evals/cases/c09-restaurant-launch.ja.txt",
-			"rate": "+55%",
+			"rate": "+58%",
 			"audio": "audio/c09-restaurant-launch.mp3",
 			"duration": 294.5,
 			"chars": 2457

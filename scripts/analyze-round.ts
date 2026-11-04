@@ -106,22 +106,36 @@ function analyzeCase(log: CaseLog) {
 		shapes.filter((shape) => shape.type === 'frame').map((shape) => [shape.id, bounds(shape)]),
 	)
 	const overlapPairs: { a: string; b: string; ratio: number }[] = []
-	const content = shapes.filter((shape) => !['connector', 'frame'].includes(shape.type))
+	let overlapCount = 0
+	const content = shapes.filter((shape) =>
+		['rectangle', 'ellipse', 'note', 'html'].includes(shape.type),
+	)
 	for (let i = 0; i < content.length; i++) {
 		for (let j = i + 1; j < content.length; j++) {
 			const a = rects.get(content[i].id)
 			const b = rects.get(content[j].id)
 			if (!a || !b) continue
 			const ratio = overlap(a, b)
-			if (ratio > 0.35) overlapPairs.push({ a: content[i].id, b: content[j].id, ratio })
+			if (ratio > 0.35) {
+				overlapCount++
+				if (overlapPairs.length < 12) {
+					overlapPairs.push({ a: content[i].id, b: content[j].id, ratio })
+				}
+			}
 		}
 	}
 	const frameOverlaps: { a: string; b: string; ratio: number }[] = []
+	let frameOverlapCount = 0
 	const frameList = [...frames.entries()].filter(([, rect]) => rect)
 	for (let i = 0; i < frameList.length; i++) {
 		for (let j = i + 1; j < frameList.length; j++) {
 			const ratio = overlap(frameList[i][1] as Rect, frameList[j][1] as Rect)
-			if (ratio > 0.05) frameOverlaps.push({ a: frameList[i][0], b: frameList[j][0], ratio })
+			if (ratio > 0.05) {
+				frameOverlapCount++
+				if (frameOverlaps.length < 8) {
+					frameOverlaps.push({ a: frameList[i][0], b: frameList[j][0], ratio })
+				}
+			}
 		}
 	}
 	const outsideFrames = shapes
@@ -163,8 +177,11 @@ function analyzeCase(log: CaseLog) {
 				Math.max(1, log.segments.length),
 		),
 		summaryHtml:
-			summaryTools.some((tool) => tool.name === 'add_html_cards' && !tool.failed) ||
-			shapes.some((shape) => shape.type === 'html' && /summary|总结|総括/i.test(shape.id)),
+			shapes.some((shape) => shape.type === 'html') &&
+			summaryTools.some(
+				(tool) =>
+					tool.name === 'add_html_cards' && tool.state === 'output-available' && !tool.failed,
+			),
 		summaryMs: log.summary?.elapsedMs ?? null,
 		shapes: shapes.length,
 		shapeTypes: shapes.reduce<Record<string, number>>((counts, shape) => {
@@ -172,8 +189,10 @@ function analyzeCase(log: CaseLog) {
 			return counts
 		}, {}),
 		htmlCards: shapes.filter((shape) => shape.type === 'html').length,
-		overlapPairs: overlapPairs.slice(0, 12),
-		frameOverlaps: frameOverlaps.slice(0, 8),
+		overlapCount,
+		overlapPairs,
+		frameOverlapCount,
+		frameOverlaps,
 		outsideFrames,
 		longLabels,
 		toolErrors,
@@ -181,7 +200,8 @@ function analyzeCase(log: CaseLog) {
 	}
 }
 
-const files = readdirSync(dir).filter((file) => file.endsWith('.json') && file !== 'summary.json')
+const generated = new Set(['summary.json', 'analysis.json'])
+const files = readdirSync(dir).filter((file) => file.endsWith('.json') && !generated.has(file))
 const logs = files.map((file) => JSON.parse(readFileSync(join(dir, file), 'utf8')) as CaseLog)
 const cases = logs.map(analyzeCase)
 const analysis = {
@@ -194,7 +214,7 @@ const analysis = {
 		htmlCards: cases.reduce((sum, item) => sum + item.htmlCards, 0),
 		waits: cases.reduce((sum, item) => sum + item.waits, 0),
 		toolErrors: cases.reduce((sum, item) => sum + item.toolErrors.length, 0),
-		overlapPairs: cases.reduce((sum, item) => sum + item.overlapPairs.length, 0),
+		overlapPairs: cases.reduce((sum, item) => sum + item.overlapCount, 0),
 		outsideFrames: cases.reduce((sum, item) => sum + item.outsideFrames.length, 0),
 		longLabels: cases.reduce((sum, item) => sum + item.longLabels.length, 0),
 		summariesMissingHtml: cases.filter((item) => !item.summaryHtml).length,
@@ -212,7 +232,7 @@ const lines = [
 ]
 for (const item of cases) {
 	lines.push(
-		`| ${item.id} | ${item.segments} | ${item.avgSegmentMs} | ${item.shapes} | ${item.htmlCards} | ${item.summaryHtml ? 'yes' : 'NO'} | ${item.toolErrors.length} | ${item.overlapPairs.length} | ${item.outsideFrames.length} | ${item.longLabels.length} |`,
+		`| ${item.id} | ${item.segments} | ${item.avgSegmentMs} | ${item.shapes} | ${item.htmlCards} | ${item.summaryHtml ? 'yes' : 'NO'} | ${item.toolErrors.length} | ${item.overlapCount} | ${item.outsideFrames.length} | ${item.longLabels.length} |`,
 	)
 }
 for (const item of cases) {

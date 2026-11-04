@@ -18,11 +18,14 @@ const browser = await chromium.launch({ channel: 'chrome' })
 const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
 try {
 	for (const item of summary.cases) {
-		await fetch(`${API}/api/active-canvas`, {
+		const activated = await fetch(`${API}/api/active-canvas`, {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },
 			body: JSON.stringify({ id: item.canvasId }),
 		})
+		if (!activated.ok) throw new Error(`activate ${item.canvasId} -> ${activated.status}`)
+		const active = (await (await fetch(`${API}/api/state`)).json()) as { activeCanvasId: string }
+		if (active.activeCanvasId !== item.canvasId) throw new Error('active canvas mismatch')
 		await page.goto(DEV, { waitUntil: 'networkidle' })
 		await page.locator('.status[aria-label="Live"]').waitFor({ timeout: 15_000 })
 		await page.waitForTimeout(400)

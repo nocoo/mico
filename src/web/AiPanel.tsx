@@ -209,14 +209,33 @@ export function AiPanel({
 	const [lessonClipId, setLessonClipId] = useState('')
 	const [sessionEnded, setSessionEnded] = useState(false)
 	const [summaryDone, setSummaryDone] = useState(false)
-	const summarized = useRef(false)
+	const [summaryRequesting, setSummaryRequesting] = useState(false)
+	const summaryAttempted = useRef(false)
+	const summaryInFlight = useRef(false)
 	const selectionRef = useRef(selectedIds)
 	selectionRef.current = selectedIds
+	const canvasIdRef = useRef(canvasId)
+	canvasIdRef.current = canvasId
 
 	const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chat' }), [])
 	const { messages, setMessages, sendMessage, status, error, stop, clearError } = useChat({
 		transport,
 		throttle: 40,
+		onFinish: ({ message }) => {
+			if (!summaryInFlight.current) return
+			summaryInFlight.current = false
+			setSummaryRequesting(false)
+			const created = message.parts.some((part) => {
+				if (!isToolUIPart(part)) return false
+				return getToolName(part) === 'add_html_cards' && part.state === 'output-available'
+			})
+			if (created) setSummaryDone(true)
+		},
+		onError: () => {
+			if (!summaryInFlight.current) return
+			summaryInFlight.current = false
+			setSummaryRequesting(false)
+		},
 	})
 
 	const busy = status === 'submitted' || status === 'streaming'
@@ -226,10 +245,12 @@ export function AiPanel({
 		lectureQueue.current = []
 		requestSeq.current++
 		requestLock.current = false
-		summarized.current = false
+		summaryAttempted.current = false
+		summaryInFlight.current = false
 		setLectureQueued(0)
 		setSessionEnded(false)
 		setSummaryDone(false)
+		setSummaryRequesting(false)
 	}, [])
 
 	useEffect(
@@ -260,7 +281,13 @@ export function AiPanel({
 		setLectureQueued(lectureQueue.current.length)
 		void sendMessage(
 			{ text: batch.join('\n\n') },
-			{ body: { selection: selectionRef.current, mode: 'lecture' } },
+			{
+				body: {
+					selection: selectionRef.current,
+					mode: 'lecture',
+					...(canvasIdRef.current ? { canvasId: canvasIdRef.current } : {}),
+				},
+			},
 		).finally(() => releaseRequestRef.current(seq))
 	}, [sendMessage])
 
@@ -277,11 +304,12 @@ export function AiPanel({
 			requestLock.current = true
 			const seq = ++requestSeq.current
 			setDraft('')
-			void sendMessage({ text: value }, { body: { selection, mode: 'chat' } }).finally(() =>
-				releaseRequestRef.current(seq),
-			)
+			void sendMessage(
+				{ text: value },
+				{ body: { selection, mode: 'chat', ...(canvasId ? { canvasId } : {}) } },
+			).finally(() => releaseRequestRef.current(seq))
 		},
-		[sendMessage, selection, status],
+		[sendMessage, selection, status, canvasId],
 	)
 
 	const submit = (event?: FormEvent) => {
@@ -302,9 +330,6 @@ export function AiPanel({
 
 	const enqueueLecture = useCallback(
 		(segment: LessonSegment, clip: LessonClip) => {
-			summarized.current = false
-			setSummaryDone(false)
-			setSessionEnded(false)
 			lectureQueue.current.push(
 				lectureSegmentText(clip, segment.id, segment.start, segment.end, segment.text),
 			)
@@ -315,32 +340,35 @@ export function AiPanel({
 	)
 
 	const requestSummary = useCallback(() => {
-		if (requestLock.current || summarized.current) return
+		if (requestLock.current || summaryInFlight.current || summaryDone) return
 		requestLock.current = true
-		summarized.current = true
-		setSummaryDone(true)
+		summaryInFlight.current = true
+		summaryAttempted.current = true
+		setSummaryRequesting(true)
 		const seq = ++requestSeq.current
 		void sendMessage(
 			{ text: POST_SESSION_SUMMARY_PROMPT },
-			{ body: { selection: selectionRef.current, mode: 'chat' } },
+			{
+				body: {
+					selection: selectionRef.current,
+					mode: 'chat',
+					...(canvasIdRef.current ? { canvasId: canvasIdRef.current } : {}),
+				},
+			},
 		).finally(() => releaseRequestRef.current(seq))
-	}, [sendMessage])
+	}, [sendMessage, summaryDone])
 
 	const endSession = useCallback(() => {
 		setSessionEnded(true)
 	}, [])
 
 	useEffect(() => {
-		if (!sessionEnded || error || busy || summaryDone || messages.length === 0) return
+		if (!sessionEnded || error || busy || summaryDone || summaryRequesting) return
+		if (summaryAttempted.current || messages.length === 0) return
 		if (requestLock.current || lectureQueue.current.length > 0) return
+		summaryAttempted.current = true
 		requestSummary()
-	}, [sessionEnded, error, busy, summaryDone, messages.length, requestSummary])
-
-	useEffect(() => {
-		if (!error) return
-		summarized.current = false
-		setSummaryDone(false)
-	}, [error])
+	}, [sessionEnded, error, busy, summaryDone, summaryRequesting, messages.length, requestSummary])
 
 	const resetLecture = useCallback(() => {
 		resetLectureQueue()
@@ -593,7 +621,7 @@ export function AiPanel({
 									{
 										text: 'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
 									},
-									{ body: { selection, mode: 'chat' } },
+									{ body: { selection, mode: 'chat', ...(canvasId ? { canvasId } : {}) } },
 								).finally(() => releaseRequestRef.current(seq))
 							}}
 						>
@@ -679,7 +707,15 @@ export function AiPanel({
 					onCreateCanvas={onCreateCanvas}
 					onSessionEnd={endSession}
 					onSummary={requestSummary}
-					canSummarize={!busy && lectureQueued === 0 && messages.length > 0 && !summaryDone}
+					canSummarize={
+						sessionEnded &&
+						!busy &&
+						!error &&
+						lectureQueued === 0 &&
+						messages.length > 0 &&
+						!summaryDone &&
+						!summaryRequesting
+					}
 				/>
 			</div>
 

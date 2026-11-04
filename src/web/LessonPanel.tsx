@@ -359,7 +359,7 @@ export function LessonPanel({
 		const client = new MaiClient({
 			path: config.localPath,
 			model: config.deployment,
-			language: clip.lang === 'zh' ? 'zh' : 'en',
+			language: clip.lang === 'zh' ? 'zh' : clip.lang === 'ja' ? 'ja' : 'en',
 		})
 		rt.client = client
 		rt.closing = false
@@ -608,7 +608,7 @@ export function LessonPanel({
 					value={selected?.id ?? ''}
 					options={clips.map((clip) => ({
 						value: clip.id,
-						label: `${clip.lang === 'zh' ? '中文' : 'EN'} · ${clip.subject} · ${clip.title}`,
+						label: `${clip.lang === 'zh' ? '中文' : clip.lang === 'ja' ? '日本語' : 'EN'} · ${clip.subject} · ${clip.title}`,
 					}))}
 					onChange={selectClip}
 					disabled={clips.length === 0}

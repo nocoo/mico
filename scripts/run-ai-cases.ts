@@ -143,11 +143,14 @@ function summarizeValue(value: unknown, limit = 600): string {
 	}
 }
 
-function inspectAssistant(chat: Chat<UIMessage>): {
+function inspectAssistant(
+	chat: Chat<UIMessage>,
+	beforeIds: Set<string>,
+): {
 	text: string
 	tools: ToolLog[]
 } {
-	const messages = chat.messages as UIMessage[]
+	const messages = (chat.messages as UIMessage[]).filter((message) => !beforeIds.has(message.id))
 	const lastAssistant = [...messages].reverse().find((message) => message.role === 'assistant')
 	if (!lastAssistant) return { text: '', tools: [] }
 	let text = ''
@@ -174,6 +177,7 @@ async function sendSegment(
 	chat: Chat<UIMessage>,
 	text: string,
 	timeoutMs: number,
+	canvasId: string,
 ): Promise<{ timedOut: boolean; error?: string }> {
 	let timedOut = false
 	const timer = setTimeout(() => {
@@ -181,8 +185,8 @@ async function sendSegment(
 		chat.stop()
 	}, timeoutMs)
 	try {
-		await chat.sendMessage({ text }, { body: { selection: [], mode: 'lecture' } })
-		return { timedOut }
+		await chat.sendMessage({ text }, { body: { selection: [], mode: 'lecture', canvasId } })
+		return { timedOut, error: chat.error?.message }
 	} catch (error) {
 		return { timedOut, error: (error as Error).message }
 	} finally {
@@ -193,6 +197,7 @@ async function sendSegment(
 async function sendSummary(
 	chat: Chat<UIMessage>,
 	timeoutMs: number,
+	canvasId: string,
 ): Promise<{ timedOut: boolean; error?: string }> {
 	const instruction = POST_SESSION_SUMMARY_PROMPT
 	let timedOut = false
@@ -201,8 +206,11 @@ async function sendSummary(
 		chat.stop()
 	}, timeoutMs)
 	try {
-		await chat.sendMessage({ text: instruction }, { body: { selection: [], mode: 'chat' } })
-		return { timedOut }
+		await chat.sendMessage(
+			{ text: instruction },
+			{ body: { selection: [], mode: 'chat', canvasId } },
+		)
+		return { timedOut, error: chat.error?.message }
 	} catch (error) {
 		return { timedOut, error: (error as Error).message }
 	} finally {
@@ -240,7 +248,11 @@ async function restoreActive(id: string): Promise<void> {
 	)
 }
 
-async function runCase(caseEntry: CaseEntry, round: number): Promise<CaseLog> {
+async function runCase(
+	caseEntry: CaseEntry,
+	round: number,
+	roundDeadline: number,
+): Promise<CaseLog> {
 	const short = caseEntry.title.length > 48 ? `${caseEntry.title.slice(0, 47)}…` : caseEntry.title
 	const canvasName = `R${round}-${caseEntry.id.toUpperCase().split('-')[0]} ${short}`.slice(0, 80)
 	const canvasId = await createFreshCanvas(canvasName)
@@ -258,18 +270,21 @@ async function runCase(caseEntry: CaseEntry, round: number): Promise<CaseLog> {
 	})
 	const segments = buildSegments(caseEntry)
 	const caseStart = Date.now()
+	const caseDeadline = Math.min(caseStart + CASE_LIMIT_MS, roundDeadline)
 	log(`case ${caseEntry.id} -> ${canvasName} (${segments.length} segments)`)
 
 	for (let index = 0; index < segments.length; index++) {
-		if (Date.now() - caseStart > CASE_LIMIT_MS) {
-			logData.error = 'case timeout before all segments'
+		const remaining = caseDeadline - Date.now()
+		if (remaining <= 1000) {
+			logData.error = 'case deadline reached before all segments'
 			break
 		}
 		const segment = segments[index]
 		const text = `[Live session | ${caseEntry.subject} · ${caseEntry.title} | segment ${index + 1} | ${segment.start.toFixed(0)}–${segment.end.toFixed(0)}s] ${segment.text}`
 		const started = Date.now()
-		const result = await sendSegment(chat, text, SEGMENT_TIMEOUT_MS)
-		const inspected = inspectAssistant(chat)
+		const beforeIds = new Set(chat.messages.map((message) => message.id))
+		const result = await sendSegment(chat, text, Math.min(SEGMENT_TIMEOUT_MS, remaining), canvasId)
+		const inspected = inspectAssistant(chat, beforeIds)
 		const entry: SegmentLog = {
 			index: index + 1,
 			start: Number(segment.start.toFixed(1)),
@@ -291,11 +306,13 @@ async function runCase(caseEntry: CaseEntry, round: number): Promise<CaseLog> {
 		writeFileSync(join(OUT, `${caseEntry.id}.json`), `${JSON.stringify(logData, null, 2)}\n`)
 	}
 
-	if (!logData.error) {
+	const summaryRemaining = caseDeadline - Date.now()
+	if (!logData.error && summaryRemaining > 5000) {
 		log(`  summary for ${caseEntry.id}`)
 		const started = Date.now()
-		const result = await sendSummary(chat, SUMMARY_TIMEOUT_MS)
-		const inspected = inspectAssistant(chat)
+		const beforeIds = new Set(chat.messages.map((message) => message.id))
+		const result = await sendSummary(chat, Math.min(SUMMARY_TIMEOUT_MS, summaryRemaining), canvasId)
+		const inspected = inspectAssistant(chat, beforeIds)
 		logData.summary = {
 			index: logData.segments.length + 1,
 			start: caseEntry.duration,
@@ -311,8 +328,10 @@ async function runCase(caseEntry: CaseEntry, round: number): Promise<CaseLog> {
 		}
 	}
 	try {
-		const board = await (await api('/api/board')).json()
-		logData.finalBoard = board
+		const canvas = (await (await api(`/api/canvases/${encodeURIComponent(canvasId)}`)).json()) as {
+			board: unknown
+		}
+		logData.finalBoard = canvas.board
 	} catch (error) {
 		logData.error = `${logData.error ?? ''} final board read failed: ${(error as Error).message}`
 	}
@@ -368,15 +387,25 @@ async function main(): Promise<void> {
 	const state = (await (await api('/api/state')).json()) as { activeCanvasId: string }
 	const initialActive = state.activeCanvasId
 	const roundStart = Date.now()
+	const roundDeadline = roundStart + ROUND_LIMIT_MS
 	const results: CaseLog[] = []
+	let previousCases: { id: string; [key: string]: unknown }[] = []
+	try {
+		const previous = JSON.parse(readFileSync(join(OUT, 'summary.json'), 'utf8')) as {
+			cases?: { id: string; [key: string]: unknown }[]
+		}
+		previousCases = previous.cases ?? []
+	} catch {
+		// No previous summary for this round.
+	}
 	try {
 		for (const entry of cases) {
-			if (Date.now() - roundStart > ROUND_LIMIT_MS) {
+			if (Date.now() >= roundDeadline) {
 				log('round timeout; stopping before', entry.id)
 				break
 			}
 			try {
-				results.push(await runCase(entry, ROUND))
+				results.push(await runCase(entry, ROUND, roundDeadline))
 			} catch (error) {
 				log('case failed', entry.id, (error as Error).message)
 				writeFileSync(
@@ -392,14 +421,19 @@ async function main(): Promise<void> {
 		round: ROUND,
 		startedAt: new Date(roundStart).toISOString(),
 		elapsedMinutes: Number(((Date.now() - roundStart) / 60_000).toFixed(1)),
-		cases: results.map((result) => ({
-			id: result.case.id,
-			title: result.case.title,
-			canvas: result.canvasName,
-			canvasId: result.canvasId,
-			error: result.error,
-			...result.stats,
-		})),
+		cases: [
+			...previousCases.filter(
+				(previous) => !results.some((result) => result.case.id === previous.id),
+			),
+			...results.map((result) => ({
+				id: result.case.id,
+				title: result.case.title,
+				canvas: result.canvasName,
+				canvasId: result.canvasId,
+				error: result.error,
+				...result.stats,
+			})),
+		],
 	}
 	writeFileSync(join(OUT, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`)
 	log('round summary', JSON.stringify(summary, null, 2))

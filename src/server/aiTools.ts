@@ -85,7 +85,7 @@ function textExtent(
 
 type ToolReply =
 	| { ok: true; revision: number; created: { id: string; type: Shape['type'] }[] }
-	| { ok: false; error: string; message: string }
+	| { ok: false; error: string; message: string; hint?: string }
 
 interface ToolContext {
 	store: BoardStore
@@ -135,7 +135,16 @@ function apply(
 		return { ok: true, revision: result.board.revision, created, updated }
 	} catch (error) {
 		if (error instanceof OperationError) {
-			return { ok: false, error: error.code, message: error.message }
+			return {
+				ok: false,
+				error: error.code,
+				message: error.message,
+				...(error.code === 'DUPLICATE_ID'
+					? {
+							hint: 'Use update_shapes for the existing object, or choose a new id with a suffix such as -2.',
+						}
+					: {}),
+			}
 		}
 		throw error
 	}

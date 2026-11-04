@@ -60,6 +60,7 @@ export interface AiChatRequest {
 	messages: UIMessage[]
 	selection: string[]
 	mode: AiChatMode
+	canvasId?: string
 }
 
 export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> {
@@ -81,6 +82,11 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 	if (mode !== 'chat' && mode !== 'lecture') {
 		throw new OperationError(400, 'INVALID_REQUEST', 'mode must be chat or lecture')
 	}
+	const rawCanvasId = record.canvasId
+	const canvasId = rawCanvasId === undefined || rawCanvasId === '' ? undefined : rawCanvasId
+	if (canvasId !== undefined && (typeof canvasId !== 'string' || canvasId.length > 80)) {
+		throw new OperationError(400, 'INVALID_REQUEST', 'canvasId must be a canvas id')
+	}
 	const validated = await safeValidateUIMessages({ messages: record.messages })
 	if (!validated.success) {
 		throw new OperationError(400, 'INVALID_REQUEST', 'messages are not valid UI messages')
@@ -88,6 +94,7 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 	return {
 		messages: sanitizeInterruptedMessages(validated.data),
 		mode,
+		canvasId,
 		selection: selection
 			.filter((id): id is string => typeof id === 'string' && id.length > 0 && id.length <= 64)
 			.slice(0, 200),
@@ -111,7 +118,7 @@ export async function streamAiChat({
 	request,
 	origin,
 }: AiResponseOptions): Promise<void> {
-	const canvasId = store.getActiveCanvasId()
+	const canvasId = request.canvasId ?? store.getActiveCanvasId()
 	const board = store.getBoard(canvasId)
 	const abort = new AbortController()
 	res.on('close', () => abort.abort())
