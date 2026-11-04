@@ -38,11 +38,11 @@
       height: 960px;
       overflow: visible;
       transform-origin: 50% 20%;
-      animation: stick 1.4s both;
+      animation: stick 2.4s both;
     }
 
     .outline {
-      animation: curl 1.4s both;
+      animation: curl 2.4s both;
     }
 
     .paper {
@@ -53,7 +53,7 @@
     .corner-light {
       fill: url(#corner-light);
       opacity: 0;
-      animation: curl 1.4s both, light 1.4s both;
+      animation: curl 2.4s both, light 2.4s both;
     }
 
     .corner-shadow {
@@ -61,7 +61,7 @@
       opacity: 0;
       filter: blur(2px);
       transform-origin: 139px 157px;
-      animation: shadow 1.4s both;
+      animation: shadow 2.4s both;
     }
 
     .replay {
@@ -94,33 +94,25 @@
     @keyframes curl {
       0%, 28% {
         d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
-        animation-timing-function: cubic-bezier(.16, .6, .3, 1);
+        animation-timing-function: cubic-bezier(.22, 1, .36, 1);
       }
       53% {
         d: path("M0 0 H160 V98.88 C160 120 160 141 156 152 C148 154 121 160 98.88 160 H0 Z");
-        animation-timing-function: cubic-bezier(.55, 0, .8, .5);
-      }
-      78% {
-        d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
-        animation-timing-function: cubic-bezier(.2, .65, .3, 1);
-      }
-      87% {
-        d: path("M0 0 H160 V98.88 C160 120 160 140 159.5 159 C140 159.3 120 160 98.88 160 H0 Z");
-        animation-timing-function: cubic-bezier(.55, 0, .8, .5);
+        animation-timing-function: cubic-bezier(.45, 0, .3, 1);
       }
       100% { d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"); }
     }
 
     @keyframes light {
-      0%, 28%, 78%, 100% { opacity: 0; animation-timing-function: cubic-bezier(.16, .6, .3, 1); }
-      53% { opacity: .55; animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
-      87% { opacity: .08; animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
+      0%, 28% { opacity: 0; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+      53% { opacity: .55; animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
+      100% { opacity: 0; }
     }
 
     @keyframes shadow {
-      0%, 28%, 78%, 100% { opacity: 0; transform: none; animation-timing-function: cubic-bezier(.16, .6, .3, 1); }
-      53% { opacity: .2; transform: translateY(3px) scale(1.15, 1.5); animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
-      87% { opacity: .03; transform: translateY(.4px); animation-timing-function: cubic-bezier(.55, 0, .8, .5); }
+      0%, 28% { opacity: 0; transform: none; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+      53% { opacity: .2; transform: translateY(3px) scale(1.15, 1.5); animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
+      100% { opacity: 0; transform: none; }
     }
 
     @media (prefers-reduced-motion: reduce) {
