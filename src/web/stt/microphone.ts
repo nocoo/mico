@@ -1,5 +1,5 @@
 export const TARGET_MICROPHONE_RATE = 16000
-export const MICROPHONE_FRAME_SAMPLES = 320
+export const MICROPHONE_FRAME_SAMPLES = 1600
 
 function floatToPcm16(sample: number): number {
 	const clamped = Math.max(-1, Math.min(1, sample))
@@ -16,21 +16,21 @@ export function resamplePcm16(
 	if (input.length === 0) return new Int16Array()
 
 	const ratio = inputRate / outputRate
-	const length = Math.ceil(input.length / ratio)
-	const output = new Int16Array(length)
-	for (let index = 0, position = 0; position < input.length; index++, position += ratio) {
+	const samples: number[] = []
+	for (let position = 0; position < input.length; position += ratio) {
 		const leftIndex = Math.floor(position)
 		const fraction = position - leftIndex
 		const left = input[leftIndex]
 		const right = leftIndex + 1 < input.length ? input[leftIndex + 1] : left
-		output[index] = floatToPcm16(left + (right - left) * fraction)
+		samples.push(floatToPcm16(left + (right - left) * fraction))
 	}
-	return output
+	return Int16Array.from(samples)
 }
 
 export class Pcm16Resampler {
 	private readonly ratio: number
 	private position = 0
+	private consumed = 0
 	private previous: number | null = null
 
 	constructor(inputRate: number, outputRate = TARGET_MICROPHONE_RATE) {
@@ -44,28 +44,55 @@ export class Pcm16Resampler {
 	push(input: Float32Array): Int16Array {
 		if (input.length === 0) return new Int16Array()
 
+		const start = this.consumed
+		const end = start + input.length
 		const output: number[] = []
-		let deferred = false
-		while (this.position < input.length) {
+		while (this.position < end) {
 			const leftIndex = Math.floor(this.position)
 			const fraction = this.position - leftIndex
-			if (leftIndex === input.length - 1 && fraction > 0) {
-				deferred = true
+			let left: number
+			let right: number
+
+			if (leftIndex < start) {
+				if (leftIndex !== start - 1 || this.previous === null) break
+				left = this.previous
+				right = input[0]
+			} else if (leftIndex < end - 1) {
+				const localIndex = leftIndex - start
+				left = input[localIndex]
+				right = input[localIndex + 1]
+			} else if (leftIndex === end - 1) {
+				const localIndex = leftIndex - start
+				left = input[localIndex]
+				if (fraction > 0) break
+				right = left
+			} else {
 				break
 			}
 
-			let left = input[leftIndex]
-			if (leftIndex === 0 && fraction > 0 && this.position < 1 && this.previous !== null) {
-				left = this.previous
-			}
-			const right = leftIndex + 1 < input.length ? input[leftIndex + 1] : left
 			output.push(floatToPcm16(left + (right - left) * fraction))
 			this.position += this.ratio
 		}
 
-		if (deferred) this.position -= Math.floor(this.position)
-		else if (this.position >= input.length) this.position -= input.length
+		this.consumed = end
 		this.previous = input[input.length - 1]
+		return Int16Array.from(output)
+	}
+
+	flush(): Int16Array {
+		if (this.previous === null) return new Int16Array()
+
+		const output: number[] = []
+		while (this.position < this.consumed) {
+			const leftIndex = Math.floor(this.position)
+			const fraction = this.position - leftIndex
+			if (leftIndex === this.consumed - 1) {
+				output.push(floatToPcm16(this.previous))
+				this.position += this.ratio
+				continue
+			}
+			break
+		}
 		return Int16Array.from(output)
 	}
 }
@@ -76,6 +103,15 @@ class MicoMicrophoneProcessor extends AudioWorkletProcessor {
 		super()
 		this.samples = new Float32Array(1024)
 		this.offset = 0
+		this.port.onmessage = (event) => {
+			if (event.data?.type !== 'flush') return
+			if (this.offset > 0) {
+				const copy = this.samples.slice(0, this.offset)
+				this.port.postMessage({ type: 'pcm', buffer: copy.buffer }, [copy.buffer])
+				this.offset = 0
+			}
+			this.port.postMessage({ type: 'flushed', id: event.data.id })
+		}
 	}
 	process(inputs, outputs) {
 		const input = inputs[0]?.[0]
@@ -88,15 +124,9 @@ class MicoMicrophoneProcessor extends AudioWorkletProcessor {
 				this.offset += count
 				if (this.offset === this.samples.length) {
 					const copy = this.samples.slice()
-					this.port.postMessage(copy.buffer, [copy.buffer])
+					this.port.postMessage({ type: 'pcm', buffer: copy.buffer }, [copy.buffer])
 					this.offset = 0
 				}
-			}
-		}
-		const output = outputs[0]
-		if (output?.length && input?.length) {
-			for (let channel = 0; channel < output.length; channel++) {
-				output[channel].set(input)
 			}
 		}
 		return true
@@ -108,7 +138,7 @@ registerProcessor('mico-microphone', MicoMicrophoneProcessor)
 export async function openMicrophone(
 	onPcm: (pcm: Int16Array) => void,
 	onEnded: () => void,
-): Promise<{ stop(): void }> {
+): Promise<{ stop(): Promise<void> }> {
 	const mediaDevices = typeof navigator === 'undefined' ? undefined : navigator.mediaDevices
 	if (!mediaDevices?.getUserMedia) throw new Error('Microphone capture is not supported')
 
@@ -121,11 +151,16 @@ export async function openMicrophone(
 	let context: AudioContext | null = null
 	let source: MediaStreamAudioSourceNode | null = null
 	let worklet: AudioWorkletNode | null = null
-	let processor: ScriptProcessorNode | null = null
 	let gain: GainNode | null = null
 	let stopped = false
+	let stopping = false
 	let ended = false
 	let pcmCarry = new Int16Array()
+	let resampler: Pcm16Resampler | null = null
+	let flushCaptureTail: (() => void) | null = null
+	let stopPromise: Promise<void> | null = null
+	let workletFlushResolve: (() => void) | null = null
+	let workletFlushReject: ((error: Error) => void) | null = null
 	const trackListeners = new Map<MediaStreamTrack, () => void>()
 	let contextStateListener: (() => void) | null = null
 
@@ -148,12 +183,10 @@ export async function openMicrophone(
 		try {
 			source?.disconnect()
 			worklet?.disconnect()
-			processor?.disconnect()
 			gain?.disconnect()
 		} catch {}
 		source = null
 		worklet = null
-		processor = null
 		gain = null
 		for (const track of tracks) {
 			try {
@@ -170,25 +203,80 @@ export async function openMicrophone(
 		}
 	}
 
-	const unexpectedEnd = () => {
-		if (stopped || ended) return
-		ended = true
-		try {
-			flushPcmCarry()
-		} finally {
-			cleanupResources()
-			onEnded()
-		}
+	const flushWorklet = async (): Promise<void> => {
+		if (!worklet) throw new Error('Microphone worklet is unavailable; the final audio segment may be incomplete')
+		await new Promise<void>((resolve, reject) => {
+			let settled = false
+			let timeout: ReturnType<typeof setTimeout> | null = null
+			const finishResolve = () => {
+				if (settled) return
+				settled = true
+				if (timeout) clearTimeout(timeout)
+				workletFlushResolve = null
+				workletFlushReject = null
+				resolve()
+			}
+			const finishReject = (error: Error) => {
+				if (settled) return
+				settled = true
+				if (timeout) clearTimeout(timeout)
+				workletFlushResolve = null
+				workletFlushReject = null
+				reject(error)
+			}
+			workletFlushResolve = finishResolve
+			workletFlushReject = finishReject
+			timeout = setTimeout(
+				() => finishReject(new Error('Timed out waiting for microphone tail flush; the final audio segment may be incomplete')),
+				250,
+			)
+			try {
+				worklet?.port.postMessage({ type: 'flush', id: 'mico-stop' })
+			} catch (error) {
+				finishReject(
+					new Error(
+						`Could not request the microphone tail flush: ${error instanceof Error ? error.message : 'unknown worklet error'}`,
+					),
+				)
+			}
+		})
 	}
 
-	const stop = () => {
-		if (stopped || ended) return
-		stopped = true
-		try {
-			flushPcmCarry()
-		} finally {
-			cleanupResources()
-		}
+	const unexpectedEnd = () => {
+		if (stopping || stopped || ended) return
+		ended = true
+		void (async () => {
+			try {
+				await flushWorklet()
+				flushCaptureTail?.()
+			} finally {
+				stopped = true
+				cleanupResources()
+				onEnded()
+			}
+		})()
+	}
+
+	const stop = (): Promise<void> => {
+		if (stopPromise) return stopPromise
+		if (stopped || ended) return Promise.resolve()
+		stopPromise = (async () => {
+			stopping = true
+			try {
+				await flushWorklet()
+			} catch (error) {
+				stopped = true
+				cleanupResources()
+				throw error
+			}
+			stopped = true
+			try {
+				flushCaptureTail?.()
+			} finally {
+				cleanupResources()
+			}
+		})()
+		return stopPromise
 	}
 
 	for (const track of tracks) {
@@ -219,7 +307,7 @@ export async function openMicrophone(
 		context.addEventListener('statechange', contextStateListener)
 
 		source = context.createMediaStreamSource(stream)
-		const resampler = new Pcm16Resampler(context.sampleRate || 48000)
+		resampler = new Pcm16Resampler(context.sampleRate || 48000)
 		const inputQueue: Float32Array[] = []
 		const appendPcm = (pcm: Int16Array) => {
 			const combined = new Int16Array(pcmCarry.length + pcm.length)
@@ -233,63 +321,73 @@ export async function openMicrophone(
 			}
 		}
 		const drainInput = (input: Float32Array) => {
+			if (stopped) return
 			if (inputQueue.length >= 32) inputQueue.shift()
 			inputQueue.push(input)
 			while (inputQueue.length > 0) {
 				const queued = inputQueue.shift()
-				if (queued) appendPcm(resampler.push(queued))
+				if (queued) appendPcm(resampler?.push(queued) ?? new Int16Array())
 			}
 		}
+		flushCaptureTail = () => {
+			if (resampler) appendPcm(resampler.flush())
+			flushPcmCarry()
+		}
 
-		let workletSetup = false
 		const WorkletConstructor = (
 			globalThis as typeof globalThis & {
 				AudioWorkletNode?: typeof AudioWorkletNode
 			}
 		).AudioWorkletNode
-		if (context.audioWorklet && WorkletConstructor && typeof Blob !== 'undefined' && typeof URL !== 'undefined') {
-			let moduleUrl: string | null = null
-			try {
-				const blob = new Blob([WORKLET_SOURCE], { type: 'application/javascript' })
-				moduleUrl = URL.createObjectURL(blob)
-				await context.audioWorklet.addModule(moduleUrl)
-				worklet = new WorkletConstructor(context, 'mico-microphone', {
-					numberOfInputs: 1,
-					numberOfOutputs: 1,
-					outputChannelCount: [1],
-				})
-				worklet.port.onmessage = (event: MessageEvent<ArrayBuffer>) => {
-					if (stopped || ended) return
-					if (event.data instanceof ArrayBuffer) {
-						drainInput(new Float32Array(event.data))
-					}
-				}
-				worklet.onprocessorerror = () => unexpectedEnd()
-				source.connect(worklet)
-				workletSetup = true
-			} catch {}
-			finally {
-				if (moduleUrl) URL.revokeObjectURL(moduleUrl)
-			}
+		if (!context.audioWorklet || !WorkletConstructor || typeof Blob === 'undefined' || typeof URL === 'undefined') {
+			throw new Error('AudioWorklet microphone capture is not supported')
 		}
 
-		if (!workletSetup) {
-			if (typeof context.createScriptProcessor !== 'function') {
-				throw new Error('No supported Web Audio capture processor')
+		let moduleUrl: string | null = null
+		try {
+			const blob = new Blob([WORKLET_SOURCE], { type: 'application/javascript' })
+			moduleUrl = URL.createObjectURL(blob)
+			await context.audioWorklet.addModule(moduleUrl)
+			worklet = new WorkletConstructor(context, 'mico-microphone', {
+				numberOfInputs: 1,
+				numberOfOutputs: 1,
+				outputChannelCount: [1],
+			})
+			worklet.port.onmessage = (event: MessageEvent<unknown>) => {
+				if (stopped) return
+				const data = event.data as
+					| ArrayBuffer
+					| { type?: string; buffer?: ArrayBuffer }
+					| null
+				if (data instanceof ArrayBuffer) {
+					drainInput(new Float32Array(data))
+					return
+				}
+				if (data && typeof data === 'object' && data.type === 'pcm' && data.buffer instanceof ArrayBuffer) {
+					drainInput(new Float32Array(data.buffer))
+				}
+				if (data && typeof data === 'object' && data.type === 'flushed') {
+					workletFlushResolve?.()
+				}
 			}
-			processor = context.createScriptProcessor(2048, 1, 1)
-			processor.onaudioprocess = (event) => {
-				if (stopped || ended) return
-				drainInput(event.inputBuffer.getChannelData(0).slice())
+			worklet.onprocessorerror = () => {
+				if (stopping) {
+					workletFlushReject?.(
+						new Error('Microphone worklet processor failed while flushing; the final audio segment may be incomplete'),
+					)
+					return
+				}
+				unexpectedEnd()
 			}
-			source.connect(processor)
+			source.connect(worklet)
+		} finally {
+			if (moduleUrl) URL.revokeObjectURL(moduleUrl)
 		}
 
 		gain = context.createGain()
 		gain.gain.value = 0
 		gain.connect(context.destination)
-		if (worklet) worklet.connect(gain)
-		else if (processor) processor.connect(gain)
+		worklet.connect(gain)
 
 		if (stopped || ended) throw new Error('Microphone capture ended')
 		return { stop }
