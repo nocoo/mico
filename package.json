@@ -15,6 +15,10 @@
 		"build": "tsc --noEmit && vite build",
 		"check": "biome check . && tsc --noEmit",
 		"test": "node --test src/**/*.test.ts scripts/*.test.ts",
+		"test:unit": "node --test src/web/*.test.ts src/server/store.test.ts",
+		"test:api": "node --test src/server/api.test.ts src/server/index.test.ts",
+		"test:cli": "node --test src/cli/index.test.ts",
+		"test:examples": "node --test scripts/examples.test.ts",
 		"test:browser": "playwright test"
 	},
 	"dependencies": {

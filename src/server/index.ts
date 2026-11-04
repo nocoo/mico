@@ -20,16 +20,19 @@ function readJson(req: IncomingMessage): Promise<unknown> {
 	return new Promise((resolveBody, reject) => {
 		const chunks: Buffer[] = []
 		let size = 0
+		let tooLarge = false
 		req.on('data', (chunk: Buffer) => {
+			if (tooLarge) return
 			size += chunk.length
 			if (size > 1024 * 1024) {
+				tooLarge = true
 				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 1 MB'))
-				req.destroy()
 				return
 			}
 			chunks.push(chunk)
 		})
 		req.on('end', () => {
+			if (tooLarge) return
 			try {
 				const text = Buffer.concat(chunks).toString('utf8')
 				resolveBody(text.length === 0 ? undefined : JSON.parse(text))

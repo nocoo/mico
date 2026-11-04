@@ -4,6 +4,17 @@
 
 - A source-only investigator read the live board database despite being told not to access it. Give delegated investigations an isolated checkout without the daily board instead of relying on prompt instructions alone.
 
+## Automated test architecture
+
+- A WebSocket broadcast is sent before the HTTP response body is read. Attach the next-message listener before issuing the mutation, or the assertion waits for a message that was already delivered.
+- Rejecting a foreign WebSocket origin must assert the 403 handshake and treat `open` as a failure. `terminate()` after a failed handshake emits a late error, so absorb it with a long-lived error listener before cleanup.
+- Absence assertions need a lifecycle, not a sleep: count browser `POST /api/operations` requests for cancelled gestures, and use a following successful mutation as a message barrier to prove a rejected batch did not broadcast.
+- Reseeding a board with the same shape count cannot be awaited by count alone; wait for the returned revision and for new ids to appear and old ids to disappear.
+- Node tests that wait on child processes, sockets or daemon startup need bounded waits and cleanup that starts before the first `await`. `daemon.close()` does not force-terminate subscriber sockets.
+- Node fetch refuses forbidden ports (for example port 1) before opening a socket. Use an allocated, then closed, ephemeral port to test a real connection refusal.
+- For oversized request bodies, drain instead of destroying the socket so the client receives the explicit 413 and the board stays unchanged.
+- Pure logic and store tests stay the fast baseline; HTTP, CLI and browser layers exist to catch wiring and contract regressions, so success assertions must check persisted values, not only status codes.
+
 ## Frame containers, HTML cards and membership
 
 - A foreignObject captures pointer events across its whole box, not just the visible HTML child. Measure the `.card-pill` width and drive a transparent SVG hit rect from it; keep the foreignObject at `pointer-events: none`. Tests must click `.card-pill`, not the handle group bounding box, which still spans the foreignObject.

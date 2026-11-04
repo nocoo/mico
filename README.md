@@ -65,13 +65,19 @@ Browser page zoom is disabled with a viewport lock plus keyboard/gesture interce
 ## Verification
 
 ```sh
-pnpm check
-pnpm test
+pnpm check          # Biome + TypeScript
+pnpm test           # pure logic, store, HTTP API, CLI and agent examples
+pnpm test:unit      # pure logic + store
+pnpm test:api       # HTTP and WebSocket daemon contract
+pnpm test:cli       # real daemon + CLI commands
+pnpm test:examples  # agent example batches through the validated store
+pnpm test:browser   # Playwright browser interaction
 pnpm build
-pnpm test:browser
 ```
 
-Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers frame alignment, icon/tooltip behavior, dock property editing, inline and panel text edits, frame label selection and member travel, automatic frame membership on draw and drag, frame-only connectors, HTML card rendering and title editing, drag snapping with alignment guides, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its color panel visible at narrow and wide widths.
+Testing layers, isolation rules, the agent API contract and the coverage map live in [`docs/testing.md`](docs/testing.md).
+
+Browser checks require installed Google Chrome and run sequentially on `127.0.0.1:27063`, with an isolated daemon on `57063`, a temporary SQLite database, and a separate Vite cache. The suite refuses to seed another origin and never changes the daily `.mico` board. It covers tool buttons and shortcuts, every drawing primitive, dock options, panel edits, inline text editing, frame label selection and member travel, automatic frame membership on draw and drag, frame-only connectors, HTML card rendering and title editing, drag snapping with alignment guides, connector creation/rebinding/cancellation, keyboard alternatives, concurrent API edits, grid/world alignment and unchanged frame geometry from 5% to 300% zoom. Responsive checks keep every dock control and its color panel visible at narrow and wide widths.
 
 ## MVP limits
 

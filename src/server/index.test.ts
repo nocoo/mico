@@ -10,7 +10,10 @@ import { test } from 'node:test'
 import WebSocket from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { DEV_ORIGIN } from '../shared/config.ts'
-import { createDaemon } from './index.ts'
+import type { Board } from '../shared/types.ts'
+import { createDaemon, type Daemon } from './index.ts'
+
+const WAIT_MS = 5000
 
 function getBoard(port: number, origin?: string): Promise<number> {
 	return new Promise((resolve, reject) => {
@@ -33,118 +36,331 @@ function getBoard(port: number, origin?: string): Promise<number> {
 	})
 }
 
-test('HTTPS-origin subscribers receive API writes and reconnect to the latest board', async () => {
+interface LiveContext {
+	daemon: Daemon
+	directory: string
+	port: number
+	url: string
+}
+
+async function withLiveDaemon(run: (context: LiveContext) => Promise<void>): Promise<void> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-live-'))
-	const daemon = createDaemon({ port: 0, dbPath: join(directory, 'board.sqlite') })
-	daemon.server.listen(0, '127.0.0.1')
-	await once(daemon.server, 'listening')
-	const address = daemon.server.address()
-	assert.ok(address && typeof address !== 'string')
-	const url = `http://127.0.0.1:${address.port}`
-	const headers = { origin: DEV_ORIGIN }
-	const socket = new WebSocket(`${url.replace('http:', 'ws:')}/api/events`, { headers })
-	let reconnected: WebSocket | undefined
+	let daemon: Daemon | undefined
 	try {
-		const [initial] = await once(socket, 'message')
-		assert.deepEqual(JSON.parse(initial.toString()), { revision: 0, shapes: [] })
-		const live = await fetch(`${url}/api/live`, { headers })
-		assert.equal(live.status, 200)
-		assert.deepEqual(await live.json(), { status: 'ok', version: manifest.version })
-		const wrongMethod = await fetch(`${url}/api/live`, { method: 'POST', headers })
-		assert.equal(wrongMethod.status, 405)
-		assert.equal(wrongMethod.headers.get('allow'), 'GET, OPTIONS')
-		const preflight = await fetch(`${url}/api/live`, { method: 'OPTIONS', headers })
-		assert.equal(preflight.status, 204)
-		assert.equal(preflight.headers.get('access-control-allow-origin'), DEV_ORIGIN)
-		const event = once(socket, 'message')
-		const response = await fetch(`${url}/api/operations`, {
-			method: 'POST',
-			headers: { ...headers, 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				expectedRevision: 0,
-				operations: [
-					{
-						type: 'create',
-						shape: {
-							id: 'live-node',
-							type: 'rectangle',
-							x: 100,
-							y: 100,
-							w: 200,
-							h: 80,
-							color: '#5b5fc7',
-							text: 'Live API update',
-						},
-					},
-				],
-			}),
+		daemon = createDaemon({ port: 0, dbPath: join(directory, 'board.sqlite') })
+		daemon.server.listen(0, '127.0.0.1')
+		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
+		const address = daemon.server.address()
+		assert.ok(address && typeof address !== 'string')
+		await run({
+			daemon,
+			directory,
+			port: address.port,
+			url: `http://127.0.0.1:${address.port}`,
 		})
-		assert.equal(response.status, 200)
-		const board = await response.json()
-		const [message] = await event
-		assert.deepEqual(JSON.parse(message.toString()), board)
-		socket.close()
-		await once(socket, 'close')
-		reconnected = new WebSocket(`${url.replace('http:', 'ws:')}/api/events`, { headers })
-		const [snapshot] = await once(reconnected, 'message')
-		assert.deepEqual(JSON.parse(snapshot.toString()), board)
 	} finally {
-		socket.terminate()
-		reconnected?.terminate()
-		daemon.close()
+		if (daemon) {
+			for (const client of daemon.wss.clients) client.terminate()
+			daemon.close()
+		}
 		rmSync(directory, { recursive: true, force: true })
 	}
+}
+
+test('HTTPS-origin subscribers receive API writes and reconnect to the latest board', async () => {
+	await withLiveDaemon(async ({ url }) => {
+		const headers = { origin: DEV_ORIGIN }
+		const socket = new WebSocket(`${url.replace('http:', 'ws:')}/api/events`, { headers })
+		let reconnected: WebSocket | undefined
+		try {
+			const [initial] = await once(socket, 'message', { signal: AbortSignal.timeout(WAIT_MS) })
+			assert.deepEqual(JSON.parse(initial.toString()), { revision: 0, shapes: [] })
+			const live = await fetch(`${url}/api/live`, { headers })
+			assert.equal(live.status, 200)
+			assert.deepEqual(await live.json(), { status: 'ok', version: manifest.version })
+			const wrongMethod = await fetch(`${url}/api/live`, { method: 'POST', headers })
+			assert.equal(wrongMethod.status, 405)
+			assert.equal(wrongMethod.headers.get('allow'), 'GET, OPTIONS')
+			const preflight = await fetch(`${url}/api/live`, { method: 'OPTIONS', headers })
+			assert.equal(preflight.status, 204)
+			assert.equal(preflight.headers.get('access-control-allow-origin'), DEV_ORIGIN)
+			const event = once(socket, 'message', { signal: AbortSignal.timeout(WAIT_MS) })
+			const response = await fetch(`${url}/api/operations`, {
+				method: 'POST',
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					expectedRevision: 0,
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'live-node',
+								type: 'rectangle',
+								x: 100,
+								y: 100,
+								w: 200,
+								h: 80,
+								color: '#5b5fc7',
+								text: 'Live API update',
+							},
+						},
+					],
+				}),
+			})
+			assert.equal(response.status, 200)
+			const board = await response.json()
+			const [message] = await event
+			assert.deepEqual(JSON.parse(message.toString()), board)
+			socket.close()
+			await once(socket, 'close', { signal: AbortSignal.timeout(WAIT_MS) })
+			reconnected = new WebSocket(`${url.replace('http:', 'ws:')}/api/events`, { headers })
+			const [snapshot] = await once(reconnected, 'message', {
+				signal: AbortSignal.timeout(WAIT_MS),
+			})
+			assert.deepEqual(JSON.parse(snapshot.toString()), board)
+		} finally {
+			socket.terminate()
+			reconnected?.terminate()
+		}
+	})
 })
 
 test('invalid browser origins and malformed WebSocket frames are isolated', async () => {
-	const directory = mkdtempSync(join(tmpdir(), 'mico-http-'))
-	const daemon = createDaemon({ port: 0, dbPath: join(directory, 'board.sqlite') })
-	daemon.server.listen(0, '127.0.0.1')
-	await once(daemon.server, 'listening')
-	const address = daemon.server.address()
-	assert.ok(address && typeof address !== 'string')
-	const port = address.port
-	const good = new WebSocket(`ws://127.0.0.1:${port}/api/events`, {
-		headers: { origin: DEV_ORIGIN },
+	await withLiveDaemon(async ({ directory, port }) => {
+		const good = new WebSocket(`ws://127.0.0.1:${port}/api/events`, {
+			headers: { origin: DEV_ORIGIN },
+		})
+		let bad: ReturnType<typeof connect> | undefined
+		let blocked: WebSocket | undefined
+		try {
+			await once(good, 'open', { signal: AbortSignal.timeout(WAIT_MS) })
+			assert.equal(await getBoard(port, 'http://malicious.example'), 403)
+			assert.equal(await getBoard(port, DEV_ORIGIN), 200)
+			assert.equal(await getBoard(port, 'https://other.dev.hexly.ai'), 403)
+			assert.equal(await getBoard(port, 'https://mico.dev.hexly.ai.evil.example'), 403)
+			bad = connect(port, '127.0.0.1')
+			await once(bad, 'connect', { signal: AbortSignal.timeout(WAIT_MS) })
+			bad.write(
+				`GET /api/events HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nOrigin: https://mico.dev.hexly.ai\r\n\r\n`,
+			)
+			const [handshake] = await once(bad, 'data', { signal: AbortSignal.timeout(WAIT_MS) })
+			assert.match(handshake.toString(), /101 Switching Protocols/)
+			bad.write(Buffer.from([0x81, 0x01, 0x61]))
+			await once(bad, 'close', { signal: AbortSignal.timeout(WAIT_MS) })
+			assert.equal(await getBoard(port), 200)
+			assert.equal(good.readyState, WebSocket.OPEN)
+
+			const lock = new DatabaseSync(join(directory, 'board.sqlite'))
+			const originalError = console.error
+			try {
+				lock.exec('BEGIN EXCLUSIVE')
+				console.error = () => {}
+				assert.equal(await getBoard(port), 500)
+				blocked = new WebSocket(`ws://127.0.0.1:${port}/api/events`, {
+					headers: { origin: DEV_ORIGIN },
+				})
+				const [code] = await once(blocked, 'close', { signal: AbortSignal.timeout(WAIT_MS) })
+				assert.equal(code, 1011)
+			} finally {
+				console.error = originalError
+				lock.exec('ROLLBACK')
+				lock.close()
+				blocked?.terminate()
+			}
+			assert.equal(await getBoard(port), 200)
+		} finally {
+			good.terminate()
+			bad?.destroy()
+		}
+	})
+})
+
+interface LiveSocket {
+	socket: WebSocket
+	next(label?: string): Promise<Board>
+}
+
+function liveSocket(url: string): LiveSocket {
+	const socket = new WebSocket(url, { headers: { origin: DEV_ORIGIN } })
+	return {
+		socket,
+		next: (label = 'board') =>
+			new Promise<Board>((resolve, reject) => {
+				const timer = setTimeout(() => {
+					cleanup()
+					reject(new Error(`timed out waiting for ${label}`))
+				}, WAIT_MS)
+				const onMessage = (data: WebSocket.RawData) => {
+					cleanup()
+					resolve(JSON.parse(data.toString()) as Board)
+				}
+				const onError = (error: Error) => {
+					cleanup()
+					reject(error)
+				}
+				const cleanup = () => {
+					clearTimeout(timer)
+					socket.off('message', onMessage)
+					socket.off('error', onError)
+				}
+				socket.on('message', onMessage)
+				socket.on('error', onError)
+			}),
+	}
+}
+
+async function expectRejectedSocket(url: string, origin: string): Promise<void> {
+	const socket = new WebSocket(url, { headers: { origin } })
+	socket.on('error', () => {
+		// The aborted handshake may emit after the rejection has been observed.
 	})
 	try {
-		await once(good, 'open')
-		assert.equal(await getBoard(port, 'http://malicious.example'), 403)
-		assert.equal(await getBoard(port, DEV_ORIGIN), 200)
-		assert.equal(await getBoard(port, 'https://other.dev.hexly.ai'), 403)
-		assert.equal(await getBoard(port, 'https://mico.dev.hexly.ai.evil.example'), 403)
-		const bad = connect(port, '127.0.0.1')
-		await once(bad, 'connect')
-		bad.write(
-			`GET /api/events HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nOrigin: https://mico.dev.hexly.ai\r\n\r\n`,
-		)
-		const [handshake] = await once(bad, 'data')
-		assert.match(handshake.toString(), /101 Switching Protocols/)
-		bad.write(Buffer.from([0x81, 0x01, 0x61]))
-		await once(bad, 'close')
-		assert.equal(await getBoard(port), 200)
-		assert.equal(good.readyState, WebSocket.OPEN)
-
-		const lock = new DatabaseSync(join(directory, 'board.sqlite'))
-		const originalError = console.error
-		try {
-			lock.exec('BEGIN EXCLUSIVE')
-			console.error = () => {}
-			assert.equal(await getBoard(port), 500)
-			const blocked = new WebSocket(`ws://127.0.0.1:${port}/api/events`, {
-				headers: { origin: DEV_ORIGIN },
-			})
-			const [code] = await once(blocked, 'close')
-			assert.equal(code, 1011)
-		} finally {
-			console.error = originalError
-			lock.exec('ROLLBACK')
-			lock.close()
-		}
-		assert.equal(await getBoard(port), 200)
+		await new Promise<void>((resolve, reject) => {
+			const timer = setTimeout(() => {
+				cleanup()
+				reject(new Error('timed out waiting for the WebSocket rejection'))
+			}, WAIT_MS)
+			const onOpen = () => {
+				cleanup()
+				reject(new Error('foreign origin was accepted'))
+			}
+			const onResponse = (_request: unknown, response: { statusCode?: number }) => {
+				cleanup()
+				try {
+					assert.equal(response.statusCode, 403)
+					resolve()
+				} catch (error) {
+					reject(error)
+				}
+			}
+			const onError = (error: Error) => {
+				cleanup()
+				reject(error)
+			}
+			const cleanup = () => {
+				clearTimeout(timer)
+				socket.off('open', onOpen)
+				socket.off('unexpected-response', onResponse)
+				socket.off('error', onError)
+			}
+			socket.on('open', onOpen)
+			socket.on('unexpected-response', onResponse)
+			socket.on('error', onError)
+		})
 	} finally {
-		good.terminate()
-		daemon.close()
-		rmSync(directory, { recursive: true, force: true })
+		try {
+			socket.terminate()
+		} catch {
+			// The rejected handshake leaves nothing to terminate.
+		}
 	}
+}
+
+test('WebSocket rejects foreign origins and broadcasts create, update and delete', async () => {
+	await withLiveDaemon(async ({ url }) => {
+		const wsUrl = `${url.replace('http:', 'ws:')}/api/events`
+		await expectRejectedSocket(wsUrl, 'https://evil.example')
+
+		const first = liveSocket(wsUrl)
+		const second = liveSocket(wsUrl)
+		try {
+			const initialFirst = first.next('initial-1')
+			const initialSecond = second.next('initial-2')
+			assert.deepEqual(await initialFirst, { revision: 0, shapes: [] })
+			assert.deepEqual(await initialSecond, { revision: 0, shapes: [] })
+
+			const createFirst = first.next('create-1')
+			const createSecond = second.next('create-2')
+			const created = await fetch(`${url}/api/operations`, {
+				method: 'POST',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'ws-note',
+								type: 'note',
+								x: 10,
+								y: 10,
+								w: 80,
+								h: 80,
+								color: '#fef3c7',
+								text: 'Live',
+							},
+						},
+					],
+				}),
+			})
+			assert.equal(created.status, 200)
+			const afterCreate = (await created.json()) as Board
+			assert.deepEqual(await createFirst, afterCreate)
+			assert.deepEqual(await createSecond, afterCreate)
+
+			const updateFirst = first.next('update-1')
+			const updateSecond = second.next('update-2')
+			const updated = await fetch(`${url}/api/operations`, {
+				method: 'POST',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					operations: [{ type: 'update', id: 'ws-note', patch: { text: 'Updated' } }],
+				}),
+			})
+			assert.equal(updated.status, 200)
+			const afterUpdate = (await updated.json()) as Board
+			assert.deepEqual(await updateFirst, afterUpdate)
+			assert.deepEqual(await updateSecond, afterUpdate)
+
+			const counts = { first: 0, second: 0 }
+			const countFirst = () => {
+				counts.first += 1
+			}
+			const countSecond = () => {
+				counts.second += 1
+			}
+			first.socket.on('message', countFirst)
+			second.socket.on('message', countSecond)
+			const conflict = await fetch(`${url}/api/operations`, {
+				method: 'POST',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					expectedRevision: 0,
+					operations: [{ type: 'update', id: 'ws-note', patch: { text: 'Stale' } }],
+				}),
+			})
+			assert.equal(conflict.status, 409)
+
+			const barrierFirst = first.next('barrier-1')
+			const barrierSecond = second.next('barrier-2')
+			const barrier = await fetch(`${url}/api/operations`, {
+				method: 'POST',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					operations: [{ type: 'update', id: 'ws-note', patch: { text: 'Barrier' } }],
+				}),
+			})
+			assert.equal(barrier.status, 200)
+			const barrierBoard = (await barrier.json()) as Board
+			assert.deepEqual(await barrierFirst, barrierBoard)
+			assert.deepEqual(await barrierSecond, barrierBoard)
+			first.socket.off('message', countFirst)
+			second.socket.off('message', countSecond)
+			assert.deepEqual(counts, { first: 1, second: 1 })
+
+			const deleteFirst = first.next('delete-1')
+			const deleteSecond = second.next('delete-2')
+			const deleted = await fetch(`${url}/api/operations`, {
+				method: 'POST',
+				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+				body: JSON.stringify({ operations: [{ type: 'delete', id: 'ws-note' }] }),
+			})
+			assert.equal(deleted.status, 200)
+			const afterDelete = (await deleted.json()) as Board
+			assert.deepEqual(await deleteFirst, afterDelete)
+			assert.deepEqual(await deleteSecond, afterDelete)
+		} finally {
+			first.socket.terminate()
+			second.socket.terminate()
+		}
+	})
 })
