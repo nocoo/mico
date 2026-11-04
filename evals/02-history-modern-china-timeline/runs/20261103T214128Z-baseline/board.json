@@ -1,0 +1,566 @@
+{
+	"revision": 4,
+	"shapes": [
+		{
+			"id": "mh-title",
+			"type": "text",
+			"x": 70,
+			"y": 22,
+			"w": 850,
+			"h": 54,
+			"color": "#0f172a",
+			"text": "中国近代史：鸦片战争前后 → 辛亥革命（1840—1912）"
+		},
+		{
+			"id": "mh-subtitle",
+			"type": "text",
+			"x": 930,
+			"y": 34,
+			"w": 490,
+			"h": 36,
+			"color": "#475569",
+			"text": "海疆通商与割让｜边疆领土变化｜关键近代化阶段"
+		},
+		{
+			"id": "mh-sea-label",
+			"type": "rectangle",
+			"x": 55,
+			"y": 112,
+			"w": 210,
+			"h": 48,
+			"color": "#0369a1",
+			"text": "海疆：割让／通商口岸"
+		},
+		{
+			"id": "sea-1842",
+			"type": "rectangle",
+			"x": 70,
+			"y": 176,
+			"w": 300,
+			"h": 118,
+			"color": "#dbeafe",
+			"text": ""
+		},
+		{
+			"id": "sea-ship",
+			"type": "ellipse",
+			"x": 24,
+			"y": 188,
+			"w": 72,
+			"h": 72,
+			"color": "#1e40af",
+			"text": "英舰"
+		},
+		{
+			"id": "sea-1858",
+			"type": "rectangle",
+			"x": 420,
+			"y": 176,
+			"w": 300,
+			"h": 118,
+			"color": "#e0f2fe",
+			"text": ""
+		},
+		{
+			"id": "sea-port",
+			"type": "ellipse",
+			"x": 384,
+			"y": 188,
+			"w": 72,
+			"h": 72,
+			"color": "#0369a1",
+			"text": "港口"
+		},
+		{
+			"id": "sea-1860",
+			"type": "rectangle",
+			"x": 770,
+			"y": 176,
+			"w": 300,
+			"h": 118,
+			"color": "#cffafe",
+			"text": ""
+		},
+		{
+			"id": "sea-tianjin",
+			"type": "ellipse",
+			"x": 734,
+			"y": 188,
+			"w": 72,
+			"h": 72,
+			"color": "#075985",
+			"text": "天津"
+		},
+		{
+			"id": "sea-1895",
+			"type": "rectangle",
+			"x": 1120,
+			"y": 176,
+			"w": 300,
+			"h": 118,
+			"color": "#bfdbfe",
+			"text": ""
+		},
+		{
+			"id": "sea-island",
+			"type": "ellipse",
+			"x": 1084,
+			"y": 188,
+			"w": 72,
+			"h": 72,
+			"color": "#1e3a8a",
+			"text": "岛屿"
+		},
+		{
+			"id": "mh-main-label",
+			"type": "rectangle",
+			"x": 55,
+			"y": 310,
+			"w": 210,
+			"h": 48,
+			"color": "#b45309",
+			"text": "关键阶段：先后箭头"
+		},
+		{
+			"id": "stage-1840",
+			"type": "rectangle",
+			"x": 45,
+			"y": 376,
+			"w": 240,
+			"h": 150,
+			"color": "#fee2e2",
+			"text": ""
+		},
+		{
+			"id": "person-lin",
+			"type": "ellipse",
+			"x": 12,
+			"y": 350,
+			"w": 76,
+			"h": 76,
+			"color": "#991b1b",
+			"text": "林则徐"
+		},
+		{
+			"id": "stage-1858",
+			"type": "rectangle",
+			"x": 340,
+			"y": 376,
+			"w": 240,
+			"h": 150,
+			"color": "#ffedd5",
+			"text": ""
+		},
+		{
+			"id": "stage-1861",
+			"type": "rectangle",
+			"x": 635,
+			"y": 376,
+			"w": 240,
+			"h": 150,
+			"color": "#fef3c7",
+			"text": ""
+		},
+		{
+			"id": "stage-1898",
+			"type": "rectangle",
+			"x": 930,
+			"y": 376,
+			"w": 240,
+			"h": 150,
+			"color": "#ede9fe",
+			"text": ""
+		},
+		{
+			"id": "person-kangliang",
+			"type": "ellipse",
+			"x": 897,
+			"y": 350,
+			"w": 76,
+			"h": 76,
+			"color": "#5b21b6",
+			"text": "康梁"
+		},
+		{
+			"id": "stage-1911",
+			"type": "rectangle",
+			"x": 1190,
+			"y": 376,
+			"w": 240,
+			"h": 150,
+			"color": "#d1fae5",
+			"text": ""
+		},
+		{
+			"id": "person-sun",
+			"type": "ellipse",
+			"x": 1157,
+			"y": 350,
+			"w": 76,
+			"h": 76,
+			"color": "#047857",
+			"text": "孙文"
+		},
+		{
+			"id": "main-arrow-1840-1858",
+			"type": "connector",
+			"from": "stage-1840",
+			"to": "stage-1858",
+			"color": "#7f1d1d",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "main-arrow-1858-1861",
+			"type": "connector",
+			"from": "stage-1858",
+			"to": "stage-1861",
+			"color": "#9a3412",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "main-arrow-1861-1898",
+			"type": "connector",
+			"from": "stage-1861",
+			"to": "stage-1898",
+			"color": "#92400e",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "main-arrow-1898-1911",
+			"type": "connector",
+			"from": "stage-1898",
+			"to": "stage-1911",
+			"color": "#047857",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "main-arrow-label",
+			"type": "text",
+			"x": 635,
+			"y": 540,
+			"w": 300,
+			"h": 40,
+			"color": "#64748b",
+			"text": "危机 — 自救与变革 — 革命"
+		},
+		{
+			"id": "mh-border-label",
+			"type": "rectangle",
+			"x": 55,
+			"y": 610,
+			"w": 210,
+			"h": 48,
+			"color": "#7f1d1d",
+			"text": "边疆：领土变化"
+		},
+		{
+			"id": "border-1858",
+			"type": "rectangle",
+			"x": 360,
+			"y": 680,
+			"w": 390,
+			"h": 150,
+			"color": "#fee2e2",
+			"text": ""
+		},
+		{
+			"id": "border-1858-map",
+			"type": "ellipse",
+			"x": 318,
+			"y": 700,
+			"w": 70,
+			"h": 70,
+			"color": "#991b1b",
+			"text": "北岸"
+		},
+		{
+			"id": "border-river",
+			"type": "line",
+			"x": 520,
+			"y": 830,
+			"w": 120,
+			"h": -26,
+			"color": "#0369a1"
+		},
+		{
+			"id": "border-1860",
+			"type": "rectangle",
+			"x": 820,
+			"y": 680,
+			"w": 390,
+			"h": 150,
+			"color": "#fecaca",
+			"text": ""
+		},
+		{
+			"id": "border-1860-map",
+			"type": "ellipse",
+			"x": 778,
+			"y": 700,
+			"w": 70,
+			"h": 70,
+			"color": "#7f1d1d",
+			"text": "江东"
+		},
+		{
+			"id": "border-arrow",
+			"type": "connector",
+			"from": "border-1858",
+			"to": "border-1860",
+			"color": "#7f1d1d",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "mh-sea-arrow-1842-1858",
+			"type": "connector",
+			"from": "sea-1842",
+			"to": "sea-1858",
+			"color": "#0369a1",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "mh-sea-arrow-1858-1860",
+			"type": "connector",
+			"from": "sea-1858",
+			"to": "sea-1860",
+			"color": "#0369a1",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "mh-sea-arrow-1860-1895",
+			"type": "connector",
+			"from": "sea-1860",
+			"to": "sea-1895",
+			"color": "#0369a1",
+			"fromAnchor": 5,
+			"toAnchor": 7
+		},
+		{
+			"id": "legend-1",
+			"type": "text",
+			"x": 70,
+			"y": 858,
+			"w": 220,
+			"h": 28,
+			"color": "#0369a1",
+			"text": "蓝色：海疆变化"
+		},
+		{
+			"id": "legend-2",
+			"type": "text",
+			"x": 320,
+			"y": 858,
+			"w": 220,
+			"h": 28,
+			"color": "#7f1d1d",
+			"text": "红色：边疆变化"
+		},
+		{
+			"id": "legend-3",
+			"type": "text",
+			"x": 570,
+			"y": 858,
+			"w": 360,
+			"h": 28,
+			"color": "#475569",
+			"text": "箭头：阶段和地区变动的先后关系"
+		},
+		{
+			"id": "legend-4",
+			"type": "text",
+			"x": 930,
+			"y": 858,
+			"w": 450,
+			"h": 28,
+			"color": "#059669",
+			"text": "人物：林则徐｜康梁｜孙文 · 地点：武昌、天津、台湾等"
+		},
+		{
+			"id": "sea-1842-text",
+			"type": "text",
+			"x": 100,
+			"y": 188,
+			"w": 250,
+			"h": 92,
+			"color": "#1e3a8a",
+			"text": "1842《南京条约》\n香港岛割让英国\n五口通商：广·厦·福·宁·沪"
+		},
+		{
+			"id": "sea-1858-text",
+			"type": "text",
+			"x": 450,
+			"y": 188,
+			"w": 250,
+			"h": 92,
+			"color": "#075985",
+			"text": "1858《天津条约》\n增开牛庄、登州、台湾、\n潮州、琼州"
+		},
+		{
+			"id": "sea-1860-text",
+			"type": "text",
+			"x": 800,
+			"y": 188,
+			"w": 250,
+			"h": 92,
+			"color": "#155e75",
+			"text": "1860《北京条约》\n天津正式开埠\n沿海通商口岸继续扩展"
+		},
+		{
+			"id": "sea-1895-text",
+			"type": "text",
+			"x": 1150,
+			"y": 188,
+			"w": 250,
+			"h": 92,
+			"color": "#1e3a8a",
+			"text": "1895《马关条约》\n台湾、澎湖割让日本"
+		},
+		{
+			"id": "stage-1840-text",
+			"type": "text",
+			"x": 95,
+			"y": 392,
+			"w": 180,
+			"h": 120,
+			"color": "#991b1b",
+			"text": "1840—1842鸦片战争\n林则徐虎门销烟\n《南京条约》\n被动开埠"
+		},
+		{
+			"id": "stage-1858-text",
+			"type": "text",
+			"x": 390,
+			"y": 392,
+			"w": 180,
+			"h": 120,
+			"color": "#9a3412",
+			"text": "1858—1860\n第二次鸦片战争\n《天津条约》/《北京条约》\n条约体系加深"
+		},
+		{
+			"id": "stage-1861-text",
+			"type": "text",
+			"x": 685,
+			"y": 392,
+			"w": 180,
+			"h": 120,
+			"color": "#92400e",
+			"text": "1861—1895洋务运动\n自强求富\n制造局、造船局\n甲午战败促危机"
+		},
+		{
+			"id": "stage-1898-text",
+			"type": "text",
+			"x": 980,
+			"y": 392,
+			"w": 180,
+			"h": 120,
+			"color": "#5b21b6",
+			"text": "1898戊戌维新\n康有为·梁启超\n百日维新\n改革受阻"
+		},
+		{
+			"id": "stage-1911-text",
+			"type": "text",
+			"x": 1240,
+			"y": 392,
+			"w": 180,
+			"h": 120,
+			"color": "#047857",
+			"text": "1911—1912辛亥革命\n武昌起义10.10\n清帝退位\n共和肇立"
+		},
+		{
+			"id": "border-1858-text",
+			"type": "text",
+			"x": 390,
+			"y": 696,
+			"w": 330,
+			"h": 120,
+			"color": "#991b1b",
+			"text": "1858《瑷珲条约》\n黑龙江北岸归俄罗斯\n中俄以黑龙江为界"
+		},
+		{
+			"id": "border-1860-text",
+			"type": "text",
+			"x": 850,
+			"y": 696,
+			"w": 330,
+			"h": 120,
+			"color": "#991b1b",
+			"text": "1860《北京条约》\n乌苏里江以东地区\n割让给俄罗斯"
+		},
+		{
+			"id": "sea-1842-note",
+			"type": "text",
+			"x": 70,
+			"y": 300,
+			"w": 300,
+			"h": 28,
+			"color": "#0369a1",
+			"text": "1842：五口通商始于被动开埠"
+		},
+		{
+			"id": "sea-1895-note",
+			"type": "text",
+			"x": 1120,
+			"y": 300,
+			"w": 300,
+			"h": 28,
+			"color": "#1e3a8a",
+			"text": "1895：台湾、澎湖割让日本"
+		},
+		{
+			"id": "main-period-1840",
+			"type": "text",
+			"x": 70,
+			"y": 538,
+			"w": 220,
+			"h": 32,
+			"color": "#991b1b",
+			"text": "1840 · 鸦片战争与开埠"
+		},
+		{
+			"id": "main-period-1858",
+			"type": "text",
+			"x": 365,
+			"y": 538,
+			"w": 220,
+			"h": 32,
+			"color": "#9a3412",
+			"text": "1858—1860 · 冲突深化"
+		},
+		{
+			"id": "main-period-1861",
+			"type": "text",
+			"x": 660,
+			"y": 538,
+			"w": 220,
+			"h": 32,
+			"color": "#92400e",
+			"text": "1861—1895 · 自强求富"
+		},
+		{
+			"id": "main-period-1898",
+			"type": "text",
+			"x": 955,
+			"y": 538,
+			"w": 220,
+			"h": 32,
+			"color": "#5b21b6",
+			"text": "1898 · 制度变革尝试"
+		},
+		{
+			"id": "main-period-1911",
+			"type": "text",
+			"x": 1215,
+			"y": 538,
+			"w": 220,
+			"h": 32,
+			"color": "#047857",
+			"text": "1911—1912 · 革命共和"
+		}
+	]
+}

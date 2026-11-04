@@ -1,0 +1,297 @@
+{
+	"revision": 3,
+	"shapes": [
+		{
+			"id": "title",
+			"type": "text",
+			"x": 80,
+			"y": 24,
+			"w": 1280,
+			"h": 56,
+			"color": "#172033",
+			"text": "唐代丝路与海上丝路：商品、宗教与技术的中外交流（618—907）"
+		},
+		{
+			"id": "subtitle",
+			"type": "text",
+			"x": 80,
+			"y": 82,
+			"w": 1280,
+			"h": 34,
+			"color": "#64748b",
+			"text": "示意图 · 不是现代国界或航线；陆路橙色，海路蓝色"
+		},
+		{
+			"id": "legend-land",
+			"type": "rectangle",
+			"x": 100,
+			"y": 118,
+			"w": 190,
+			"h": 38,
+			"color": "#c2410c",
+			"text": "━━ 陆路（丝绸之路）"
+		},
+		{
+			"id": "legend-sea",
+			"type": "rectangle",
+			"x": 310,
+			"y": 118,
+			"w": 190,
+			"h": 38,
+			"color": "#2563eb",
+			"text": "━━ 海路（印度洋）"
+		},
+		{
+			"id": "map-bg",
+			"type": "rectangle",
+			"x": 80,
+			"y": 166,
+			"w": 1280,
+			"h": 520,
+			"color": "#f8fafc",
+			"text": ""
+		},
+		{
+			"id": "chang-an",
+			"type": "ellipse",
+			"x": 230,
+			"y": 236,
+			"w": 150,
+			"h": 74,
+			"color": "#7c3aed",
+			"text": "长安（唐都）\n大陆起点"
+		},
+		{
+			"id": "dunhuang",
+			"type": "rectangle",
+			"x": 430,
+			"y": 278,
+			"w": 150,
+			"h": 64,
+			"color": "#d97706",
+			"text": "敦煌\n河西门户"
+		},
+		{
+			"id": "kashgar",
+			"type": "rectangle",
+			"x": 620,
+			"y": 316,
+			"w": 150,
+			"h": 64,
+			"color": "#d97706",
+			"text": "喀什（疏勒）\n中亚西域"
+		},
+		{
+			"id": "samarkand",
+			"type": "rectangle",
+			"x": 820,
+			"y": 316,
+			"w": 150,
+			"h": 64,
+			"color": "#d97706",
+			"text": "撒马尔罕"
+		},
+		{
+			"id": "bukhara",
+			"type": "rectangle",
+			"x": 1010,
+			"y": 316,
+			"w": 150,
+			"h": 64,
+			"color": "#d97706",
+			"text": "布哈拉"
+		},
+		{
+			"id": "siraf",
+			"type": "ellipse",
+			"x": 1170,
+			"y": 510,
+			"w": 150,
+			"h": 74,
+			"color": "#0369a1",
+			"text": "设拉夫（波斯湾）\n唐代对外港口"
+		},
+		{
+			"id": "guangzhou",
+			"type": "ellipse",
+			"x": 230,
+			"y": 540,
+			"w": 150,
+			"h": 74,
+			"color": "#0369a1",
+			"text": "广州\n唐代海港"
+		},
+		{
+			"id": "srivijaya",
+			"type": "ellipse",
+			"x": 720,
+			"y": 540,
+			"w": 150,
+			"h": 74,
+			"color": "#0369a1",
+			"text": "三佛齐（室利佛逝）\n东南亚海港枢纽"
+		},
+		{
+			"id": "arab-sea-label",
+			"type": "text",
+			"x": 1010,
+			"y": 472,
+			"w": 140,
+			"h": 32,
+			"color": "#0369a1",
+			"text": "印度洋—波斯湾"
+		},
+		{
+			"id": "land-edge-1",
+			"type": "connector",
+			"from": "chang-an",
+			"to": "dunhuang",
+			"color": "#c2410c"
+		},
+		{
+			"id": "land-edge-2",
+			"type": "connector",
+			"from": "dunhuang",
+			"to": "kashgar",
+			"color": "#c2410c"
+		},
+		{
+			"id": "land-edge-3",
+			"type": "connector",
+			"from": "kashgar",
+			"to": "samarkand",
+			"color": "#c2410c"
+		},
+		{
+			"id": "land-edge-4",
+			"type": "connector",
+			"from": "samarkand",
+			"to": "bukhara",
+			"color": "#c2410c"
+		},
+		{
+			"id": "sea-edge-1",
+			"type": "connector",
+			"from": "guangzhou",
+			"to": "srivijaya",
+			"color": "#2563eb"
+		},
+		{
+			"id": "sea-edge-2",
+			"type": "connector",
+			"from": "srivijaya",
+			"to": "siraf",
+			"color": "#2563eb"
+		},
+		{
+			"id": "land-eastwest-label",
+			"type": "text",
+			"x": 250,
+			"y": 196,
+			"w": 680,
+			"h": 34,
+			"color": "#9a3412",
+			"text": "陆路东↔西：长安—敦煌—喀什—撒马尔罕—布哈拉"
+		},
+		{
+			"id": "sea-southwest-label",
+			"type": "text",
+			"x": 360,
+			"y": 636,
+			"w": 700,
+			"h": 34,
+			"color": "#1d4ed8",
+			"text": "海路南↔西：广州—三佛齐（室利佛逝）—设拉夫（波斯湾）"
+		},
+		{
+			"id": "route-1-bg",
+			"type": "rectangle",
+			"x": 80,
+			"y": 656,
+			"w": 390,
+			"h": 120,
+			"color": "#fff7ed",
+			"text": ""
+		},
+		{
+			"id": "route-1",
+			"type": "text",
+			"x": 100,
+			"y": 668,
+			"w": 350,
+			"h": 96,
+			"color": "#9a3412",
+			"text": "① 陆路东行｜商品\n丝绸、茶、漆器、瓷器向西；\n经敦煌、撒马尔罕至中亚、波斯。"
+		},
+		{
+			"id": "route-2-bg",
+			"type": "rectangle",
+			"x": 525,
+			"y": 656,
+			"w": 390,
+			"h": 120,
+			"color": "#fffbeb",
+			"text": ""
+		},
+		{
+			"id": "route-2",
+			"type": "text",
+			"x": 545,
+			"y": 668,
+			"w": 350,
+			"h": 96,
+			"color": "#92400e",
+			"text": "② 陆路西行｜宗教文化\n佛经、佛像、西域乐舞东传；\n玻璃、金银工艺随胡商入长安。"
+		},
+		{
+			"id": "route-3-bg",
+			"type": "rectangle",
+			"x": 970,
+			"y": 656,
+			"w": 390,
+			"h": 120,
+			"color": "#eff6ff",
+			"text": ""
+		},
+		{
+			"id": "route-3",
+			"type": "text",
+			"x": 990,
+			"y": 668,
+			"w": 350,
+			"h": 96,
+			"color": "#1d4ed8",
+			"text": "③ 海路往复｜商品宗教\n瓷、丝绸西行；香料、象牙回东；\n阿拉伯商人带来伊斯兰与季风航海经验。"
+		},
+		{
+			"id": "compare-bg",
+			"type": "rectangle",
+			"x": 80,
+			"y": 790,
+			"w": 1280,
+			"h": 100,
+			"color": "#f1f5f9",
+			"text": ""
+		},
+		{
+			"id": "compare-land",
+			"type": "text",
+			"x": 100,
+			"y": 804,
+			"w": 610,
+			"h": 70,
+			"color": "#7c2d12",
+			"text": "陆路｜利：直达中亚、宗教经典连续、重载\n限：沙漠山地、关隘控制、运输慢"
+		},
+		{
+			"id": "compare-sea",
+			"type": "text",
+			"x": 730,
+			"y": 804,
+			"w": 610,
+			"h": 70,
+			"color": "#1e40af",
+			"text": "海路｜利：批量、跨印度洋、季风网络\n限：海难、季候限制、中转依赖"
+		}
+	]
+}

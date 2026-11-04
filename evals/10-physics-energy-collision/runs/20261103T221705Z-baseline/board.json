@@ -1,0 +1,1311 @@
+{
+	"revision": 4,
+	"shapes": [
+		{
+			"id": "title-bg",
+			"type": "rectangle",
+			"x": 60,
+			"y": 28,
+			"w": 1320,
+			"h": 64,
+			"color": "#183153"
+		},
+		{
+			"id": "title",
+			"type": "text",
+			"x": 78,
+			"y": 38,
+			"w": 1284,
+			"h": 48,
+			"text": "能量转化：斜面 → 水平弹性碰撞 → 弹簧压缩",
+			"color": "#FFFFFF"
+		},
+		{
+			"id": "subtitle",
+			"type": "text",
+			"x": 80,
+			"y": 92,
+			"w": 1280,
+			"h": 26,
+			"text": "质量相同 · 光滑接触面 · g = 10 m/s²",
+			"color": "#667085"
+		},
+		{
+			"id": "energy-bg",
+			"type": "rectangle",
+			"x": 60,
+			"y": 118,
+			"w": 1320,
+			"h": 112,
+			"color": "#F5F7FA"
+		},
+		{
+			"id": "energy-title",
+			"type": "text",
+			"x": 82,
+			"y": 128,
+			"w": 300,
+			"h": 32,
+			"text": "能量守恒条：总能量始终为 100 J",
+			"color": "#183153"
+		},
+		{
+			"id": "energy-a",
+			"type": "rectangle",
+			"x": 390,
+			"y": 126,
+			"w": 300,
+			"h": 46,
+			"color": "#EEF2FF"
+		},
+		{
+			"id": "energy-b",
+			"type": "rectangle",
+			"x": 700,
+			"y": 126,
+			"w": 300,
+			"h": 46,
+			"color": "#ECFDF3"
+		},
+		{
+			"id": "energy-c",
+			"type": "rectangle",
+			"x": 1010,
+			"y": 126,
+			"w": 300,
+			"h": 46,
+			"color": "#FFF7ED"
+		},
+		{
+			"id": "energy-a-text",
+			"type": "text",
+			"x": 390,
+			"y": 136,
+			"w": 300,
+			"h": 28,
+			"text": "A 顶部：mgh = 100 J",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "energy-b-text",
+			"type": "text",
+			"x": 700,
+			"y": 136,
+			"w": 300,
+			"h": 28,
+			"text": "B 底部：½mv² = 100 J",
+			"color": "#13795B"
+		},
+		{
+			"id": "energy-c-text",
+			"type": "text",
+			"x": 1010,
+			"y": 136,
+			"w": 300,
+			"h": 28,
+			"text": "C 最大压缩：½kx² = 100 J",
+			"color": "#C46A18"
+		},
+		{
+			"id": "energy-arrow1",
+			"type": "text",
+			"x": 673,
+			"y": 132,
+			"w": 30,
+			"h": 28,
+			"text": "→",
+			"color": "#667085"
+		},
+		{
+			"id": "energy-arrow2",
+			"type": "text",
+			"x": 983,
+			"y": 132,
+			"w": 30,
+			"h": 28,
+			"text": "→",
+			"color": "#667085"
+		},
+		{
+			"id": "energy-foot",
+			"type": "text",
+			"x": 82,
+			"y": 184,
+			"w": 1270,
+			"h": 30,
+			"text": "mgh = ½mv² = ½kx² = 100 J  ·  动能与势能可转换，但机械能守恒",
+			"color": "#101828"
+		},
+		{
+			"id": "scene-bg",
+			"type": "rectangle",
+			"x": 60,
+			"y": 248,
+			"w": 880,
+			"h": 268,
+			"color": "#FFFFFF"
+		},
+		{
+			"id": "scene-frame-l",
+			"type": "line",
+			"x": 60,
+			"y": 248,
+			"w": 0,
+			"h": 268,
+			"color": "#98A2B3"
+		},
+		{
+			"id": "scene-frame-b",
+			"type": "line",
+			"x": 60,
+			"y": 516,
+			"w": 880,
+			"h": 0,
+			"color": "#98A2B3"
+		},
+		{
+			"id": "scene-title",
+			"type": "text",
+			"x": 82,
+			"y": 258,
+			"w": 500,
+			"h": 32,
+			"text": "① 斜面下滑与水平完全弹性碰撞",
+			"color": "#183153"
+		},
+		{
+			"id": "slope",
+			"type": "line",
+			"x": 165,
+			"y": 365,
+			"w": 260,
+			"h": 135,
+			"color": "#183153"
+		},
+		{
+			"id": "ground",
+			"type": "line",
+			"x": 425,
+			"y": 500,
+			"w": 490,
+			"h": 0,
+			"color": "#183153"
+		},
+		{
+			"id": "ground-shadow",
+			"type": "line",
+			"x": 425,
+			"y": 510,
+			"w": 490,
+			"h": 0,
+			"color": "#98A2B3"
+		},
+		{
+			"id": "h-bracket-l",
+			"type": "line",
+			"x": 148,
+			"y": 365,
+			"w": 0,
+			"h": 135,
+			"color": "#C46A18"
+		},
+		{
+			"id": "h-top",
+			"type": "line",
+			"x": 138,
+			"y": 365,
+			"w": 20,
+			"h": 0,
+			"color": "#C46A18"
+		},
+		{
+			"id": "h-bottom",
+			"type": "line",
+			"x": 138,
+			"y": 500,
+			"w": 20,
+			"h": 0,
+			"color": "#C46A18"
+		},
+		{
+			"id": "h-label",
+			"type": "text",
+			"x": 98,
+			"y": 407,
+			"w": 70,
+			"h": 35,
+			"text": "h = 5 m",
+			"color": "#C46A18"
+		},
+		{
+			"id": "block-a",
+			"type": "rectangle",
+			"x": 255,
+			"y": 318,
+			"w": 62,
+			"h": 52,
+			"color": "#4F46E5",
+			"text": "2 kg"
+		},
+		{
+			"id": "block-a-label",
+			"type": "text",
+			"x": 240,
+			"y": 292,
+			"w": 130,
+			"h": 24,
+			"text": "A：静止",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "slope-arrow",
+			"type": "text",
+			"x": 350,
+			"y": 380,
+			"w": 130,
+			"h": 34,
+			"text": "滑下 →  v=10",
+			"color": "#13795B"
+		},
+		{
+			"id": "block-b",
+			"type": "rectangle",
+			"x": 500,
+			"y": 448,
+			"w": 62,
+			"h": 52,
+			"color": "#13795B",
+			"text": "2 kg"
+		},
+		{
+			"id": "block-c",
+			"type": "rectangle",
+			"x": 615,
+			"y": 448,
+			"w": 62,
+			"h": 52,
+			"color": "#C46A18",
+			"text": "2 kg"
+		},
+		{
+			"id": "before-label",
+			"type": "text",
+			"x": 500,
+			"y": 420,
+			"w": 180,
+			"h": 24,
+			"text": "碰撞前",
+			"color": "#667085"
+		},
+		{
+			"id": "block-b-arrow",
+			"type": "text",
+			"x": 475,
+			"y": 438,
+			"w": 160,
+			"h": 28,
+			"text": "10 m/s →",
+			"color": "#13795B"
+		},
+		{
+			"id": "block-c-rest",
+			"type": "text",
+			"x": 610,
+			"y": 420,
+			"w": 170,
+			"h": 24,
+			"text": "静止 v=0",
+			"color": "#667085"
+		},
+		{
+			"id": "spring-anchor",
+			"type": "line",
+			"x": 820,
+			"y": 430,
+			"w": 0,
+			"h": 80,
+			"color": "#183153"
+		},
+		{
+			"id": "spring-top",
+			"type": "line",
+			"x": 820,
+			"y": 430,
+			"w": 40,
+			"h": 0,
+			"color": "#183153"
+		},
+		{
+			"id": "scene-spring-lead-l",
+			"type": "line",
+			"x": 690,
+			"y": 474,
+			"w": 20,
+			"h": 0,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-0",
+			"type": "line",
+			"x": 710,
+			"y": 474,
+			"w": 6.428571428571445,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-1",
+			"type": "line",
+			"x": 716.4285714285714,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-2",
+			"type": "line",
+			"x": 722.8571428571429,
+			"y": 486,
+			"w": 6.428571428571445,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-3",
+			"type": "line",
+			"x": 729.2857142857143,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-4",
+			"type": "line",
+			"x": 735.7142857142858,
+			"y": 486,
+			"w": 6.428571428571445,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-5",
+			"type": "line",
+			"x": 742.1428571428572,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-6",
+			"type": "line",
+			"x": 748.5714285714287,
+			"y": 486,
+			"w": 6.428571428571445,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-7",
+			"type": "line",
+			"x": 755.0000000000001,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-8",
+			"type": "line",
+			"x": 761.4285714285716,
+			"y": 486,
+			"w": 6.428571428571445,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-9",
+			"type": "line",
+			"x": 767.857142857143,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-10",
+			"type": "line",
+			"x": 774.2857142857144,
+			"y": 486,
+			"w": 6.428571428571445,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-11",
+			"type": "line",
+			"x": 780.7142857142859,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-12",
+			"type": "line",
+			"x": 787.1428571428573,
+			"y": 486,
+			"w": 6.428571428571445,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-13",
+			"type": "line",
+			"x": 793.5714285714288,
+			"y": 462,
+			"w": 6.428571428571445,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "scene-spring-lead-r",
+			"type": "line",
+			"x": 800.0000000000002,
+			"y": 486,
+			"w": 19.999999999999773,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "block-at-spring",
+			"type": "rectangle",
+			"x": 650,
+			"y": 448,
+			"w": 62,
+			"h": 52,
+			"color": "#C46A18",
+			"text": "2 kg"
+		},
+		{
+			"id": "spring-label",
+			"type": "text",
+			"x": 690,
+			"y": 416,
+			"w": 180,
+			"h": 28,
+			"text": "弹簧 k=100 N/m",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "to-spring-arrow",
+			"type": "text",
+			"x": 680,
+			"y": 505,
+			"w": 145,
+			"h": 28,
+			"text": "压缩 →",
+			"color": "#C46A18"
+		},
+		{
+			"id": "momentum-bg",
+			"type": "rectangle",
+			"x": 960,
+			"y": 248,
+			"w": 420,
+			"h": 268,
+			"color": "#EEF2FF"
+		},
+		{
+			"id": "momentum-title",
+			"type": "text",
+			"x": 982,
+			"y": 258,
+			"w": 376,
+			"h": 32,
+			"text": "② 水平方向动量守恒",
+			"color": "#183153"
+		},
+		{
+			"id": "momentum-divider",
+			"type": "line",
+			"x": 982,
+			"y": 298,
+			"w": 376,
+			"h": 0,
+			"color": "#98A2B3"
+		},
+		{
+			"id": "momentum-before",
+			"type": "text",
+			"x": 982,
+			"y": 308,
+			"w": 376,
+			"h": 28,
+			"text": "碰撞前",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "m1-before",
+			"type": "rectangle",
+			"x": 982,
+			"y": 342,
+			"w": 58,
+			"h": 48,
+			"color": "#13795B",
+			"text": "2kg"
+		},
+		{
+			"id": "m2-before",
+			"type": "rectangle",
+			"x": 1125,
+			"y": 342,
+			"w": 58,
+			"h": 48,
+			"color": "#C46A18",
+			"text": "静止"
+		},
+		{
+			"id": "momentum-before-velocity",
+			"type": "text",
+			"x": 1048,
+			"y": 348,
+			"w": 70,
+			"h": 30,
+			"text": "10 →",
+			"color": "#13795B"
+		},
+		{
+			"id": "momentum-before-formula",
+			"type": "text",
+			"x": 982,
+			"y": 398,
+			"w": 376,
+			"h": 28,
+			"text": "p前 = 2×10 + 2×0 = 20 kg·m/s",
+			"color": "#101828"
+		},
+		{
+			"id": "momentum-after",
+			"type": "text",
+			"x": 982,
+			"y": 430,
+			"w": 376,
+			"h": 28,
+			"text": "碰撞后：完全弹性碰撞",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "m1-after",
+			"type": "rectangle",
+			"x": 982,
+			"y": 455,
+			"w": 58,
+			"h": 48,
+			"color": "#13795B",
+			"text": "静止"
+		},
+		{
+			"id": "m2-after",
+			"type": "rectangle",
+			"x": 1125,
+			"y": 455,
+			"w": 58,
+			"h": 48,
+			"color": "#C46A18",
+			"text": "2kg"
+		},
+		{
+			"id": "momentum-after-velocity",
+			"type": "text",
+			"x": 1190,
+			"y": 462,
+			"w": 100,
+			"h": 30,
+			"text": "→ 10",
+			"color": "#C46A18"
+		},
+		{
+			"id": "momentum-after-formula",
+			"type": "text",
+			"x": 982,
+			"y": 492,
+			"w": 376,
+			"h": 22,
+			"text": "p后 = 20 kg·m/s  ·  K碰后 = 100 J",
+			"color": "#101828"
+		},
+		{
+			"id": "spring-strip",
+			"type": "rectangle",
+			"x": 60,
+			"y": 536,
+			"w": 1320,
+			"h": 168,
+			"color": "#FFFFFF"
+		},
+		{
+			"id": "spring-strip-title",
+			"type": "text",
+			"x": 82,
+			"y": 546,
+			"w": 400,
+			"h": 30,
+			"text": "③ 弹簧压缩过程",
+			"color": "#183153"
+		},
+		{
+			"id": "stage1-card",
+			"type": "rectangle",
+			"x": 80,
+			"y": 582,
+			"w": 390,
+			"h": 108,
+			"color": "#F5F7FA"
+		},
+		{
+			"id": "stage1-title",
+			"type": "text",
+			"x": 96,
+			"y": 590,
+			"w": 340,
+			"h": 26,
+			"text": "压缩开始",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-wall",
+			"type": "rectangle",
+			"x": 430,
+			"y": 620,
+			"w": 16,
+			"h": 54,
+			"color": "#183153"
+		},
+		{
+			"id": "stage1-spring-lead-l",
+			"type": "line",
+			"x": 250,
+			"y": 646,
+			"w": 20,
+			"h": 0,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-0",
+			"type": "line",
+			"x": 270,
+			"y": 646,
+			"w": 11.666666666666686,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-1",
+			"type": "line",
+			"x": 281.6666666666667,
+			"y": 634,
+			"w": 11.666666666666686,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-2",
+			"type": "line",
+			"x": 293.33333333333337,
+			"y": 658,
+			"w": 11.666666666666686,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-3",
+			"type": "line",
+			"x": 305.00000000000006,
+			"y": 634,
+			"w": 11.666666666666686,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-4",
+			"type": "line",
+			"x": 316.66666666666674,
+			"y": 658,
+			"w": 11.666666666666686,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-5",
+			"type": "line",
+			"x": 328.3333333333334,
+			"y": 634,
+			"w": 11.666666666666686,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-6",
+			"type": "line",
+			"x": 340.0000000000001,
+			"y": 658,
+			"w": 11.666666666666686,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-7",
+			"type": "line",
+			"x": 351.6666666666668,
+			"y": 634,
+			"w": 11.666666666666686,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-8",
+			"type": "line",
+			"x": 363.3333333333335,
+			"y": 658,
+			"w": 11.666666666666686,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-9",
+			"type": "line",
+			"x": 375.00000000000017,
+			"y": 634,
+			"w": 11.666666666666686,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-10",
+			"type": "line",
+			"x": 386.66666666666686,
+			"y": 658,
+			"w": 11.666666666666686,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-11",
+			"type": "line",
+			"x": 398.33333333333354,
+			"y": 634,
+			"w": 11.666666666666686,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-spring-lead-r",
+			"type": "line",
+			"x": 410.0000000000002,
+			"y": 658,
+			"w": 19.999999999999773,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage1-block",
+			"type": "rectangle",
+			"x": 205,
+			"y": 620,
+			"w": 55,
+			"h": 52,
+			"color": "#C46A18",
+			"text": "2 kg"
+		},
+		{
+			"id": "stage1-text",
+			"type": "text",
+			"x": 96,
+			"y": 628,
+			"w": 100,
+			"h": 50,
+			"text": "v = 10 m/s\nx = 0",
+			"color": "#101828"
+		},
+		{
+			"id": "stage2-card",
+			"type": "rectangle",
+			"x": 485,
+			"y": 582,
+			"w": 390,
+			"h": 108,
+			"color": "#F5F7FA"
+		},
+		{
+			"id": "stage2-title",
+			"type": "text",
+			"x": 501,
+			"y": 590,
+			"w": 340,
+			"h": 26,
+			"text": "压缩进行中",
+			"color": "#13795B"
+		},
+		{
+			"id": "stage2-wall",
+			"type": "rectangle",
+			"x": 835,
+			"y": 620,
+			"w": 16,
+			"h": 54,
+			"color": "#183153"
+		},
+		{
+			"id": "stage2-spring-lead-l",
+			"type": "line",
+			"x": 655,
+			"y": 646,
+			"w": 20,
+			"h": 0,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-0",
+			"type": "line",
+			"x": 675,
+			"y": 646,
+			"w": 11.666666666666629,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-1",
+			"type": "line",
+			"x": 686.6666666666666,
+			"y": 634,
+			"w": 11.666666666666629,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-2",
+			"type": "line",
+			"x": 698.3333333333333,
+			"y": 658,
+			"w": 11.666666666666629,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-3",
+			"type": "line",
+			"x": 709.9999999999999,
+			"y": 634,
+			"w": 11.666666666666629,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-4",
+			"type": "line",
+			"x": 721.6666666666665,
+			"y": 658,
+			"w": 11.666666666666629,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-5",
+			"type": "line",
+			"x": 733.3333333333331,
+			"y": 634,
+			"w": 11.666666666666629,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-6",
+			"type": "line",
+			"x": 744.9999999999998,
+			"y": 658,
+			"w": 11.666666666666629,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-7",
+			"type": "line",
+			"x": 756.6666666666664,
+			"y": 634,
+			"w": 11.666666666666629,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-8",
+			"type": "line",
+			"x": 768.333333333333,
+			"y": 658,
+			"w": 11.666666666666629,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-9",
+			"type": "line",
+			"x": 779.9999999999997,
+			"y": 634,
+			"w": 11.666666666666629,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-10",
+			"type": "line",
+			"x": 791.6666666666663,
+			"y": 658,
+			"w": 11.666666666666629,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-11",
+			"type": "line",
+			"x": 803.3333333333329,
+			"y": 634,
+			"w": 11.666666666666629,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-spring-lead-r",
+			"type": "line",
+			"x": 814.9999999999995,
+			"y": 658,
+			"w": 20.000000000000455,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage2-block",
+			"type": "rectangle",
+			"x": 610,
+			"y": 620,
+			"w": 55,
+			"h": 52,
+			"color": "#C46A18",
+			"text": "2 kg"
+		},
+		{
+			"id": "stage2-text",
+			"type": "text",
+			"x": 501,
+			"y": 628,
+			"w": 108,
+			"h": 50,
+			"text": "v 正在减小\nUs 在增加",
+			"color": "#101828"
+		},
+		{
+			"id": "stage3-card",
+			"type": "rectangle",
+			"x": 890,
+			"y": 582,
+			"w": 470,
+			"h": 108,
+			"color": "#FFF7ED"
+		},
+		{
+			"id": "stage3-title",
+			"type": "text",
+			"x": 906,
+			"y": 590,
+			"w": 430,
+			"h": 26,
+			"text": "最大压缩量 ③",
+			"color": "#C46A18"
+		},
+		{
+			"id": "stage3-wall",
+			"type": "rectangle",
+			"x": 1330,
+			"y": 620,
+			"w": 16,
+			"h": 54,
+			"color": "#183153"
+		},
+		{
+			"id": "stage3-spring-lead-l",
+			"type": "line",
+			"x": 1090,
+			"y": 646,
+			"w": 20,
+			"h": 0,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-0",
+			"type": "line",
+			"x": 1110,
+			"y": 646,
+			"w": 20,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-1",
+			"type": "line",
+			"x": 1130,
+			"y": 634,
+			"w": 20,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-2",
+			"type": "line",
+			"x": 1150,
+			"y": 658,
+			"w": 20,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-3",
+			"type": "line",
+			"x": 1170,
+			"y": 634,
+			"w": 20,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-4",
+			"type": "line",
+			"x": 1190,
+			"y": 658,
+			"w": 20,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-5",
+			"type": "line",
+			"x": 1210,
+			"y": 634,
+			"w": 20,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-6",
+			"type": "line",
+			"x": 1230,
+			"y": 658,
+			"w": 20,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-7",
+			"type": "line",
+			"x": 1250,
+			"y": 634,
+			"w": 20,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-8",
+			"type": "line",
+			"x": 1270,
+			"y": 658,
+			"w": 20,
+			"h": -24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-9",
+			"type": "line",
+			"x": 1290,
+			"y": 634,
+			"w": 20,
+			"h": 24,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-spring-lead-r",
+			"type": "line",
+			"x": 1310,
+			"y": 658,
+			"w": 20,
+			"h": -12,
+			"color": "#4F46E5"
+		},
+		{
+			"id": "stage3-block",
+			"type": "rectangle",
+			"x": 1040,
+			"y": 620,
+			"w": 55,
+			"h": 52,
+			"color": "#C46A18",
+			"text": "2 kg"
+		},
+		{
+			"id": "stage3-v",
+			"type": "text",
+			"x": 906,
+			"y": 628,
+			"w": 130,
+			"h": 24,
+			"text": "瞬间静止：v=0",
+			"color": "#C44536"
+		},
+		{
+			"id": "stage3-x",
+			"type": "text",
+			"x": 906,
+			"y": 658,
+			"w": 300,
+			"h": 26,
+			"text": "最大压缩量：x = 1.414 m",
+			"color": "#C46A18"
+		},
+		{
+			"id": "key1",
+			"type": "rectangle",
+			"x": 60,
+			"y": 716,
+			"w": 420,
+			"h": 220,
+			"color": "#EEF2FF"
+		},
+		{
+			"id": "key2",
+			"type": "rectangle",
+			"x": 510,
+			"y": 716,
+			"w": 420,
+			"h": 220,
+			"color": "#ECFDF3"
+		},
+		{
+			"id": "key3",
+			"type": "rectangle",
+			"x": 960,
+			"y": 716,
+			"w": 420,
+			"h": 220,
+			"color": "#FFF7ED"
+		},
+		{
+			"id": "key1-title",
+			"type": "text",
+			"x": 82,
+			"y": 730,
+			"w": 376,
+			"h": 34,
+			"text": "关键位置 1：斜面顶部",
+			"color": "#4F46E5"
+		},
+		{
+			"id": "key1-speed",
+			"type": "text",
+			"x": 82,
+			"y": 774,
+			"w": 376,
+			"h": 30,
+			"text": "速度：v₁ = 0（静止）",
+			"color": "#101828"
+		},
+		{
+			"id": "key1-energies",
+			"type": "text",
+			"x": 82,
+			"y": 812,
+			"w": 376,
+			"h": 74,
+			"text": "重力势能：Eₚ = mgh = 100 J\n动能：K = 0\n机械能：E = 100 J",
+			"color": "#101828"
+		},
+		{
+			"id": "key2-title",
+			"type": "text",
+			"x": 532,
+			"y": 730,
+			"w": 376,
+			"h": 34,
+			"text": "关键位置 2：碰撞前后",
+			"color": "#13795B"
+		},
+		{
+			"id": "key2-before",
+			"type": "text",
+			"x": 532,
+			"y": 772,
+			"w": 376,
+			"h": 30,
+			"text": "碰撞前：v₁=10 m/s，v₂=0",
+			"color": "#101828"
+		},
+		{
+			"id": "key2-after",
+			"type": "text",
+			"x": 532,
+			"y": 810,
+			"w": 376,
+			"h": 30,
+			"text": "碰撞后：v₁=0，v₂=10 m/s",
+			"color": "#101828"
+		},
+		{
+			"id": "key2-energy",
+			"type": "text",
+			"x": 532,
+			"y": 852,
+			"w": 376,
+			"h": 34,
+			"text": "动量 20 kg·m/s；动能 100 J",
+			"color": "#101828"
+		},
+		{
+			"id": "key3-title",
+			"type": "text",
+			"x": 982,
+			"y": 730,
+			"w": 376,
+			"h": 34,
+			"text": "关键位置 3：最大压缩",
+			"color": "#C46A18"
+		},
+		{
+			"id": "key3-speed",
+			"type": "text",
+			"x": 982,
+			"y": 774,
+			"w": 376,
+			"h": 30,
+			"text": "速度：v₂ = 0（瞬间静止）",
+			"color": "#101828"
+		},
+		{
+			"id": "key3-energies",
+			"type": "text",
+			"x": 982,
+			"y": 812,
+			"w": 376,
+			"h": 74,
+			"text": "弹簧势能：Uₛ = ½kx² = 100 J\n动能：K = 0\n能量全部存于弹簧",
+			"color": "#101828"
+		},
+		{
+			"id": "max-compression-highlight",
+			"type": "rectangle",
+			"x": 982,
+			"y": 884,
+			"w": 376,
+			"h": 40,
+			"color": "#C46A18",
+			"text": "x_max = 1.414 m"
+		}
+	]
+}

@@ -1,0 +1,20 @@
+{
+	"case": "06-chemistry-acid-base-titration",
+	"round": "baseline",
+	"sourceRevision": "5bcb07b",
+	"canvasRevision": "66c3a72",
+	"promptRevision": "880a84f",
+	"rubricRevision": "880a84f",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-03T21-56-16-103Z_01a1a369-b466-7219-8cda-4ed0719c020a",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 1,
+	"shapeCount": 74,
+	"score": 9,
+	"scoreMaximum": 10
+}

@@ -1,0 +1,21 @@
+{
+	"case": "01-literature-moonlit-thought",
+	"round": "baseline",
+	"sourceRevision": "8658c00",
+	"canvasRevision": "66c3a72",
+	"promptRevision": "880a84f",
+	"rubricRevision": "50c5690",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-03T21-28-06-917Z_01a1a34f-ee04-72c4-b7d1-6d11363e9cfd",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 1,
+	"shapeCount": 90,
+	"score": 6,
+	"scoreMaximum": 10,
+	"note": "Rubric clarity was corrected during the drawing; the prompt and canvas implementation did not change."
+}

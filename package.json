@@ -9,10 +9,12 @@
 	"scripts": {
 		"dev": "vite",
 		"daemon": "node --watch src/server/index.ts",
+		"eval:server": "node scripts/eval-server.ts",
+		"eval:capture": "node scripts/eval-capture.ts",
 		"mico": "node src/cli/index.ts",
 		"build": "tsc --noEmit && vite build",
 		"check": "biome check . && tsc --noEmit",
-		"test": "node --test src/**/*.test.ts",
+		"test": "node --test src/**/*.test.ts scripts/*.test.ts",
 		"test:browser": "playwright test"
 	},
 	"dependencies": {

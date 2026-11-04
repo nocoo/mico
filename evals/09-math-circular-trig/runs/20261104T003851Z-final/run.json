@@ -1,0 +1,20 @@
+{
+	"case": "09-math-circular-trig",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "880a84f",
+	"rubricRevision": "50c5690",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-36-20-356Z_01a1a3fc-4103-72ec-9d7d-75d428b522ec",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 2,
+	"shapeCount": 140,
+	"score": 10,
+	"scoreMaximum": 10
+}

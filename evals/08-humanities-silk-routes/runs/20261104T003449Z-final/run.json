@@ -1,0 +1,20 @@
+{
+	"case": "08-humanities-silk-routes",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "50c5690",
+	"rubricRevision": "880a84f",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-32-00-885Z_01a1a3f8-4b74-728e-b6d3-728c6e354dd8",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 1,
+	"shapeCount": 85,
+	"score": 9,
+	"scoreMaximum": 10
+}
