@@ -19,6 +19,9 @@ test('the AI panel streams a tool loop and draws on the board', async ({ page, r
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
 	await expect(panel.getByText('Draw a lesson with Mico')).toBeVisible()
+	for (const name of ['Chat', 'Live', 'Audio', 'Settings']) {
+		await expect(panel.getByRole('tab', { name })).toHaveText('')
+	}
 
 	const composer = panel.getByRole('textbox', { name: COMPOSER })
 	await composer.fill('Draw projectile motion')
@@ -59,12 +62,88 @@ test('the live tab loads the session catalogue and playback controls', async ({ 
 	await expect(panel.getByRole('button', { name: 'New canvas' })).toBeVisible()
 	await expect(panel.getByRole('button', { name: 'Create session summary' })).toBeVisible()
 	await expect(panel.locator('.lesson-wave')).toBeVisible()
+	await expect(panel.getByText('Confirmed segments')).toBeVisible()
+	const lesson = panel.locator('.lesson')
+	await expect
+		.poll(() => lesson.evaluate((el) => el.scrollHeight - el.clientHeight))
+		.toBeLessThanOrEqual(1)
+	const panelBox = await panel.boundingBox()
+	const segmentsBox = await panel.locator('.lesson-segments').boundingBox()
+	if (!panelBox || !segmentsBox) throw new Error('Missing live panel layout')
+	expect(panelBox.height).toBe(700)
+	expect(panelBox.y + panelBox.height - segmentsBox.y - segmentsBox.height).toBeLessThan(20)
 
 	const picker = panel.getByRole('combobox', { name: 'Lecture' })
 	await expect(picker).toBeVisible()
 	await picker.click()
 	await expect(page.getByRole('option')).toHaveCount(20)
 	await page.keyboard.press('Escape')
+})
+
+test('AI settings save endpoint and model without exposing or accidentally clearing the key', async ({
+	page,
+	request,
+}) => {
+	const initial = await request.put('/api/ai/settings', {
+		data: { baseURL: 'http://127.0.0.1:3425/v1', model: 'auto/gpt-6-luna', apiKey: 'initial-key' },
+	})
+	expect(initial.ok()).toBe(true)
+	const writes: unknown[] = []
+	page.on('request', (req) => {
+		if (req.method() === 'PUT' && req.url().endsWith('/api/ai/settings')) {
+			writes.push(req.postDataJSON())
+		}
+	})
+	await page.reload()
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await panel.getByRole('tab', { name: 'Chat' }).focus()
+	await page.keyboard.press('End')
+	await expect(panel.getByRole('tab', { name: 'Settings' })).toBeFocused()
+	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
+	await expect(settings.getByLabel('Endpoint')).toHaveValue('http://127.0.0.1:3425/v1')
+	await expect(settings.locator('.rt-TextFieldRoot')).toHaveCount(3)
+	const fieldBox = await settings.locator('.rt-TextFieldRoot').first().boundingBox()
+	const checkboxBox = await settings.getByRole('checkbox').boundingBox()
+	const saveBox = await settings.getByRole('button', { name: 'Save settings' }).boundingBox()
+	expect(fieldBox?.height).toBe(32)
+	expect(checkboxBox?.height).toBe(16)
+	expect(saveBox?.height).toBe(32)
+	await settings.getByLabel('Endpoint').fill('https://example.test/v1')
+	await settings.getByLabel('Model', { exact: true }).fill('example-model')
+	await settings.getByRole('button', { name: 'Save settings' }).click()
+	await expect(settings.getByRole('status')).toHaveText('Settings saved.')
+	expect(writes[0]).toEqual({ baseURL: 'https://example.test/v1', model: 'example-model' })
+
+	await settings.getByLabel('API key', { exact: true }).fill('example-key')
+	await settings.getByRole('button', { name: 'Save settings' }).click()
+	await expect(settings.getByLabel('API key', { exact: true })).toHaveValue('')
+	expect(writes[1]).toEqual({
+		baseURL: 'https://example.test/v1',
+		model: 'example-model',
+		apiKey: 'example-key',
+	})
+
+	await settings.getByLabel('Remove current API key').check()
+	await settings.getByRole('button', { name: 'Save settings' }).click()
+	await expect(settings.getByLabel('Remove current API key')).toHaveCount(0)
+	expect(writes[2]).toEqual({
+		baseURL: 'https://example.test/v1',
+		model: 'example-model',
+		apiKey: '',
+	})
+	await page.reload()
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await panel.getByRole('tab', { name: 'Settings' }).click()
+	await expect(settings.getByLabel('Endpoint')).toHaveValue('https://example.test/v1')
+	await expect(settings.getByLabel('Model', { exact: true })).toHaveValue('example-model')
+	await expect(settings.getByLabel('Remove current API key')).toHaveCount(0)
+	const result = await request.get('/api/ai/settings')
+	expect(await result.json()).toEqual({
+		baseURL: 'https://example.test/v1',
+		model: 'example-model',
+		hasApiKey: false,
+	})
 })
 
 test('a second turn keeps the conversation and the tool history valid', async ({
@@ -154,7 +233,7 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 	await panel.getByRole('textbox', { name: COMPOSER }).fill('Draw something')
 	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
 	await expect(panel.getByRole('alert')).toContainText('Assistant request failed')
-	await expect(panel.getByRole('alert')).toContainText('127.0.0.1:3425')
+	await expect(panel.getByRole('alert')).toContainText('Settings')
 
 	const composer = panel.getByRole('textbox', { name: COMPOSER })
 	await composer.fill('Keep this draft')

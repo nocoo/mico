@@ -10,6 +10,7 @@ import {
 	Mic,
 	MousePointer2,
 	PlayCircle,
+	Settings,
 	Square,
 	TriangleAlert,
 	X,
@@ -17,6 +18,7 @@ import {
 import type { CSSProperties, FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../shared/summaryPrompt'
+import { AiSettings } from './AiSettings'
 import { formatDuration } from './aiAudio'
 import { IconButton } from './IconButton'
 import { LessonPanel, type LessonSegment } from './LessonPanel'
@@ -34,7 +36,7 @@ interface AiPanelProps {
 	onCreateCanvas: (name: string) => void
 }
 
-type AiTab = 'chat' | 'lesson' | 'audio'
+type AiTab = 'chat' | 'lesson' | 'audio' | 'settings'
 
 const WAVE_BARS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -472,13 +474,13 @@ export function AiPanel({
 	const focusTab = (event: KeyboardEvent<HTMLDivElement>) => {
 		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 		event.preventDefault()
-		const order: AiTab[] = ['chat', 'lesson', 'audio']
+		const order: AiTab[] = ['chat', 'lesson', 'audio', 'settings']
 		const index = order.indexOf(tab)
 		const next =
 			event.key === 'Home'
 				? 'chat'
 				: event.key === 'End'
-					? 'audio'
+					? 'settings'
 					: order[(index + (event.key === 'ArrowRight' ? 1 : -1) + order.length) % order.length]
 		setTab(next)
 		document.getElementById(`ai-tab-${next}`)?.focus()
@@ -494,45 +496,29 @@ export function AiPanel({
 		>
 			<header className="ai-panel-header">
 				<div className="ai-tabs" role="tablist" aria-label="AI modes" onKeyDown={focusTab}>
-					<button
-						id="ai-tab-chat"
-						type="button"
-						role="tab"
-						className="ai-tab"
-						aria-selected={tab === 'chat'}
-						aria-controls="ai-panel-chat"
-						tabIndex={tab === 'chat' ? 0 : -1}
-						onClick={() => setTab('chat')}
-					>
-						<MessageSquare size={16} strokeWidth={1.75} aria-hidden="true" />
-						Chat
-					</button>
-					<button
-						id="ai-tab-lesson"
-						type="button"
-						role="tab"
-						className="ai-tab"
-						aria-selected={tab === 'lesson'}
-						aria-controls="ai-panel-lesson"
-						tabIndex={tab === 'lesson' ? 0 : -1}
-						onClick={() => setTab('lesson')}
-					>
-						<PlayCircle size={16} strokeWidth={1.75} aria-hidden="true" />
-						Live
-					</button>
-					<button
-						id="ai-tab-audio"
-						type="button"
-						role="tab"
-						className="ai-tab"
-						aria-selected={tab === 'audio'}
-						aria-controls="ai-panel-audio"
-						tabIndex={tab === 'audio' ? 0 : -1}
-						onClick={() => setTab('audio')}
-					>
-						<AudioLines size={16} strokeWidth={1.75} aria-hidden="true" />
-						Audio
-					</button>
+					{(
+						[
+							{ id: 'chat', label: 'Chat', icon: MessageSquare },
+							{ id: 'lesson', label: 'Live', icon: PlayCircle },
+							{ id: 'audio', label: 'Audio', icon: AudioLines },
+							{ id: 'settings', label: 'Settings', icon: Settings },
+						] as const
+					).map(({ id, label, icon }) => (
+						<IconButton
+							key={id}
+							id={`ai-tab-${id}`}
+							icon={icon}
+							label={label}
+							role="tab"
+							className="ai-tab"
+							aria-selected={tab === id}
+							aria-controls={`ai-panel-${id}`}
+							tabIndex={tab === id ? 0 : -1}
+							compact
+							tooltipSide="bottom"
+							onClick={() => setTab(id)}
+						/>
+					))}
 				</div>
 				<IconButton
 					icon={X}
@@ -609,9 +595,7 @@ export function AiPanel({
 						<div>
 							<strong>Assistant request failed</strong>
 							<span>{error.message}</span>
-							<span>
-								Check the Magpie gateway at <code>127.0.0.1:3425</code>.
-							</span>
+							<span>Check your endpoint and model in Settings.</span>
 						</div>
 						<button
 							type="button"
@@ -754,6 +738,16 @@ export function AiPanel({
 					</span>
 				</div>
 				<p className="ai-audio-note">Voice capture is not connected yet.</p>
+			</div>
+
+			<div
+				id="ai-panel-settings"
+				className="ai-settings-panel"
+				role="tabpanel"
+				aria-labelledby="ai-tab-settings"
+				hidden={tab !== 'settings'}
+			>
+				<AiSettings />
 			</div>
 		</section>
 	)

@@ -1135,7 +1135,7 @@ svg {
 	flex-direction: column;
 	width: var(--ai-panel-width);
 	height: min(
-		560px,
+		700px,
 		calc(100dvh - var(--ai-panel-top) - var(--dock-height, 64px) - var(--space-2))
 	);
 	padding: 0;
@@ -1143,7 +1143,8 @@ svg {
 }
 .ai-panel[hidden],
 .ai-chat[hidden],
-.ai-audio[hidden] {
+.ai-audio[hidden],
+.ai-settings-panel[hidden] {
 	display: none;
 }
 .ai-panel-header {
@@ -1158,24 +1159,11 @@ svg {
 .ai-tabs {
 	display: flex;
 	align-items: center;
+	min-width: 0;
 	gap: var(--space-05);
 }
 .ai-tab {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--space-05);
-	height: var(--control-compact);
-	padding: 0 var(--space-15);
-	border: 0;
-	border-radius: var(--radius-pill);
-	background: transparent;
 	color: var(--ink-secondary);
-	font-size: var(--type-body);
-	font-weight: var(--weight-medium);
-	line-height: var(--line-body);
-	transition:
-		background var(--motion-fast),
-		color var(--motion-fast);
 }
 .ai-tab > svg {
 	color: var(--ink-muted);
@@ -1314,11 +1302,11 @@ svg {
 }
 .ai-send {
 	border-radius: var(--radius-pill);
-	background: var(--accent);
-	color: var(--ink);
+	background: var(--candy-blue-stroke);
+	color: var(--surface);
 }
 .ai-send:hover:not(:disabled) {
-	background: var(--candy-blue-stroke);
+	background: color-mix(in srgb, var(--candy-blue-stroke) 85%, var(--ink));
 	color: var(--surface);
 }
 .ai-send:disabled {
@@ -1483,7 +1471,7 @@ svg {
 	}
 	.ai-panel {
 		height: min(
-			560px,
+			700px,
 			calc(
 				100dvh -
 				var(--ai-panel-top) -
@@ -1710,6 +1698,56 @@ svg {
 	font-family: var(--font-mono, ui-monospace, monospace);
 	font-size: var(--type-caption);
 }
+.ai-settings-panel {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+}
+.ai-settings {
+	padding: var(--space-15);
+}
+.ai-settings-form {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: var(--space-15);
+}
+.ai-settings-field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-05);
+	color: var(--ink-secondary);
+	font-size: var(--type-body);
+	font-weight: var(--weight-medium);
+}
+.ai-settings-clear {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+	color: var(--ink-secondary);
+	font-size: var(--type-body);
+}
+.ai-settings-form .rt-Button {
+	align-self: flex-start;
+	background: var(--candy-blue-stroke);
+	color: var(--surface);
+}
+.ai-settings-form .rt-Button:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--candy-blue-stroke) 85%, var(--ink));
+}
+.ai-settings-note,
+.ai-settings-error {
+	margin: 0;
+	color: var(--ink-secondary);
+	font-size: var(--type-caption);
+	line-height: var(--line-caption);
+}
+.ai-settings-error {
+	color: var(--danger);
+}
+.ai-settings > p:last-child:not(:first-child) {
+	margin-top: var(--space-1);
+}
 .ai-lesson {
 	display: flex;
 	flex: 1;
@@ -1888,13 +1926,12 @@ svg {
 .lesson-primary {
 	flex: 1;
 	border: 0;
-	background: var(--accent);
-	color: var(--ink);
+	background: var(--candy-blue-stroke);
+	color: var(--surface);
 	font-weight: var(--weight-semibold);
 }
 .lesson-primary:hover {
-	background: var(--candy-blue-stroke);
-	color: var(--surface);
+	background: color-mix(in srgb, var(--candy-blue-stroke) 85%, var(--ink));
 }
 .lesson-button {
 	border: var(--hairline) solid var(--border);
@@ -1956,10 +1993,37 @@ svg {
 	font-weight: var(--weight-semibold);
 }
 .lesson-sliders input[type="range"] {
+	appearance: none;
 	width: 100%;
-	height: 14px;
+	height: 16px;
 	margin: 0;
-	accent-color: var(--accent);
+	background: transparent;
+}
+.lesson-sliders input[type="range"]::-webkit-slider-runnable-track {
+	height: 4px;
+	border-radius: var(--radius-pill);
+	background: var(--border);
+}
+.lesson-sliders input[type="range"]::-moz-range-track {
+	height: 4px;
+	border-radius: var(--radius-pill);
+	background: var(--border);
+}
+.lesson-sliders input[type="range"]::-webkit-slider-thumb {
+	appearance: none;
+	width: 12px;
+	height: 12px;
+	margin-top: -4px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--candy-blue-stroke);
+}
+.lesson-sliders input[type="range"]::-moz-range-thumb {
+	width: 12px;
+	height: 12px;
+	border: 0;
+	border-radius: 50%;
+	background: var(--candy-blue-stroke);
 }
 .lesson-vad {
 	display: flex;
@@ -1997,7 +2061,6 @@ svg {
 	flex-direction: column;
 	flex: 1 0 120px;
 	min-height: 108px;
-	max-height: 180px;
 	border: var(--hairline) solid var(--border);
 	border-radius: var(--radius-control);
 	overflow: hidden;
@@ -2049,9 +2112,6 @@ svg {
 	.lesson-live p {
 		max-height: 56px;
 		min-height: 32px;
-	}
-	.lesson-segments {
-		max-height: 120px;
 	}
 }
 @media (prefers-reduced-motion: reduce) {
