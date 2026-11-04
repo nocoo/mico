@@ -643,7 +643,7 @@ test('frames hold named members, reject nesting and ungroup on delete', () => {
 	}
 })
 
-test('shape labels accept typography and lines accept stroke width', () => {
+test('shape labels accept typography and rectangles, ellipses and lines accept stroke width', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
 	try {
@@ -664,6 +664,7 @@ test('shape labels accept typography and lines accept stroke width', () => {
 						font: 'serif',
 						fontSize: 24,
 						fontWeight: 700,
+						strokeWidth: 8,
 					},
 				},
 				{
@@ -680,6 +681,7 @@ test('shape labels accept typography and lines accept stroke width', () => {
 						font: 'sans',
 						fontSize: 16,
 						fontWeight: 500,
+						strokeWidth: 2.5,
 					},
 				},
 				{
@@ -711,6 +713,7 @@ test('shape labels accept typography and lines accept stroke width', () => {
 			font: 'serif',
 			fontSize: 24,
 			fontWeight: 700,
+			strokeWidth: 8,
 		})
 
 		const updated = store.apply({
@@ -718,8 +721,9 @@ test('shape labels accept typography and lines accept stroke width', () => {
 				{
 					type: 'update',
 					id: 'label-rect',
-					patch: { fontSize: 32, fontWeight: 600 },
+					patch: { fontSize: 32, fontWeight: 600, strokeWidth: 12.5 },
 				},
+				{ type: 'update', id: 'label-ellipse', patch: { strokeWidth: 64 } },
 				{ type: 'update', id: 'custom-line', patch: { strokeWidth: 64 } },
 			],
 		})
@@ -727,11 +731,64 @@ test('shape labels accept typography and lines accept stroke width', () => {
 			...created.shapes[0],
 			fontSize: 32,
 			fontWeight: 600,
+			strokeWidth: 12.5,
 		})
+		assert.equal(
+			updated.shapes[1].type === 'ellipse' ? updated.shapes[1].strokeWidth : undefined,
+			64,
+		)
 		assert.equal(updated.shapes[2].type === 'line' ? updated.shapes[2].strokeWidth : undefined, 64)
 
+		const beforeInvalid = store.getBoard()
 		for (const operations of [
-			[{ type: 'update', id: 'label-rect', patch: { strokeWidth: 8 } }],
+			[
+				{
+					type: 'create',
+					shape: {
+						id: 'atomic-rect',
+						type: 'rectangle',
+						x: 1,
+						y: 1,
+						w: 10,
+						h: 10,
+						color: '#000000',
+						strokeWidth: 7,
+					},
+				},
+				{ type: 'update', id: 'label-ellipse', patch: { strokeWidth: 65 } },
+			],
+			[
+				{
+					type: 'create',
+					shape: {
+						id: 'invalid-rect',
+						type: 'rectangle',
+						x: 1,
+						y: 1,
+						w: 10,
+						h: 10,
+						color: '#000000',
+						strokeWidth: 0,
+					},
+				},
+			],
+			[
+				{
+					type: 'create',
+					shape: {
+						id: 'invalid-ellipse',
+						type: 'ellipse',
+						x: 1,
+						y: 1,
+						w: 10,
+						h: 10,
+						color: '#000000',
+						strokeWidth: 65,
+					},
+				},
+			],
+			[{ type: 'update', id: 'label-rect', patch: { strokeWidth: 65 } }],
+			[{ type: 'update', id: 'label-ellipse', patch: { strokeWidth: 0 } }],
 			[{ type: 'update', id: 'custom-line', patch: { strokeWidth: 65 } }],
 			[{ type: 'update', id: 'custom-line', patch: { font: 'hand' } }],
 			[{ type: 'update', id: 'label-ellipse', patch: { fontSize: 4 } }],
@@ -741,6 +798,7 @@ test('shape labels accept typography and lines accept stroke width', () => {
 				(error: unknown) => error instanceof OperationError && error.status === 400,
 				JSON.stringify(operations),
 			)
+			assert.deepEqual(store.getBoard(), beforeInvalid)
 		}
 	} finally {
 		store.close()

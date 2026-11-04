@@ -414,6 +414,142 @@ test('rectangle and ellipse fills are explicit and connector paint follows board
 	)
 })
 
+test('rectangle and ellipse stroke widths render and expose their existing property UI', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				...current.shapes.map((shape) => ({ type: 'delete', id: shape.id })),
+				{
+					type: 'create',
+					shape: {
+						id: 'default-rect',
+						type: 'rectangle',
+						x: 160,
+						y: 200,
+						w: 180,
+						h: 100,
+						color: '#183153',
+						fill: '#dbeafe',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'width-rect',
+						type: 'rectangle',
+						x: 380,
+						y: 200,
+						w: 180,
+						h: 100,
+						color: '#b83535',
+						fill: '#fff1f2',
+						strokeWidth: 12,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'default-ellipse',
+						type: 'ellipse',
+						x: 620,
+						y: 200,
+						w: 160,
+						h: 100,
+						color: '#2563eb',
+						fill: '#eff6ff',
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'width-ellipse',
+						type: 'ellipse',
+						x: 820,
+						y: 200,
+						w: 160,
+						h: 100,
+						color: '#107c10',
+						fill: '#ecfdf5',
+						strokeWidth: 2.5,
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+	await page.reload()
+	await expect(page.locator('[data-initial-fit-ready="true"]')).toHaveCount(1)
+
+	await expect(page.locator('[data-shape-id="default-rect"] > rect').first()).toHaveAttribute(
+		'stroke-width',
+		'2',
+	)
+	await expect(page.locator('[data-shape-id="width-rect"] > rect').first()).toHaveAttribute(
+		'stroke-width',
+		'12',
+	)
+	await expect(page.locator('[data-shape-id="default-ellipse"] > ellipse')).toHaveAttribute(
+		'stroke-width',
+		'2',
+	)
+	await expect(page.locator('[data-shape-id="width-ellipse"] > ellipse')).toHaveAttribute(
+		'stroke-width',
+		'2.5',
+	)
+
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.locator('[data-shape-id="default-rect"] > rect').first().click()
+	await expect(page.locator('[data-shape-id="default-rect"] > rect').first()).toHaveAttribute(
+		'stroke-width',
+		'3',
+	)
+	await expect(page.getByLabel('Stroke width', { exact: true })).toHaveValue('2')
+
+	await page.locator('[data-shape-id="width-rect"] > rect').first().click()
+	await expect(page.getByLabel('Stroke width', { exact: true })).toHaveValue('12')
+	await page.getByLabel('Stroke width', { exact: true }).selectOption('7')
+	await expect(page.locator('[data-shape-id="width-rect"] > rect').first()).toHaveAttribute(
+		'stroke-width',
+		'7',
+	)
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'width-rect')
+			return shape?.type === 'rectangle' ? shape.strokeWidth : undefined
+		})
+		.toBe(7)
+
+	await page.locator('[data-shape-id="width-ellipse"] > ellipse').click()
+	await expect(page.getByLabel('Stroke width', { exact: true })).toHaveValue('2.5')
+	await expect(
+		page.getByLabel('Stroke width', { exact: true }).locator('option[value="2.5"]'),
+	).toHaveText('2.5px')
+	await page.getByLabel('Stroke width', { exact: true }).selectOption('3')
+	await expect(page.locator('[data-shape-id="width-ellipse"] > ellipse')).toHaveAttribute(
+		'stroke-width',
+		'3',
+	)
+
+	const revision = (await board(request)).revision
+	const fractional = await request.post('/api/operations', {
+		data: {
+			expectedRevision: revision,
+			operations: [{ type: 'update', id: 'width-ellipse', patch: { strokeWidth: 2.75 } }],
+		},
+	})
+	expect(fractional.ok()).toBe(true)
+	await expect(page.getByLabel('Stroke width', { exact: true })).toHaveValue('2.75')
+	await expect(page.locator('[data-shape-id="width-ellipse"] > ellipse')).toHaveAttribute(
+		'stroke-width',
+		'2.75',
+	)
+})
+
 test('rectangle and ellipse labels preserve lines, wrap and expose overflow honestly', async ({
 	page,
 	request,
@@ -611,6 +747,59 @@ test('narrow text properties keep typography controls accessible', async ({ page
 	}
 })
 
+test('narrow labeled shapes keep stroke and typography controls inside the dock', async ({
+	page,
+	request,
+}) => {
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'narrow-labeled-shape',
+						type: 'rectangle',
+						x: 160,
+						y: 400,
+						w: 240,
+						h: 120,
+						color: '#183153',
+						fill: '#dbeafe',
+						text: '窄屏矩形',
+						font: 'sans',
+						fontSize: 24,
+						fontWeight: 600,
+						strokeWidth: 64,
+					},
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+
+	await page.reload()
+	await expect(page.locator('.canvas')).toHaveAttribute('data-initial-fit-ready', 'true')
+	await page.getByRole('button', { name: 'Fit board', exact: true }).click()
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await page.locator('[data-shape-id="narrow-labeled-shape"] > rect').first().click()
+
+	for (const viewportWidth of [390, 320]) {
+		await page.setViewportSize({ width: viewportWidth, height: 844 })
+		for (const label of ['Text', 'Font family', 'Font size', 'Font weight', 'Stroke width']) {
+			const control =
+				label === 'Text' ? page.locator('#shape-text') : page.getByLabel(label, { exact: true })
+			await expect(control).toBeVisible()
+			const box = await control.boundingBox()
+			if (!box) throw new Error(`Missing narrow ${label} control`)
+			expect(box.width).toBeGreaterThanOrEqual(72)
+			expect(box.x).toBeGreaterThanOrEqual(0)
+			expect(box.x + box.width).toBeLessThanOrEqual(viewportWidth)
+		}
+	}
+})
+
 test('node edge hits win near existing connector endpoints and midsegments stay selectable', async ({
 	page,
 	request,
@@ -694,6 +883,145 @@ test('node edge hits win near existing connector endpoints and midsegments stay 
 		'data-selected-id',
 		'edge',
 	)
+})
+
+test('thick endpoint border stays on the node rather than the connector hit overlay', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{ type: 'update', id: 'a', patch: { strokeWidth: 64 } },
+				{ type: 'update', id: 'b', patch: { y: 400 } },
+				{
+					type: 'update',
+					id: 'edge',
+					patch: { fromAnchor: 11, toAnchor: 10 },
+				},
+			],
+		},
+	})
+	expect(response.ok()).toBe(true)
+	await expect(page.locator('[data-shape-id="a"] > rect').first()).toHaveAttribute(
+		'stroke-width',
+		'64',
+	)
+
+	const endpoint = await page
+		.locator('[data-shape-id="edge"] line')
+		.last()
+		.evaluate((element) => {
+			const line = element as SVGLineElement
+			const start = line.getPointAtLength(0)
+			const next = line.getPointAtLength(Math.min(16, line.getTotalLength()))
+			const startScreen = new DOMPoint(start.x, start.y).matrixTransform(
+				line.getScreenCTM() ?? undefined,
+			)
+			const nextScreen = new DOMPoint(next.x, next.y).matrixTransform(
+				line.getScreenCTM() ?? undefined,
+			)
+			const dx = nextScreen.x - startScreen.x
+			const dy = nextScreen.y - startScreen.y
+			const length = Math.hypot(dx, dy) || 1
+			return {
+				x: startScreen.x,
+				y: startScreen.y,
+				dx: dx / length,
+				dy: dy / length,
+			}
+		})
+	const borderPoint = { x: endpoint.x + endpoint.dx * 28, y: endpoint.y + endpoint.dy * 28 }
+	await page.mouse.click(borderPoint.x, borderPoint.y)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toHaveAttribute(
+		'data-selected-id',
+		'a',
+	)
+
+	const before = (await board(request)).shapes.find((shape) => shape.id === 'a')
+	await page.mouse.move(borderPoint.x, borderPoint.y)
+	await page.mouse.down()
+	await page.mouse.move(borderPoint.x + endpoint.dx * 24, borderPoint.y + endpoint.dy * 24, {
+		steps: 6,
+	})
+	await page.mouse.up()
+	await expect
+		.poll(async () => {
+			const shape = (await board(request)).shapes.find((item) => item.id === 'a')
+			return shape?.type === 'connector' ? undefined : shape?.x
+		})
+		.not.toBe(before?.type === 'connector' ? undefined : before?.x)
+})
+
+test('flat ellipse trims geometrically at 3x zoom', async ({ page, request }) => {
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	const current = await board(request)
+	const ellipseResponse = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				...current.shapes.map((shape) => ({ type: 'delete', id: shape.id })),
+				{
+					type: 'create',
+					shape: {
+						id: 'flat-ellipse',
+						type: 'ellipse',
+						x: 0,
+						y: 0,
+						w: 400,
+						h: 20,
+						color: '#2563eb',
+						fill: '#eff6ff',
+						strokeWidth: 64,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'flat-target',
+						type: 'rectangle',
+						x: 500,
+						y: 200,
+						w: 100,
+						h: 100,
+						color: '#107c10',
+						fill: '#dcfce7',
+						strokeWidth: 2,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'flat-edge',
+						type: 'connector',
+						from: 'flat-ellipse',
+						to: 'flat-target',
+						fromAnchor: 11,
+						toAnchor: 9,
+						color: '#5c6474',
+					},
+				},
+			],
+		},
+	})
+	expect(ellipseResponse.ok()).toBe(true)
+	await page.reload()
+	await expect(page.locator('.canvas')).toHaveAttribute('data-initial-fit-ready', 'true')
+	await page.getByRole('button', { name: 'Reset view', exact: true }).click()
+	for (let index = 0; index < 6; index += 1) {
+		await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
+	}
+	await expect(page.getByRole('button', { name: 'Reset view', exact: true })).toHaveText('299%')
+
+	const flatHit = await page.locator('.connector-hit line').evaluate((element) => {
+		const line = element as SVGLineElement
+		return { x1: line.x1.baseVal.value, y1: line.y1.baseVal.value, x2: line.x2.baseVal.value }
+	})
+	expect(flatHit.x1).toBeGreaterThan(400)
+	expect(flatHit.y1).toBeGreaterThan(10)
 })
 
 test('frame controls align to four-pixel layout slots even on fractional viewport edges', async ({

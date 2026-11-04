@@ -980,7 +980,8 @@ foreignObject:has(> .typographic-text) {
 	.shape-text-property {
 		flex-basis: 100%;
 	}
-	.label-typography {
+	.label-typography,
+	.shape-width-property {
 		flex: 1 1 72px;
 		min-width: 72px;
 	}

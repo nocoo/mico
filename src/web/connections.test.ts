@@ -56,11 +56,189 @@ test('short connector hit segments keep a selectable midpoint', () => {
 
 	const long = trimConnectorHitSegment({ x: 0, y: 0 }, { x: 100, y: 0 }, 1)
 	assert.deepEqual(long, { start: { x: 24, y: 0 }, end: { x: 76, y: 0 }, short: false })
+
+	const thickLine: CanvasShape = {
+		id: 'thick-line',
+		type: 'line',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 0,
+		color: '#5b5fc7',
+		strokeWidth: 64,
+	}
+	const thick = trimConnectorHitSegment({ x: 0, y: 0 }, { x: 100, y: 0 }, 1, thickLine, thickLine)
+	assert.deepEqual(thick, { start: { x: 32, y: 0 }, end: { x: 68, y: 0 }, short: false })
+	const thickZoomed = trimConnectorHitSegment(
+		{ x: 0, y: 0 },
+		{ x: 100, y: 0 },
+		2,
+		thickLine,
+		thickLine,
+	)
+	assert.deepEqual(thickZoomed, { start: { x: 32, y: 0 }, end: { x: 68, y: 0 }, short: false })
+})
+
+test('short thick-node overlap has no fallback hit segment', () => {
+	const thickA: CanvasShape = {
+		id: 'A',
+		type: 'rectangle',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#5b5fc7',
+		strokeWidth: 64,
+	}
+	const thinB: CanvasShape = {
+		id: 'B',
+		type: 'rectangle',
+		x: 160,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#5b5fc7',
+		strokeWidth: 2,
+	}
+	const overlappingB: CanvasShape = { ...thinB, x: 80 }
+	const noGap = trimConnectorHitSegment(
+		{ x: 100, y: 50 },
+		{ x: 80, y: 50 },
+		1,
+		thickA,
+		overlappingB,
+	)
+	assert.equal(noGap.safe, false)
+	assert.equal(noGap.short, true)
+	assert.deepEqual(noGap.start, noGap.end)
+
+	const farThinB: CanvasShape = { ...thinB, x: 300 }
+	const safeGap = trimConnectorHitSegment({ x: 100, y: 50 }, { x: 300, y: 50 }, 1, thickA, farThinB)
+	assert.notEqual(safeGap.safe, false)
+	assert.equal(safeGap.short, false)
+	assert.ok(safeGap.start.x > 100)
+	assert.ok(safeGap.end.x < 300)
+	assert.ok(safeGap.start.x < safeGap.end.x)
+
+	const flatEllipse: CanvasShape = {
+		id: 'flat',
+		type: 'ellipse',
+		x: 0,
+		y: 0,
+		w: 400,
+		h: 20,
+		color: '#5b5fc7',
+		strokeWidth: 64,
+	}
+	const flatDiagonal = trimConnectorHitSegment({ x: 400, y: 10 }, { x: 500, y: 50 }, 3, flatEllipse)
+	assert.equal(flatDiagonal.short, false)
+	assert.ok(flatDiagonal.start.x > 430)
+	assert.ok(flatDiagonal.start.y > 15)
+})
+
+test('overlapping ellipse bounding boxes do not hide a visible connector gap', () => {
+	const first: CanvasShape = { ...ellipse, id: 'first', strokeWidth: 2 }
+	const second: CanvasShape = { ...ellipse, id: 'second', x: 80, y: 80, strokeWidth: 2 }
+	const offset = 50 / Math.sqrt(2)
+	const segment = trimConnectorHitSegment(
+		{ x: 50 + offset, y: 50 + offset },
+		{ x: 130 - offset, y: 130 - offset },
+		1,
+		first,
+		second,
+	)
+	assert.notEqual(segment.safe, false)
+	assert.ok(segment.start.x < segment.end.x)
+})
+
+test('diagonal rectangle and ellipse trims include stroke and 16px hit band', () => {
+	const thickRect: CanvasShape = {
+		id: 'diagonal-rect',
+		type: 'rectangle',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#5b5fc7',
+		strokeWidth: 64,
+	}
+	const rectZoom1 = trimConnectorHitSegment({ x: 100, y: 100 }, { x: 180, y: 180 }, 1, thickRect)
+	assert.ok(Math.abs(rectZoom1.start.x - 148) < 1e-9)
+	assert.ok(Math.abs(rectZoom1.start.y - 148) < 1e-9)
+	const rectZoom2 = trimConnectorHitSegment({ x: 100, y: 100 }, { x: 180, y: 180 }, 2, thickRect)
+	assert.ok(Math.abs(rectZoom2.start.x - 140) < 1e-9)
+	assert.ok(Math.abs(rectZoom2.start.y - 140) < 1e-9)
+
+	const thickEllipse: CanvasShape = {
+		id: 'diagonal-ellipse',
+		type: 'ellipse',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#5b5fc7',
+		strokeWidth: 64,
+	}
+	const ellipseZoom1 = trimConnectorHitSegment(
+		{ x: 100, y: 50 },
+		{ x: 180, y: 130 },
+		1,
+		thickEllipse,
+	)
+	const ellipseZoom2 = trimConnectorHitSegment(
+		{ x: 100, y: 50 },
+		{ x: 180, y: 130 },
+		2,
+		thickEllipse,
+	)
+	const ellipse1Distance = Math.hypot(ellipseZoom1.start.x - 100, ellipseZoom1.start.y - 50)
+	const ellipse2Distance = Math.hypot(ellipseZoom2.start.x - 100, ellipseZoom2.start.y - 50)
+	assert.ok(ellipse1Distance > 32)
+	assert.ok(ellipse2Distance > 32)
+	assert.ok(ellipseZoom1.start.x > ellipseZoom2.start.x)
+
+	const ellipsePoint = ellipseZoom1.start
+	const rx = 50 + 32 + 16
+	const ry = 50 + 32 + 16
+	assert.ok(((ellipsePoint.x - 50) / rx) ** 2 + ((ellipsePoint.y - 50) / ry) ** 2 >= 0.999)
 })
 
 test('snapping picks the nearest anchor of the closest node', () => {
 	const target = findSnapTarget([rectangle], { x: 52, y: 2 }, 'other', 1)
 	assert.deepEqual(target, { shapeId: 'a', anchorIndex: 0, point: { x: 50, y: 0 } })
+})
+
+test('thick rectangle and ellipse strokes extend the snap boundary', () => {
+	const thickRect: CanvasShape = {
+		id: 'thick-rect',
+		type: 'rectangle',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#5b5fc7',
+		strokeWidth: 40,
+	}
+	assert.ok(findSnapTarget([thickRect], { x: -30, y: 50 }, 'other', 1))
+	assert.equal(findSnapTarget([thickRect], { x: -46, y: 50 }, 'other', 1), null)
+	assert.ok(findSnapTarget([thickRect], { x: -30, y: 50 }, 'other', 2))
+	assert.equal(findSnapTarget([thickRect], { x: -36, y: 50 }, 'other', 2), null)
+
+	const thickEllipse: CanvasShape = {
+		id: 'thick-ellipse',
+		type: 'ellipse',
+		x: 0,
+		y: 0,
+		w: 100,
+		h: 100,
+		color: '#5b5fc7',
+		strokeWidth: 40,
+	}
+	assert.ok(findSnapTarget([thickEllipse], { x: -26, y: 50 }, 'other', 1))
+	assert.ok(findSnapTarget([thickEllipse], { x: 40, y: 50 }, 'other', 1))
+	assert.equal(findSnapTarget([thickEllipse], { x: -50, y: 50 }, 'other', 1), null)
+	assert.ok(findSnapTarget([thickEllipse], { x: -26, y: 50 }, 'other', 2))
+	assert.equal(findSnapTarget([thickEllipse], { x: -36, y: 50 }, 'other', 2), null)
 })
 
 test('snapping stays within 24 screen pixels of the node boundary', () => {

@@ -1279,7 +1279,7 @@ export default function App() {
 						fill={shapeFill(shape)}
 						pointerEvents="all"
 						stroke={shape.color}
-						strokeWidth={active ? 3 : 2}
+						strokeWidth={shape.strokeWidth ?? (active ? 3 : 2)}
 					/>
 					{active && (
 						<rect
@@ -1306,7 +1306,7 @@ export default function App() {
 						fill={shapeFill(shape)}
 						pointerEvents="all"
 						stroke={shape.color}
-						strokeWidth={active ? 3 : 2}
+						strokeWidth={shape.strokeWidth ?? (active ? 3 : 2)}
 					/>
 					{active && (
 						<rect
@@ -1764,6 +1764,36 @@ export default function App() {
 									/>
 								</div>
 							)}
+							{(selected.type === 'rectangle' || selected.type === 'ellipse') && (
+								<div className="property-field shape-width-property">
+									<label className="sr-only" htmlFor="shape-width">
+										Stroke width
+									</label>
+									<select
+										id="shape-width"
+										value={selected.strokeWidth ?? 2}
+										onChange={(event) =>
+											void postOperations([
+												{
+													type: 'update',
+													id: selected.id,
+													patch: { strokeWidth: Number(event.target.value) },
+												},
+											])
+										}
+									>
+										{selected.strokeWidth !== undefined &&
+											!LINE_WIDTHS.some((width) => width === selected.strokeWidth) && (
+												<option value={selected.strokeWidth}>{selected.strokeWidth}px</option>
+											)}
+										{LINE_WIDTHS.map((width) => (
+											<option key={width} value={width}>
+												{width}px
+											</option>
+										))}
+									</select>
+								</div>
+							)}
 							{selected.type === 'line' && (
 								<div className="property-field">
 									<label className="sr-only" htmlFor="line-width">
@@ -1975,7 +2005,7 @@ export default function App() {
 							const to = visibleShapes.find((item) => item.id === shape.to)
 							if (!from || !to || !isCanvasShape(from) || !isCanvasShape(to)) return null
 							const { start, end } = getConnectorAnchors(from, to, shape)
-							const hit = trimConnectorHitSegment(start, end, viewport.zoom)
+							const hit = trimConnectorHitSegment(start, end, viewport.zoom, from, to)
 							return (
 								<g
 									key={`hit:${shape.id}`}
@@ -1988,8 +2018,8 @@ export default function App() {
 										x2={hit.end.x}
 										y2={hit.end.y}
 										stroke="transparent"
-										strokeWidth={hit.short ? 4 : 16}
-										pointerEvents="stroke"
+										strokeWidth={hit.safe === false ? 0 : hit.short ? 4 : 16}
+										pointerEvents={hit.safe === false ? 'none' : 'stroke'}
 										vectorEffect="non-scaling-stroke"
 									/>
 								</g>

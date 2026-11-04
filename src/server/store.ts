@@ -178,8 +178,13 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		}
 	}
 	if (Object.hasOwn(value, 'strokeWidth')) {
-		if (value.type !== 'line' && value.type !== 'path') {
-			invalid('strokeWidth is only valid for line and path shapes')
+		if (
+			value.type !== 'rectangle' &&
+			value.type !== 'ellipse' &&
+			value.type !== 'line' &&
+			value.type !== 'path'
+		) {
+			invalid('strokeWidth is only valid for rectangle, ellipse, line and path shapes')
 		}
 		if (!validStrokeWidth(value.strokeWidth)) {
 			invalid('strokeWidth must be between 1 and 64')
@@ -327,6 +332,7 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		'font',
 		'fontSize',
 		'fontWeight',
+		'strokeWidth',
 		'widget',
 		'widgetTitle',
 		'items',
@@ -432,8 +438,12 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 				if (!validStrokeWidth(patch.strokeWidth)) {
 					invalid('line strokeWidth must be between 1 and 64')
 				}
+			} else if (target.type === 'rectangle' || target.type === 'ellipse') {
+				if (!validStrokeWidth(patch.strokeWidth)) {
+					invalid('shape strokeWidth must be between 1 and 64')
+				}
 			} else if (target.type !== 'path') {
-				invalid('strokeWidth is only valid for line and path shapes')
+				invalid('strokeWidth is only valid for rectangle, ellipse, line and path shapes')
 			}
 		}
 		if (target.type === 'path') {
