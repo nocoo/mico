@@ -29,7 +29,7 @@
 	--hairline: 1px;
 	--stroke-standard: 1.5px;
 	--stroke-strong: 2px;
-	--accent: var(--candy-blue-hover);
+	--accent: var(--candy-blue);
 	--accent-hover: var(--candy-blue-hover);
 	--accent-tint: var(--candy-blue-tint);
 	--ink: var(--candy-ink);
@@ -39,7 +39,7 @@
 	--grid-major: var(--candy-grid);
 	--grid-minor: var(--candy-grid);
 	--grid-snap: var(--accent);
-	--surface: #ffffff;
+	--surface: var(--candy-surface);
 	--surface-muted: var(--candy-neutral-tint);
 	--surface-hover: var(--candy-surface-hover);
 	--border: var(--candy-border);
@@ -50,12 +50,16 @@
 	--warning: var(--candy-warning);
 	--danger: var(--candy-danger);
 	--tooltip-surface: var(--candy-ink);
-	--tooltip-ink: #ffffff;
-	--shadow-panel: 0 2px 8px #24304a08, 0 8px 24px #24304a06;
-	--shadow-popover: 0 8px 32px #24304a14;
+	--tooltip-ink: var(--candy-surface);
+	--shadow-panel:
+		0 2px 8px color-mix(in srgb, var(--ink) 4%, transparent),
+		0 8px 24px color-mix(in srgb, var(--ink) 3%, transparent);
+	--shadow-popover: 0 8px 32px color-mix(in srgb, var(--ink) 8%, transparent);
 	--panel-radius: 20px;
 	--panel-shadow:
-		inset 0 0 0 var(--hairline) var(--border), 0 1px 2px #24304a0d, 0 12px 32px #24304a14;
+		inset 0 0 0 var(--hairline) var(--border),
+		0 1px 2px color-mix(in srgb, var(--ink) 6%, transparent),
+		0 2px 12px color-mix(in srgb, var(--ink) 8%, transparent);
 	--motion-fast: 120ms;
 	--panel-width: 320px;
 	--property-label-width: 96px;
@@ -74,6 +78,10 @@ html,
 body,
 #root,
 #root > .radix-themes {
+	--accent-8: var(--candy-blue);
+	--accent-9: var(--candy-blue);
+	--accent-a3: var(--candy-blue-tint);
+	--accent-a4: var(--candy-blue-tint);
 	width: 100%;
 	height: 100%;
 	margin: 0;
@@ -121,7 +129,7 @@ svg {
 	--frame-inset: var(--space-3);
 	--dock-rows: 1;
 	--dock-width: max-content;
-	--dock-base-height: calc(var(--control-size) + var(--space-1));
+	--dock-base-height: calc(var(--control-size) + var(--space-2));
 	--dock-height: var(--measured-dock-height, var(--dock-base-height));
 	--popover-width: min(
 		var(--panel-width),
@@ -176,15 +184,19 @@ svg {
 .toolbar {
 	display: flex;
 	align-items: center;
-	padding: var(--space-05);
-	min-height: calc(var(--control-size) + var(--space-1));
-	gap: var(--space-05);
+	padding: var(--space-1);
+	min-height: calc(var(--control-size) + var(--space-2));
+	gap: var(--space-15);
 	pointer-events: auto;
+}
+.toolbar .icon-button,
+.toolbar .text-button {
+	border-radius: calc(var(--panel-radius) - var(--space-1));
 }
 .brand {
 	display: flex;
 	align-items: center;
-	gap: var(--space-1);
+	gap: var(--space-05);
 	white-space: nowrap;
 }
 .brand-mark {
@@ -194,7 +206,6 @@ svg {
 	color: var(--accent);
 }
 .brand strong {
-	width: var(--space-6);
 	font-size: var(--type-brand);
 	font-weight: var(--weight-bold);
 	line-height: var(--line-heading);
@@ -210,7 +221,7 @@ svg {
 .status {
 	display: grid;
 	place-items: center;
-	width: var(--control-size);
+	width: var(--space-1);
 	height: var(--control-size);
 }
 .status-dot {
@@ -440,7 +451,7 @@ svg {
 	padding: 0;
 	border: 0;
 	border-radius: var(--radius-control);
-	box-shadow: inset 0 0 0 var(--hairline) #00000014;
+	box-shadow: inset 0 0 0 var(--hairline) color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .custom-color:focus-within {
 	outline: var(--stroke-strong) solid var(--accent);
@@ -505,7 +516,7 @@ svg {
 	height: 100%;
 	overflow: hidden;
 	border-radius: var(--radius-panel);
-	background: var(--surface);
+	background: transparent;
 }
 .html-card-frame {
 	display: block;
@@ -525,7 +536,7 @@ svg {
 	text-align: center;
 }
 .sticky-note {
-	filter: drop-shadow(0 2px 4px rgb(36 42 56 / 0.16));
+	filter: drop-shadow(0 2px 4px color-mix(in srgb, var(--ink) 16%, transparent));
 }
 .sticky-text {
 	height: 100%;
@@ -791,12 +802,19 @@ svg {
 	flex-direction: column;
 	width: 320px;
 	max-height: calc(100dvh - var(--frame-inset) * 2 - var(--dock-height, 64px) - var(--space-8));
+	--card-border-radius: var(--panel-radius);
+	--card-border-width: 0;
+	--card-padding: 0;
 	padding: 0;
 	overflow: hidden;
 	background: var(--surface);
 	border: 0;
 	border-radius: var(--panel-radius);
 	box-shadow: var(--panel-shadow);
+}
+.selection-panel::before,
+.selection-panel::after {
+	content: none;
 }
 .selection-panel-header {
 	display: flex;
@@ -853,6 +871,20 @@ svg {
 	align-items: center;
 	gap: var(--space-1);
 }
+.panel-hint {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--space-1);
+	color: var(--ink-secondary);
+}
+.panel-hint > svg {
+	flex: 0 0 auto;
+	margin-top: 2px;
+}
+.panel-swatches-icon {
+	flex: 0 0 auto;
+	color: var(--ink-secondary);
+}
 .selection-panel .rt-TextFieldRoot,
 .selection-panel .rt-TextAreaRoot,
 .selection-panel .select-trigger {
@@ -891,6 +923,7 @@ svg {
 	outline-offset: var(--hairline);
 }
 .color-custom {
+	position: relative;
 	display: grid;
 	place-items: center;
 	width: var(--control-compact);
@@ -898,11 +931,30 @@ svg {
 	border: var(--hairline) solid var(--border);
 	border-radius: var(--radius-control);
 	overflow: hidden;
+	background: conic-gradient(
+		var(--candy-pink),
+		var(--candy-yellow),
+		var(--candy-green),
+		var(--candy-blue),
+		var(--candy-pink)
+	);
+	color: var(--surface);
+}
+.color-custom.chosen {
+	outline: var(--stroke-strong) solid var(--ink);
+	outline-offset: var(--hairline);
+}
+.color-custom-icon {
+	pointer-events: none;
+	filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--ink) 45%, transparent));
 }
 .color-custom input {
-	width: 120%;
-	height: 120%;
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
 	border: 0;
 	padding: 0;
+	opacity: 0;
 	cursor: pointer;
 }

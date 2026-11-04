@@ -12,6 +12,9 @@ import {
 	Circle,
 	CodeXml,
 	Frame,
+	MousePointer2,
+	Palette,
+	Pipette,
 	Slash,
 	Square,
 	StickyNote,
@@ -143,9 +146,12 @@ export function SelectionPanel({
 
 			<div className="selection-panel-body">
 				{!shape && (
-					<Text size="1" color="gray">
-						Drag to move, or use the dock to wrap the selection in a frame or delete it.
-					</Text>
+					<div className="panel-hint">
+						<MousePointer2 size={14} strokeWidth={1.75} aria-hidden="true" />
+						<Text size="1" color="gray">
+							Drag to move, or use the dock to wrap the selection in a frame or delete it.
+						</Text>
+					</div>
 				)}
 
 				{shape?.type === 'text' && (
@@ -258,9 +264,12 @@ export function SelectionPanel({
 								}}
 							/>
 						</Field>
-						<Text size="1" color="gray">
-							Markup is generated through the API.
-						</Text>
+						<div className="panel-hint">
+							<CodeXml size={14} strokeWidth={1.75} aria-hidden="true" />
+							<Text size="1" color="gray">
+								Markup is generated through the API.
+							</Text>
+						</div>
 					</>
 				)}
 
@@ -325,8 +334,14 @@ export function SelectionPanel({
 
 				{shape && (
 					<fieldset className="panel-field panel-color">
-						<legend className="panel-label">Color</legend>
+						<legend className="sr-only">Color</legend>
 						<div className="panel-swatches">
+							<Palette
+								className="panel-swatches-icon"
+								size={14}
+								strokeWidth={1.75}
+								aria-hidden="true"
+							/>
 							{SHAPE_COLORS.map(({ value, label }) => (
 								<button
 									type="button"
@@ -338,7 +353,18 @@ export function SelectionPanel({
 									onClick={() => onColor(value)}
 								/>
 							))}
-							<label className="color-custom" title="Custom color">
+							<label
+								className={`color-custom ${
+									SHAPE_COLORS.some(({ value }) => value === shape.color) ? '' : 'chosen'
+								}`}
+								title="Custom color"
+							>
+								<Pipette
+									className="color-custom-icon"
+									size={14}
+									strokeWidth={2}
+									aria-hidden="true"
+								/>
 								<input
 									type="color"
 									value={shape.color}

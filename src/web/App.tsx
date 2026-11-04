@@ -25,6 +25,9 @@ import {
 	CANDY_LAYOUT,
 	CANDY_TINTS,
 	CONTROL_SIZE,
+	candyInk,
+	candyLine,
+	candyWash,
 	FONT_OPTIONS,
 	FONT_SIZES,
 	FONT_STACKS,
@@ -886,7 +889,7 @@ export default function App() {
 						width={shape.w}
 						height={shape.h}
 						rx={10}
-						fill="var(--surface)"
+						style={{ fill: candyWash(shape.color) }}
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 					/>
@@ -904,7 +907,7 @@ export default function App() {
 						<text
 							x={shape.x + shape.w / 2}
 							y={shape.y + shape.h / 2}
-							fill="#172033"
+							fill={candyInk(shape.color)}
 							textAnchor="middle"
 							dominantBaseline="middle"
 						>
@@ -922,7 +925,7 @@ export default function App() {
 						cy={shape.y + shape.h / 2}
 						rx={shape.w / 2}
 						ry={shape.h / 2}
-						fill="var(--surface)"
+						style={{ fill: candyWash(shape.color) }}
 						stroke={shape.color}
 						strokeWidth={active ? 3 : 2}
 					/>
@@ -940,7 +943,7 @@ export default function App() {
 						<text
 							x={shape.x + shape.w / 2}
 							y={shape.y + shape.h / 2}
-							fill="#172033"
+							fill={candyInk(shape.color)}
 							textAnchor="middle"
 							dominantBaseline="middle"
 						>
@@ -959,8 +962,10 @@ export default function App() {
 						width={shape.w}
 						height={shape.h}
 						rx={10}
-						fill="var(--surface)"
-						stroke={active ? shape.color : 'var(--border)'}
+						style={{
+							fill: candyWash(shape.color, 5),
+							stroke: active ? shape.color : candyLine(shape.color),
+						}}
 						strokeWidth={active ? 2 : 1}
 						vectorEffect="non-scaling-stroke"
 					/>
@@ -1020,8 +1025,10 @@ export default function App() {
 						width={shape.w}
 						height={shape.h}
 						rx={10}
-						fill="#fbfcff"
-						stroke={active ? shape.color : 'var(--border)'}
+						style={{
+							fill: candyWash(shape.color, 7),
+							stroke: active ? shape.color : candyLine(shape.color),
+						}}
 						strokeWidth={active ? 2 : 1}
 						vectorEffect="non-scaling-stroke"
 						pointerEvents="none"
@@ -1102,7 +1109,7 @@ export default function App() {
 								fontFamily: FONT_STACKS[font],
 								fontSize: `${shape.fontSize ?? 32}px`,
 								fontWeight: shape.fontWeight ?? 500,
-								color: shape.color,
+								color: candyInk(shape.color),
 							}}
 						>
 							{shape.text || 'Type something'}

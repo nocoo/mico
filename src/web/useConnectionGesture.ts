@@ -137,7 +137,7 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 					shape: {
 						id: crypto.randomUUID(),
 						type: 'connector',
-						color: CANDY_LAYOUT.inkSecondary,
+						color: CANDY_LAYOUT.connector,
 						...endpoints,
 					},
 				}

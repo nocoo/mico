@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
+import { CANDY_COLORS, CANDY_TINTS } from '../../src/web/design'
 
 async function board(request: APIRequestContext): Promise<Board> {
 	const response = await request.get('/api/board')
@@ -150,6 +151,7 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
+	await expect(page.locator('.identity-panel .brand-mark.lucide')).toHaveCount(1)
 	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
 	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(15)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
@@ -197,7 +199,7 @@ test('selected object properties live inside the dock and edit the board', async
 	await properties.getByRole('button', { name: 'Set color Green' }).click()
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
-		.toMatchObject({ color: '#166534' })
+		.toMatchObject({ color: CANDY_COLORS.green })
 	await properties.getByRole('button', { name: 'Close properties' }).click()
 	await expect(properties).toHaveCount(0)
 })
@@ -379,7 +381,7 @@ test('sticky note text edits inline and in the properties panel', async ({ page,
 		| CanvasShape
 		| undefined
 	if (!note || note.type !== 'note') throw new Error('Expected a note')
-	expect(note).toMatchObject({ color: '#fce7f3', text: 'Note' })
+	expect(note).toMatchObject({ color: CANDY_TINTS.pink, text: 'Note' })
 
 	const center = await worldPoint(page, note.x + note.w / 2, note.y + note.h / 2)
 	await page.mouse.dblclick(center.x, center.y)

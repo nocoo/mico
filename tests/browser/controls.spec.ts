@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Shape } from '../../src/shared/types'
+import { CANDY_COLORS, CANDY_TINTS } from '../../src/web/design'
 import {
 	board,
 	choose,
@@ -61,7 +62,7 @@ test('rectangle, ellipse and line tools draw by dragging', async ({ page, reques
 	await dragWorld(page, { x: 160, y: 160 }, { x: 340, y: 260 })
 	await expect.poll(async () => countOf(request, 'rectangle')).toBe(1)
 	const rectangle = (await board(request)).shapes.find((shape) => shape.type === 'rectangle')
-	expect(rectangle).toMatchObject({ x: 160, y: 160, w: 180, h: 100 })
+	expect(rectangle).toMatchObject({ x: 160, y: 160, w: 180, h: 100, color: CANDY_COLORS.blue })
 
 	await page.getByRole('button', { name: 'Ellipse', exact: true }).click()
 	await dragWorld(page, { x: 420, y: 160 }, { x: 560, y: 280 })
@@ -71,6 +72,7 @@ test('rectangle, ellipse and line tools draw by dragging', async ({ page, reques
 		y: 160,
 		w: 140,
 		h: 120,
+		color: CANDY_COLORS.blue,
 	})
 
 	await page.getByRole('button', { name: 'Line', exact: true }).click()
@@ -81,6 +83,7 @@ test('rectangle, ellipse and line tools draw by dragging', async ({ page, reques
 		y: 340,
 		w: 200,
 		h: 60,
+		color: CANDY_COLORS.green,
 	})
 })
 
@@ -93,6 +96,7 @@ test('text, sticky note and html tools create their primitives on click', async 
 	await expect.poll(async () => countOf(request, 'text')).toBe(1)
 	expect((await board(request)).shapes.find((shape) => shape.type === 'text')).toMatchObject({
 		text: 'Type something',
+		color: CANDY_COLORS.blue,
 		font: 'sans',
 		fontSize: 32,
 		fontWeight: 500,
@@ -103,7 +107,7 @@ test('text, sticky note and html tools create their primitives on click', async 
 	await expect.poll(async () => countOf(request, 'note')).toBe(1)
 	expect((await board(request)).shapes.find((shape) => shape.type === 'note')).toMatchObject({
 		text: 'Note',
-		color: '#fef3c7',
+		color: CANDY_TINTS.yellow,
 	})
 
 	await page.getByRole('button', { name: 'HTML card', exact: true }).click()
@@ -124,7 +128,7 @@ test('sticky palette, brush style and brush width apply to new objects', async (
 	await clickWorld(page, 500, 220)
 	await expect.poll(async () => countOf(request, 'note')).toBe(1)
 	expect((await board(request)).shapes.find((shape) => shape.type === 'note')).toMatchObject({
-		color: '#f1f5f9',
+		color: CANDY_TINTS.neutral,
 	})
 
 	await page.getByRole('button', { name: 'Brush', exact: true }).click()
@@ -192,7 +196,7 @@ test('keyboard shortcuts switch tools and control delete, zoom and fit', async (
 		y: 300,
 		w: 160,
 		h: 160,
-		color: '#fef3c7',
+		color: CANDY_TINTS.yellow,
 		text: 'Editor focus',
 	}
 	await seed(page, request, [note])
@@ -344,7 +348,9 @@ test('properties panel edits text, colors, path brushes and typography', async (
 	await properties.getByLabel('Text', { exact: true }).press('Enter')
 	await expect.poll(async () => (await shapeOf(request, 'panel-rect')).text).toBe('Panel rename')
 	await properties.getByRole('button', { name: 'Set color Green' }).click()
-	await expect.poll(async () => (await shapeOf(request, 'panel-rect')).color).toBe('#166534')
+	await expect
+		.poll(async () => (await shapeOf(request, 'panel-rect')).color)
+		.toBe(CANDY_COLORS.green)
 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	await clickPathInk(page, 'panel-path')
@@ -455,7 +461,7 @@ test('frame membership accepts lines, strokes and html cards but never html as h
 						y: html.y + 20,
 						w: 80,
 						h: 80,
-						color: '#fef3c7',
+						color: CANDY_TINTS.yellow,
 						text: 'Nope',
 						frameId: html.id,
 					},
@@ -479,7 +485,7 @@ test('frame membership accepts lines, strokes and html cards but never html as h
 						y: 620,
 						w: 160,
 						h: 160,
-						color: '#fef3c7',
+						color: CANDY_TINTS.yellow,
 						text: 'Drop target',
 					},
 				},

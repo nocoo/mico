@@ -13,54 +13,85 @@ export const BRUSH_STYLES = [
 export const BRUSH_WIDTHS = [2, 4, 8] as const
 
 export const CANDY_COLORS = {
-	blue: '#3b82f6',
-	green: '#22c55e',
-	yellow: '#facc15',
-	pink: '#f472b6',
-	ink: '#263248',
+	blue: '#00a2e1',
+	green: '#a6d94f',
+	yellow: '#f7de4b',
+	pink: '#ff7fa3',
+	ink: '#2b3038',
 } as const
 
 export const CANDY_TINTS = {
-	blue: '#dbeafe',
-	green: '#dcfce7',
-	yellow: '#fef3c7',
-	pink: '#fce7f3',
-	neutral: '#f1f5f9',
+	blue: '#e2f5fc',
+	green: '#f1fadc',
+	yellow: '#fff8d4',
+	pink: '#ffe9f0',
+	neutral: '#f3f5f4',
 } as const
 
 export const CANDY_LAYOUT = {
-	blueHover: '#2563eb',
-	textPreset: '#1d4ed8',
-	linePreset: '#166534',
-	yellowPreset: '#a16207',
-	pinkPreset: '#9d174d',
-	grid: '#dfe5ec',
-	canvas: '#f8fafc',
-	inkSecondary: '#5b6575',
-	inkMuted: '#5b6575',
-	surfaceHover: '#e2e8f0',
-	border: '#dbe3ef',
-	borderStrong: '#94a3b8',
-	greenStatus: '#15803d',
-	warning: '#a16207',
-	danger: '#be123c',
+	surface: '#ffffff',
+	blueHover: '#008fc7',
+	blueStroke: '#0b7ba8',
+	greenStroke: '#5c8c1e',
+	yellowStroke: '#8c7300',
+	pinkStroke: '#b23f63',
+	textPreset: CANDY_COLORS.blue,
+	linePreset: CANDY_COLORS.green,
+	yellowPreset: '#8c7300',
+	pinkPreset: '#b23f63',
+	connector: CANDY_COLORS.blue,
+	grid: '#dceaf1',
+	canvas: '#f5fafc',
+	inkSecondary: '#5e6a73',
+	inkMuted: '#7a858d',
+	surfaceHover: '#ecf1f4',
+	border: '#dce4e9',
+	borderStrong: '#a9b6be',
+	greenStatus: '#4fae3f',
+	warning: '#8c7300',
+	danger: '#c13a5c',
 } as const
+
+export function candyWash(color: string, percent = 10): string {
+	return `color-mix(in srgb, ${color} ${percent}%, var(--surface))`
+}
+
+const READABLE_TEXT: Record<string, string> = {
+	[CANDY_COLORS.blue]: CANDY_LAYOUT.blueStroke,
+	[CANDY_COLORS.green]: CANDY_LAYOUT.greenStroke,
+	[CANDY_COLORS.yellow]: CANDY_LAYOUT.yellowStroke,
+	[CANDY_COLORS.pink]: CANDY_LAYOUT.pinkStroke,
+}
+
+export function candyInk(color: string): string {
+	return READABLE_TEXT[color] ?? color
+}
+
+export function candyLine(color: string, percent = 35): string {
+	return `color-mix(in srgb, ${color} ${percent}%, var(--border))`
+}
 
 export function initializeCandyPalette(root: HTMLElement): void {
 	const properties: Record<string, string> = {
 		'--candy-blue': CANDY_COLORS.blue,
 		'--candy-blue-hover': CANDY_LAYOUT.blueHover,
 		'--candy-blue-tint': CANDY_TINTS.blue,
+		'--candy-blue-stroke': CANDY_LAYOUT.blueStroke,
 		'--candy-green': CANDY_COLORS.green,
 		'--candy-green-tint': CANDY_TINTS.green,
+		'--candy-green-stroke': CANDY_LAYOUT.greenStroke,
 		'--candy-yellow': CANDY_COLORS.yellow,
 		'--candy-yellow-tint': CANDY_TINTS.yellow,
+		'--candy-yellow-stroke': CANDY_LAYOUT.yellowStroke,
 		'--candy-pink': CANDY_COLORS.pink,
 		'--candy-pink-tint': CANDY_TINTS.pink,
+		'--candy-pink-stroke': CANDY_LAYOUT.pinkStroke,
 		'--candy-ink': CANDY_COLORS.ink,
 		'--candy-neutral-tint': CANDY_TINTS.neutral,
+		'--candy-surface': CANDY_LAYOUT.surface,
 		'--candy-grid': CANDY_LAYOUT.grid,
 		'--candy-canvas': CANDY_LAYOUT.canvas,
+		'--candy-connector': CANDY_LAYOUT.connector,
 		'--candy-ink-secondary': CANDY_LAYOUT.inkSecondary,
 		'--candy-ink-muted': CANDY_LAYOUT.inkMuted,
 		'--candy-green-status': CANDY_LAYOUT.greenStatus,
@@ -74,10 +105,10 @@ export function initializeCandyPalette(root: HTMLElement): void {
 }
 
 export const SHAPE_COLORS = [
-	{ value: CANDY_LAYOUT.textPreset, label: 'Blue' },
-	{ value: CANDY_LAYOUT.linePreset, label: 'Green' },
-	{ value: CANDY_LAYOUT.yellowPreset, label: 'Yellow' },
-	{ value: CANDY_LAYOUT.pinkPreset, label: 'Pink' },
+	{ value: CANDY_COLORS.blue, label: 'Blue' },
+	{ value: CANDY_COLORS.green, label: 'Green' },
+	{ value: CANDY_COLORS.yellow, label: 'Yellow' },
+	{ value: CANDY_COLORS.pink, label: 'Pink' },
 	{ value: CANDY_COLORS.ink, label: 'Ink' },
 ] as const
 

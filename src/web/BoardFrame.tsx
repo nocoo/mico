@@ -8,6 +8,7 @@ import {
 	Maximize,
 	Minus,
 	MousePointer2,
+	PenTool,
 	Plus,
 	Slash,
 	Square,
@@ -100,20 +101,7 @@ export function BoardFrame({
 			<header className="topbar">
 				<div className="identity-panel floating-panel">
 					<div className="brand">
-						<svg className="brand-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-							<path
-								d="M3 19V5L12 14L21 5V19"
-								stroke="currentColor"
-								strokeWidth="2.25"
-								strokeLinejoin="round"
-							/>
-							<path
-								d="M3 5H6M18 5H21M10 19H14"
-								stroke="currentColor"
-								strokeWidth="2.25"
-								strokeLinecap="round"
-							/>
-						</svg>
+						<PenTool className="brand-mark" strokeWidth={2.25} aria-hidden="true" />
 						<strong>mico</strong>
 					</div>
 					<span
