@@ -341,6 +341,7 @@ export function AiPanel({
 
 	const requestSummary = useCallback(() => {
 		if (requestLock.current || summaryInFlight.current || summaryDone) return
+		clearError()
 		requestLock.current = true
 		summaryInFlight.current = true
 		summaryAttempted.current = true
@@ -356,7 +357,7 @@ export function AiPanel({
 				},
 			},
 		).finally(() => releaseRequestRef.current(seq))
-	}, [sendMessage, summaryDone])
+	}, [sendMessage, summaryDone, clearError])
 
 	const endSession = useCallback(() => {
 		setSessionEnded(true)
@@ -710,7 +711,6 @@ export function AiPanel({
 					canSummarize={
 						sessionEnded &&
 						!busy &&
-						!error &&
 						lectureQueued === 0 &&
 						messages.length > 0 &&
 						!summaryDone &&

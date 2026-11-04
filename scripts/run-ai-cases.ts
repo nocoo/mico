@@ -307,6 +307,9 @@ async function runCase(
 	}
 
 	const summaryRemaining = caseDeadline - Date.now()
+	if (!logData.error && summaryRemaining <= 5000) {
+		logData.error = 'summary skipped: case deadline'
+	}
 	if (!logData.error && summaryRemaining > 5000) {
 		log(`  summary for ${caseEntry.id}`)
 		const started = Date.now()
@@ -389,6 +392,7 @@ async function main(): Promise<void> {
 	const roundStart = Date.now()
 	const roundDeadline = roundStart + ROUND_LIMIT_MS
 	const results: CaseLog[] = []
+	const attempted = new Set<string>()
 	let previousCases: { id: string; [key: string]: unknown }[] = []
 	try {
 		const previous = JSON.parse(readFileSync(join(OUT, 'summary.json'), 'utf8')) as {
@@ -404,6 +408,7 @@ async function main(): Promise<void> {
 				log('round timeout; stopping before', entry.id)
 				break
 			}
+			attempted.add(entry.id)
 			try {
 				results.push(await runCase(entry, ROUND, roundDeadline))
 			} catch (error) {
@@ -422,9 +427,7 @@ async function main(): Promise<void> {
 		startedAt: new Date(roundStart).toISOString(),
 		elapsedMinutes: Number(((Date.now() - roundStart) / 60_000).toFixed(1)),
 		cases: [
-			...previousCases.filter(
-				(previous) => !results.some((result) => result.case.id === previous.id),
-			),
+			...previousCases.filter((previous) => !attempted.has(previous.id)),
 			...results.map((result) => ({
 				id: result.case.id,
 				title: result.case.title,
