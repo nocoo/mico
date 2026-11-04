@@ -1,0 +1,20 @@
+{
+	"case": "10-physics-energy-collision",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "50c5690",
+	"rubricRevision": "880a84f",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-40-15-930Z_01a1a3ff-d93a-71b7-ad57-4a3b1374b28d",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 4,
+	"shapeCount": 112,
+	"score": 8,
+	"scoreMaximum": 10
+}
