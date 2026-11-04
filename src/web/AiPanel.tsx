@@ -202,6 +202,8 @@ export function AiPanel({
 	const lastCanvasId = useRef(canvasId)
 	const lectureQueue = useRef<string[]>([])
 	const requestLock = useRef(false)
+	const requestSeq = useRef(0)
+	const releaseRequestRef = useRef<(seq: number) => void>(() => {})
 	const [lectureQueued, setLectureQueued] = useState(0)
 	const [lessonClipId, setLessonClipId] = useState('')
 	const selectionRef = useRef(selectedIds)
@@ -216,15 +218,52 @@ export function AiPanel({
 	const busy = status === 'submitted' || status === 'streaming'
 	const selection = selectedIds
 
+	const resetLectureQueue = useCallback(() => {
+		lectureQueue.current = []
+		requestSeq.current++
+		requestLock.current = false
+		setLectureQueued(0)
+	}, [])
+
+	const pumpLecture = useCallback(() => {
+		if (requestLock.current) return
+		const batch: string[] = []
+		let size = 0
+		while (lectureQueue.current.length > 0 && batch.length < 3) {
+			const next = lectureQueue.current[0]
+			if (batch.length > 0 && size + next.length > 900) break
+			batch.push(lectureQueue.current.shift() as string)
+			size += next.length
+		}
+		if (batch.length === 0) {
+			setLectureQueued(0)
+			return
+		}
+		requestLock.current = true
+		const seq = ++requestSeq.current
+		setLectureQueued(lectureQueue.current.length)
+		void sendMessage(
+			{ text: batch.join('\n\n') },
+			{ body: { selection: selectionRef.current, mode: 'lecture' } },
+		).finally(() => releaseRequestRef.current(seq))
+	}, [sendMessage])
+
+	releaseRequestRef.current = (seq) => {
+		if (requestSeq.current !== seq) return
+		requestLock.current = false
+		pumpLecture()
+	}
+
 	const send = useCallback(
 		(text: string) => {
 			const value = text.trim()
 			if (!value || requestLock.current || status === 'submitted' || status === 'streaming') return
 			requestLock.current = true
+			const seq = ++requestSeq.current
 			setDraft('')
-			void sendMessage({ text: value }, { body: { selection, mode: 'chat' } }).catch(() => {
-				requestLock.current = false
-			})
+			void sendMessage({ text: value }, { body: { selection, mode: 'chat' } }).finally(() =>
+				releaseRequestRef.current(seq),
+			)
 		},
 		[sendMessage, selection, status],
 	)
@@ -245,36 +284,6 @@ export function AiPanel({
 		return () => window.clearTimeout(timer)
 	}, [open, initialPrompt, onInitialPromptConsumed, send])
 
-	const resetLectureQueue = useCallback(() => {
-		lectureQueue.current = []
-		requestLock.current = false
-		setLectureQueued(0)
-	}, [])
-
-	const pumpLecture = useCallback(() => {
-		if (requestLock.current) return
-		const batch: string[] = []
-		let size = 0
-		while (lectureQueue.current.length > 0 && batch.length < 3) {
-			const next = lectureQueue.current[0]
-			if (batch.length > 0 && size + next.length > 900) break
-			batch.push(lectureQueue.current.shift() as string)
-			size += next.length
-		}
-		if (batch.length === 0) {
-			setLectureQueued(0)
-			return
-		}
-		requestLock.current = true
-		setLectureQueued(lectureQueue.current.length)
-		void sendMessage(
-			{ text: batch.join('\n\n') },
-			{ body: { selection: selectionRef.current, mode: 'lecture' } },
-		).catch(() => {
-			requestLock.current = false
-		})
-	}, [sendMessage])
-
 	const enqueueLecture = useCallback(
 		(segment: LessonSegment, clip: LessonClip) => {
 			lectureQueue.current.push(
@@ -290,15 +299,6 @@ export function AiPanel({
 		resetLectureQueue()
 		if (status === 'submitted' || status === 'streaming') stop()
 	}, [resetLectureQueue, status, stop])
-
-	useEffect(() => {
-		if (status === 'ready') {
-			requestLock.current = false
-			pumpLecture()
-		} else if (status === 'error') {
-			requestLock.current = false
-		}
-	}, [status, pumpLecture])
 
 	useEffect(() => {
 		if (lastCanvasId.current === canvasId) return
@@ -540,15 +540,14 @@ export function AiPanel({
 							onClick={() => {
 								if (requestLock.current) return
 								requestLock.current = true
+								const seq = ++requestSeq.current
 								clearError()
 								void sendMessage(
 									{
 										text: 'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
 									},
 									{ body: { selection, mode: 'chat' } },
-								).catch(() => {
-									requestLock.current = false
-								})
+								).finally(() => releaseRequestRef.current(seq))
 							}}
 						>
 							Continue
