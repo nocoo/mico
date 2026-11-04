@@ -14,7 +14,18 @@
       --ink: #2b3038;
       --ink-secondary: #5e6a73;
       --accent: #00a2e1;
-      --accent-hover: #008fc7;
+      --blue-tint: #e2f5fc;
+      --blue-ink: #0b7ba8;
+      --green: #a6d94f;
+      --green-tint: #f1fadc;
+      --green-ink: #5c8c1e;
+      --yellow: #f7de4b;
+      --yellow-tint: #fff8d4;
+      --yellow-ink: #8c7300;
+      --pink: #ff7fa3;
+      --pink-tint: #ffe9f0;
+      --pink-ink: #b23f63;
+      --border-strong: #a9b6be;
       font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background: var(--canvas);
@@ -81,7 +92,7 @@
       border-radius: 12px;
       background: transparent;
       color: var(--ink-secondary);
-      transition: background 120ms, color 120ms;
+      transition: background 160ms, color 160ms, box-shadow 160ms;
     }
 
     .icon-button { width: 40px; }
@@ -96,27 +107,55 @@
       stroke-linejoin: round;
     }
     .icon-button:hover:not(:disabled), .zoom-value:hover { background: var(--surface-hover); color: var(--ink); }
-    .drawing-tools .icon-button[aria-pressed="true"] { background: var(--tool-accent, var(--accent)); color: var(--tool-ink, var(--surface)); }
-    .drawing-tools .icon-button[aria-pressed="true"]:is([data-tool="ellipse"], [data-tool="connector"], [data-tool="line"], [data-tool="note"], [data-tool="path"]) { box-shadow: inset 0 0 0 2px var(--ink); }
-    [data-tool="ellipse"], [data-tool="connector"] { --tool-accent: #a6d94f; --tool-ink: var(--ink); }
-    [data-tool="line"], [data-tool="note"] { --tool-accent: #f7de4b; --tool-ink: var(--ink); }
-    [data-tool="path"] { --tool-accent: #ff7fa3; --tool-ink: var(--ink); }
-    [data-tool="text"] { --tool-accent: var(--ink); }
+    .drawing-tools .icon-button[aria-pressed="true"] {
+      background: var(--tool-tint, var(--blue-tint));
+      color: var(--tool-ink, var(--blue-ink));
+      box-shadow: inset 0 0 0 2px var(--tool-accent, var(--accent));
+    }
+    [data-tool="ellipse"], [data-tool="connector"] { --tool-accent: var(--green); --tool-tint: var(--green-tint); --tool-ink: var(--green-ink); }
+    [data-tool="line"], [data-tool="note"] { --tool-accent: var(--yellow); --tool-tint: var(--yellow-tint); --tool-ink: var(--yellow-ink); }
+    [data-tool="path"] { --tool-accent: var(--pink); --tool-tint: var(--pink-tint); --tool-ink: var(--pink-ink); }
     .zoom-value { width: 64px; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
 
-    .tool-options { display: flex; align-items: center; gap: 4px; }
-    .tool-options[hidden], .option-divider[hidden] { display: none; }
-    .tool-options select {
-      width: 88px;
+    .options-wrap {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      transition: width 320ms cubic-bezier(.2, .7, .2, 1);
+    }
+    .tool-options { display: flex; align-items: center; flex: 0 0 auto; width: max-content; gap: 4px; }
+    .tool-options[hidden] { display: none; }
+    .select-wrap { position: relative; display: block; flex: 0 0 88px; width: 88px; height: 32px; }
+    .select-wrap select {
+      display: block;
+      appearance: none;
+      width: 100%;
       height: 32px;
-      padding: 0 8px;
-      border: 1px solid #a9b6be;
+      padding: 0 28px 0 8px;
+      border: 1px solid var(--border-strong);
       border-radius: 8px;
       background: var(--surface);
       color: var(--ink);
       font-size: 12px;
+      cursor: pointer;
     }
-    .segmented-control { display: flex; align-items: center; }
+    .select-wrap svg {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: var(--ink-secondary);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .segmented-control { display: flex; align-items: center; --choice-color: var(--pink); --choice-tint: var(--pink-tint); --choice-ink: var(--pink-ink); }
     .segmented-control button {
       height: 32px;
       padding: 0 8px;
@@ -128,21 +167,33 @@
     .segmented-control button + button { margin-left: -1px; }
     .segmented-control button:first-child { border-radius: 8px 0 0 8px; }
     .segmented-control button:last-child { border-radius: 0 8px 8px 0; }
-    .segmented-control button[aria-pressed="true"] { position: relative; border-color: var(--ink); color: var(--ink); }
+    .segmented-control button[aria-pressed="true"] {
+      position: relative;
+      border-color: var(--choice-color);
+      background: var(--choice-tint);
+      color: var(--choice-ink);
+      box-shadow: inset 0 0 0 1px var(--choice-color);
+    }
     .note-colors button { width: 32px; }
+    .note-colors button:nth-child(1) { --choice-color: var(--yellow); }
+    .note-colors button:nth-child(2) { --choice-color: var(--pink); }
+    .note-colors button:nth-child(3) { --choice-color: var(--green); }
+    .note-colors button:nth-child(4), .note-colors button:nth-child(5) { --choice-color: var(--accent); }
 
     @media (max-width: 768px) {
       .toolbar { bottom: 16px; }
-      .dock-main { flex-direction: column; gap: 8px; }
-      .dock-divider { display: none; }
-      .view-controls { justify-content: flex-end; width: 100%; }
+      .dock-main { flex-direction: column; gap: 0; }
+      .dock-divider, .option-divider { display: none; }
+      .options-wrap { height: 0; transition: width 320ms cubic-bezier(.2, .7, .2, 1), height 320ms cubic-bezier(.2, .7, .2, 1), margin 320ms cubic-bezier(.2, .7, .2, 1); }
+      .options-wrap.open { height: 40px; margin-top: 8px; }
+      .view-controls { justify-content: flex-end; width: 100%; margin-top: 8px; }
     }
     @media (max-width: 480px) {
       .divider { display: none; }
       .drawing-tools { display: grid; grid-template-columns: repeat(4, 40px); row-gap: 8px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .icon-button, .zoom-value { transition: none; }
+      .icon-button, .zoom-value, .options-wrap { transition: none; }
     }
   </style>
 </head>
@@ -194,11 +245,12 @@
         <button class="icon-button" type="button" aria-label="Delete selected" title="Delete selected" disabled><svg><use href="#delete"/></svg></button>
         <button class="icon-button" type="button" aria-label="Frame selection" title="Frame selection" disabled><svg><use href="#frame"/></svg></button>
       </div>
-      <span class="divider option-divider" hidden></span>
+      <div class="options-wrap">
+      <span class="divider option-divider"></span>
       <div class="tool-options text-options" data-options="text" role="group" aria-label="Text options" hidden>
-        <select aria-label="Font family"><option>Hand</option><option>Serif</option><option selected>Sans</option><option>Mono</option></select>
-        <select aria-label="Font size"><option>16</option><option>24</option><option selected>32</option><option>48</option></select>
-        <select aria-label="Font weight"><option>300</option><option>400</option><option selected>500</option><option>700</option></select>
+        <label class="select-wrap"><select aria-label="Font family"><option>Hand</option><option>Serif</option><option selected>Sans</option><option>Mono</option></select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></label>
+        <label class="select-wrap"><select aria-label="Font size"><option>16</option><option>24</option><option selected>32</option><option>48</option></select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></label>
+        <label class="select-wrap"><select aria-label="Font weight"><option>300</option><option>400</option><option selected>500</option><option>700</option></select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></label>
       </div>
       <div class="tool-options" data-options="path" role="group" aria-label="Brush options" hidden>
         <div class="segmented-control" role="group" aria-label="Brush style">
@@ -212,6 +264,7 @@
         <div class="segmented-control note-colors" role="group" aria-label="Sticky color">
           <button type="button" aria-label="Yellow sticky" aria-pressed="true" style="background:#fff8d4"></button><button type="button" aria-label="Pink sticky" aria-pressed="false" style="background:#ffe9f0"></button><button type="button" aria-label="Green sticky" aria-pressed="false" style="background:#f1fadc"></button><button type="button" aria-label="Blue sticky" aria-pressed="false" style="background:#e2f5fc"></button><button type="button" aria-label="Neutral sticky" aria-pressed="false" style="background:#f3f5f4"></button>
         </div>
+      </div>
       </div>
       <span class="divider dock-divider"></span>
       <div class="view-controls" role="group" aria-label="View controls">
@@ -229,15 +282,24 @@
     const toolbar = document.querySelector('.toolbar');
     const tools = [...toolbar.querySelectorAll('[data-tool]')];
     const options = [...toolbar.querySelectorAll('[data-options]')];
+    const optionsWrap = toolbar.querySelector('.options-wrap');
     const optionDivider = toolbar.querySelector('.option-divider');
     const zoomValue = toolbar.querySelector('.zoom-value');
     let zoom = 1;
 
+    function updateOptionsWidth() {
+      const activeOptions = options.find((group) => !group.hidden);
+      optionsWrap.classList.toggle('open', Boolean(activeOptions));
+      optionsWrap.style.width = `${activeOptions ? activeOptions.scrollWidth + optionDivider.offsetWidth : 0}px`;
+    }
+
     function selectTool(id) {
       tools.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.tool === id)));
       options.forEach((group) => { group.hidden = group.dataset.options !== id; });
-      optionDivider.hidden = options.every((group) => group.hidden);
+      updateOptionsWidth();
     }
+
+    window.addEventListener('resize', updateOptionsWidth);
 
     function setZoom(value) {
       zoom = Math.min(3, Math.max(.05, value));
