@@ -1,0 +1,20 @@
+{
+	"case": "02-history-modern-china-timeline",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "880a84f",
+	"rubricRevision": "12b9161",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-09-21-611Z_01a1a3e3-8dcb-73b0-971b-f5172dae08fc",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 1,
+	"shapeCount": 102,
+	"score": 10,
+	"scoreMaximum": 10
+}
