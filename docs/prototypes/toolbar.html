@@ -25,9 +25,10 @@
 
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; overflow: hidden; }
-    button { font: inherit; cursor: pointer; }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
     button:disabled { cursor: default; opacity: .35; }
-    button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
     .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
 
@@ -95,9 +96,40 @@
       stroke-linejoin: round;
     }
     .icon-button:hover:not(:disabled), .zoom-value:hover { background: var(--surface-hover); color: var(--ink); }
-    .icon-button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
-    .icon-button[aria-pressed="true"]:hover { background: var(--accent-hover); color: var(--surface); }
+    .drawing-tools .icon-button[aria-pressed="true"] { background: var(--tool-accent, var(--accent)); color: var(--tool-ink, var(--surface)); }
+    .drawing-tools .icon-button[aria-pressed="true"]:is([data-tool="ellipse"], [data-tool="connector"], [data-tool="line"], [data-tool="note"], [data-tool="path"]) { box-shadow: inset 0 0 0 2px var(--ink); }
+    [data-tool="ellipse"], [data-tool="connector"] { --tool-accent: #a6d94f; --tool-ink: var(--ink); }
+    [data-tool="line"], [data-tool="note"] { --tool-accent: #f7de4b; --tool-ink: var(--ink); }
+    [data-tool="path"] { --tool-accent: #ff7fa3; --tool-ink: var(--ink); }
+    [data-tool="text"] { --tool-accent: var(--ink); }
     .zoom-value { width: 64px; color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+
+    .tool-options { display: flex; align-items: center; gap: 4px; }
+    .tool-options[hidden], .option-divider[hidden] { display: none; }
+    .tool-options select {
+      width: 88px;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid #a9b6be;
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 12px;
+    }
+    .segmented-control { display: flex; align-items: center; }
+    .segmented-control button {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink-secondary);
+      font-size: 12px;
+    }
+    .segmented-control button + button { margin-left: -1px; }
+    .segmented-control button:first-child { border-radius: 8px 0 0 8px; }
+    .segmented-control button:last-child { border-radius: 0 8px 8px 0; }
+    .segmented-control button[aria-pressed="true"] { position: relative; border-color: var(--ink); color: var(--ink); }
+    .note-colors button { width: 32px; }
 
     @media (max-width: 768px) {
       .toolbar { bottom: 16px; }
@@ -146,21 +178,40 @@
   <div class="toolbar" role="toolbar" aria-label="Canvas tools">
     <div class="dock-main">
       <div class="drawing-tools">
-        <button class="icon-button" type="button" aria-label="Select" aria-pressed="true" title="Select (V)"><svg><use href="#select"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Pan" aria-pressed="false" title="Pan (H)"><svg><use href="#hand"/></svg></button>
+        <button class="icon-button" data-tool="select" type="button" aria-label="Select" aria-pressed="true" title="Select (V)"><svg><use href="#select"/></svg></button>
+        <button class="icon-button" data-tool="hand" type="button" aria-label="Pan" aria-pressed="false" title="Pan (H)"><svg><use href="#hand"/></svg></button>
         <span class="divider"></span>
-        <button class="icon-button" type="button" aria-label="Rectangle" aria-pressed="false" title="Rectangle (R)"><svg><use href="#rectangle"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Ellipse" aria-pressed="false" title="Ellipse (O)"><svg><use href="#ellipse"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Text" aria-pressed="false" title="Text (T)"><svg><use href="#text"/></svg></button>
+        <button class="icon-button" data-tool="rectangle" type="button" aria-label="Rectangle" aria-pressed="false" title="Rectangle (R)"><svg><use href="#rectangle"/></svg></button>
+        <button class="icon-button" data-tool="ellipse" type="button" aria-label="Ellipse" aria-pressed="false" title="Ellipse (O)"><svg><use href="#ellipse"/></svg></button>
+        <button class="icon-button" data-tool="text" type="button" aria-label="Text" aria-pressed="false" title="Text (T)"><svg><use href="#text"/></svg></button>
         <span class="divider"></span>
-        <button class="icon-button" type="button" aria-label="Line" aria-pressed="false" title="Line (L)"><svg><use href="#line"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Brush" aria-pressed="false" title="Brush (P)"><svg><use href="#brush"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Sticky note" aria-pressed="false" title="Sticky note (N)"><svg><use href="#note"/></svg></button>
-        <button class="icon-button" type="button" aria-label="HTML card" aria-pressed="false" title="HTML card (W)"><svg><use href="#html"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Connector" aria-pressed="false" title="Connector (C)"><svg><use href="#connector"/></svg></button>
+        <button class="icon-button" data-tool="line" type="button" aria-label="Line" aria-pressed="false" title="Line (L)"><svg><use href="#line"/></svg></button>
+        <button class="icon-button" data-tool="path" type="button" aria-label="Brush" aria-pressed="false" title="Brush (P)"><svg><use href="#brush"/></svg></button>
+        <button class="icon-button" data-tool="note" type="button" aria-label="Sticky note" aria-pressed="false" title="Sticky note (N)"><svg><use href="#note"/></svg></button>
+        <button class="icon-button" data-tool="html" type="button" aria-label="HTML card" aria-pressed="false" title="HTML card (W)"><svg><use href="#html"/></svg></button>
+        <button class="icon-button" data-tool="connector" type="button" aria-label="Connector" aria-pressed="false" title="Connector (C)"><svg><use href="#connector"/></svg></button>
         <span class="divider"></span>
         <button class="icon-button" type="button" aria-label="Delete selected" title="Delete selected" disabled><svg><use href="#delete"/></svg></button>
         <button class="icon-button" type="button" aria-label="Frame selection" title="Frame selection" disabled><svg><use href="#frame"/></svg></button>
+      </div>
+      <span class="divider option-divider" hidden></span>
+      <div class="tool-options text-options" data-options="text" role="group" aria-label="Text options" hidden>
+        <select aria-label="Font family"><option>Hand</option><option>Serif</option><option selected>Sans</option><option>Mono</option></select>
+        <select aria-label="Font size"><option>16</option><option>24</option><option selected>32</option><option>48</option></select>
+        <select aria-label="Font weight"><option>300</option><option>400</option><option selected>500</option><option>700</option></select>
+      </div>
+      <div class="tool-options" data-options="path" role="group" aria-label="Brush options" hidden>
+        <div class="segmented-control" role="group" aria-label="Brush style">
+          <button type="button" aria-pressed="false">Pencil</button><button type="button" aria-pressed="false">Marker</button><button type="button" aria-pressed="true">Brush</button>
+        </div>
+        <div class="segmented-control" role="group" aria-label="Brush width">
+          <button type="button" aria-pressed="false">2</button><button type="button" aria-pressed="true">4</button><button type="button" aria-pressed="false">8</button>
+        </div>
+      </div>
+      <div class="tool-options" data-options="note" role="group" aria-label="Sticky colors" hidden>
+        <div class="segmented-control note-colors" role="group" aria-label="Sticky color">
+          <button type="button" aria-label="Yellow sticky" aria-pressed="true" style="background:#fff8d4"></button><button type="button" aria-label="Pink sticky" aria-pressed="false" style="background:#ffe9f0"></button><button type="button" aria-label="Green sticky" aria-pressed="false" style="background:#f1fadc"></button><button type="button" aria-label="Blue sticky" aria-pressed="false" style="background:#e2f5fc"></button><button type="button" aria-label="Neutral sticky" aria-pressed="false" style="background:#f3f5f4"></button>
+        </div>
       </div>
       <span class="divider dock-divider"></span>
       <div class="view-controls" role="group" aria-label="View controls">
@@ -174,5 +225,46 @@
       </div>
     </div>
   </div>
+  <script>
+    const toolbar = document.querySelector('.toolbar');
+    const tools = [...toolbar.querySelectorAll('[data-tool]')];
+    const options = [...toolbar.querySelectorAll('[data-options]')];
+    const optionDivider = toolbar.querySelector('.option-divider');
+    const zoomValue = toolbar.querySelector('.zoom-value');
+    let zoom = 1;
+
+    function selectTool(id) {
+      tools.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.tool === id)));
+      options.forEach((group) => { group.hidden = group.dataset.options !== id; });
+      optionDivider.hidden = options.every((group) => group.hidden);
+    }
+
+    function setZoom(value) {
+      zoom = Math.min(3, Math.max(.05, value));
+      zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+    }
+
+    toolbar.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.dataset.tool) selectTool(button.dataset.tool);
+      const group = button.closest('.segmented-control');
+      if (group) group.querySelectorAll('button').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      if (button.getAttribute('aria-label') === 'Zoom out') setZoom(zoom / 1.2);
+      if (button.getAttribute('aria-label') === 'Zoom in') setZoom(zoom * 1.2);
+      if (button === zoomValue || button.getAttribute('aria-label') === 'Fit board') setZoom(1);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.target.closest('select') || event.metaKey || event.ctrlKey || event.altKey) return;
+      const shortcuts = { v: 'select', h: 'hand', r: 'rectangle', o: 'ellipse', t: 'text', l: 'line', p: 'path', n: 'note', w: 'html', c: 'connector' };
+      const tool = shortcuts[event.key.toLowerCase()];
+      if (tool) selectTool(tool);
+      if (event.key === 'Escape') selectTool('select');
+      if (event.key === '+' || event.key === '=') setZoom(zoom * 1.2);
+      if (event.key === '-') setZoom(zoom / 1.2);
+      if (event.key === '0' || event.key.toLowerCase() === 'f') setZoom(1);
+    });
+  </script>
 </body>
 </html>
