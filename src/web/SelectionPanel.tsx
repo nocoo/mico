@@ -43,8 +43,6 @@ interface SelectionPanelProps {
 	onClose: () => void
 	onPatch: (patch: Patch) => void
 	onColor: (color: string) => void
-	onFrame: () => void
-	onDelete: () => void
 	onReconnect: (endpoint: 'from' | 'to', id: string) => void
 }
 
@@ -92,8 +90,6 @@ export function SelectionPanel({
 	onClose,
 	onPatch,
 	onColor,
-	onFrame,
-	onDelete,
 	onReconnect,
 }: SelectionPanelProps) {
 	if (!shape && count === 0) return null

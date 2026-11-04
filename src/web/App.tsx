@@ -9,7 +9,6 @@ import type {
 	Operation,
 	Point,
 	Shape,
-	ShapeType,
 } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
@@ -44,7 +43,6 @@ import {
 	shapeBounds,
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
-import { UiInput } from './UiInput'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
 import { WidgetCard } from './WidgetCard'
@@ -1349,8 +1347,6 @@ export default function App() {
 					void postOperations([{ type: 'update', id: selected.id, patch }])
 				}}
 				onColor={updateSelectedColor}
-				onFrame={frameSelection}
-				onDelete={deleteSelected}
 				onReconnect={(endpoint, id) => changeEndpoint(endpoint, id)}
 			/>
 
