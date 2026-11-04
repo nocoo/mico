@@ -200,21 +200,62 @@ function analyzeCase(log: CaseLog) {
 	}
 }
 
-const generated = new Set(['summary.json', 'analysis.json'])
-const files = readdirSync(dir).filter((file) => file.endsWith('.json') && !generated.has(file))
-const logs = files.map((file) => JSON.parse(readFileSync(join(dir, file), 'utf8')) as CaseLog)
-const cases = logs.map(analyzeCase)
+interface SummaryCase {
+	id: string
+	title?: string
+	canvas?: string
+	canvasId?: string
+	error?: string
+}
+
+let summaryCases: SummaryCase[] | null = null
+try {
+	const summary = JSON.parse(readFileSync(join(dir, 'summary.json'), 'utf8')) as {
+		cases?: SummaryCase[]
+	}
+	summaryCases = summary.cases ?? null
+} catch {
+	summaryCases = null
+}
+
+const cases: ReturnType<typeof analyzeCase>[] = []
+const failures: { id: string; title?: string; error: string }[] = []
+if (summaryCases) {
+	for (const entry of summaryCases) {
+		if (entry.error || !entry.canvasId) {
+			failures.push({ id: entry.id, title: entry.title, error: entry.error ?? 'missing canvas' })
+			continue
+		}
+		try {
+			const log = JSON.parse(readFileSync(join(dir, `${entry.id}.json`), 'utf8')) as CaseLog
+			cases.push(analyzeCase(log))
+		} catch {
+			failures.push({ id: entry.id, title: entry.title, error: 'missing or invalid case log' })
+		}
+	}
+} else {
+	const generated = new Set(['summary.json', 'analysis.json'])
+	const files = readdirSync(dir).filter((file) => file.endsWith('.json') && !generated.has(file))
+	for (const file of files) {
+		const log = JSON.parse(readFileSync(join(dir, file), 'utf8')) as CaseLog
+		cases.push(analyzeCase(log))
+	}
+}
+
 const analysis = {
 	round,
+	failures,
 	cases,
 	totals: {
 		cases: cases.length,
+		failedCases: failures.length,
 		segments: cases.reduce((sum, item) => sum + item.segments, 0),
 		shapes: cases.reduce((sum, item) => sum + item.shapes, 0),
 		htmlCards: cases.reduce((sum, item) => sum + item.htmlCards, 0),
 		waits: cases.reduce((sum, item) => sum + item.waits, 0),
 		toolErrors: cases.reduce((sum, item) => sum + item.toolErrors.length, 0),
 		overlapPairs: cases.reduce((sum, item) => sum + item.overlapCount, 0),
+		frameOverlapPairs: cases.reduce((sum, item) => sum + item.frameOverlapCount, 0),
 		outsideFrames: cases.reduce((sum, item) => sum + item.outsideFrames.length, 0),
 		longLabels: cases.reduce((sum, item) => sum + item.longLabels.length, 0),
 		summariesMissingHtml: cases.filter((item) => !item.summaryHtml).length,
@@ -225,14 +266,14 @@ writeFileSync(join(dir, 'analysis.json'), `${JSON.stringify(analysis, null, 2)}\
 const lines = [
 	`# Round ${round} analysis`,
 	'',
-	`Cases: ${analysis.totals.cases}; segments: ${analysis.totals.segments}; shapes: ${analysis.totals.shapes}; HTML cards: ${analysis.totals.htmlCards}; WAIT: ${analysis.totals.waits}; tool errors: ${analysis.totals.toolErrors}; overlaps: ${analysis.totals.overlapPairs}; outside frames: ${analysis.totals.outsideFrames}; long labels: ${analysis.totals.longLabels}; summaries missing HTML: ${analysis.totals.summariesMissingHtml}.`,
+	`Cases: ${analysis.totals.cases}; failed: ${analysis.totals.failedCases}; segments: ${analysis.totals.segments}; shapes: ${analysis.totals.shapes}; HTML cards: ${analysis.totals.htmlCards}; WAIT: ${analysis.totals.waits}; tool errors: ${analysis.totals.toolErrors}; content overlaps: ${analysis.totals.overlapPairs}; frame overlaps: ${analysis.totals.frameOverlapPairs}; outside frames: ${analysis.totals.outsideFrames}; long labels: ${analysis.totals.longLabels}; summaries missing HTML: ${analysis.totals.summariesMissingHtml}.`,
 	'',
-	'| case | segments | avg ms | shapes | html | summary html | tool errors | overlaps | outside frames | long labels |',
-	'| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |',
+	'| case | segments | avg ms | shapes | html | summary html | tool errors | content overlaps | frame overlaps | outside frames | long labels |',
+	'| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |',
 ]
 for (const item of cases) {
 	lines.push(
-		`| ${item.id} | ${item.segments} | ${item.avgSegmentMs} | ${item.shapes} | ${item.htmlCards} | ${item.summaryHtml ? 'yes' : 'NO'} | ${item.toolErrors.length} | ${item.overlapCount} | ${item.outsideFrames.length} | ${item.longLabels.length} |`,
+		`| ${item.id} | ${item.segments} | ${item.avgSegmentMs} | ${item.shapes} | ${item.htmlCards} | ${item.summaryHtml ? 'yes' : 'NO'} | ${item.toolErrors.length} | ${item.overlapCount} | ${item.frameOverlapCount} | ${item.outsideFrames.length} | ${item.longLabels.length} |`,
 	)
 }
 for (const item of cases) {
@@ -246,6 +287,11 @@ for (const item of cases) {
 	if (item.overlapPairs.length) {
 		lines.push(
 			`Overlaps: ${item.overlapPairs.map((pair) => `${pair.a}/${pair.b} ${(pair.ratio * 100).toFixed(0)}%`).join(', ')}`,
+		)
+	}
+	if (item.frameOverlaps.length) {
+		lines.push(
+			`Frame overlaps: ${item.frameOverlaps.map((pair) => `${pair.a}/${pair.b} ${(pair.ratio * 100).toFixed(0)}%`).join(', ')}`,
 		)
 	}
 	if (item.outsideFrames.length) lines.push(`Outside frames: ${item.outsideFrames.join(', ')}`)

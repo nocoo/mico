@@ -392,6 +392,7 @@ async function main(): Promise<void> {
 	const roundStart = Date.now()
 	const roundDeadline = roundStart + ROUND_LIMIT_MS
 	const results: CaseLog[] = []
+	const failures: { id: string; title: string; error: string }[] = []
 	const attempted = new Set<string>()
 	let previousCases: { id: string; [key: string]: unknown }[] = []
 	try {
@@ -412,7 +413,9 @@ async function main(): Promise<void> {
 			try {
 				results.push(await runCase(entry, ROUND, roundDeadline))
 			} catch (error) {
-				log('case failed', entry.id, (error as Error).message)
+				const message = (error as Error).message
+				log('case failed', entry.id, message)
+				failures.push({ id: entry.id, title: entry.title, error: message })
 				writeFileSync(
 					join(OUT, `${entry.id}.error.txt`),
 					`${new Date().toISOString()}\n${(error as Error).stack ?? ''}\n`,
@@ -428,6 +431,7 @@ async function main(): Promise<void> {
 		elapsedMinutes: Number(((Date.now() - roundStart) / 60_000).toFixed(1)),
 		cases: [
 			...previousCases.filter((previous) => !attempted.has(previous.id)),
+			...failures,
 			...results.map((result) => ({
 				id: result.case.id,
 				title: result.case.title,

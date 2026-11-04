@@ -98,31 +98,35 @@ interface ToolContext {
 
 function normalizeOperations(current: Shape[], operations: Operation[]): Operation[] {
 	const byId = new Map<string, Shape>(current.map((shape) => [shape.id, shape]))
-	return operations.map((operation) => {
-		if (operation.type !== 'create') return operation
+	const normalized: Operation[] = []
+	for (const operation of operations) {
+		if (operation.type !== 'create') {
+			normalized.push(operation)
+			continue
+		}
 		const existing = byId.get(operation.shape.id)
-		if (!existing || existing.type !== operation.shape.type) return operation
+		if (!existing || existing.type !== operation.shape.type) {
+			normalized.push(operation)
+			byId.set(operation.shape.id, operation.shape)
+			continue
+		}
 		if (operation.shape.type === 'connector') {
-			const next = operation.shape
-			return {
-				type: 'update',
-				id: operation.shape.id,
-				patch: {
-					from: next.from,
-					to: next.to,
-					color: next.color,
-					...(next.fromAnchor !== undefined ? { fromAnchor: next.fromAnchor } : {}),
-					...(next.toAnchor !== undefined ? { toAnchor: next.toAnchor } : {}),
-				},
-			}
+			normalized.push(
+				{ type: 'delete', id: operation.shape.id },
+				{ type: 'create', shape: operation.shape },
+			)
+			byId.set(operation.shape.id, operation.shape)
+			continue
 		}
 		const { id: _id, type: _type, ...patch } = operation.shape
-		return {
+		normalized.push({
 			type: 'update',
 			id: operation.shape.id,
 			patch: patch as Extract<Operation, { type: 'update' }>['patch'],
-		}
-	})
+		})
+		byId.set(operation.shape.id, operation.shape)
+	}
+	return normalized
 }
 
 function apply(
@@ -136,10 +140,25 @@ function apply(
 	const current = store.getBoard(canvasId)
 	const normalized = normalizeOperations(current.shapes, operations)
 	if (layoutLimit !== undefined) {
+		const byId = new Map<string, Shape>(current.shapes.map((shape) => [shape.id, shape]))
 		for (const operation of normalized) {
-			if (operation.type !== 'create' || operation.shape.type === 'connector') continue
-			const bottom = Math.max(operation.shape.y, operation.shape.y + operation.shape.h)
-			if (bottom > layoutLimit) {
+			let shape: Shape | undefined
+			let previous: Shape | undefined
+			if (operation.type === 'create') {
+				shape = operation.shape
+			} else if (operation.type === 'update') {
+				previous = byId.get(operation.id)
+				if (previous && previous.type !== 'connector') {
+					shape = { ...previous, ...operation.patch } as Shape
+				}
+			}
+			if (!shape || shape.type === 'connector') continue
+			const bottom = Math.max(shape.y, shape.y + shape.h)
+			const previousBottom =
+				previous && previous.type !== 'connector'
+					? Math.max(previous.y, previous.y + previous.h)
+					: Number.NEGATIVE_INFINITY
+			if (bottom > layoutLimit && (previousBottom <= layoutLimit || bottom > previousBottom)) {
 				return {
 					ok: false,
 					error: 'LAYOUT_LIMIT',
@@ -165,7 +184,7 @@ function apply(
 			canvas: result.canvas,
 			board: result.board,
 		})
-		const created = operations
+		const created = normalized
 			.filter(
 				(operation): operation is Extract<Operation, { type: 'create' }> =>
 					operation.type === 'create',

@@ -10,14 +10,14 @@ const shots = join(dir, 'shots')
 mkdirSync(shots, { recursive: true })
 
 const summary = JSON.parse(readFileSync(join(dir, 'summary.json'), 'utf8')) as {
-	cases: { id: string; canvasId: string }[]
+	cases: { id: string; canvasId?: string; error?: string }[]
 }
 const state = (await (await fetch(`${API}/api/state`)).json()) as { activeCanvasId: string }
 const initial = state.activeCanvasId
 const browser = await chromium.launch({ channel: 'chrome' })
 const page = await browser.newPage({ viewport: { width: 1440, height: 960 } })
 try {
-	for (const item of summary.cases) {
+	for (const item of summary.cases.filter((entry) => entry.canvasId && !entry.error)) {
 		const activated = await fetch(`${API}/api/active-canvas`, {
 			method: 'PUT',
 			headers: { 'content-type': 'application/json' },

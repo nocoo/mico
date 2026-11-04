@@ -618,3 +618,83 @@ test('lecture tools reject content below the live layout limit', async () => {
 		assert.equal(ok.ok, true)
 	})
 })
+
+test('layout limits cover upserts and updates', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+			layoutLimit: 1600,
+		})
+		await run(tools.add_notes, {
+			notes: [{ id: 'note', x: 10, y: 10, w: 200, h: 100, text: 'First' }],
+		})
+		const upsert = (await run(tools.add_notes, {
+			notes: [{ id: 'note', x: 10, y: 5000, w: 200, h: 100, text: 'Moved too low' }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(upsert.ok, false)
+		assert.equal(upsert.error, 'LAYOUT_LIMIT')
+		const update = (await run(tools.update_shapes, {
+			updates: [{ id: 'note', patch: { y: 9000 } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(update.ok, false)
+		assert.equal(update.error, 'LAYOUT_LIMIT')
+		const shrink = (await run(tools.update_shapes, {
+			updates: [{ id: 'note', patch: { y: 1400 } }],
+		})) as { ok: boolean }
+		assert.equal(shrink.ok, true)
+	})
+})
+
+test('same-batch duplicate ids collapse into one object', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		const reply = (await run(tools.add_notes, {
+			notes: [
+				{ id: 'same', x: 10, y: 10, text: 'First' },
+				{ id: 'same', x: 10, y: 10, text: 'Second' },
+			],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const notes = store.getBoard().shapes.filter((shape) => shape.id === 'same')
+		assert.equal(notes.length, 1)
+		assert.equal(notes[0].type === 'note' ? notes[0].text : null, 'Second')
+	})
+})
+
+test('connector upserts reset anchors when endpoints change', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'a', x: 10, y: 10, w: 100, h: 60 },
+				{ id: 'b', x: 300, y: 10, w: 100, h: 60 },
+			],
+		})
+		await run(tools.add_connectors, {
+			connectors: [{ id: 'link', from: 'a', to: 'b', fromAnchor: 11 }],
+		})
+		await run(tools.add_lines, {
+			lines: [{ id: 'line', from: { x: 10, y: 200 }, to: { x: 200, y: 200 } }],
+		})
+		const reply = (await run(tools.add_connectors, {
+			connectors: [{ id: 'link', from: 'line', to: 'b' }],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const link = store.getBoard().shapes.find((shape) => shape.id === 'link')
+		assert.equal(link?.type === 'connector' ? link.from : null, 'line')
+		assert.equal(link?.type === 'connector' ? link.fromAnchor : 'missing', undefined)
+	})
+})

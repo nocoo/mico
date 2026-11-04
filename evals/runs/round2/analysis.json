@@ -1,5 +1,6 @@
 {
   "round": 2,
+  "failures": [],
   "cases": [
     {
       "id": "c01-family-trip",
@@ -299,12 +300,14 @@
   ],
   "totals": {
     "cases": 10,
+    "failedCases": 0,
     "segments": 130,
     "shapes": 295,
     "htmlCards": 18,
     "waits": 0,
     "toolErrors": 2,
     "overlapPairs": 0,
+    "frameOverlapPairs": 3,
     "outsideFrames": 0,
     "longLabels": 1,
     "summariesMissingHtml": 0

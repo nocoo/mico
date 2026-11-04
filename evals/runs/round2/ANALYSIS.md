@@ -1,19 +1,19 @@
 # Round 2 analysis
 
-Cases: 10; segments: 130; shapes: 295; HTML cards: 18; WAIT: 0; tool errors: 2; overlaps: 0; outside frames: 0; long labels: 1; summaries missing HTML: 0.
+Cases: 10; failed: 0; segments: 130; shapes: 295; HTML cards: 18; WAIT: 0; tool errors: 2; content overlaps: 0; frame overlaps: 3; outside frames: 0; long labels: 1; summaries missing HTML: 0.
 
-| case | segments | avg ms | shapes | html | summary html | tool errors | overlaps | outside frames | long labels |
-| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: |
-| c01-family-trip | 9 | 14441 | 17 | 4 | yes | 0 | 0 | 0 | 0 |
-| c02-product-sprint | 18 | 14573 | 23 | 3 | yes | 1 | 0 | 0 | 1 |
-| c03-ai-platform | 10 | 15650 | 43 | 1 | yes | 0 | 0 | 0 | 0 |
-| c04-factory-q3 | 8 | 17409 | 19 | 1 | yes | 0 | 0 | 0 | 0 |
-| c05-er-handover | 12 | 40610 | 33 | 1 | yes | 0 | 0 | 0 | 0 |
-| c06-science-fair | 18 | 20207 | 39 | 1 | yes | 0 | 0 | 0 | 0 |
-| c07-incident-postmortem | 16 | 19456 | 32 | 2 | yes | 1 | 0 | 0 | 0 |
-| c08-community-center | 10 | 18039 | 27 | 1 | yes | 0 | 0 | 0 | 0 |
-| c09-restaurant-launch | 16 | 23096 | 31 | 3 | yes | 0 | 0 | 0 | 0 |
-| c10-disaster-drill | 13 | 12637 | 31 | 1 | yes | 0 | 0 | 0 | 0 |
+| case | segments | avg ms | shapes | html | summary html | tool errors | content overlaps | frame overlaps | outside frames | long labels |
+| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| c01-family-trip | 9 | 14441 | 17 | 4 | yes | 0 | 0 | 0 | 0 | 0 |
+| c02-product-sprint | 18 | 14573 | 23 | 3 | yes | 1 | 0 | 0 | 0 | 1 |
+| c03-ai-platform | 10 | 15650 | 43 | 1 | yes | 0 | 0 | 0 | 0 | 0 |
+| c04-factory-q3 | 8 | 17409 | 19 | 1 | yes | 0 | 0 | 0 | 0 | 0 |
+| c05-er-handover | 12 | 40610 | 33 | 1 | yes | 0 | 0 | 0 | 0 | 0 |
+| c06-science-fair | 18 | 20207 | 39 | 1 | yes | 0 | 0 | 0 | 0 | 0 |
+| c07-incident-postmortem | 16 | 19456 | 32 | 2 | yes | 1 | 0 | 0 | 0 | 0 |
+| c08-community-center | 10 | 18039 | 27 | 1 | yes | 0 | 0 | 1 | 0 | 0 |
+| c09-restaurant-launch | 16 | 23096 | 31 | 3 | yes | 0 | 0 | 2 | 0 | 0 |
+| c10-disaster-drill | 13 | 12637 | 31 | 1 | yes | 0 | 0 | 0 | 0 | 0 |
 
 ## c01-family-trip
 
