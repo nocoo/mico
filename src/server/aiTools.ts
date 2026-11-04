@@ -33,6 +33,21 @@ const noteColorSchema = z
 	])
 	.describe('Pale sticky-note fill.')
 
+const anyColorSchema = z
+	.enum([
+		CANDY_COLORS.blue,
+		CANDY_COLORS.green,
+		CANDY_COLORS.yellow,
+		CANDY_COLORS.pink,
+		CANDY_COLORS.ink,
+		CANDY_TINTS.yellow,
+		CANDY_TINTS.pink,
+		CANDY_TINTS.green,
+		CANDY_TINTS.blue,
+		CANDY_TINTS.neutral,
+	])
+	.describe('Palette color; notes use pale tints, other shapes use vivid outlines.')
+
 const frameIdSchema = idSchema
 	.optional()
 	.describe('Optional existing frame id; members must fit inside.')
@@ -73,17 +88,29 @@ interface ToolContext {
 	store: BoardStore
 	broadcast: (event: unknown) => void
 	selection: string[]
+	canvasId: string
+	revision: number
 }
 
 function apply(
-	{ store, broadcast }: ToolContext,
+	{ store, broadcast, canvasId }: ToolContext,
 	operations: Operation[],
+	observedRevision: number,
 ): ToolReply | { ok: true; revision: number; updated: string[] } {
 	if (operations.length === 0) {
-		return { ok: true, revision: store.getBoard().revision, created: [] }
+		return { ok: true, revision: store.getBoard(canvasId).revision, created: [] }
+	}
+	const mutatesExisting = operations.some((operation) => operation.type !== 'create')
+	const current = store.getBoard(canvasId)
+	if (mutatesExisting && current.revision !== observedRevision) {
+		return {
+			ok: false,
+			error: 'REVISION_CONFLICT',
+			message: `The board changed since your last read (revision ${observedRevision} → ${current.revision}). Call get_board and retry with the current layout.`,
+		}
 	}
 	try {
-		const result = store.applyRequest({ operations })
+		const result = store.applyRequest({ operations, canvasId })
 		broadcast({
 			type: 'board',
 			canvasId: result.canvasId,
@@ -116,8 +143,16 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 	color,
 })
 
-export function createCanvasTools(context: ToolContext) {
-	const { store, selection } = context
+export function createCanvasTools(input: Omit<ToolContext, 'revision'> & { revision?: number }) {
+	const { store, selection, canvasId } = input
+	let observedRevision = input.revision ?? store.getBoard(canvasId).revision
+	const context: ToolContext = { ...input, revision: observedRevision }
+	const applyOperations = (operations: Operation[]) => {
+		context.revision = observedRevision
+		const reply = apply(context, operations, observedRevision)
+		if (reply.ok) observedRevision = reply.revision
+		return reply
+	}
 	return {
 		get_board: tool({
 			description:
@@ -130,7 +165,8 @@ export function createCanvasTools(context: ToolContext) {
 					.describe('Include the full HTML of selected html cards (max 6000 characters each).'),
 			}),
 			execute: async ({ ids, include_html }) => {
-				const board = store.getBoard()
+				const board = store.getBoard(canvasId)
+				observedRevision = board.revision
 				return {
 					ok: true,
 					...boardDigest(board, selection, { ids, includeHtml: include_html === true }),
@@ -180,7 +216,7 @@ export function createCanvasTools(context: ToolContext) {
 					}
 					return { type: 'create', shape }
 				})
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -218,7 +254,7 @@ export function createCanvasTools(context: ToolContext) {
 						...(note.frameId ? { frameId: note.frameId } : {}),
 					},
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -261,7 +297,7 @@ export function createCanvasTools(context: ToolContext) {
 						...(box.frameId ? { frameId: box.frameId } : {}),
 					},
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -295,7 +331,7 @@ export function createCanvasTools(context: ToolContext) {
 						...(line.frameId ? { frameId: line.frameId } : {}),
 					},
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -329,7 +365,7 @@ export function createCanvasTools(context: ToolContext) {
 						...(connector.toAnchor !== undefined ? { toAnchor: connector.toAnchor } : {}),
 					},
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -365,7 +401,7 @@ export function createCanvasTools(context: ToolContext) {
 						title: frame.title,
 					},
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -388,15 +424,19 @@ export function createCanvasTools(context: ToolContext) {
 			}),
 			execute: async ({ strokes }) => {
 				const operations: Operation[] = strokes.map((stroke) => {
-					const xs = stroke.points.map((point) => point.x)
-					const ys = stroke.points.map((point) => point.y)
+					const rounded: Point[] = stroke.points.map((point) => ({
+						x: Math.round(point.x * 10) / 10,
+						y: Math.round(point.y * 10) / 10,
+					}))
+					const xs = rounded.map((point) => point.x)
+					const ys = rounded.map((point) => point.y)
 					const left = Math.min(...xs)
 					const top = Math.min(...ys)
 					const w = Math.max(1, Math.max(...xs) - left)
 					const h = Math.max(1, Math.max(...ys) - top)
-					const points: Point[] = stroke.points.map((point) => ({
-						x: Math.round((point.x - left) * 10) / 10,
-						y: Math.round((point.y - top) * 10) / 10,
+					const points: Point[] = rounded.map((point) => ({
+						x: point.x - left,
+						y: point.y - top,
 					}))
 					return {
 						type: 'create',
@@ -413,7 +453,7 @@ export function createCanvasTools(context: ToolContext) {
 						},
 					}
 				})
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -453,7 +493,7 @@ export function createCanvasTools(context: ToolContext) {
 						...(card.frameId ? { frameId: card.frameId } : {}),
 					},
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -496,7 +536,7 @@ export function createCanvasTools(context: ToolContext) {
 					id: update.id,
 					patch: update.patch,
 				}))
-				return apply(context, operations)
+				return applyOperations(operations)
 			},
 		}),
 
@@ -508,11 +548,11 @@ export function createCanvasTools(context: ToolContext) {
 			}),
 			execute: async ({ ids }) => {
 				const operations: Operation[] = ids.map((id) => ({ type: 'delete', id }))
-				const reply = apply(context, operations)
+				const reply = applyOperations(operations)
 				if (!reply.ok) return reply
 				return {
 					ok: true as const,
-					revision: store.getBoard().revision,
+					revision: observedRevision,
 					deleted: ids,
 				}
 			},

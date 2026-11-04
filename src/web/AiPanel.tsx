@@ -25,6 +25,7 @@ interface AiPanelProps {
 	onClearSelection: () => void
 	initialPrompt?: string
 	onInitialPromptConsumed: () => void
+	canvasId: string
 }
 
 type AiTab = 'chat' | 'audio'
@@ -148,6 +149,7 @@ export function AiPanel({
 	onClearSelection,
 	initialPrompt,
 	onInitialPromptConsumed,
+	canvasId,
 }: AiPanelProps) {
 	const [tab, setTab] = useState<AiTab>('chat')
 	const [draft, setDraft] = useState('')
@@ -158,10 +160,10 @@ export function AiPanel({
 	const composerRef = useRef<HTMLTextAreaElement>(null)
 	const pointerInside = useRef(false)
 	const wasOpen = useRef(false)
-	const sentInitial = useRef(false)
+	const lastCanvasId = useRef(canvasId)
 
 	const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chat' }), [])
-	const { messages, sendMessage, status, error, stop, regenerate, clearError } = useChat({
+	const { messages, setMessages, sendMessage, status, error, stop, clearError } = useChat({
 		transport,
 		throttle: 40,
 	})
@@ -186,15 +188,25 @@ export function AiPanel({
 	}
 
 	useEffect(() => {
-		if (!open || !initialPrompt || sentInitial.current) return
+		if (!open || !initialPrompt) return
 		const timer = window.setTimeout(() => {
-			if (sentInitial.current) return
-			sentInitial.current = true
-			send(initialPrompt)
+			setDraft(initialPrompt)
 			onInitialPromptConsumed()
+			send(initialPrompt)
 		}, 0)
 		return () => window.clearTimeout(timer)
-	}, [open, initialPrompt, send, onInitialPromptConsumed])
+	}, [open, initialPrompt, onInitialPromptConsumed, send])
+
+	useEffect(() => {
+		if (lastCanvasId.current === canvasId) return
+		const previous = lastCanvasId.current
+		lastCanvasId.current = canvasId
+		if (!previous || !canvasId) return
+		stop()
+		setMessages([])
+		clearError()
+		setDraft('')
+	}, [canvasId, stop, setMessages, clearError])
 
 	useEffect(() => {
 		if (!open) return
@@ -403,7 +415,8 @@ export function AiPanel({
 					<div className="ai-error" role="alert">
 						<TriangleAlert size={16} strokeWidth={2} aria-hidden="true" />
 						<div>
-							<strong>Assistant unavailable</strong>
+							<strong>Assistant request failed</strong>
+							<span>{error.message}</span>
 							<span>
 								Check the Magpie gateway at <code>127.0.0.1:3425</code>.
 							</span>
@@ -412,10 +425,12 @@ export function AiPanel({
 							type="button"
 							onClick={() => {
 								clearError()
-								void regenerate({ body: { selection } })
+								send(
+									'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
+								)
 							}}
 						>
-							Retry
+							Continue
 						</button>
 					</div>
 				)}

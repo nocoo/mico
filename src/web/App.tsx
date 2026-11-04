@@ -43,6 +43,7 @@ import {
 	TEXT_SIZE,
 	type Tool,
 } from './design'
+import { HTML_CARD_SANDBOX, htmlCardDocument } from './htmlCard'
 import { canRebaseMoveGroup } from './move'
 import { SelectField } from './SelectField'
 import { SelectionPanel } from './SelectionPanel'
@@ -65,6 +66,24 @@ const isConnector = (shape: Shape): shape is Connector => shape.type === 'connec
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
 
 const randomId = () => crypto.randomUUID()
+
+function ShapeLabel({ text, x, y, fill }: { text: string; x: number; y: number; fill: string }) {
+	const lines = text.split('\n').map((line, index) => ({ line, key: `${index}-${line}` }))
+	const lineHeight = 18
+	return (
+		<text x={x} y={y} fill={fill} textAnchor="middle" dominantBaseline="middle">
+			{lines.map(({ line, key }, index) => (
+				<tspan
+					key={key}
+					x={x}
+					dy={index === 0 ? `${(-(lines.length - 1) * lineHeight) / 2}px` : `${lineHeight}px`}
+				>
+					{line || ' '}
+				</tspan>
+			))}
+		</text>
+	)
+}
 
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
@@ -1064,15 +1083,12 @@ export default function App() {
 						/>
 					)}
 					{shape.text && (
-						<text
+						<ShapeLabel
+							text={shape.text}
 							x={shape.x + shape.w / 2}
 							y={shape.y + shape.h / 2}
 							fill={candyInk(shape.color)}
-							textAnchor="middle"
-							dominantBaseline="middle"
-						>
-							{shape.text}
-						</text>
+						/>
 					)}
 				</g>
 			)
@@ -1100,15 +1116,12 @@ export default function App() {
 						/>
 					)}
 					{shape.text && (
-						<text
+						<ShapeLabel
+							text={shape.text}
 							x={shape.x + shape.w / 2}
 							y={shape.y + shape.h / 2}
 							fill={candyInk(shape.color)}
-							textAnchor="middle"
-							dominantBaseline="middle"
-						>
-							{shape.text}
-						</text>
+						/>
 					)}
 				</g>
 			)
@@ -1141,8 +1154,9 @@ export default function App() {
 								<iframe
 									className="html-card-frame"
 									title={shape.title ?? 'HTML card'}
-									sandbox="allow-scripts"
-									srcDoc={shape.html}
+									sandbox={HTML_CARD_SANDBOX}
+									referrerPolicy="no-referrer"
+									srcDoc={htmlCardDocument(shape.html)}
 								/>
 							) : (
 								<div className="html-card-empty">HTML content is generated through the API</div>
@@ -1466,6 +1480,7 @@ export default function App() {
 				onClearSelection={clearSelection}
 				initialPrompt={aiPrompt}
 				onInitialPromptConsumed={consumeAiPrompt}
+				canvasId={activeCanvasId}
 			/>
 
 			<CanvasPanel

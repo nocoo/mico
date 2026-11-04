@@ -1,6 +1,7 @@
 import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
 import { CANDY_COLORS, CANDY_TINTS } from '../../src/web/design'
+import { resetBoard } from './support'
 
 async function board(request: APIRequestContext): Promise<Board> {
 	const response = await request.get('/api/board')
@@ -842,7 +843,7 @@ test('html cards render generated markup and expose only their title', async ({
 						h: 300,
 						color: '#22c55e',
 						title: 'Stats',
-						html: '<!doctype html><html><body style="margin:0"><h1 id="value">42</h1></body></html>',
+						html: '<!doctype html><html><body style="margin:0"><h1 id="value">42</h1><script>document.getElementById("value").textContent = "hacked"</script></body></html>',
 						frameId: 'html-frame',
 					},
 				},
@@ -854,6 +855,7 @@ test('html cards render generated markup and expose only their title', async ({
 	await page.locator('.status[aria-label="Live"]').waitFor()
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
+	await expect(page.locator('[data-shape-id="html-card"] iframe')).toHaveAttribute('sandbox', '')
 	const frame = page.frameLocator('[data-shape-id="html-card"] iframe')
 	await expect(frame.locator('#value')).toHaveText('42')
 
@@ -1109,4 +1111,25 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 	if (await closePanel.count()) await closePanel.click()
 	await page.mouse.move(0, 0)
 	await page.screenshot({ path: '/tmp/mico-frame-mobile.png', animations: 'disabled' })
+})
+
+test('multi-line concept labels render one tspan per line', async ({ page, request }) => {
+	await resetBoard(request, [
+		{
+			id: 'multi',
+			type: 'rectangle',
+			x: 160,
+			y: 160,
+			w: 260,
+			h: 120,
+			color: '#00a2e1',
+			text: 'Line one\nLine two',
+		},
+	])
+	await page.reload()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	const label = page.locator('[data-shape-id="multi"]')
+	await expect(label.locator('tspan')).toHaveCount(2)
+	await expect(label).toContainText('Line one')
+	await expect(label).toContainText('Line two')
 })

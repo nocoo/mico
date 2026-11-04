@@ -4,7 +4,14 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
-import { MAGPIE_DEFAULT_BASE_URL, MAGPIE_DEFAULT_MODEL, magpieSettings } from './ai.ts'
+import { CANDY_TINTS } from '../shared/palette.ts'
+import {
+	MAGPIE_DEFAULT_BASE_URL,
+	MAGPIE_DEFAULT_MODEL,
+	magpieSettings,
+	sanitizeInterruptedMessages,
+} from './ai.ts'
+import { digestShape } from './aiBoard.ts'
 import { createMockAiModel } from './aiMock.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
@@ -47,6 +54,7 @@ test('AI tools create a labelled lesson and connect existing ids', async () => {
 			store,
 			broadcast: (event) => events.push(event),
 			selection: [],
+			canvasId: store.getActiveCanvasId(),
 		})
 
 		const text = (await run(tools.add_texts, {
@@ -80,7 +88,12 @@ test('AI tools create a labelled lesson and connect existing ids', async () => {
 
 test('AI tools report validation errors without writing', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({ store, broadcast: () => {}, selection: [] })
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
 		const reply = (await run(tools.add_connectors, {
 			connectors: [{ id: 'missing', from: 'ghost-a', to: 'ghost-b' }],
 		})) as { ok: boolean; error?: string; message?: string }
@@ -99,7 +112,12 @@ test('AI tools report validation errors without writing', async () => {
 
 test('AI tools estimate text bounds and derive stroke bounds from absolute points', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({ store, broadcast: () => {}, selection: [] })
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
 		await run(tools.add_texts, {
 			texts: [
 				{
@@ -239,4 +257,181 @@ test('AI chat rejects invalid requests', async () => {
 		const body = (await response.json()) as { error: string }
 		assert.equal(body.error, 'INVALID_REQUEST')
 	})
+})
+
+test('AI tools stay pinned to the canvas captured at request time', async () => {
+	await withStore(async (store) => {
+		const first = store.getActiveCanvasId()
+		const second = store.createCanvas('Second canvas', true).canvas.id
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: first,
+		})
+		await run(tools.add_texts, {
+			texts: [{ id: 'pinned', x: 10, y: 10, text: 'Pinned to the first canvas' }],
+		})
+		assert.equal(store.getBoard(first).shapes.length, 1)
+		assert.equal(store.getBoard(second).shapes.length, 0)
+	})
+})
+
+test('updates are rejected after a concurrent board change and recover after a re-read', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_texts, {
+			texts: [{ id: 'label', x: 10, y: 10, text: 'Before' }],
+		})
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'human', type: 'note', x: 300, y: 10, w: 200, h: 100, color: '#fff8d4' },
+				},
+			],
+		})
+		const conflict = (await run(tools.update_shapes, {
+			updates: [{ id: 'label', patch: { text: 'Stale' } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(conflict.ok, false)
+		assert.equal(conflict.error, 'REVISION_CONFLICT')
+		const label = store.getBoard().shapes.find((shape) => shape.id === 'label')
+		assert.equal(label?.type === 'text' ? label.text : null, 'Before')
+
+		await run(tools.get_board, {})
+		const retried = (await run(tools.update_shapes, {
+			updates: [{ id: 'label', patch: { text: 'After' } }],
+		})) as { ok: boolean }
+		assert.equal(retried.ok, true)
+		const updated = store.getBoard().shapes.find((shape) => shape.id === 'label')
+		assert.equal(updated?.type === 'text' ? updated.text : null, 'After')
+	})
+})
+
+test('strokes round points and their bounds together', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		const reply = (await run(tools.add_strokes, {
+			strokes: [
+				{
+					id: 'decimal',
+					points: [
+						{ x: 0, y: 0 },
+						{ x: 1.06, y: 2.06 },
+					],
+				},
+			],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const stroke = store.getBoard().shapes.find((shape) => shape.id === 'decimal')
+		assert.ok(stroke && stroke.type === 'path')
+		assert.equal(stroke.w, 1.1)
+		assert.equal(stroke.h, 2.1)
+		assert.deepEqual(stroke.points, [
+			{ x: 0, y: 0 },
+			{ x: 1.1, y: 2.1 },
+		])
+	})
+})
+
+test('line and path digests keep direction and sampled geometry', () => {
+	const line = digestShape({
+		id: 'line',
+		type: 'line',
+		x: 100,
+		y: 200,
+		w: -40,
+		h: 30,
+		color: '#2b3038',
+	})
+	assert.deepEqual(line.start, { x: 100, y: 200 })
+	assert.deepEqual(line.end, { x: 60, y: 230 })
+
+	const path = digestShape({
+		id: 'path',
+		type: 'path',
+		x: 50,
+		y: 60,
+		w: 100,
+		h: 40,
+		color: '#2b3038',
+		points: [
+			{ x: 0, y: 0 },
+			{ x: 50, y: 20 },
+			{ x: 100, y: 40 },
+		],
+		brush: 'brush',
+		strokeWidth: 4,
+	})
+	assert.equal(path.points, 3)
+	assert.deepEqual(path.samples, [
+		{ x: 50, y: 60 },
+		{ x: 100, y: 80 },
+		{ x: 150, y: 100 },
+	])
+})
+
+test('note tints are accepted when updating a note', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_notes, {
+			notes: [{ id: 'note', x: 10, y: 10, text: 'Remember' }],
+		})
+		const reply = (await run(tools.update_shapes, {
+			updates: [{ id: 'note', patch: { color: CANDY_TINTS.yellow } }],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const note = store.getBoard().shapes.find((shape) => shape.id === 'note')
+		assert.equal(note?.color, CANDY_TINTS.yellow)
+	})
+})
+
+test('interrupted tool calls are dropped before the next turn', () => {
+	const messages = [
+		{ id: 'u', role: 'user' as const, parts: [{ type: 'text' as const, text: 'Draw a box' }] },
+		{
+			id: 'a',
+			role: 'assistant' as const,
+			parts: [
+				{ type: 'text' as const, text: 'Drawing it now.' },
+				{
+					type: 'tool-add_boxes' as const,
+					toolCallId: 'call-1',
+					state: 'input-available' as const,
+					input: { boxes: [] },
+				},
+			],
+		},
+		{
+			id: 'b',
+			role: 'assistant' as const,
+			parts: [
+				{
+					type: 'tool-add_texts' as const,
+					toolCallId: 'call-2',
+					state: 'input-streaming' as const,
+					input: {},
+				},
+			],
+		},
+	]
+	const cleaned = sanitizeInterruptedMessages(messages as never)
+	assert.equal(cleaned.length, 2)
+	assert.deepEqual(cleaned[1].parts, [{ type: 'text', text: 'Drawing it now.' }])
 })

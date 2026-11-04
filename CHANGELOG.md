@@ -7,6 +7,7 @@
 - Give the assistant canvas tools for text, notes, boxes, lines, connectors, frames, strokes, HTML cards, updates and deletes; every call writes and broadcasts immediately.
 - Attach the current marquee selection to each AI request as primary context, add quick lesson prompts and a `?ai=` URL trigger for automation.
 - Keep the Audio tab as a recording microphone interface placeholder.
+- Pin each AI request to the active canvas, guard stale updates, sanitize interrupted tool calls, and block scripts and external resources in HTML cards.
 - Add multiple saved canvases with names, timestamps and generated SVG previews; the top-left Canvases panel creates, switches, renames and deletes them.
 - Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.
 - Add full canvas management to the agent API and CLI, including per-canvas operations, `--canvas` targeting, state snapshots and WebSocket canvas events.

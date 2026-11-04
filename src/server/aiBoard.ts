@@ -28,6 +28,9 @@ export interface ShapeDigest {
 	brush?: string
 	strokeWidth?: number
 	points?: number
+	samples?: { x: number; y: number }[]
+	start?: { x: number; y: number }
+	end?: { x: number; y: number }
 	html?: string
 	htmlLength?: number
 }
@@ -70,12 +73,12 @@ export function boardBounds(shapes: Shape[]): BoardRect | null {
 	return {
 		x: round(left),
 		y: round(top),
-		w: round(right - left),
-		h: round(bottom - top),
+		w: round(Math.abs(right - left)),
+		h: round(Math.abs(bottom - top)),
 	}
 }
 
-export function digestShape(shape: Shape, includeHtml = false): ShapeDigest {
+export function digestShape(shape: Shape, includeHtml = false, detailed = false): ShapeDigest {
 	const digest: ShapeDigest = { id: shape.id, type: shape.type }
 	if (shape.type === 'connector') {
 		digest.color = shape.color
@@ -96,10 +99,21 @@ export function digestShape(shape: Shape, includeHtml = false): ShapeDigest {
 		if (shape.fontSize !== undefined) digest.fontSize = shape.fontSize
 		if (shape.fontWeight !== undefined) digest.fontWeight = shape.fontWeight
 	}
+	if (shape.type === 'line') {
+		digest.start = { x: round(shape.x), y: round(shape.y) }
+		digest.end = { x: round(shape.x + shape.w), y: round(shape.y + shape.h) }
+	}
 	if (shape.type === 'path') {
 		digest.brush = shape.brush
 		digest.strokeWidth = shape.strokeWidth
-		digest.points = shape.points?.length ?? 0
+		const points = shape.points ?? []
+		digest.points = points.length
+		const limit = detailed ? 32 : 8
+		const step = Math.max(1, Math.ceil(points.length / limit))
+		digest.samples = points
+			.filter((_, index) => index % step === 0 || index === points.length - 1)
+			.slice(0, limit)
+			.map((point) => ({ x: round(shape.x + point.x), y: round(shape.y + point.y) }))
 	}
 	if (shape.type === 'html') {
 		const html = shape.html ?? ''
@@ -134,7 +148,11 @@ export function boardDigest(
 		bounds: boardBounds(board.shapes),
 		selection: liveSelection,
 		shapes: shapes.map((shape) =>
-			digestShape(shape, options.includeHtml === true && liveSelection.includes(shape.id)),
+			digestShape(
+				shape,
+				options.includeHtml === true && liveSelection.includes(shape.id),
+				liveSelection.includes(shape.id),
+			),
 		),
 		omitted,
 	}
@@ -144,7 +162,7 @@ export function selectedDigests(board: Board, selection: string[]): ShapeDigest[
 	const wanted = new Set(selection)
 	return board.shapes
 		.filter((shape) => wanted.has(shape.id))
-		.map((shape) => digestShape(shape, true))
+		.map((shape) => digestShape(shape, true, true))
 }
 
 export function formatBoardContext(board: Board, selection: string[]): string {

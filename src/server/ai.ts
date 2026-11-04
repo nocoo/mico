@@ -3,6 +3,7 @@ import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import {
 	convertToModelMessages,
 	isStepCount,
+	isToolUIPart,
 	type LanguageModel,
 	safeValidateUIMessages,
 	streamText,
@@ -40,6 +41,19 @@ export function createMagpieModel(settings = magpieSettings()): LanguageModel {
 	return provider.chatModel(settings.model)
 }
 
+const COMPLETE_TOOL_STATES = new Set(['output-available', 'output-error', 'output-denied'])
+
+export function sanitizeInterruptedMessages(messages: UIMessage[]): UIMessage[] {
+	return messages.flatMap((message) => {
+		if (message.role !== 'assistant') return [message]
+		const parts = message.parts.filter(
+			(part) => !isToolUIPart(part) || COMPLETE_TOOL_STATES.has(part.state),
+		)
+		if (parts.length === 0) return []
+		return [{ ...message, parts }]
+	})
+}
+
 export interface AiChatRequest {
 	messages: UIMessage[]
 	selection: string[]
@@ -65,7 +79,7 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 		throw new OperationError(400, 'INVALID_REQUEST', 'messages are not valid UI messages')
 	}
 	return {
-		messages: validated.data,
+		messages: sanitizeInterruptedMessages(validated.data),
 		selection: selection
 			.filter((id): id is string => typeof id === 'string' && id.length > 0 && id.length <= 64)
 			.slice(0, 200),
@@ -89,7 +103,8 @@ export async function streamAiChat({
 	request,
 	origin,
 }: AiResponseOptions): Promise<void> {
-	const board = store.getBoard()
+	const canvasId = store.getActiveCanvasId()
+	const board = store.getBoard(canvasId)
 	const abort = new AbortController()
 	res.on('close', () => abort.abort())
 	const headers: Record<string, string> = {}
@@ -101,7 +116,13 @@ export async function streamAiChat({
 		model,
 		instructions: buildInstructions(board, request.selection),
 		messages: await convertToModelMessages(request.messages),
-		tools: createCanvasTools({ store, broadcast, selection: request.selection }),
+		tools: createCanvasTools({
+			store,
+			broadcast,
+			selection: request.selection,
+			canvasId,
+			revision: board.revision,
+		}),
 		stopWhen: isStepCount(40),
 		maxRetries: 1,
 		abortSignal: abort.signal,

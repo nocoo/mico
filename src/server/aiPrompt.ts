@@ -30,7 +30,7 @@ export const AI_SYSTEM_PROMPT = `You are Mico, a canvas tutor living inside a sh
 - get_board: inspect ids, bounds, selection and layout. The canvas snapshot in this prompt is already current, so skip get_board on an empty board and only call it when you need exact ids for connectors/updates or a final layout check.
 - add_texts: titles, axis labels, headings, short annotations, equations in serif text. Not for paragraphs.
 - add_notes: key facts, formulas, definitions, warnings, worked-example steps. Use notes for anything the learner should remember.
-- add_boxes: discrete concepts, quantities, stages, steps. Request type "rectangle" for process steps and "ellipse" for objects, particles, states and cycles.
+- add_boxes: discrete concepts, quantities, stages, steps. Use kind: 'rectangle' for process steps and kind: 'ellipse' for objects, particles, states and cycles. The field is kind, never type.
 - add_lines: axes, rays, vectors, separators, timelines and geometric construction lines. Lines are not relationships between concepts; use connectors for those.
 - add_connectors: causal or sequential flow between two existing nodes. Add short labels on the nodes, not on the connector.
 - add_frames: group a stage, a panel, a comparison column or a whole lesson. Give every frame a concise title.

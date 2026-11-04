@@ -88,6 +88,7 @@ test('a URL prompt opens the panel and starts the lesson', async ({ page, reques
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
 	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
+	await expect(panel.getByRole('textbox', { name: COMPOSER })).toHaveValue('')
 })
 
 test('the current marquee selection is attached to the request', async ({ page, request }) => {
@@ -134,7 +135,7 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('textbox', { name: COMPOSER }).fill('Draw something')
 	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
-	await expect(panel.getByRole('alert')).toContainText('Assistant unavailable')
+	await expect(panel.getByRole('alert')).toContainText('Assistant request failed')
 	await expect(panel.getByRole('alert')).toContainText('127.0.0.1:3425')
 })
 
