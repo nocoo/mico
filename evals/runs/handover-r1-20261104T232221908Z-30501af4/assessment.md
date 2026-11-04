@@ -9,6 +9,6 @@
 - Updates: six `update_shapes` calls correctly revise earlier beds, including the later 1-bed oxygen, A3 laboratory result, B5 temperature, and 2-bed family update. Round one does not support a claim that the model always creates duplicates.
 - Grouping: A and B beds share the same column without distinct ward boundaries; there are no frames. Follow-up notes for the resuscitation beds are separate from their bed notes.
 - Summary: the final HTML card is separate from other objects and does not overflow its measured iframe (1824 × 950 content). It contains 766 text characters and no SVG icons; the six-row table is dense and uses Mico's palette rather than a clinical visual hierarchy. The screenshot is a fit view, not evidence that the whole card is readable at that zoom.
-- Artifacts: `transcript.jsonl`, individual turn logs, `final-board.json`, and the 1440 × 960 `screenshot.png`. Each turn used `mode: lecture` with the same pinned canvas id; the final automatic summary used `mode: chat`. Timestamps in the synthetic segment envelope are fixed at `0:00–0:00` in both rounds.
+- Artifacts: `transcript.jsonl` (complete per-turn requests, tool calls and responses), `final-board.json`, and the 1440 × 960 `screenshot.png`. Each turn used `mode: lecture` with the same pinned canvas id; the final automatic summary used `mode: chat`. Timestamps in the synthetic segment envelope are fixed at `0:00–0:00` in both rounds.
 
 One run per revision is illustrative, not a statistically controlled model comparison.

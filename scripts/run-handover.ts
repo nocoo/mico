@@ -264,10 +264,6 @@ async function sendOneTurn(options: {
 			tool: toolRevisions,
 		},
 	}
-	writeFileSync(
-		join(directory, `turn-${String(index).padStart(3, '0')}.json`),
-		`${JSON.stringify(record, null, 2)}\n`,
-	)
 	appendJsonl(directory, record)
 	if (timedOut) throw new Error(`Turn ${index} timed out`)
 	if (chatError) throw new Error(`Turn ${index} stream error: ${chatError}`)
