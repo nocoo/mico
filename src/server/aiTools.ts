@@ -94,6 +94,8 @@ interface ToolContext {
 	canvasId: string
 	revision: number
 	layoutLimit?: number
+	layoutLimitX?: number
+	layoutMaxWidth?: number
 }
 
 function normalizeOperations(current: Shape[], operations: Operation[]): Operation[] {
@@ -130,7 +132,7 @@ function normalizeOperations(current: Shape[], operations: Operation[]): Operati
 }
 
 function apply(
-	{ store, broadcast, canvasId, layoutLimit }: ToolContext,
+	{ store, broadcast, canvasId, layoutLimit, layoutLimitX, layoutMaxWidth }: ToolContext,
 	operations: Operation[],
 	observedRevision: number,
 ): ToolReply | { ok: true; revision: number; updated: string[] } {
@@ -139,7 +141,7 @@ function apply(
 	}
 	const current = store.getBoard(canvasId)
 	const normalized = normalizeOperations(current.shapes, operations)
-	if (layoutLimit !== undefined) {
+	if (layoutLimit !== undefined || layoutLimitX !== undefined || layoutMaxWidth !== undefined) {
 		const byId = new Map<string, Shape>(current.shapes.map((shape) => [shape.id, shape]))
 		for (const operation of normalized) {
 			let shape: Shape | undefined
@@ -154,16 +156,54 @@ function apply(
 			}
 			if (!shape || shape.type === 'connector') continue
 			const bottom = Math.max(shape.y, shape.y + shape.h)
+			const right = Math.max(shape.x, shape.x + shape.w)
+			const width = Math.abs(shape.w)
 			const previousBottom =
 				previous && previous.type !== 'connector'
 					? Math.max(previous.y, previous.y + previous.h)
 					: Number.NEGATIVE_INFINITY
-			if (bottom > layoutLimit && (previousBottom <= layoutLimit || bottom > previousBottom)) {
+			const previousRight =
+				previous && previous.type !== 'connector'
+					? Math.max(previous.x, previous.x + previous.w)
+					: Number.NEGATIVE_INFINITY
+			const previousWidth =
+				previous && previous.type !== 'connector' ? Math.abs(previous.w) : Number.NEGATIVE_INFINITY
+			if (
+				layoutLimit !== undefined &&
+				bottom > layoutLimit &&
+				(previousBottom <= layoutLimit || bottom > previousBottom)
+			) {
 				return {
 					ok: false,
 					error: 'LAYOUT_LIMIT',
-					message: `Live layout limit is y=${layoutLimit}; this object reaches y=${Math.round(bottom)}. Place it in the next column at y=160 or compact the existing sections with update_shapes.`,
-					hint: 'Do not extend the current column. Use the next free column, starting near y=160.',
+					message: `Live layout limit is y=${layoutLimit}; this object reaches y=${Math.round(bottom)}. Place it in the second column at x=1040, y=160, or compact the existing sections with update_shapes.`,
+					hint: 'Do not extend the current column. Use the second column at x=1040, starting near y=160.',
+				}
+			}
+			if (
+				layoutLimitX !== undefined &&
+				right > layoutLimitX &&
+				(previousRight <= layoutLimitX || right > previousRight)
+			) {
+				return {
+					ok: false,
+					error: 'LAYOUT_LIMIT_X',
+					message: `Live layout limit is x=${layoutLimitX}; this object reaches x=${Math.round(right)}. Use only two columns (x=80 and x=1040) and compact the existing sections.`,
+					hint: 'Move the section into the second column or shrink it; do not add a third column.',
+				}
+			}
+			if (
+				layoutMaxWidth !== undefined &&
+				shape.type !== 'line' &&
+				shape.type !== 'path' &&
+				width > layoutMaxWidth &&
+				(previousWidth <= layoutMaxWidth || width > previousWidth)
+			) {
+				return {
+					ok: false,
+					error: 'LAYOUT_WIDTH',
+					message: `Live section width is limited to ${layoutMaxWidth}px; this object is ${Math.round(width)}px wide. Split it into a note/card that fits two columns.`,
+					hint: 'Keep frames and cards at most 900px wide.',
 				}
 			}
 		}
@@ -220,7 +260,12 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 })
 
 export function createCanvasTools(
-	input: Omit<ToolContext, 'revision'> & { revision?: number; layoutLimit?: number },
+	input: Omit<ToolContext, 'revision'> & {
+		revision?: number
+		layoutLimit?: number
+		layoutLimitX?: number
+		layoutMaxWidth?: number
+	},
 ) {
 	const { store, selection, canvasId } = input
 	let observedRevision = input.revision ?? store.getBoard(canvasId).revision
@@ -310,7 +355,7 @@ export function createCanvasTools(
 							y: coord('Top edge.'),
 							w: size('Width.').optional(),
 							h: size('Height.').optional(),
-							text: z.string().min(1).max(2000),
+							text: z.string().min(1).max(6000),
 							color: anyColorSchema.optional(),
 							frameId: frameIdSchema,
 						}),
@@ -537,7 +582,7 @@ export function createCanvasTools(
 
 		add_html_cards: tool({
 			description:
-				'Add a rich HTML card for precise tables, charts, annotated SVG diagrams, chemistry equations or formatted math. Use inline styles only; no scripts or external resources; keep markup under 12,000 characters.',
+				'Add a rich HTML card for precise tables, charts, annotated SVG diagrams, chemistry equations or formatted math. Use inline styles only; no scripts or external resources; keep markup under 20,000 characters.',
 			inputSchema: z.object({
 				cards: z
 					.array(
@@ -548,7 +593,7 @@ export function createCanvasTools(
 							w: size('Width.'),
 							h: size('Height.'),
 							title: z.string().min(1).max(120),
-							html: z.string().min(1).max(12000),
+							html: z.string().min(1).max(40000),
 							color: colorSchema.optional(),
 							frameId: frameIdSchema,
 						}),
@@ -590,9 +635,9 @@ export function createCanvasTools(
 									w: z.number().min(-20000).max(20000).optional(),
 									h: z.number().min(-20000).max(20000).optional(),
 									color: colorSchema.optional(),
-									text: z.string().max(2000).optional(),
+									text: z.string().max(6000).optional(),
 									title: z.string().min(1).max(120).optional(),
-									html: z.string().min(1).max(12000).optional(),
+									html: z.string().min(1).max(40000).optional(),
 									frameId: z.string().nullable().optional(),
 									font: z.enum(['sans', 'serif', 'hand', 'mono']).optional(),
 									fontSize: z.number().min(8).max(256).optional(),

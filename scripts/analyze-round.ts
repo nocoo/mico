@@ -180,7 +180,10 @@ function analyzeCase(log: CaseLog) {
 			shapes.some((shape) => shape.type === 'html') &&
 			summaryTools.some(
 				(tool) =>
-					tool.name === 'add_html_cards' && tool.state === 'output-available' && !tool.failed,
+					tool.state === 'output-available' &&
+					!tool.failed &&
+					(tool.name === 'add_html_cards' ||
+						(tool.name === 'update_shapes' && (tool.input ?? '').includes('"html"'))),
 			),
 		summaryMs: log.summary?.elapsedMs ?? null,
 		shapes: shapes.length,

@@ -698,3 +698,26 @@ test('connector upserts reset anchors when endpoints change', async () => {
 		assert.equal(link?.type === 'connector' ? link.fromAnchor : 'missing', undefined)
 	})
 })
+
+test('live layout also caps horizontal bounds and object width', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+			layoutLimitX: 2000,
+			layoutMaxWidth: 940,
+		})
+		const right = (await run(tools.add_notes, {
+			notes: [{ id: 'right', x: 1500, y: 100, w: 800, h: 120, text: 'Too wide right' }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(right.ok, false)
+		assert.equal(right.error, 'LAYOUT_LIMIT_X')
+		const wide = (await run(tools.add_frames, {
+			frames: [{ id: 'wide', x: 80, y: 100, w: 1200, h: 400, title: 'Too wide' }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(wide.ok, false)
+		assert.equal(wide.error, 'LAYOUT_WIDTH')
+	})
+})

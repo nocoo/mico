@@ -138,6 +138,8 @@ export async function streamAiChat({
 			canvasId,
 			revision: board.revision,
 			layoutLimit: request.mode === 'lecture' ? 1600 : undefined,
+			layoutLimitX: request.mode === 'lecture' ? 2000 : undefined,
+			layoutMaxWidth: request.mode === 'lecture' ? 940 : undefined,
 		}),
 		stopWhen:
 			request.mode === 'lecture'

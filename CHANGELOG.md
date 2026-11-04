@@ -13,6 +13,8 @@
 - Add ten meeting and planning cases with generated Chinese, English and Japanese audio, plus the source scripts and a reusable real-daemon case runner.
 - Add a post-session summary action and automatic summary when a live session ends; the assistant checks layout warnings, fixes overlaps, then builds one rich HTML summary card.
 - Give `get_board` layout warnings for overlaps and frame escapes, and map vivid colors to note tint fills instead of failing the tool.
+- Enforce a two-column live layout, cap section width, treat duplicate create ids as updates, and allow richer HTML/text in cards and notes.
+- Add a real-session case library and round artifacts under `evals/runs/`.
 - Pin each AI request to the active canvas, guard stale updates, sanitize interrupted tool calls, and block scripts and external resources in HTML cards.
 - Add multiple saved canvases with names, timestamps and generated SVG previews; the top-left Canvases panel creates, switches, renames and deletes them.
 - Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.

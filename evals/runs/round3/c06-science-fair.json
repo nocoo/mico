@@ -1,0 +1,867 @@
+{
+  "round": 3,
+  "case": {
+    "id": "c06-science-fair",
+    "lang": "en",
+    "subject": "School committee",
+    "title": "Science fair venue, budget and volunteers",
+    "voice": "en-US-GuyNeural",
+    "rate": "+40%",
+    "script": "c06-science-fair.en.txt",
+    "duration": 299.7
+  },
+  "canvasId": "6f321c07-7899-4b8f-a54d-a62d778a3a8c",
+  "canvasName": "R3-C06 Science fair venue, budget and volunteers",
+  "startedAt": "2026-11-04T16:43:19.480Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 18.4,
+      "text": "Thank you for coming to the science fair planning meeting. We have about forty minutes and we need to leave with a budget, a schedule, a venue plan, and named owners. The fair is for grades six through eight, it will run on a Saturday in October, and we expect one hundred and twenty student projects. Last year we had eighty projects and it was already crowded, so this year we need a different layout.",
+      "elapsedMs": 9043,
+      "timedOut": false,
+      "textReply": "Captured the meeting goals and scale: grades 6–8, Saturday in October, 120 projects—up from last year’s crowded 80—and the need for a new layout.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title\",\"x\":80,\"y\":64,\"text\":\"Science fair planning\",\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"x\":80,\"y\":152,\"text\":\"Purpose & scale\",\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title\",\"type\":\"text\"},{\"id\":\"scope\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"meeting-scope\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNeed a different layout this year\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"meeting-scope\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 18.4,
+      "end": 35.8,
+      "text": "Let's start with the goal. The fair should be a low pressure opportunity for students to explain their work, not a pure competition. Every student gets a table and a short presentation slot. We will have three judged categories: scientific method, engineering design, and communication. We also want a family open house in the afternoon so parents and younger students can visit.",
+      "elapsedMs": 9117,
+      "timedOut": false,
+      "textReply": "Added the low-pressure presentation goal, the three judged categories, and an afternoon family open house.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":2,\"count\":3,\"bounds\":{\"x\":80,\"y\":64,\"w\":760,\"h\":320},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"}],\"omitted\":0,\"warnings\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"fair-goal\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\nJudged categories:\\n• Scientific method\\n• Engineering design\\n• Communication\",\"color\":\"#fff8d4\"},{\"id\":\"family-open-house\",\"x\":488,\"y\":408,\"w\":352,\"h\":128,\"text\":\"AFTERNOON OPEN HOUSE\\nFamilies and younger students are invited to visit.\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"fair-goal\",\"type\":\"note\"},{\"id\":\"family-open-house\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 35.8,
+      "end": 49.3,
+      "text": "The venue options are the school gym, the cafeteria plus hallway, and the community college atrium. The gym is free and can hold one hundred and twenty tables, but the acoustics are terrible and the floor is needed for basketball on Friday night, so setup cannot start until seven in the morning.",
+      "elapsedMs": 10453,
+      "timedOut": false,
+      "textReply": "I’m capturing the gym’s known capacity and operational trade-offs alongside the venue options still under consideration.Added a venue comparison section. The gym is free for 120 tables, but has poor acoustics and Saturday setup cannot begin before 7 a.m.; cafeteria-plus-hallway and the college atrium remain to assess.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"venue-options\",\"x\":80,\"y\":576,\"w\":760,\"h\":368,\"title\":\"Venue options · capacity, constraints & trade-offs\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"venue-options\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"gym-option\",\"x\":112,\"y\":632,\"w\":328,\"h\":224,\"text\":\"SCHOOL GYM\\nCost: free\\nCapacity: 120 tables\\n\\nTrade-offs\\n• Terrible acoustics\\n• Basketball Friday night\\n• Setup starts no earlier than 7 a.m. Saturday\",\"color\":\"#fff8d4\",\"frameId\":\"venue-options\"},{\"id\":\"other-venues\",\"x\":472,\"y\":632,\"w\":328,\"h\":176,\"text\":\"ALTERNATIVES TO ASSESS\\n• Cafeteria + hallway\\n• Community college atrium\\n\\nCost, capacity and logistics not yet stated.\",\"color\":\"#e2f5fc\",\"frameId\":\"venue-options\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"gym-option\",\"type\":\"note\"},{\"id\":\"other-venues\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 49.3,
+      "end": 68,
+      "text": "The cafeteria and hallway can hold ninety tables and setup can start Friday afternoon, but the hallway is a fire lane and we cannot block it. The college atrium is beautiful and has parking, but it costs eight hundred dollars and requires a certificate of insurance. The safety requirements are not optional. Every project using heat, chemicals, or live animals needs a pre approval form signed by a teacher.",
+      "elapsedMs": 8034,
+      "timedOut": false,
+      "textReply": "Updated both alternatives with their stated capacity, setup window, cost, insurance requirement, and hallway fire-lane constraint.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":8,\"bounds\":{\"x\":80,\"y\":64,\"w\":760,\"h\":880},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\nJud…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"other-venues\",\"patch\":{\"text\":\"CAFETERIA + HALLWAY\\nCapacity: 90 tables\\nSetup: Friday afternoon\\nConstraint: keep hallway clear;\\nit is a fire lane\\n\\nCOLLEGE ATRIUM\\nCost: $800; parking\\nRequires certificate of insurance\"}},{\"id\":\"venue-options\",\"patch\":{\"h\":448}}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[],\"updated\":[\"other-venues\",\"venue-options\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"safety-requirements\",\"x\":1040,\"y\":576,\"w\":360,\"h\":176,\"text\":\"SAFETY · REQUIRED\\nFor projects using heat,\\nchemicals, or live animals:\\n\\nPre-approval form must be\\nsigned by a teacher.\\n\\nSafety requirements are\\nnot optional.\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"safety-requirements\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 68,
+      "end": 83.4,
+      "text": "No open flames. Electrical projects must use grounded outlets and cannot daisy chain power strips. We need two first aid stations and a clear path for emergency vehicles. The district safety officer has to review the floor plan two weeks before the event. The budget we have is four thousand dollars from the PTA, plus whatever we raise.",
+      "elapsedMs": 9465,
+      "timedOut": false,
+      "textReply": "Added the remaining safety constraints and deadline, plus the $4,000 PTA baseline; fundraising is still undetermined.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"safety-requirements-2\",\"x\":1040,\"y\":776,\"w\":360,\"h\":200,\"text\":\"SAFETY · ADDITIONAL\\n• No open flames\\n• Electrical projects: grounded outlets; no daisy-chained power strips\\n• Two first-aid stations\\n• Clear emergency-vehicle path\\n• Safety officer reviews floor plan ≥2 weeks before event\",\"color\":\"#ffe9f0\"},{\"id\":\"budget-baseline\",\"x\":1040,\"y\":1016,\"w\":360,\"h\":136,\"text\":\"BUDGET BASELINE\\nPTA funds: $4,000\\nPlus fundraising to be determined\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"safety-requirements-2\",\"type\":\"note\"},{\"id\":\"budget-baseline\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 83.4,
+      "end": 101.4,
+      "text": "Last year we spent two thousand on tables, six hundred on printing, four hundred on awards, and three hundred on snacks. This year we want to add a keynote speaker and a livestream for families who cannot attend. The speaker honorarium is five hundred, the AV rental is seven hundred, and the livestream requires a volunteer and a dedicated laptop. Let's compare the two realistic venue plans.",
+      "elapsedMs": 15510,
+      "timedOut": false,
+      "textReply": "Added the prior-year cost breakdown and proposed add-ons; the known subtotal is $4,500, before venue costs or fundraising.Added the budget snapshot and a venue-plan comparison panel. The known prior spend plus keynote and AV totals $4,500—$500 above the $4,000 PTA baseline, before venue costs or fundraising. The cafeteria holds 90 tables, so it cannot accommodate 120 projects as stated; the gym fits 120. The college atrium’s capacity is unknown, so the two realistic plans still need confirmation.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"venue-budget-compare\",\"x\":1040,\"y\":208,\"w\":360,\"h\":336,\"title\":\"Budget snapshot · last year & proposed additions\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\\\"><div style=\\\"font-size:18px;font-weight:700;margin-bottom:8px\\\">Last year: $3,300</div><table style=\\\"width:100%;border-collapse:collapse;font-size:14px\\\"><tr><td style=\\\"padding:3px 0\\\">Tables</td><td style=\\\"text-align:right\\\">$2,000</td></tr><tr><td>Printing</td><td style=\\\"text-align:right\\\">$600</td></tr><tr><td>Awards</td><td style=\\\"text-align:right\\\">$400</td></tr><tr><td>Snacks</td><td style=\\\"text-align:right\\\">$300</td></tr></table><hr style=\\\"border:0;border-top:1px solid #bbb;margin:8px 0\\\"><div style=\\\"font-weight:700\\\">Proposed additions: $1,200</div><div style=\\\"font-size:14px\\\">Keynote honorarium $500<br>AV rental $700<br>Livestream: volunteer + de…",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"venue-budget-compare\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"venue-plan-options\",\"x\":1040,\"y\":576,\"w\":360,\"h\":400,\"title\":\"Two venue plans · comparison pending\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.4\\\"><div style=\\\"font-weight:700;font-size:17px;margin-bottom:8px\\\">Plan A · School gym</div><div style=\\\"font-size:14px\\\">Venue: $0 · capacity 120 tables<br>Acoustics poor; Saturday setup from 7 a.m.<br>Known baseline + additions: $4,500</div><hr style=\\\"border:0;border-top:1px solid #bbb;margin:12px 0\\\"><div style=\\\"font-weight:700;font-size:17px;margin-bottom:8px\\\">Plan B · Cafeteria + hallway</div><div style=\\\"font-size:14px\\\">Capacity 90 tables · Friday setup<br>Hallway must remain unobstructed (fire lane).<br>Venue cost not stated; only viable if 120 projects fit without blocking the fire lane.</div><div style=\\\"margin-top:12px;background:#e2f5fc;padding:8px;font-size:13px\\\"><b…",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"venue-plan-options\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 101.4,
+      "end": 118.5,
+      "text": "Plan A is the gym plus the outdoor courtyard for food trucks. Capacity is good, setup is painful, and the acoustics are poor. Plan B is the cafeteria, the hallway, and four classrooms for quiet presentations. Capacity is ninety projects, so we would need to limit entries or run two sessions. The college atrium is a third option but the insurance and cost make it a stretch.",
+      "elapsedMs": 9032,
+      "timedOut": false,
+      "textReply": "Updated the comparison with the clarified plans: Plan A is the gym plus courtyard; Plan B adds four classrooms but serves only 90 projects, requiring limited entries or two sessions. The atrium remains a costly, insurance-dependent third option. No decision was stated.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"venue-plan-options\",\"patch\":{\"title\":\"Venue plans A & B · atrium fallback\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.4\\\"><div style=\\\"font-weight:700;font-size:17px;margin-bottom:8px\\\">Plan A · Gym + outdoor courtyard</div><div style=\\\"font-size:14px\\\">Capacity: good for 120 projects<br>Courtyard for food trucks<br>Trade-offs: painful setup; poor acoustics</div><hr style=\\\"border:0;border-top:1px solid #bbb;margin:12px 0\\\"><div style=\\\"font-weight:700;font-size:17px;margin-bottom:8px\\\">Plan B · Cafeteria + hallway + 4 classrooms</div><div style=\\\"font-size:14px\\\">Capacity: 90 projects<br>Quiet presentations in classrooms<br>Need to limit entries or run two sessions<br>Hallway must remain clear as a fire lane</div><div style=\\\"margin-top:12px;background:#fff8d4;padding:8px;font-size:13px\\\"><b>Third option · College atrium…",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[],\"updated\":[\"venue-plan-options\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 118.5,
+      "end": 137,
+      "text": "The committee's preference is Plan A if we can solve three problems: setup time, noise, and power. The custodial team says they can open the gym at six, not seven, if we submit a request two weeks ahead. The AV club can lend us two portable speakers and six microphones. The facilities team can bring in two quiet generators for the courtyard, but we need to keep them away from the presentation tables.",
+      "elapsedMs": 12375,
+      "timedOut": false,
+      "textReply": "Recorded Plan A as the committee’s conditional preference and added the custodial, AV, and generator mitigations.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":11,\"count\":13,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1088},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"venue-plan-options\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\\\"><div style=\\\"font-weight:700;font-size:17px\\\">Plan A · preferred, conditional</div><div style=\\\"font-size:14px\\\">Gym + courtyard for food trucks<br>Capacity fits 120; setup and noise/power need solutions.</div><div style=\\\"margin-top:8px;font-size:14px\\\"><b>Mitigations / dependencies</b><br>• Custodians can open gym at 6 a.m. if request submitted 2 weeks ahead<br>• AV club: 2 portable speakers + 6 microphones<br>• Facilities: 2 quiet courtyard generators; keep away from presentation tables</div><div style=\\\"margin-top:10px;background:#fff8d4;padding:7px;font-size:13px\\\"><b>Preference, not final decision:</b> Plan A if these three issues are resolved.</div></div>\"}},{\"id\":\"gym-option\",\"patch\":{\"text\":\"SCHOOL GYM + COURTYARD\\nCapacity fits 120\\nFoo…",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[],\"updated\":[\"venue-plan-options\",\"gym-option\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"safety-requirements\",\"patch\":{\"x\":80,\"y\":1080}},{\"id\":\"safety-requirements-2\",\"patch\":{\"x\":488,\"y\":1080}},{\"id\":\"budget-baseline\",\"patch\":{\"x\":80,\"y\":1280}}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[],\"updated\":[\"safety-requirements\",\"safety-requirements-2\",\"budget-baseline\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 137,
+      "end": 152.6,
+      "text": "For noise, we will group the noisier engineering projects near the courtyard and keep the reading and communication projects in the quiet corner. We will not use the gym's main sound system for announcements; instead we will use a small PA at the entrance. Presentations will be scheduled in fifteen minute blocks with five minute transitions.",
+      "elapsedMs": 11190,
+      "timedOut": false,
+      "textReply": "Added the noise zoning, entrance PA choice, and 15-minute presentation blocks with 5-minute transitions.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"noise-layout\",\"x\":80,\"y\":880,\"w\":360,\"h\":176,\"text\":\"PLAN A · NOISE + PRESENTATION FLOW\\n• Noisier engineering projects near courtyard\\n• Reading + communication projects in quiet corner\\n• Small PA at entrance; no gym main sound system\\n• Presentations: 15-minute blocks + 5-minute transitions\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"noise-layout\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":14,\"count\":14,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1352},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"venue-options\",\"patch\":{\"h\":488}},{\"id\":\"noise-layout\",\"patch\":{\"x\":488,\"y\":880}}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"venue-options\",\"noise-layout\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 152.6,
+      "end": 171,
+      "text": "Judges will rotate in pairs, and each pair will see no more than twelve projects. The schedule is tight. Eight in the morning, student setup. Nine, welcome and safety briefing. Nine thirty to eleven thirty, judging. Eleven thirty to twelve thirty, lunch and family open house. Twelve thirty to two, public viewing and hands on demos. Two to two thirty, keynote. Two thirty to three, awards and cleanup.",
+      "elapsedMs": 11840,
+      "timedOut": false,
+      "textReply": "Added the run of show and judging rotation cap; presentations retain 15-minute slots with 5-minute transitions.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"schedule-details\",\"x\":1040,\"y\":1000,\"w\":360,\"h\":368,\"text\":\"SATURDAY RUN OF SHOW\\n8:00  Student setup\\n9:00  Welcome + safety briefing\\n9:30–11:30  Judging\\n11:30–12:30  Lunch + family open house\\n12:30–2:00  Public viewing + hands-on demos\\n2:00–2:30  Keynote\\n2:30–3:00  Awards + cleanup\\n\\nJudging: pairs rotate; ≤12 projects per pair.\\nPresentations: 15-min blocks + 5-min transitions.\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"schedule-details\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":16,\"count\":15,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1352},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"schedule-details\",\"patch\":{\"y\":1008,\"h\":368}},{\"id\":\"venue-budget-compare\",\"patch\":{\"h\":336}},{\"id\":\"venue-plan-options\",\"patch\":{\"y\":576,\"h\":400}}]}",
+          "output": "{\"ok\":true,\"revision\":17,\"created\":[],\"updated\":[\"schedule-details\",\"venue-budget-compare\",\"venue-plan-options\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 11,
+      "start": 171,
+      "end": 187.4,
+      "text": "We need everyone out by four because the gym has an evening event. The budget needs a decision. Venue is free under Plan A. Tables and chairs are already in the school, so zero. Printing is seven hundred because we have more projects and need floor maps. Awards are five hundred. Snacks are four hundred. AV rental is seven hundred. Speaker is five hundred.",
+      "elapsedMs": 13413,
+      "timedOut": false,
+      "textReply": "Updated the Plan A cost forecast to $2,800 and added the 4 p.m. gym-clear deadline; $1,200 remains before other costs.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"venue-budget-compare\",\"patch\":{\"title\":\"Budget decision · Plan A forecast\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\\\"><div style=\\\"font-size:18px;font-weight:700;margin-bottom:8px\\\">Plan A · projected costs</div><table style=\\\"width:100%;border-collapse:collapse;font-size:14px\\\"><tr><td>Venue</td><td style=\\\"text-align:right\\\">$0</td></tr><tr><td>Tables + chairs (on site)</td><td style=\\\"text-align:right\\\">$0</td></tr><tr><td>Printing + floor maps</td><td style=\\\"text-align:right\\\">$700</td></tr><tr><td>Awards</td><td style=\\\"text-align:right\\\">$500</td></tr><tr><td>Snacks</td><td style=\\\"text-align:right\\\">$400</td></tr><tr><td>AV rental</td><td style=\\\"text-align:right\\\">$700</td></tr><tr><td>Speaker</td><td style=\\\"text-align:right\\\">$500</td></tr></table><hr style=\\\"border:0;border-top:1px solid #bbb;margin:8px 0…",
+          "output": "{\"ok\":true,\"revision\":18,\"created\":[],\"updated\":[\"venue-budget-compare\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"schedule-details\",\"patch\":{\"text\":\"SATURDAY RUN OF SHOW\\n8:00  Student setup\\n9:00  Welcome + safety briefing\\n9:30–11:30  Judging\\n11:30–12:30  Lunch + family open house\\n12:30–2:00  Public viewing + hands-on demos\\n2:00–2:30  Keynote\\n2:30–3:00  Awards + cleanup\\nEveryone out by 4:00 (evening gym event)\\n\\nJudging: pairs rotate; ≤12 projects per pair.\\nPresentations: 15-min blocks + 5-min transitions.\"}}]}",
+          "output": "{\"ok\":true,\"revision\":19,\"created\":[],\"updated\":[\"schedule-details\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":19,\"count\":15,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1352},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 12,
+      "start": 187.4,
+      "end": 205.8,
+      "text": "Safety supplies, tape, signage, and extension cords are three hundred. That totals three thousand one hundred, leaving nine hundred for contingency. The PTA can cover it, but we need receipts within two weeks. Volunteers are the biggest risk. We need twelve judges, four check in volunteers, two first aid volunteers, two floaters, and one AV lead. So far we have six judges and two check in volunteers.",
+      "elapsedMs": 19675,
+      "timedOut": false,
+      "textReply": "Updated the budget to $3,100 with $900 contingency and added the PTA receipt deadline; volunteer gaps are next.Added the $3,100 Plan A budget, $900 contingency, and two-week receipt deadline. The volunteer gap is visible: 6 judges, 2 check-in volunteers, 2 first-aid volunteers, 2 floaters, and 1 AV lead still need coverage; livestream also needs an owner and laptop.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"venue-budget-compare\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\\\"><div style=\\\"font-size:18px;font-weight:700;margin-bottom:8px\\\">Plan A · approved budget plan</div><table style=\\\"width:100%;border-collapse:collapse;font-size:14px\\\"><tr><td>Venue; tables + chairs</td><td style=\\\"text-align:right\\\">$0</td></tr><tr><td>Printing + floor maps</td><td style=\\\"text-align:right\\\">$700</td></tr><tr><td>Awards</td><td style=\\\"text-align:right\\\">$500</td></tr><tr><td>Snacks</td><td style=\\\"text-align:right\\\">$400</td></tr><tr><td>AV rental</td><td style=\\\"text-align:right\\\">$700</td></tr><tr><td>Speaker</td><td style=\\\"text-align:right\\\">$500</td></tr><tr><td>Safety supplies, tape, signage, cords</td><td style=\\\"text-align:right\\\">$300</td></tr></table><hr style=\\\"border:0;border-top:1px solid #bbb;margin:8px 0\\\"><div …",
+          "output": "{\"ok\":true,\"revision\":20,\"created\":[],\"updated\":[\"venue-budget-compare\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"volunteer-status\",\"x\":1040,\"y\":576,\"w\":360,\"h\":400,\"title\":\"Volunteer staffing · gaps to fill\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.4\\\"><table style=\\\"width:100%;border-collapse:collapse;font-size:14px\\\"><tr style=\\\"font-weight:700;border-bottom:1px solid #999\\\"><td style=\\\"padding:5px 0\\\">Role</td><td>Needed</td><td>Have</td><td>Gap</td></tr><tr><td style=\\\"padding:5px 0\\\">Judges</td><td>12</td><td>6</td><td style=\\\"font-weight:700\\\">6</td></tr><tr><td style=\\\"padding:5px 0\\\">Check-in</td><td>4</td><td>2</td><td style=\\\"font-weight:700\\\">2</td></tr><tr><td style=\\\"padding:5px 0\\\">First aid</td><td>2</td><td>0 stated</td><td>2</td></tr><tr><td style=\\\"padding:5px 0\\\">Floaters</td><td>2</td><td>0 stated</td><td>2</td></tr><tr><td style=\\\"padding:5px 0\\\">AV lead</td><td>1</td><td>0 stated</td><td>1</td></tr></table><div…",
+          "output": "{\"ok\":true,\"revision\":21,\"created\":[{\"id\":\"volunteer-status\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 13,
+      "start": 205.8,
+      "end": 223.2,
+      "text": "The college outreach coordinator can send five students, but they need service hours forms. We will ask the high school science club for the rest. If we do not have twelve judges by two weeks before the event, we will switch to a poster walk instead of individual judging. Owners and deadlines. Ms. Chen owns the venue request and the safety floor plan, due four weeks before. Mr.",
+      "elapsedMs": 14639,
+      "timedOut": false,
+      "textReply": "Added the judge recruitment sources and the two-weeks-before poster-walk trigger; Ms. Chen’s assignment and deadline are captured next.Added the judge recruitment plan and poster-walk fallback, plus Ms. Chen’s venue-request and safety-floor-plan assignments, due four weeks before the event. The next owner’s assignment is still unfinished in the transcript.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"volunteer-status\",\"x\":1040,\"y\":576,\"w\":360,\"h\":400,\"title\":\"Volunteer staffing · recruiting plan & trigger\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\\\"><table style=\\\"width:100%;border-collapse:collapse;font-size:13px\\\"><tr style=\\\"font-weight:700;border-bottom:1px solid #999\\\"><td style=\\\"padding:4px 0\\\">Role</td><td>Need</td><td>Have</td><td>Gap</td></tr><tr><td>Judges</td><td>12</td><td>6</td><td>6</td></tr><tr><td>Check-in</td><td>4</td><td>2</td><td>2</td></tr><tr><td>First aid</td><td>2</td><td>—</td><td>2</td></tr><tr><td>Floaters</td><td>2</td><td>—</td><td>2</td></tr><tr><td>AV lead</td><td>1</td><td>—</td><td>1</td></tr></table><div style=\\\"margin-top:8px;font-size:13px\\\"><b>Recruiting:</b> college outreach coordinator sends 5 students (service-hours forms needed); ask high school science club for remaining ju…",
+          "output": "{\"ok\":true,\"revision\":22,\"created\":[],\"updated\":[\"volunteer-status\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"owner-assignments\",\"x\":1040,\"y\":1008,\"w\":360,\"h\":272,\"text\":\"OWNERS & DEADLINES\\n\\nMs. Chen\\n• Venue request\\n• Safety floor plan\\nDue: 4 weeks before event\\n\\nOpen: additional owners and deadlines will be captured as assigned.\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":23,\"created\":[{\"id\":\"owner-assignments\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 14,
+      "start": 223.2,
+      "end": 239.3,
+      "text": "Patel owns the budget and receipts, due three weeks before. The PTA liaison owns the snack order and volunteer signup, due two weeks before. The AV club owns the PA and livestream test, due one week before. I will own the project registration form and the judge assignment. The registration form opens next Monday and closes three weeks before the fair.",
+      "elapsedMs": 13469,
+      "timedOut": false,
+      "textReply": "Added the remaining named owners, responsibilities, and deadlines, including your registration-form dates and judge assignment.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"owner-assignments\",\"patch\":{\"text\":\"OWNERS & DEADLINES\\n\\nMs. Chen\\n• Venue request + safety floor plan\\nDue: 4 weeks before event\\n\\nMr. Patel\\n• Budget + receipts\\nDue: 3 weeks before event\\n\\nPTA liaison\\n• Snack order + volunteer signup\\nDue: 2 weeks before event\\n\\nAV club\\n• PA + livestream test\\nDue: 1 week before event\\n\\nYou\\n• Registration form + judge assignment\\nForm opens next Monday; closes 3 weeks before fair\"}}]}",
+          "output": "{\"ok\":true,\"revision\":24,\"created\":[],\"updated\":[\"owner-assignments\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":24,\"count\":17,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1352},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"venue-plan-options\",\"patch\":{\"y\":576,\"h\":400}},{\"id\":\"volunteer-status\",\"patch\":{\"x\":488,\"y\":576,\"w\":360,\"h\":400}},{\"id\":\"schedule-details\",\"patch\":{\"x\":1040,\"y\":1008,\"h\":240}},{\"id\":\"owner-assignments\",\"patch\":{\"x\":1040,\"y\":1008,\"w\":360,\"h\":272}}]}",
+          "output": "{\"ok\":true,\"revision\":25,\"created\":[],\"updated\":[\"venue-plan-options\",\"volunteer-status\",\"schedule-details\",\"owner-assignments\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 15,
+      "start": 239.3,
+      "end": 256.1,
+      "text": "Every project needs a teacher sponsor and a safety form at registration, not the day of. We also need a communication plan. One email to families this week with the date and the registration link. One email to teachers next week with the safety rules. A reminder two weeks before with the drop off map. A final email the day before with parking and lunch information.",
+      "elapsedMs": 17682,
+      "timedOut": false,
+      "textReply": "Added the registration prerequisites and four timed communications, from this week’s family email through the day-before logistics note.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"registration-comms\",\"x\":80,\"y\":880,\"w\":360,\"h\":176,\"text\":\"REGISTRATION + COMMUNICATION\\nEvery project: teacher sponsor + safety form at registration—not on event day.\\n\\nFamily email · this week\\nDate + registration link\\nTeacher email · next week\\nSafety rules\\n2 weeks before · drop-off map\\nDay before · parking + lunch info\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":26,\"created\":[{\"id\":\"registration-comms\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":26,\"count\":18,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1352},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"other-venues\",\"patch\":{\"x\":488,\"y\":632}},{\"id\":\"noise-layout\",\"patch\":{\"x\":80,\"y\":880}},{\"id\":\"registration-comms\",\"patch\":{\"x\":488,\"y\":880}},{\"id\":\"volunteer-status\",\"patch\":{\"x\":1040,\"y\":576}},{\"id\":\"schedule-details\",\"patch\":{\"x\":1040,\"y\":1008,\"h\":240}},{\"id\":\"owner-assignments\",\"patch\":{\"x\":1040,\"y\":1280,\"h\":272}}]}",
+          "output": "{\"ok\":true,\"revision\":27,\"created\":[],\"updated\":[\"other-venues\",\"noise-layout\",\"registration-comms\",\"volunteer-status\",\"schedule-details\",\"owner-assignments\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 16,
+      "start": 256.1,
+      "end": 274.7,
+      "text": "The school newsletter gets a short paragraph and a photo from last year. Let's make the decision. We choose Plan A, the gym plus courtyard, with the quiet corner and the smaller PA. We cap registration at one hundred and twenty projects. We keep the college atrium as a backup only if the gym becomes unavailable. We approve the three thousand one hundred dollar budget and hold nine hundred as contingency.",
+      "elapsedMs": 13278,
+      "timedOut": false,
+      "textReply": "Recorded the decision: Plan A, 120-project cap, atrium backup only if needed, and approved $3,100 with $900 contingency.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"decision-summary\",\"x\":1040,\"y\":1280,\"w\":360,\"h\":272,\"title\":\"Decision · Plan A approved\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.4\\\"><div style=\\\"font-size:18px;font-weight:700;color:#2b3038\\\">Venue + capacity</div><div style=\\\"font-size:14px\\\">Choose gym + courtyard; quiet corner and smaller PA. Cap registration at 120 projects.</div><div style=\\\"margin-top:8px;font-size:14px\\\"><b>Backup:</b> college atrium only if gym becomes unavailable.</div><div style=\\\"margin-top:10px;padding:8px;background:#fff8d4\\\"><b>Budget approved: $3,100</b><br>Hold $900 as contingency.</div><div style=\\\"font-size:12px;margin-top:8px\\\">Newsletter: short paragraph + photo from last year.</div></div>\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":28,\"created\":[{\"id\":\"decision-summary\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":28,\"count\":19,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1488},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"volunteer-status\",\"patch\":{\"x\":488,\"y\":576}},{\"id\":\"venue-plan-options\",\"patch\":{\"y\":1008,\"h\":240}},{\"id\":\"decision-summary\",\"patch\":{\"x\":488,\"y\":1280,\"w\":360,\"h\":272}},{\"id\":\"owner-assignments\",\"patch\":{\"x\":1040,\"y\":1280,\"w\":360,\"h\":272}}]}",
+          "output": "{\"ok\":true,\"revision\":29,\"created\":[],\"updated\":[\"volunteer-status\",\"venue-plan-options\",\"decision-summary\",\"owner-assignments\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 17,
+      "start": 274.7,
+      "end": 291.5,
+      "text": "We confirm the schedule and the owners. If the judge count is below ten two weeks before, we switch to poster walk and reduce the judging block by thirty minutes. One final point: accessibility. The gym entrance has a ramp, but the courtyard has a small step. We will put a temporary ramp at the courtyard door and reserve the front row for wheelchairs and strollers.",
+      "elapsedMs": 20805,
+      "timedOut": false,
+      "textReply": "Updated the confirmed schedule and revised the judge trigger to fewer than 10; added the courtyard ramp and reserved front row.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"volunteer-status\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\\\"><table style=\\\"width:100%;border-collapse:collapse;font-size:13px\\\"><tr style=\\\"font-weight:700;border-bottom:1px solid #999\\\"><td style=\\\"padding:4px 0\\\">Role</td><td>Need</td><td>Have</td><td>Gap</td></tr><tr><td>Judges</td><td>12</td><td>6</td><td>6</td></tr><tr><td>Check-in</td><td>4</td><td>2</td><td>2</td></tr><tr><td>First aid</td><td>2</td><td>—</td><td>2</td></tr><tr><td>Floaters</td><td>2</td><td>—</td><td>2</td></tr><tr><td>AV lead</td><td>1</td><td>—</td><td>1</td></tr></table><div style=\\\"margin-top:8px;font-size:13px\\\"><b>Recruiting:</b> college coordinator sends 5 students (service-hours forms); ask high school science club for others.</div><div style=\\\"margin-top:8px;padding:8px;background:#ffe9f0;font-size:13px\\\"><b>Trigger:</b> if…",
+          "output": "{\"ok\":true,\"revision\":30,\"created\":[],\"updated\":[\"volunteer-status\",\"schedule-details\",\"decision-summary\",\"gym-option\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":30,\"count\":19,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1488},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"other-venues\",\"patch\":{\"x\":80,\"y\":1080}},{\"id\":\"safety-requirements\",\"patch\":{\"x\":488,\"y\":1080}},{\"id\":\"safety-requirements-2\",\"patch\":{\"x\":80,\"y\":1280}},{\"id\":\"budget-baseline\",\"patch\":{\"x\":80,\"y\":1440}},{\"id\":\"venue-plan-options\",\"patch\":{\"x\":1040,\"y\":576,\"h\":400}},{\"id\":\"volunteer-status\",\"patch\":{\"x\":488,\"y\":576,\"h\":280}},{\"id\":\"noise-layout\",\"patch\":{\"x\":80,\"y\":880}},{\"id\":\"registration-comms\",\"patch\":{\"x\":488,\"y\":880}},{\"id\":\"schedule-details\",\"patch\":{\"x\":1040,\"y\":1008,\"h\":240}},{\"id\":\"owner-assignments\",\"patch\":{\"x\":1040,\"y\":1280,\"h\":272}},{\"id\":\"decision-summary\",\"patch\":{\"x\":1040,\"y\":1280,\"w\":360,\"h\":272}}]}",
+          "output": "{\"ok\":true,\"revision\":31,\"created\":[],\"updated\":[\"other-venues\",\"safety-requirements\",\"safety-requirements-2\",\"budget-baseline\",\"venue-plan-options\",\"volunteer-status\",\"noise-layout\",\"registration-comms\",\"schedule-details\",\"owner-assignments\",\"decision-summary\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 18,
+      "start": 291.5,
+      "end": 299.7,
+      "text": "The registration form will ask about accessibility needs so we can plan ahead. Good. That is consensus. I will send the minutes tonight and create the shared checklist. Thank you.",
+      "elapsedMs": 13295,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"accessibility-followup\",\"x\":80,\"y\":1440,\"w\":360,\"h\":136,\"text\":\"ACCESSIBILITY + FOLLOW-UP\\nRegistration form asks about accessibility needs for advance planning.\\n\\nConsensus reached.\\nMinutes: send tonight.\\nShared checklist: create.\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":32,\"created\":[{\"id\":\"accessibility-followup\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":32,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1512},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"other-venues\",\"patch\":{\"frameId\":null}},{\"id\":\"budget-baseline\",\"patch\":{\"x\":488,\"y\":1280}},{\"id\":\"accessibility-followup\",\"patch\":{\"x\":488,\"y\":1440}},{\"id\":\"owner-assignments\",\"patch\":{\"x\":1040,\"y\":1008,\"h\":272}},{\"id\":\"decision-summary\",\"patch\":{\"x\":1040,\"y\":1280,\"h\":272}}]}",
+          "output": "{\"ok\":true,\"revision\":33,\"created\":[],\"updated\":[\"other-venues\",\"budget-baseline\",\"accessibility-followup\",\"owner-assignments\",\"decision-summary\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 18,
+    "requests": 19,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_notes": 10,
+      "get_board": 14,
+      "add_frames": 1,
+      "update_shapes": 18,
+      "add_html_cards": 6
+    },
+    "shapes": 21,
+    "shapeTypes": {
+      "text": 2,
+      "note": 13,
+      "frame": 1,
+      "html": 5
+    },
+    "htmlCards": 5,
+    "totalReplyChars": 3269,
+    "totalMs": 326156
+  },
+  "summary": {
+    "index": 19,
+    "start": 299.7,
+    "end": 299.7,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 93841,
+    "timedOut": false,
+    "textReply": "Created the post-session summary card below the existing board content and fixed the reported layout overlaps. It consolidates the Plan A decision, budget, schedule, owners and deadlines, volunteer trigger, safety/accessibility requirements, and remaining risks.\n\n**Takeaway:** Plan A is approved for up to 120 projects at $3,100, with $900 held for contingency; volunteer coverage—especially judges—remains the main risk.",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":33,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1512},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+        "failed": false
+      },
+      {
+        "name": "update_shapes",
+        "state": "output-available",
+        "input": "{\"updates\":[{\"id\":\"owner-assignments\",\"patch\":{\"y\":1280}},{\"id\":\"decision-summary\",\"patch\":{\"x\":488,\"y\":1280}},{\"id\":\"budget-baseline\",\"patch\":{\"y\":1440}},{\"id\":\"accessibility-followup\",\"patch\":{\"x\":80,\"y\":1480}}]}",
+        "output": "{\"ok\":true,\"revision\":34,\"created\":[],\"updated\":[\"owner-assignments\",\"decision-summary\",\"budget-baseline\",\"accessibility-followup\"]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":34,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1552},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+        "failed": false
+      },
+      {
+        "name": "update_shapes",
+        "state": "output-available",
+        "input": "{\"updates\":[{\"id\":\"budget-baseline\",\"patch\":{\"x\":80,\"y\":1480}},{\"id\":\"accessibility-followup\",\"patch\":{\"x\":488,\"y\":1552}}]}",
+        "output": "{\"ok\":true,\"revision\":35,\"created\":[],\"updated\":[\"budget-baseline\",\"accessibility-followup\"]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":35,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1624},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Science fair planning\",\"font\":\"sans\",\"fontSize\":48,\"fontWeight\":700},{\"id\":\"scope\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":400,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"Purpose & scale\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"meeting-scope\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Leave with: budget • schedule • venue plan • named owners\\n\\nAudience: grades 6–8\\nWhen: Saturday in October\\nExpected: 120 student projects\\nLast year: 80 projects; already crowded\\nNe…\"},{\"id\":\"fair-goal\",\"type\":\"note\",\"x\":488,\"y\":208,\"w\":352,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"GOAL\\nLow-pressure chance to explain work—not a pure competition.\\n\\nEvery student: one table + a short presentation slot.\\n\\…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"post-session-summary\",\"x\":80,\"y\":1848,\"w\":1320,\"h\":760,\"title\":\"School science fair · post-session summary\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:22px;line-height:1.42;background:#fff\\\"><div style=\\\"font-size:28px;font-weight:700;color:#2b3038\\\">School science fair · decisions & follow-through</div><div style=\\\"font-size:16px;margin:6px 0 18px;color:#444\\\">Purpose: plan a welcoming grades 6–8 fair for up to 120 projects, with a workable venue, schedule, budget and named owners.</div><div style=\\\"display:flex;gap:14px;margin-bottom:16px\\\"><div style=\\\"flex:1;background:#e2f5fc;padding:14px;border-left:5px solid #00a2e1\\\"><div style=\\\"font-size:18px;font-weight:700;margin-bottom:6px\\\">Decisions</div><div><b>Venue:</b> Plan A — school gym + courtyard; quiet corner and small entrance PA. Atrium is backup only if gym unavailable.</div><div><b…",
+        "output": "{\"ok\":true,\"revision\":36,\"created\":[{\"id\":\"post-session-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 36,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 760,
+        "h": 60,
+        "text": "Science fair planning",
+        "font": "sans",
+        "fontSize": 48,
+        "fontWeight": 700
+      },
+      {
+        "id": "scope",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 152,
+        "w": 400,
+        "h": 40,
+        "text": "Purpose & scale",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "meeting-scope",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 208,
+        "w": 360,
+        "h": 176,
+        "text": "Leave with: budget • schedule • venue plan • named owners\n\nAudience: grades 6–8\nWhen: Saturday in October\nExpected: 120 student projects\nLast year: 80 projects; already crowded\nNeed a different layout this year"
+      },
+      {
+        "id": "fair-goal",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 488,
+        "y": 208,
+        "w": 352,
+        "h": 176,
+        "text": "GOAL\nLow-pressure chance to explain work—not a pure competition.\n\nEvery student: one table + a short presentation slot.\n\nJudged categories:\n• Scientific method\n• Engineering design\n• Communication"
+      },
+      {
+        "id": "family-open-house",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 488,
+        "y": 408,
+        "w": 352,
+        "h": 128,
+        "text": "AFTERNOON OPEN HOUSE\nFamilies and younger students are invited to visit."
+      },
+      {
+        "id": "venue-options",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 576,
+        "w": 760,
+        "h": 488,
+        "title": "Venue options · capacity, constraints & trade-offs"
+      },
+      {
+        "id": "gym-option",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 112,
+        "y": 632,
+        "w": 328,
+        "h": 224,
+        "text": "SCHOOL GYM + COURTYARD\nCapacity fits 120\nFood trucks in courtyard\n\nConditional fix: 6 a.m. access\nwith request ≥2 weeks ahead\n\nAV: 2 speakers + 6 mics\nQuiet generators away from tables\n\nAccess: gym ramp; temporary\ncourtyard-door ramp",
+        "frameId": "venue-options"
+      },
+      {
+        "id": "other-venues",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1080,
+        "w": 328,
+        "h": 176,
+        "text": "CAFETERIA + HALLWAY\nCapacity: 90 tables\nSetup: Friday afternoon\nConstraint: keep hallway clear;\nit is a fire lane\n\nCOLLEGE ATRIUM\nCost: $800; parking\nRequires certificate of insurance"
+      },
+      {
+        "id": "safety-requirements",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 488,
+        "y": 1080,
+        "w": 360,
+        "h": 176,
+        "text": "SAFETY · REQUIRED\nFor projects using heat,\nchemicals, or live animals:\n\nPre-approval form must be\nsigned by a teacher.\n\nSafety requirements are\nnot optional."
+      },
+      {
+        "id": "safety-requirements-2",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 1280,
+        "w": 360,
+        "h": 200,
+        "text": "SAFETY · ADDITIONAL\n• No open flames\n• Electrical projects: grounded outlets; no daisy-chained power strips\n• Two first-aid stations\n• Clear emergency-vehicle path\n• Safety officer reviews floor plan ≥2 weeks before event"
+      },
+      {
+        "id": "budget-baseline",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1480,
+        "w": 360,
+        "h": 136,
+        "text": "BUDGET BASELINE\nPTA funds: $4,000\nPlus fundraising to be determined"
+      },
+      {
+        "id": "venue-budget-compare",
+        "color": "#f7de4b",
+        "type": "html",
+        "x": 1040,
+        "y": 208,
+        "w": 360,
+        "h": 336,
+        "title": "Budget decision · Plan A forecast",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\"><div style=\"font-size:18px;font-weight:700;margin-bottom:8px\">Plan A · approved budget plan</div><table style=\"width:100%;border-collapse:collapse;font-size:14px\"><tr><td>Venue; tables + chairs</td><td style=\"text-align:right\">$0</td></tr><tr><td>Printing + floor maps</td><td style=\"text-align:right\">$700</td></tr><tr><td>Awards</td><td style=\"text-align:right\">$500</td></tr><tr><td>Snacks</td><td style=\"text-align:right\">$400</td></tr><tr><td>AV rental</td><td style=\"text-align:right\">$700</td></tr><tr><td>Speaker</td><td style=\"text-align:right\">$500</td></tr><tr><td>Safety supplies, tape, signage, cords</td><td style=\"text-align:right\">$300</td></tr></table><hr style=\"border:0;border-top:1px solid #bbb;margin:8px 0\"><div style=\"font-size:17px;font-weight:700\">Total: $3,100 · contingency: $900</div><div style=\"font-size:13px;background:#fff8d4;padding:7px;margin-top:8px\">PTA covers plan. Submit receipts within 2 weeks. Livestream still needs a volunteer + dedicated laptop.</div></div>"
+      },
+      {
+        "id": "venue-plan-options",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 1040,
+        "y": 576,
+        "w": 360,
+        "h": 400,
+        "title": "Venue plans A & B · atrium fallback",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\"><div style=\"font-weight:700;font-size:17px\">Plan A · preferred, conditional</div><div style=\"font-size:14px\">Gym + courtyard for food trucks<br>Capacity fits 120; setup and noise/power need solutions.</div><div style=\"margin-top:8px;font-size:14px\"><b>Mitigations / dependencies</b><br>• Custodians can open gym at 6 a.m. if request submitted 2 weeks ahead<br>• AV club: 2 portable speakers + 6 microphones<br>• Facilities: 2 quiet courtyard generators; keep away from presentation tables</div><div style=\"margin-top:10px;background:#fff8d4;padding:7px;font-size:13px\"><b>Preference, not final decision:</b> Plan A if these three issues are resolved.</div></div>"
+      },
+      {
+        "id": "noise-layout",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 880,
+        "w": 360,
+        "h": 176,
+        "text": "PLAN A · NOISE + PRESENTATION FLOW\n• Noisier engineering projects near courtyard\n• Reading + communication projects in quiet corner\n• Small PA at entrance; no gym main sound system\n• Presentations: 15-minute blocks + 5-minute transitions"
+      },
+      {
+        "id": "schedule-details",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 1008,
+        "w": 360,
+        "h": 240,
+        "text": "SATURDAY RUN OF SHOW · CONFIRMED\n8:00  Student setup\n9:00  Welcome + safety briefing\n9:30–11:30  Judging\n11:30–12:30  Lunch + family open house\n12:30–2:00  Public viewing + hands-on demos\n2:00–2:30  Keynote\n2:30–3:00  Awards + cleanup\nEveryone out by 4:00\n\nJudging: pairs; ≤12 projects/pair.\nPresentations: 15-min blocks + 5-min transitions.\nFallback: poster walk; reduce judging by 30 min if <10 judges at T−2 weeks."
+      },
+      {
+        "id": "volunteer-status",
+        "color": "#ff7fa3",
+        "type": "html",
+        "x": 488,
+        "y": 576,
+        "w": 360,
+        "h": 280,
+        "title": "Volunteer staffing · recruiting plan & trigger",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.35\"><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><tr style=\"font-weight:700;border-bottom:1px solid #999\"><td style=\"padding:4px 0\">Role</td><td>Need</td><td>Have</td><td>Gap</td></tr><tr><td>Judges</td><td>12</td><td>6</td><td>6</td></tr><tr><td>Check-in</td><td>4</td><td>2</td><td>2</td></tr><tr><td>First aid</td><td>2</td><td>—</td><td>2</td></tr><tr><td>Floaters</td><td>2</td><td>—</td><td>2</td></tr><tr><td>AV lead</td><td>1</td><td>—</td><td>1</td></tr></table><div style=\"margin-top:8px;font-size:13px\"><b>Recruiting:</b> college coordinator sends 5 students (service-hours forms); ask high school science club for others.</div><div style=\"margin-top:8px;padding:8px;background:#ffe9f0;font-size:13px\"><b>Trigger:</b> if fewer than 10 judges 2 weeks before, switch to poster walk and shorten judging by 30 minutes.</div><div style=\"margin-top:6px;font-size:12px\">Livestream requires a volunteer + dedicated laptop.</div></div>"
+      },
+      {
+        "id": "owner-assignments",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1040,
+        "y": 1280,
+        "w": 360,
+        "h": 272,
+        "text": "OWNERS & DEADLINES\n\nMs. Chen\n• Venue request + safety floor plan\nDue: 4 weeks before event\n\nMr. Patel\n• Budget + receipts\nDue: 3 weeks before event\n\nPTA liaison\n• Snack order + volunteer signup\nDue: 2 weeks before event\n\nAV club\n• PA + livestream test\nDue: 1 week before event\n\nYou\n• Registration form + judge assignment\nForm opens next Monday; closes 3 weeks before fair"
+      },
+      {
+        "id": "registration-comms",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 488,
+        "y": 880,
+        "w": 360,
+        "h": 176,
+        "text": "REGISTRATION + COMMUNICATION\nEvery project: teacher sponsor + safety form at registration—not on event day.\n\nFamily email · this week\nDate + registration link\nTeacher email · next week\nSafety rules\n2 weeks before · drop-off map\nDay before · parking + lunch info"
+      },
+      {
+        "id": "decision-summary",
+        "color": "#a6d94f",
+        "type": "html",
+        "x": 488,
+        "y": 1280,
+        "w": 360,
+        "h": 272,
+        "title": "Decision · Plan A approved",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:12px;line-height:1.4\"><div style=\"font-size:18px;font-weight:700\">DECISION · PLAN A</div><div style=\"font-size:14px\">Gym + courtyard; quiet corner + small PA. Cap: 120 projects.<br>College atrium backup only if gym unavailable.</div><div style=\"margin-top:8px;padding:8px;background:#fff8d4\"><b>Budget approved: $3,100</b><br>$900 contingency held.</div><div style=\"font-size:13px;margin-top:8px\"><b>Accessibility:</b> temporary ramp at courtyard door; front row reserved for wheelchairs and strollers. Gym entrance has ramp.</div><div style=\"font-size:12px;margin-top:6px\">Newsletter: short paragraph + last-year photo.</div></div>"
+      },
+      {
+        "id": "accessibility-followup",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 488,
+        "y": 1552,
+        "w": 360,
+        "h": 136,
+        "text": "ACCESSIBILITY + FOLLOW-UP\nRegistration form asks about accessibility needs for advance planning.\n\nConsensus reached.\nMinutes: send tonight.\nShared checklist: create."
+      },
+      {
+        "id": "post-session-summary",
+        "color": "#2b3038",
+        "type": "html",
+        "x": 80,
+        "y": 1848,
+        "w": 1320,
+        "h": 760,
+        "title": "School science fair · post-session summary",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:22px;line-height:1.42;background:#fff\"><div style=\"font-size:28px;font-weight:700;color:#2b3038\">School science fair · decisions & follow-through</div><div style=\"font-size:16px;margin:6px 0 18px;color:#444\">Purpose: plan a welcoming grades 6–8 fair for up to 120 projects, with a workable venue, schedule, budget and named owners.</div><div style=\"display:flex;gap:14px;margin-bottom:16px\"><div style=\"flex:1;background:#e2f5fc;padding:14px;border-left:5px solid #00a2e1\"><div style=\"font-size:18px;font-weight:700;margin-bottom:6px\">Decisions</div><div><b>Venue:</b> Plan A — school gym + courtyard; quiet corner and small entrance PA. Atrium is backup only if gym unavailable.</div><div><b>Capacity:</b> registration capped at 120 projects. Gym access at 6 a.m. depends on request ≥2 weeks ahead.</div><div><b>Budget:</b> approve $3,100; hold $900 contingency from $4,000 PTA funds. Receipts due within 2 weeks.</div><div><b>Format:</b> low-pressure student presentations, with judged categories for scientific method, engineering design and communication; afternoon family open house.</div></div><div style=\"flex:1;background:#f1fadc;padding:14px;border-left:5px solid #a6d94f\"><div style=\"font-size:18px;font-weight:700;margin-bottom:6px\">Core plan & safeguards</div><div>Engineering projects near courtyard; reading/communication in quiet corner. Use small PA, not gym sound system; generators kept away from tables. Two speakers, six mics.</div><div style=\"margin-top:6px\">Teacher sponsor + safety form required at registration; heat/chemical/live-animal projects need teacher-signed pre-approval. No open flames; grounded outlets; no daisy-chained strips; two first-aid stations; emergency path clear.</div><div style=\"margin-top:6px\">Accessibility: temporary courtyard ramp; front row reserved for wheelchairs/strollers; ask access needs on registration.</div></div></div><div style=\"font-size:19px;font-weight:700;margin:12px 0 6px\">Action register</div><table style=\"width:100%;border-collapse:collapse;font-size:14px\"><thead><tr style=\"background:#2b3038;color:white\"><th style=\"padding:8px;text-align:left\">Owner</th><th style=\"padding:8px;text-align:left\">Action</th><th style=\"padding:8px;text-align:left\">Deadline</th></tr></thead><tbody><tr style=\"background:#f3f5f4\"><td style=\"padding:7px\">Ms. Chen</td><td style=\"padding:7px\">Venue request + safety floor plan</td><td style=\"padding:7px\">4 weeks before fair; safety officer review ≥2 weeks before</td></tr><tr><td style=\"padding:7px\">Mr. Patel</td><td style=\"padding:7px\">Budget + receipts</td><td style=\"padding:7px\">Budget due 3 weeks before; receipts within 2 weeks after purchase</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:7px\">PTA liaison</td><td style=\"padding:7px\">Snack order + volunteer signup</td><td style=\"padding:7px\">2 weeks before fair</td></tr><tr><td style=\"padding:7px\">AV club</td><td style=\"padding:7px\">PA setup + livestream test</td><td style=\"padding:7px\">1 week before fair</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:7px\">Meeting lead (you)</td><td style=\"padding:7px\">Registration form + judge assignment; include teacher sponsor, safety form and accessibility needs</td><td style=\"padding:7px\">Open next Monday; close 3 weeks before fair</td></tr><tr><td style=\"padding:7px\">Meeting lead (you)</td><td style=\"padding:7px\">Send minutes; create shared checklist</td><td style=\"padding:7px\">Tonight</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:7px\">Comms owner not assigned</td><td style=\"padding:7px\">Family email (date/link); teacher email (safety rules); reminder (drop-off map); final email (parking/lunch); newsletter paragraph + last-year photo</td><td style=\"padding:7px\">This week; next week; 2 weeks before; day before; newsletter timing TBD</td></tr><tr><td style=\"padding:7px\">Recruiting owners TBD</td><td style=\"padding:7px\">Obtain service-hours forms for 5 college student volunteers; ask high school science club for remaining judges</td><td style=\"padding:7px\">Before judge-count checkpoint (2 weeks prior)</td></tr></tbody></table><div style=\"display:flex;gap:14px;margin-top:16px\"><div style=\"flex:1;background:#fff8d4;padding:12px;border-left:5px solid #f7de4b\"><div style=\"font-size:18px;font-weight:700\">Run of show · Saturday in October</div><div style=\"font-size:14px;margin-top:5px\">8:00 setup · 9:00 welcome/safety · 9:30–11:30 judging · 11:30–12:30 lunch + family open house · 12:30–2:00 public viewing/demos · 2:00–2:30 keynote · 2:30–3:00 awards/cleanup · everyone out by 4:00.</div><div style=\"font-size:13px;margin-top:5px\">Judges rotate in pairs, ≤12 projects per pair. Presentations: 15-minute slots + 5-minute transitions.</div></div><div style=\"flex:1;background:#ffe9f0;padding:12px;border-left:5px solid #ff7fa3\"><div style=\"font-size:18px;font-weight:700\">Risks & checkpoints</div><div style=\"font-size:14px;margin-top:5px\">Volunteer coverage is the largest risk: judges 6/12, check-in 2/4, first aid 0/2 stated, floaters 0/2 stated, AV lead 0/1 stated. Livestream also needs a volunteer + dedicated laptop.</div><div style=\"font-size:14px;margin-top:5px\"><b>Fallback:</b> if fewer than 10 judges at T−2 weeks, switch to poster walk and shorten judging by 30 minutes. Confirm gym access request, safety review, generator placement, and accessible courtyard route. Atrium has $800 cost + insurance certificate requirement.</div><div style=\"font-size:13px;margin-top:5px\">Budget has $900 contingency; fundraising not needed for approved baseline unless additional costs arise.</div></div></div></div>"
+      }
+    ]
+  }
+}

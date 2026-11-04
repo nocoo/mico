@@ -1,0 +1,338 @@
+{
+  "round": 3,
+  "failures": [],
+  "cases": [
+    {
+      "id": "c01-family-trip",
+      "title": "暑假旅行方案：预算、体力与分工",
+      "canvas": "R3-C01 暑假旅行方案：预算、体力与分工",
+      "segments": 9,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 8929,
+      "summaryHtml": true,
+      "summaryMs": 55424,
+      "shapes": 23,
+      "shapeTypes": {
+        "frame": 2,
+        "note": 15,
+        "rectangle": 3,
+        "text": 1,
+        "html": 2
+      },
+      "htmlCards": 2,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c03-ai-platform",
+      "title": "AI 白板系统架构：前后端与实时链路",
+      "canvas": "R3-C03 AI 白板系统架构：前后端与实时链路",
+      "segments": 10,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 14187,
+      "summaryHtml": true,
+      "summaryMs": 35863,
+      "shapes": 40,
+      "shapeTypes": {
+        "text": 4,
+        "rectangle": 21,
+        "connector": 9,
+        "note": 5,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c05-er-handover",
+      "title": "救急外来の夜勤引き継ぎと優先順位",
+      "canvas": "R3-C05 救急外来の夜勤引き継ぎと優先順位",
+      "segments": 12,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 12321,
+      "summaryHtml": true,
+      "summaryMs": 30403,
+      "shapes": 21,
+      "shapeTypes": {
+        "text": 2,
+        "rectangle": 7,
+        "note": 11,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 3,
+          "tool": "add_boxes",
+          "error": "An error occurred."
+        },
+        {
+          "segment": 4,
+          "tool": "add_boxes",
+          "error": "An error occurred."
+        }
+      ]
+    },
+    {
+      "id": "c06-science-fair",
+      "title": "Science fair venue, budget and volunteers",
+      "canvas": "R3-C06 Science fair venue, budget and volunteers",
+      "segments": 18,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 12906,
+      "summaryHtml": true,
+      "summaryMs": 93841,
+      "shapes": 21,
+      "shapeTypes": {
+        "text": 2,
+        "note": 13,
+        "frame": 1,
+        "html": 5
+      },
+      "htmlCards": 5,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c07-incident-postmortem",
+      "title": "Payment API outage postmortem and actions",
+      "canvas": "R3-C07 Payment API outage postmortem and actions",
+      "segments": 16,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 11774,
+      "summaryHtml": true,
+      "summaryMs": 128774,
+      "shapes": 50,
+      "shapeTypes": {
+        "text": 11,
+        "note": 15,
+        "frame": 1,
+        "rectangle": 12,
+        "connector": 10,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 8,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"LAYOUT_LIMIT\",\"message\":\"Live layout limit is y=1600; this object reaches y=1768. Place it in the second column at x=1040, y=160, or compact the existing sections with update_shapes.\",\"hint\":\"Do not extend the current column. Use the second column at x=1040, starting near y=160.\"}"
+        },
+        {
+          "segment": 8,
+          "tool": "update_shapes",
+          "error": "{\"ok\":false,\"error\":\"NOT_FOUND\",\"message\":\"shape not found: support-comms\"}"
+        }
+      ]
+    },
+    {
+      "id": "c08-community-center",
+      "title": "社区中心改造：预算、方案与一致意见",
+      "canvas": "R3-C08 社区中心改造：预算、方案与一致意见",
+      "segments": 10,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 12039,
+      "summaryHtml": true,
+      "summaryMs": 95828,
+      "shapes": 18,
+      "shapeTypes": {
+        "text": 2,
+        "note": 13,
+        "frame": 2,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c09-restaurant-launch",
+      "title": "ランチメニュー刷新と試験営業",
+      "canvas": "R3-C09 ランチメニュー刷新と試験営業",
+      "segments": 16,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 15153,
+      "summaryHtml": true,
+      "summaryMs": 180003,
+      "shapes": 29,
+      "shapeTypes": {
+        "text": 3,
+        "note": 25,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapCount": 4,
+      "overlapPairs": [
+        {
+          "a": "pricing",
+          "b": "promo-social",
+          "ratio": 1
+        },
+        {
+          "a": "promotion-b",
+          "b": "ops-conditions",
+          "ratio": 0.8636363636363636
+        },
+        {
+          "a": "launch-promo",
+          "b": "owners-deadlines",
+          "ratio": 1
+        },
+        {
+          "a": "decision-peak",
+          "b": "supply-plan",
+          "ratio": 0.6818181818181818
+        }
+      ],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c10-disaster-drill",
+      "title": "防災訓練の役割、タイムライン、備品",
+      "canvas": "R3-C10 防災訓練の役割、タイムライン、備品",
+      "segments": 13,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 13553,
+      "summaryHtml": true,
+      "summaryMs": 122276,
+      "shapes": 20,
+      "shapeTypes": {
+        "text": 2,
+        "note": 13,
+        "frame": 3,
+        "html": 2
+      },
+      "htmlCards": 2,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 13,
+          "tool": "add_html_cards",
+          "error": "{\"ok\":false,\"error\":\"LAYOUT_LIMIT\",\"message\":\"Live layout limit is y=1600; this object reaches y=2000. Place it in the second column at x=1040, y=160, or compact the existing sections with update_shapes.\",\"hint\":\"Do not extend the current column. Use the second column at x=1040, starting near y=160.\"}"
+        }
+      ]
+    },
+    {
+      "id": "c04-factory-q3",
+      "title": "工厂第三季度排产与交付计划",
+      "canvas": "R3-C04 工厂第三季度排产与交付计划",
+      "segments": 8,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 11229,
+      "summaryHtml": true,
+      "summaryMs": 89879,
+      "shapes": 16,
+      "shapeTypes": {
+        "text": 2,
+        "frame": 2,
+        "html": 3,
+        "note": 9
+      },
+      "htmlCards": 3,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 7,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"LAYOUT_LIMIT\",\"message\":\"Live layout limit is y=1600; this object reaches y=1776. Place it in the second column at x=1040, y=160, or compact the existing sections with update_shapes.\",\"hint\":\"Do not extend the current column. Use the second column at x=1040, starting near y=160.\"}"
+        }
+      ]
+    },
+    {
+      "id": "c02-product-sprint",
+      "title": "Sprint planning: onboarding scope and owners",
+      "canvas": "R3-C02 Sprint planning: onboarding scope and owners",
+      "segments": 18,
+      "waits": 1,
+      "timeouts": 0,
+      "avgSegmentMs": 11660,
+      "summaryHtml": true,
+      "summaryMs": 38664,
+      "shapes": 15,
+      "shapeTypes": {
+        "text": 2,
+        "frame": 2,
+        "note": 10,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapCount": 0,
+      "overlapPairs": [],
+      "frameOverlapCount": 0,
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    }
+  ],
+  "totals": {
+    "cases": 10,
+    "failedCases": 0,
+    "segments": 130,
+    "shapes": 253,
+    "htmlCards": 18,
+    "waits": 1,
+    "toolErrors": 6,
+    "overlapPairs": 4,
+    "frameOverlapPairs": 0,
+    "outsideFrames": 0,
+    "longLabels": 0,
+    "summariesMissingHtml": 0
+  }
+}

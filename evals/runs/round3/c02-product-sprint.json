@@ -1,0 +1,723 @@
+{
+  "round": 3,
+  "case": {
+    "id": "c02-product-sprint",
+    "lang": "en",
+    "subject": "Product meeting",
+    "title": "Sprint planning: onboarding scope and owners",
+    "voice": "en-US-AriaNeural",
+    "rate": "+43%",
+    "script": "c02-product-sprint.en.txt",
+    "duration": 294.9
+  },
+  "canvasId": "36dcca57-faf0-495f-94bc-02f5e4cd1ea9",
+  "canvasName": "R3-C02 Sprint planning: onboarding scope and owners",
+  "startedAt": "2026-11-04T17:18:44.352Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 19.9,
+      "text": "Let's start the sprint planning meeting. We have a five person product team and two weeks. The goal for this sprint is to ship the new onboarding flow to a small group of beta users, not to finish everything on the backlog. Please keep that goal in mind when we discuss scope. I want us to leave with a committed set of stories, one owner for each, the dependencies, and the risks we accept. First, the business context.",
+      "elapsedMs": 7040,
+      "timedOut": false,
+      "textReply": "WAIT",
+      "waits": true,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"sprint-title\",\"x\":80,\"y\":64,\"text\":\"Sprint planning · Onboarding beta\",\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"x\":80,\"y\":152,\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"fontSize\":22,\"fontWeight\":600}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"sprint-title\",\"type\":\"text\"},{\"id\":\"sprint-purpose\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 19.9,
+      "end": 32.5,
+      "text": "Last month only thirty eight percent of new users completed onboarding. The biggest drop off is at the workspace setup step, where people do not understand whether they need to invite their team right away. Support gets about twenty tickets a week about that screen.",
+      "elapsedMs": 13624,
+      "timedOut": false,
+      "textReply": "Added the onboarding baseline and primary friction point, plus the sprint’s two-week, five-person beta-scope guardrail.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"business-context\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"title\":\"Business context · onboarding friction\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"business-context\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"context-metrics\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"color\":\"#e2f5fc\",\"frameId\":\"business-context\"},{\"id\":\"sprint-guardrail\",\"x\":520,\"y\":296,\"w\":360,\"h\":176,\"text\":\"Sprint guardrail\\n5-person team · 2 weeks\\nShip onboarding to a small beta group\\nPrioritize the flow, not the entire backlog\",\"color\":\"#fff8d4\",\"frameId\":\"business-context\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"context-metrics\",\"type\":\"note\"},{\"id\":\"sprint-guardrail\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 32.5,
+      "end": 45.1,
+      "text": "The design team has three concepts: a shorter single page flow, a guided checklist that appears after signup, and an import workspace option for users who already have data. We cannot build all three in one sprint. The engineering capacity is sixteen developer days.",
+      "elapsedMs": 9239,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":3,\"count\":5,\"bounds\":{\"x\":80,\"y\":64,\"w\":880,\"h\":460},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"},{\"…",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"scope-options\",\"x\":1040,\"y\":160,\"w\":880,\"h\":400,\"title\":\"Candidate scope · capacity 16 developer-days\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"scope-options\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"three-concepts\",\"x\":1080,\"y\":232,\"w\":800,\"h\":272,\"text\":\"Three design concepts · cannot build all in one sprint\\n\\n• Shorter single-page flow\\n• Guided checklist after signup\\n• Import workspace for users with existing data\\n\\nEngineering capacity: 16 developer-days\\nSelection and estimates not yet stated\",\"color\":\"#fff8d4\",\"frameId\":\"scope-options\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"three-concepts\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 45.1,
+      "end": 63.8,
+      "text": "Alex is on backend, Priya and Sam are on frontend, Diego is on infrastructure, and Mei is our designer who can pair on implementation but is only available four days. We also have one QA contractor for the second week. There is a company holiday next Friday, so the first week is four days and the second week is five, but QA cannot start before staging is stable. Here are the candidate stories.",
+      "elapsedMs": 14113,
+      "timedOut": false,
+      "textReply": "Captured the team roles, holiday-adjusted workdays, Mei’s four-day availability, and the dependency that QA starts only after staging is stable. Waiting for the candidate stories.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":7,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":496},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"},{…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"sprint-guardrail\",\"patch\":{\"text\":\"Sprint guardrail\\n5-person team · 2 weeks\\nWeek 1: 4 days · Week 2: 5 days\\nHoliday next Friday · beta scope only\"}},{\"id\":\"three-concepts\",\"patch\":{\"h\":272,\"text\":\"Three concepts · cannot build all\\n• Shorter single-page flow\\n• Guided checklist after signup\\n• Import workspace for existing data\\n\\nCapacity: 16 developer-days\\nStories forthcoming; selection pending\\n\\nTeam: Alex—backend; Priya & Sam—frontend\\nDiego—infrastructure; Mei—design + implementation (4 days)\\nQA contractor: week 2; starts only when staging is stable\"}}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[],\"updated\":[\"sprint-guardrail\",\"three-concepts\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 63.8,
+      "end": 81,
+      "text": "Story one, shorten the workspace setup page from four steps to two and remove the mandatory invite. That is about three frontend days and one backend day. Story two, add a progress checklist after signup. That is four frontend days, plus analytics, plus two backend days if we want to remember checklist state. Story three, import an existing workspace from a CSV.",
+      "elapsedMs": 7278,
+      "timedOut": false,
+      "textReply": "Added the first two story estimates and the CSV import story as an incomplete item; no scope choice assumed.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"candidate-stories\",\"x\":1080,\"y\":520,\"w\":800,\"h\":176,\"text\":\"Candidate stories · partial estimates\\n\\n1 · Setup: 4 steps → 2; invite optional\\n3 frontend days + 1 backend day\\n\\n2 · Post-signup progress checklist\\n4 frontend days + 2 backend days for saved state; analytics also needed\\n\\n3 · CSV workspace import\\nEstimate not yet given; story details continue…\",\"color\":\"#e2f5fc\",\"frameId\":\"scope-options\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"candidate-stories\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 81,
+      "end": 98.5,
+      "text": "That is six backend days and two frontend days, and it depends on the new data model that Diego is still migrating. Story four, capture onboarding events and build a dashboard. That is two days from Diego and half a day from Alex. Story five, fix the invitation email bug. That is one day and it is already causing support load. We also have two unplanned commitments.",
+      "elapsedMs": 10551,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":7,\"count\":8,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":632},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"},{…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"scope-options\",\"patch\":{\"h\":560}},{\"id\":\"candidate-stories\",\"patch\":{\"y\":536,\"h\":176,\"text\":\"Candidate stories · estimates so far\\n\\n1 · Setup: 4 steps → 2; invite optional\\n3 frontend + 1 backend day\\n2 · Checklist + saved state: 4 frontend + 2 backend days; analytics needed\\n3 · CSV import: 6 backend + 2 frontend days; depends on Diego’s data-model migration\\n\\nMore stories/commitments to capture\"}}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[],\"updated\":[\"scope-options\",\"candidate-stories\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"stories-4-5\",\"x\":1080,\"y\":728,\"w\":800,\"h\":176,\"text\":\"Additional candidate stories\\n\\n4 · Onboarding events + dashboard\\n2 days Diego + ½ day Alex\\n\\n5 · Fix invitation email bug\\n1 day · already driving support load\\n\\nTwo unplanned commitments mentioned; details pending\",\"color\":\"#fff8d4\",\"frameId\":\"scope-options\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"stories-4-5\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 98.5,
+      "end": 116.9,
+      "text": "Legal wants an updated consent screen by the end of week one because of a new privacy requirement. That is one day of frontend and half a day of review. And the mobile team needs a small API field for their release, which is half a day on backend. These are not negotiable this sprint, so put them in the capacity budget before we choose stories. The design team recommends story one first.",
+      "elapsedMs": 10490,
+      "timedOut": false,
+      "textReply": "Added the two mandatory commitments to the candidate list and noted design’s recommendation for Story 1. No story set has been committed yet.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":9,\"count\":9,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":840},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"},{…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"scope-options\",\"patch\":{\"h\":760}},{\"id\":\"stories-4-5\",\"patch\":{\"y\":728,\"h\":176,\"text\":\"Additional candidate stories\\n\\n4 · Onboarding events + dashboard\\n2 days Diego + ½ day Alex\\n5 · Fix invitation email bug\\n1 day · already driving support load\\n\\nUnplanned, non-negotiable commitments:\\n• Consent screen: 1 frontend day + ½ day review; due end of week 1\\n• Mobile API field: ½ backend day\\n\\nDesign recommends story 1\"}}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[],\"updated\":[\"scope-options\",\"stories-4-5\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 116.9,
+      "end": 133.2,
+      "text": "It directly addresses the drop off, it does not depend on the migration, and it is small enough to finish in the first week. Story two is valuable, but if we add it now we will not have time to test both. Story three is strategically important, but the data model will not be ready until the end of week one, so it is too risky for this sprint.",
+      "elapsedMs": 6709,
+      "timedOut": false,
+      "textReply": "Recorded the scope trade-offs: Story 1 best targets the drop-off and fits week one; Stories 2 and 3 carry testing and migration risks.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"three-concepts\",\"patch\":{\"text\":\"Scope trade-offs · design recommends Story 1\\n\\n1 · Shorten setup + make invites optional\\nDirectly targets drop-off; no migration dependency; fits week 1\\n\\n2 · Guided checklist\\nValuable, but testing both stories would not fit\\n\\n3 · CSV import\\nStrategic, but data model arrives end of week 1; too risky this sprint\\n\\nCapacity: 16 developer-days; final selection pending\"}}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[],\"updated\":[\"three-concepts\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 133.2,
+      "end": 151.9,
+      "text": "Story four is necessary because we cannot tell whether the change worked, but we can limit it to three events instead of a full dashboard. Story five is a quick win and should be included. Now the dependencies. Story two depends on the checklist API, which does not exist. Story three depends on the migration ticket, owned by Diego, and that migration is currently blocked by two legacy tables.",
+      "elapsedMs": 13120,
+      "timedOut": false,
+      "textReply": "Added the reduced three-event measurement scope and Story 5 quick win, plus Stories 2 and 3 dependency risks.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"candidate-stories\",\"patch\":{\"text\":\"Candidate stories · estimates so far\\n\\n1 · Setup: 4 steps → 2; invite optional\\n3 frontend + 1 backend day\\n2 · Checklist + saved state: 4 frontend + 2 backend days; needs analytics\\n3 · CSV import: 6 backend + 2 frontend days; depends on Diego’s migration\\n\\n4 · Limit measurement to 3 onboarding events (not full dashboard)\\nNecessary to evaluate change\\n5 · Fix invitation email bug: 1 day; quick win, include\"}}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[],\"updated\":[\"candidate-stories\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"three-concepts\",\"patch\":{\"text\":\"Scope trade-offs · design recommends Story 1\\n\\n1 · Shorten setup + make invites optional\\nTargets drop-off; no migration dependency; fits week 1\\n2 · Checklist valuable, but testing both won’t fit\\n3 · CSV import strategic; migration arrives end week 1, too risky\\n\\n2 depends on missing checklist API\\n3 depends on Diego’s migration, blocked by two legacy tables\\n\\nCapacity: 16 developer-days\"}}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[],\"updated\":[\"three-concepts\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 151.9,
+      "end": 170.1,
+      "text": "The consent screen depends on legal review, which has not been scheduled. The invitation email bug has a suspected race condition and needs a reproduction from support. We should not start anything whose dependency is unknown by the end of day two. The risks are also clear. If we commit to story one and story two, QA only has three days and will test both flows, which is not enough.",
+      "elapsedMs": 10993,
+      "timedOut": false,
+      "textReply": "Captured the day-two dependency gate, unresolved legal review and support reproduction, and the risk that QA’s three days cannot cover both Stories 1 and 2.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"three-concepts\",\"patch\":{\"text\":\"Scope trade-offs · Story 1 favored\\n\\n1 · Setup flow: targets drop-off, no migration, fits week 1\\n2 · Checklist valuable, but testing both won’t fit\\n3 · Import: Diego’s migration blocked by two legacy tables\\n\\nDeps: Story 2 needs missing checklist API\\nConsent screen needs unscheduled legal review\\nInvite-bug reproduction from support is still needed\\nDo not start if dependency unknown by end of day 2\\n\\nRisk: QA has only 3 days; Stories 1 + 2 would overrun testing\"}}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[],\"updated\":[\"three-concepts\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"stories-4-5\",\"patch\":{\"text\":\"Stories 4–5 + fixed commitments\\n\\n4 · Three onboarding events (not full dashboard)\\n2 days Diego + ½ day Alex\\n5 · Invitation email bug: 1 day; suspected race condition\\nSupport reproduction needed\\n\\nNon-negotiable:\\nConsent screen: 1 frontend day + ½ day review; due week 1; legal review unscheduled\\nMobile API field: ½ backend day\\n\\nDesign recommends Story 1\"}}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"stories-4-5\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 11,
+      "start": 170.1,
+      "end": 185.6,
+      "text": "If we drop story two, we lose the guided experience the design team believes will improve activation. If we add story three after the migration, we may not finish it and we will have a half built import screen. If we ignore analytics, we will ship blind. We need to choose a scope that is small enough to finish and measurable.",
+      "elapsedMs": 9154,
+      "timedOut": false,
+      "textReply": "Added the scope trade-off: preserve measurement with three events, avoid a risky partial import, and note the guided-experience benefit lost if Story 2 is dropped.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"three-concepts\",\"patch\":{\"text\":\"Scope trade-offs · measurable, finishable beta\\n\\n1 · Setup flow: targets drop-off, no migration, fits week 1\\n2 · Checklist offers guided experience, but QA (3 days) cannot test both flows\\n3 · Import is risky after delayed migration; avoid half-built scope\\n\\nStory 4: keep 3 events so beta is measurable\\nStory 5: quick win; repro still needed\\n\\nRisks: dropping 2 loses guided activation benefit\\nIgnoring analytics means shipping blind\\nChoose scope small enough to finish\"}}]}",
+          "output": "{\"ok\":true,\"revision\":16,\"created\":[],\"updated\":[\"three-concepts\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 12,
+      "start": 185.6,
+      "end": 200.5,
+      "text": "I propose the following sprint goal: ship the shortened onboarding flow to beta, fix the invitation bug, capture three onboarding events, and prepare the import story for the next sprint. We do not build the checklist this sprint. We keep the checklist design ready and put it at the top of the next sprint backlog.",
+      "elapsedMs": 12773,
+      "timedOut": false,
+      "textReply": "Recorded the proposed beta scope: Stories 1, 4 and 5; defer the checklist with its design ready for next sprint, and prepare import for later. The proposal is not yet a final commitment.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":16,\"count\":9,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":856},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"},…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"proposed-scope\",\"x\":120,\"y\":576,\"w\":800,\"h\":200,\"text\":\"Proposed sprint goal · beta onboarding\\n\\nCommit: Story 1 shortened flow; Story 5 invite bug; Story 4 capture 3 events\\nPrepare Story 3 import for next sprint\\nDefer Story 2 checklist; keep design ready\\nNext sprint backlog: checklist at top\",\"color\":\"#f1fadc\"},{\"id\":\"capacity-budget\",\"x\":1080,\"y\":920,\"w\":800,\"h\":176,\"text\":\"Capacity budget · 16 developer-days\\n\\nFixed commitments: consent screen (1 frontend day + ½ review); mobile API field (½ backend day)\\nCommitted candidate stories: 1 + 4 + 5\\nImport prep and checklist are not committed build scope\\nOwners, final estimates and dependencies still to confirm\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":17,\"created\":[{\"id\":\"proposed-scope\",\"type\":\"note\"},{\"id\":\"capacity-budget\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 13,
+      "start": 200.5,
+      "end": 218.5,
+      "text": "For the import, we write the technical design and create the migration dependency, but we do not start the UI. This gives us a complete, shippable slice and a clear next step. Let's break it down. Story one is owned by Priya, with Sam reviewing the frontend and Alex handling the backend flag. Story five is owned by Alex and Sam; they need a reproduction from support by Tuesday.",
+      "elapsedMs": 13843,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":17,\"count\":11,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1032},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"proposed-scope\",\"patch\":{\"text\":\"Proposed sprint goal · shippable beta slice\\n\\nCommit: Story 1 shortened flow; Story 5 invite bug; Story 4 capture 3 events\\nStory 3: write technical design + create migration dependency; no UI this sprint\\nStory 2 checklist deferred; keep design ready\\nNext sprint backlog: checklist at top\"}},{\"id\":\"stories-4-5\",\"patch\":{\"text\":\"Stories 4–5 + fixed commitments\\n\\n4 · Three onboarding events (not full dashboard)\\n2 days Diego + ½ day Alex\\n5 · Invitation email bug: 1 day\\nOwners: Alex + Sam\\nSupport reproduction due Tuesday\\n\\nNon-negotiable: consent screen 1 frontend day + ½ review; mobile API field ½ backend day\"}}]}",
+          "output": "{\"ok\":true,\"revision\":18,\"created\":[],\"updated\":[\"proposed-scope\",\"stories-4-5\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"candidate-stories\",\"patch\":{\"text\":\"Story 1 · setup 4 steps → 2; invite optional\\nOwner: Priya; Sam reviews frontend; Alex handles backend flag\\nEstimate: 3 frontend + 1 backend day\\n\\n2 · Checklist + saved state: 4 frontend + 2 backend days; needs analytics\\n3 · CSV import: 6 backend + 2 frontend days; depends on Diego’s migration\\nThis sprint: design only + create migration dependency; no UI start\"}}]}",
+          "output": "{\"ok\":true,\"revision\":19,\"created\":[],\"updated\":[\"candidate-stories\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 14,
+      "start": 218.5,
+      "end": 233.8,
+      "text": "Story four is owned by Diego; we track only three events, signup started, workspace created, and invite sent, and the dashboard query is a saved SQL view, not a new UI. The consent screen is owned by Mei and Priya, with legal review on Wednesday. The mobile API field is owned by Alex and is due Thursday. Now the timeline.",
+      "elapsedMs": 13929,
+      "timedOut": false,
+      "textReply": "Added Story 4’s owner, three tracked events and SQL-view approach, plus consent and API-field owners and due dates; started the timeline and dependency notes.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"stories-4-5\",\"patch\":{\"text\":\"Story 4 · Diego owns; 2 days + ½ day Alex\\nTrack 3 events: signup started, workspace created, invite sent\\nDashboard = saved SQL view; no new UI\\n\\nStory 5 · Alex + Sam; 1 day\\nSupport reproduction due Tuesday\\n\\nFixed commitments\\nConsent screen: Mei + Priya; legal review Wednesday; due end week 1\\nMobile API field: Alex; due Thursday\"}}]}",
+          "output": "{\"ok\":true,\"revision\":20,\"created\":[],\"updated\":[\"stories-4-5\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"timeline-dependencies\",\"x\":120,\"y\":800,\"w\":800,\"h\":176,\"text\":\"Timeline & dependencies\\n\\nBy Tuesday: Support provides invite-bug reproduction\\nBy Wednesday: legal review for consent screen\\nBy Thursday: Alex delivers mobile API field\\nWeek 1: finish Story 1; consent screen due\\nQA contractor starts only after staging is stable\\nStory 3: design + migration dependency ticket only\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":21,\"created\":[{\"id\":\"timeline-dependencies\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 15,
+      "start": 233.8,
+      "end": 250.7,
+      "text": "Week one: story one implementation Monday through Wednesday, consent screen Wednesday, invitation bug reproduction Tuesday and fix Thursday, analytics events Wednesday and Thursday. Week two: staging stabilization Monday, QA Tuesday and Wednesday, beta rollout Thursday, buffer Friday. The mobile API field should ship Tuesday so it does not collide with QA.",
+      "elapsedMs": 15240,
+      "timedOut": false,
+      "textReply": "Updated the two-week schedule: Story 1 and consent in week one, staging then QA in week two, API field Tuesday, beta Thursday, and Friday buffer.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":21,\"count\":12,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1032},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"timeline-dependencies\",\"patch\":{\"text\":\"Sprint timeline & dependencies\\n\\nWeek 1\\nMon–Wed: Story 1 implementation\\nTue: Support reproduction for invite bug\\nWed: consent screen; analytics events begin\\nThu: invite-bug fix; analytics events continue\\n\\nWeek 2\\nMon: stabilize staging\\nTue–Wed: QA (after staging stable)\\nTue: mobile API field ships (avoid QA collision)\\nThu: beta rollout · Fri: buffer\\n\\nGate: don’t start with dependency unknown by end of day 2\"}}]}",
+          "output": "{\"ok\":true,\"revision\":22,\"created\":[],\"updated\":[\"timeline-dependencies\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 16,
+      "start": 250.7,
+      "end": 269.5,
+      "text": "The import design happens Thursday of week one and does not block anything. The risk we accept is that the checklist is delayed by one sprint. The mitigation is that the shorter flow may already recover enough activation. The risk we do not accept is shipping both flow changes untested. If QA finds a blocker on Tuesday of week two, we delay beta by one week rather than ship a broken onboarding.",
+      "elapsedMs": 13734,
+      "timedOut": false,
+      "textReply": "Added Thursday’s non-blocking import design, the accepted checklist delay and mitigation, and the release guardrail: a QA blocker means delaying beta—not shipping broken onboarding.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"timeline-dependencies\",\"patch\":{\"text\":\"Sprint timeline & dependencies\\n\\nWeek 1\\nMon–Wed: Story 1 implementation\\nTue: Support invite-bug reproduction\\nWed: consent screen; analytics begins\\nThu: invite-bug fix; analytics continues\\nThu: Story 3 import technical design (no blockers)\\n\\nWeek 2\\nMon: stabilize staging\\nTue–Wed: QA; API field ships Tue\\nThu: beta rollout · Fri: buffer\\nIf QA finds Tue blocker: delay beta one week\"}}]}",
+          "output": "{\"ok\":true,\"revision\":23,\"created\":[],\"updated\":[\"timeline-dependencies\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"accepted-risks\",\"x\":120,\"y\":1000,\"w\":800,\"h\":176,\"text\":\"Accepted risks & release guardrail\\n\\nAccept: checklist delayed one sprint\\nMitigation: short flow may recover enough activation\\nReject: ship both flow changes untested\\nIf QA finds blocker Tuesday week 2, delay beta one week; never ship broken onboarding\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":24,\"created\":[{\"id\":\"accepted-risks\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 17,
+      "start": 269.5,
+      "end": 286.3,
+      "text": "If the invitation bug reproduction cannot be found by Wednesday, we keep story five in the sprint but downgrade it to an investigation, and we do not claim it as shipped. Any objections? Hearing none, we have consensus on the sprint goal, the scope, the owners, the dependencies and the accepted risk. I will post this summary in the sprint channel today.",
+      "elapsedMs": 13539,
+      "timedOut": false,
+      "textReply": "Updated the consensus scope and Story 5 fallback: if support cannot reproduce the bug by Wednesday, the team investigates it but does not count it as shipped.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"stories-4-5\",\"patch\":{\"text\":\"Story 4 · Diego owns; 2 days + ½ day Alex\\nTrack 3 events: signup started, workspace created, invite sent\\nDashboard = saved SQL view; no new UI\\n\\nStory 5 · Alex + Sam; 1 day\\nSupport reproduction due Tue\\nIf not found by Wed: investigate only; do not claim shipped\\n\\nFixed commitments\\nConsent: Mei + Priya; legal review Wed; due week 1\\nMobile API field: Alex; ships Tue, week 2\"}}]}",
+          "output": "{\"ok\":true,\"revision\":25,\"created\":[],\"updated\":[\"stories-4-5\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"proposed-scope\",\"patch\":{\"text\":\"Committed sprint goal · onboarding beta\\n\\nShip Story 1 shortened flow to beta; capture 3 events\\nStory 5 invite bug: fix if reproduced; otherwise investigate only, not shipped\\nStory 3: design + migration dependency; no UI\\nStory 2 checklist deferred one sprint; design ready, top next sprint\\n\\nConsensus reached: scope, owners, dependencies, accepted risks\\nSummary to sprint channel today\"}}]}",
+          "output": "{\"ok\":true,\"revision\":26,\"created\":[],\"updated\":[\"proposed-scope\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 18,
+      "start": 286.3,
+      "end": 294.9,
+      "text": "Please update your tickets before end of day and flag anything that is not estimated. Next check in is Monday standup, and the mid sprint review is Wednesday of week two. Thank you.",
+      "elapsedMs": 14510,
+      "timedOut": false,
+      "textReply": "Added ticket updates, unestimated-work flags, Monday standup, and the Wednesday week-two review.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"timeline-dependencies\",\"patch\":{\"text\":\"Sprint timeline & dependencies\\n\\nWeek 1\\nMon–Wed: Story 1 implementation\\nTue: Support invite-bug reproduction\\nWed: consent screen; analytics begins\\nThu: invite-bug fix; analytics continues\\nThu: Story 3 import design (no blockers)\\n\\nWeek 2\\nMon: staging stable + standup check-in\\nTue: API field; QA starts after staging stable\\nWed: QA + mid-sprint review\\nThu: beta rollout · Fri: buffer\\nQA blocker Tue: delay beta one week\"}}]}",
+          "output": "{\"ok\":true,\"revision\":27,\"created\":[],\"updated\":[\"timeline-dependencies\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"meeting-closeout\",\"x\":120,\"y\":1200,\"w\":800,\"h\":144,\"text\":\"Closeout\\n\\nUpdate tickets by end of day; flag unestimated work\\nNext check-in: Monday standup\\nMid-sprint review: Wednesday, week 2\\nConsensus summary to sprint channel today\",\"color\":\"#f3f5f4\"}]}",
+          "output": "{\"ok\":true,\"revision\":28,\"created\":[{\"id\":\"meeting-closeout\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 18,
+    "requests": 19,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 1,
+    "toolNames": {
+      "add_texts": 1,
+      "add_frames": 2,
+      "add_notes": 8,
+      "get_board": 9,
+      "update_shapes": 17,
+      "add_html_cards": 1
+    },
+    "shapes": 15,
+    "shapeTypes": {
+      "text": 2,
+      "frame": 2,
+      "note": 10,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 2037,
+    "totalMs": 248543
+  },
+  "summary": {
+    "index": 19,
+    "start": 294.9,
+    "end": 294.9,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 38664,
+    "timedOut": false,
+    "textReply": "Added one detailed HTML summary card below the existing board, with the consensus scope, action owners and deadlines, timeline, dependencies, and accepted risks. No layout warnings remain.\n\n**Takeaway:** Ship the shortened onboarding flow with three measurable events; keep the checklist deferred, and delay beta if QA finds a blocker.",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":28,\"count\":14,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1280},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"post-session-summary\",\"x\":80,\"y\":1504,\"w\":1760,\"h\":760,\"title\":\"Sprint planning summary · onboarding beta\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;background:#ffffff;padding:28px;line-height:1.4;border-radius:12px\\\"><div style=\\\"font-size:30px;font-weight:800;margin-bottom:6px\\\">Sprint planning · Onboarding beta</div><div style=\\\"font-size:17px;color:#007fae;margin-bottom:20px\\\">Purpose: commit a small, measurable onboarding beta slice—not finish the backlog. Baseline completion is 38%; workspace setup is the main drop-off (~20 support tickets/week).</div><div style=\\\"display:grid;grid-template-columns:1fr 1fr;gap:18px\\\"><section style=\\\"border:2px solid #a6d94f;border-radius:10px;padding:16px\\\"><div style=\\\"font-size:20px;font-weight:700;margin-bottom:8px\\\">Consensus scope & decisions</div><ul style=\\\"margin:0;padding-left:22px\\\"><li><b>Story 1:<…",
+        "output": "{\"ok\":true,\"revision\":29,\"created\":[{\"id\":\"post-session-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":29,\"count\":15,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":2200},\"selection\":[],\"shapes\":[{\"id\":\"sprint-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":850,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Sprint planning · Onboarding beta\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"sprint-purpose\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":850,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"Purpose · commit scope, owners, dependencies & accepted risks\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"business-context\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"Business context · onboarding friction\"},{\"id\":\"context-metrics\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":360,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"Baseline completion: 38% last month\\nLargest drop-off: workspace setup\\nConfusion: must I invite my team now?\\nSupport volume: ~20 tickets/week on this screen\",\"frameId\":\"business-context\"…",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 29,
+    "shapes": [
+      {
+        "id": "sprint-title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 850,
+        "h": 60,
+        "text": "Sprint planning · Onboarding beta",
+        "font": "sans",
+        "fontSize": 42,
+        "fontWeight": 800
+      },
+      {
+        "id": "sprint-purpose",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 152,
+        "w": 850,
+        "h": 36,
+        "text": "Purpose · commit scope, owners, dependencies & accepted risks",
+        "font": "sans",
+        "fontSize": 22,
+        "fontWeight": 600
+      },
+      {
+        "id": "business-context",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 224,
+        "w": 880,
+        "h": 300,
+        "title": "Business context · onboarding friction"
+      },
+      {
+        "id": "context-metrics",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 120,
+        "y": 296,
+        "w": 360,
+        "h": 176,
+        "text": "Baseline completion: 38% last month\nLargest drop-off: workspace setup\nConfusion: must I invite my team now?\nSupport volume: ~20 tickets/week on this screen",
+        "frameId": "business-context"
+      },
+      {
+        "id": "sprint-guardrail",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 520,
+        "y": 296,
+        "w": 360,
+        "h": 176,
+        "text": "Sprint guardrail\n5-person team · 2 weeks\nWeek 1: 4 days · Week 2: 5 days\nHoliday next Friday · beta scope only",
+        "frameId": "business-context"
+      },
+      {
+        "id": "scope-options",
+        "color": "#f7de4b",
+        "type": "frame",
+        "x": 1040,
+        "y": 160,
+        "w": 880,
+        "h": 760,
+        "title": "Candidate scope · capacity 16 developer-days"
+      },
+      {
+        "id": "three-concepts",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1080,
+        "y": 232,
+        "w": 800,
+        "h": 272,
+        "text": "Scope trade-offs · measurable, finishable beta\n\n1 · Setup flow: targets drop-off, no migration, fits week 1\n2 · Checklist offers guided experience, but QA (3 days) cannot test both flows\n3 · Import is risky after delayed migration; avoid half-built scope\n\nStory 4: keep 3 events so beta is measurable\nStory 5: quick win; repro still needed\n\nRisks: dropping 2 loses guided activation benefit\nIgnoring analytics means shipping blind\nChoose scope small enough to finish",
+        "frameId": "scope-options"
+      },
+      {
+        "id": "candidate-stories",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1080,
+        "y": 536,
+        "w": 800,
+        "h": 176,
+        "text": "Story 1 · setup 4 steps → 2; invite optional\nOwner: Priya; Sam reviews frontend; Alex handles backend flag\nEstimate: 3 frontend + 1 backend day\n\n2 · Checklist + saved state: 4 frontend + 2 backend days; needs analytics\n3 · CSV import: 6 backend + 2 frontend days; depends on Diego’s migration\nThis sprint: design only + create migration dependency; no UI start",
+        "frameId": "scope-options"
+      },
+      {
+        "id": "stories-4-5",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1080,
+        "y": 728,
+        "w": 800,
+        "h": 176,
+        "text": "Story 4 · Diego owns; 2 days + ½ day Alex\nTrack 3 events: signup started, workspace created, invite sent\nDashboard = saved SQL view; no new UI\n\nStory 5 · Alex + Sam; 1 day\nSupport reproduction due Tue\nIf not found by Wed: investigate only; do not claim shipped\n\nFixed commitments\nConsent: Mei + Priya; legal review Wed; due week 1\nMobile API field: Alex; ships Tue, week 2",
+        "frameId": "scope-options"
+      },
+      {
+        "id": "proposed-scope",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 120,
+        "y": 576,
+        "w": 800,
+        "h": 200,
+        "text": "Committed sprint goal · onboarding beta\n\nShip Story 1 shortened flow to beta; capture 3 events\nStory 5 invite bug: fix if reproduced; otherwise investigate only, not shipped\nStory 3: design + migration dependency; no UI\nStory 2 checklist deferred one sprint; design ready, top next sprint\n\nConsensus reached: scope, owners, dependencies, accepted risks\nSummary to sprint channel today"
+      },
+      {
+        "id": "capacity-budget",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1080,
+        "y": 920,
+        "w": 800,
+        "h": 176,
+        "text": "Capacity budget · 16 developer-days\n\nFixed commitments: consent screen (1 frontend day + ½ review); mobile API field (½ backend day)\nCommitted candidate stories: 1 + 4 + 5\nImport prep and checklist are not committed build scope\nOwners, final estimates and dependencies still to confirm"
+      },
+      {
+        "id": "timeline-dependencies",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 120,
+        "y": 800,
+        "w": 800,
+        "h": 176,
+        "text": "Sprint timeline & dependencies\n\nWeek 1\nMon–Wed: Story 1 implementation\nTue: Support invite-bug reproduction\nWed: consent screen; analytics begins\nThu: invite-bug fix; analytics continues\nThu: Story 3 import design (no blockers)\n\nWeek 2\nMon: staging stable + standup check-in\nTue: API field; QA starts after staging stable\nWed: QA + mid-sprint review\nThu: beta rollout · Fri: buffer\nQA blocker Tue: delay beta one week"
+      },
+      {
+        "id": "accepted-risks",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 120,
+        "y": 1000,
+        "w": 800,
+        "h": 176,
+        "text": "Accepted risks & release guardrail\n\nAccept: checklist delayed one sprint\nMitigation: short flow may recover enough activation\nReject: ship both flow changes untested\nIf QA finds blocker Tuesday week 2, delay beta one week; never ship broken onboarding"
+      },
+      {
+        "id": "meeting-closeout",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 120,
+        "y": 1200,
+        "w": 800,
+        "h": 144,
+        "text": "Closeout\n\nUpdate tickets by end of day; flag unestimated work\nNext check-in: Monday standup\nMid-sprint review: Wednesday, week 2\nConsensus summary to sprint channel today"
+      },
+      {
+        "id": "post-session-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 1504,
+        "w": 1760,
+        "h": 760,
+        "title": "Sprint planning summary · onboarding beta",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;background:#ffffff;padding:28px;line-height:1.4;border-radius:12px\"><div style=\"font-size:30px;font-weight:800;margin-bottom:6px\">Sprint planning · Onboarding beta</div><div style=\"font-size:17px;color:#007fae;margin-bottom:20px\">Purpose: commit a small, measurable onboarding beta slice—not finish the backlog. Baseline completion is 38%; workspace setup is the main drop-off (~20 support tickets/week).</div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:18px\"><section style=\"border:2px solid #a6d94f;border-radius:10px;padding:16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">Consensus scope & decisions</div><ul style=\"margin:0;padding-left:22px\"><li><b>Story 1:</b> shorten setup from 4 steps to 2; invitation optional. Ship to beta.</li><li><b>Story 4:</b> capture only 3 events—signup started, workspace created, invite sent. Dashboard is a saved SQL view; no new UI.</li><li><b>Story 5:</b> fix invitation email bug if support reproduction is found; otherwise investigate only and do not claim shipped.</li><li><b>Story 3:</b> import technical design + migration dependency ticket only; no UI this sprint.</li><li><b>Story 2:</b> checklist deferred one sprint; keep design ready and put it at top of next sprint backlog.</li><li>Fixed work: consent screen and mobile API field. Capacity: 16 developer-days.</li></ul></section><section style=\"border:2px solid #f7de4b;border-radius:10px;padding:16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">Compact timeline</div><div style=\"padding:8px 10px;background:#fff8d4;border-radius:6px;margin-bottom:7px\"><b>Week 1 · 4 workdays</b><br>Mon–Wed: Story 1 implementation. Tue: support bug reproduction. Wed: consent screen + analytics start; legal review. Thu: bug fix if reproduced; analytics; Story 3 import design.</div><div style=\"padding:8px 10px;background:#e2f5fc;border-radius:6px\"><b>Week 2 · 5 workdays</b><br>Mon: stabilize staging. Tue: mobile API field; QA starts after staging is stable. Tue–Wed: QA; Wed: mid-sprint review. Thu: beta rollout. Fri: buffer.</div><div style=\"margin-top:8px\"><b>Release gate:</b> if QA finds a blocker Tuesday, delay beta one week; never ship broken onboarding.</div></section></div><section style=\"margin-top:18px;border:2px solid #00a2e1;border-radius:10px;padding:16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">Actions · owners · deadlines</div><table style=\"width:100%;border-collapse:collapse;font-size:14px\"><thead><tr style=\"background:#e2f5fc\"><th style=\"text-align:left;padding:7px;border-bottom:1px solid #9bb\">Work</th><th style=\"text-align:left;padding:7px;border-bottom:1px solid #9bb\">Owner(s)</th><th style=\"text-align:left;padding:7px;border-bottom:1px solid #9bb\">Deadline / dependency</th></tr></thead><tbody><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">Story 1: shortened flow + backend flag</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Priya; Sam frontend review; Alex backend flag</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Implement Mon–Wed, week 1; 3 FE + 1 BE day</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">Story 5: invitation bug reproduction / fix</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Alex + Sam; Support supplies reproduction</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Repro Tue; if not found by Wed, investigate only; 1 day estimate</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">Story 4: 3 events + saved SQL view</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Diego; Alex contributes ½ day</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Events Wed–Thu, week 1; 2 days Diego + ½ day Alex</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">Consent screen</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Mei + Priya</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Wednesday legal review; due end of week 1; 1 FE day + ½ review</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">Mobile API field</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Alex</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Ship Tuesday, week 2; ½ backend day</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">Story 3 import technical design + migration dependency</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Owner not explicitly assigned; migration is Diego-owned</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">Thursday, week 1; migration blocked by two legacy tables; no UI</td></tr><tr><td style=\"padding:7px\">Tickets, unestimated work, summary post</td><td style=\"padding:7px\">All owners; meeting lead posts summary</td><td style=\"padding:7px\">Update tickets by end of day; flag unestimated work; post to sprint channel today</td></tr></tbody></table></section><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px\"><section style=\"background:#ffe9f0;border-radius:10px;padding:16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">Accepted risks & safeguards</div><ul style=\"margin:0;padding-left:22px\"><li>Accept checklist delay of one sprint; shorter flow may recover enough activation.</li><li>Do not ship both flow changes untested; QA has only 3 days.</li><li>Migration is late and blocked by two legacy tables; avoid partial import UI.</li><li>QA starts only when staging is stable. Any Tuesday blocker delays beta one week.</li><li>Story 5 race condition is suspected; without reproduction by Wednesday, do not report a fix as shipped.</li></ul></section><section style=\"background:#f3f5f4;border-radius:10px;padding:16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">Open follow-ups</div><ul style=\"margin:0;padding-left:22px\"><li>Confirm all ticket estimates, especially Story 3 design/dependency work; flag unestimated tasks.</li><li>Ensure legal review occurs Wednesday and support reproduction arrives Tuesday.</li><li>Confirm staging stability before QA begins; beta decision follows QA results.</li><li>Next check-in: Monday standup. Mid-sprint review: Wednesday, week 2.</li></ul></section></div></div>"
+      }
+    ]
+  }
+}

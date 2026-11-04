@@ -1,0 +1,576 @@
+{
+  "round": 3,
+  "case": {
+    "id": "c05-er-handover",
+    "lang": "ja",
+    "subject": "医療引継ぎ",
+    "title": "救急外来の夜勤引き継ぎと優先順位",
+    "voice": "ja-JP-NanamiNeural",
+    "rate": "+40%",
+    "script": "c05-er-handover.ja.txt",
+    "duration": 287.5
+  },
+  "canvasId": "d7af4d74-69f9-4eea-b0c2-e12d6c7b8472",
+  "canvasName": "R3-C05 救急外来の夜勤引き継ぎと優先順位",
+  "startedAt": "2026-11-04T16:40:21.198Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 25.5,
+      "text": "では、救急外来の引き継ぎを始めます。 今日は平日の夜勤帯で、看護師は三人、医師は二人、ベッドは八床です。 現在の稼働は六床で、空きは二床あります。 これから三例の患者さんを共有して、優先順位と役割を決めます。 最後に、誰が何をいつまでに行うかをはっきりさせてください。 最初の患者さんは、七十二歳の男性です。 夕方から胸が痛いと救急搬送されました。",
+      "elapsedMs": 12645,
+      "timedOut": false,
+      "textReply": "引き継ぎの前提（夜勤体制・病床状況）と、患者1の基本情報を記録しました。優先順位や役割は、情報が共有されてから追加します。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title\",\"x\":80,\"y\":64,\"text\":\"救急外来｜夜勤引き継ぎ\",\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"context\",\"x\":80,\"y\":160,\"text\":\"平日夜勤帯　｜　優先順位・役割・期限を確認\",\"w\":880,\"h\":36,\"color\":\"#00a2e1\",\"fontSize\":23,\"fontWeight\":600}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title\",\"type\":\"text\"},{\"id\":\"context\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"staff\",\"x\":80,\"y\":232,\"w\":248,\"h\":96,\"text\":\"看護師 3人\\n医師 2人\",\"color\":\"#00a2e1\"},{\"id\":\"beds\",\"x\":368,\"y\":232,\"w\":248,\"h\":96,\"text\":\"ベッド 8床\\n稼働 6｜空き 2\",\"color\":\"#a6d94f\"},{\"id\":\"patient1\",\"x\":80,\"y\":376,\"w\":320,\"h\":104,\"text\":\"患者1｜72歳 男性\\n夕方から胸痛\\n救急搬送\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"staff\",\"type\":\"rectangle\"},{\"id\":\"beds\",\"type\":\"rectangle\"},{\"id\":\"patient1\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 25.5,
+      "end": 50,
+      "text": "来院時、意識は清明で、血圧は百六十の九十、脈は九十八、呼吸数は二十二、酸素飽和度は九十六パーセントです。 心電図では下壁誘導に軽度のST低下があり、トロポニンはまだ結果待ちです。 既往は高血圧と糖尿病、喫煙歴があります。 胸痛は持続していて、ニトログリセリンで少し軽減しました。 この患者さんは、急性冠症候群を除外する必要があります。",
+      "elapsedMs": 7526,
+      "timedOut": false,
+      "textReply": "患者1のバイタル、心電図所見、既往歴、検査待ちの状況を追記しました。急性冠症候群の除外が必要な点も記録しています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"patient1-vitals\",\"x\":432,\"y\":368,\"w\":300,\"h\":176,\"text\":\"来院時：意識清明\\n血圧 160/90 mmHg｜脈拍 98/分\\n呼吸数 22/分｜SpO₂ 96%\\n心電図：下壁誘導に軽度ST低下\\nトロポニン：結果待ち\\n既往：高血圧・糖尿病・喫煙歴\\n胸痛持続、ニトロで軽減\\n要点：急性冠症候群の除外が必要\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"patient1-vitals\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 50,
+      "end": 76.1,
+      "text": "今のところバイタルは安定していますが、いつ悪化するかわかりません。 二例目は、五十八歳の女性です。 職場で突然ろれつが回らなくなり、右の手足に力が入らないと同僚が通報しました。 発症時刻は十八時四十分ごろで、現在は十九時十分です。 血圧は百八十の百、脈は八十八、意識は傾眠傾向、瞳孔は左右差なし、右上下肢の麻痺があります。 頭部CTはまだ撮影していません。",
+      "elapsedMs": 10666,
+      "timedOut": false,
+      "textReply": "患者2の急な構音障害・右片麻痺、発症時刻、バイタル、頭部CT未撮影を記録しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_boxes",
+          "state": "output-error",
+          "input": "{\"boxes\":[{\"id\":\"patient2\",\"x\":80,\"y\":608,\"w\":320,\"h\":104,\"text\":\"患者2｜58歳 女性\\n構音障害・右片麻痺\\n発症 18:40｜現在 19:10\",\"color\":\"#ff7fa3\"},{\"id\":\"patient2-alert\",\"x\":432,\"y\":592,\"w\":300,\"h\":192,\"text\":\"傾眠傾向｜瞳孔左右差なし\\n血圧 180/100 mmHg｜脈拍 88/分\\n頭部CT：未撮影\\n急性神経症状・発症時刻を共有\\n緊急評価が必要\",\"color\":\"#ffe9f0\"}]}",
+          "output": "",
+          "error": "An error occurred.",
+          "failed": true
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"patient2\",\"x\":80,\"y\":608,\"w\":320,\"h\":104,\"text\":\"患者2｜58歳 女性\\n構音障害・右片麻痺\\n発症 18:40｜現在 19:10\",\"color\":\"#ff7fa3\"},{\"id\":\"patient2-alert\",\"x\":432,\"y\":592,\"w\":300,\"h\":192,\"text\":\"傾眠傾向｜瞳孔左右差なし\\n血圧 180/100 mmHg｜脈拍 88/分\\n頭部CT：未撮影\\n急性神経症状・発症時刻を共有\\n緊急評価が必要\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"patient2\",\"type\":\"rectangle\"},{\"id\":\"patient2-alert\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 76.1,
+      "end": 101.4,
+      "text": "発症から三時間以内なので、血栓溶解療法の適応を急いで評価する必要があります。 CTと採血を優先し、神経内科に連絡してください。 三例目は、大学生の男性です。 自転車で転倒し、右手首の痛みと腫れがあります。 意識は清明、バイタルは安定、指の動きは保たれています。 レントゲンでは橈骨遠位端の骨折の疑いです。 痛みは強いですが、生命の危険は低いです。",
+      "elapsedMs": 9763,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"patient2-priority\",\"x\":768,\"y\":592,\"w\":300,\"h\":192,\"text\":\"優先：頭部CT・採血\\n神経内科へ連絡\\n発症 18:40 → 現在 19:10\\n発症3時間以内\\n血栓溶解療法の適応を\\n至急評価（医師判断）\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"patient2-priority\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-error",
+          "input": "{\"boxes\":[{\"id\":\"patient3\",\"x\":80,\"y\":832,\"w\":320,\"h\":104,\"text\":\"患者3｜大学生 男性\\n自転車転倒｜右手首痛・腫脹\\n橈骨遠位端骨折疑い\",\"color\":\"#f7de4b\"},{\"id\":\"patient3-status\",\"x\":432,\"y\":816,\"w\":300,\"h\":160,\"text\":\"意識清明｜バイタル安定\\n指の動きは保たれる\\n痛み強い\\n生命の危険は低い\",\"color\":\"#fff8d4\"}]}",
+          "output": "",
+          "error": "An error occurred.",
+          "failed": true
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"patient3\",\"x\":80,\"y\":832,\"w\":320,\"h\":104,\"text\":\"患者3｜大学生 男性\\n自転車転倒｜右手首痛・腫脹\\n橈骨遠位端骨折疑い\",\"color\":\"#f7de4b\"},{\"id\":\"patient3-status\",\"x\":432,\"y\":816,\"w\":300,\"h\":160,\"text\":\"意識清明｜バイタル安定\\n指の動きは保たれる\\n痛み強い\\n生命の危険は低い\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"patient3\",\"type\":\"rectangle\"},{\"id\":\"patient3-status\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 101.4,
+      "end": 125.9,
+      "text": "この患者さんは後回しにできますが、痛みのコントロールと固定は必要です。 今のスタッフ配置を確認します。 医師の田中さんは胸痛の患者さんを担当してください。 看護師の佐藤さんは田中さんにつき、心電図の再検、採血、ニトログリセリンの準備をお願いします。 医師の鈴木さんは脳卒中の患者さんを担当し、CTと神経内科への連絡を優先してください。",
+      "elapsedMs": 11382,
+      "timedOut": false,
+      "textReply": "患者3は疼痛管理・固定を後順位で追加し、医師2名と看護師1名の担当を記録します。患者3に疼痛コントロールと固定を追加し、田中医師・佐藤看護師・鈴木医師の担当と優先タスクを記録しました。役割と期限について、続きの共有を反映します。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":6,\"count\":11,\"bounds\":{\"x\":80,\"y\":64,\"w\":988,\"h\":912},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"救急外来｜夜勤引き継ぎ\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"context\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"平日夜勤帯　｜　優先順位・役割・期限を確認\",\"font\":\"sans\",\"fontSize\":23,\"fontWeight\":600},{\"id\":\"staff\",\"type\":\"rectangle\",\"x\":80,\"y\":232,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"看護師 3人\\n医師 2人\"},{\"id\":\"beds\",\"type\":\"rectangle\",\"x\":368,\"y\":232,\"w\":248,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"ベッド 8床\\n稼働 6｜空き 2\"},{\"id\":\"patient1\",\"type\":\"rectangle\",\"x\":80,\"y\":376,\"w\":320,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"患者1｜72歳 男性\\n夕方から胸痛\\n救急搬送\"},{\"id\":\"patient1-vitals\",\"type\":\"note\",\"x\":432,\"y\":368,\"w\":300,\"h\":176,\"color\":\"#ffe9f0\",\"text\":\"来院時：意識清明\\n血圧 160/90 mmHg｜脈拍 98/分\\n呼吸数 22/分｜SpO₂ 96%\\n心電図：下壁誘導に軽度ST低下\\nトロ…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"patient3-care\",\"x\":768,\"y\":816,\"w\":300,\"h\":160,\"text\":\"後順位\\n疼痛コントロール\\n患部を固定\",\"color\":\"#f1fadc\"},{\"id\":\"assignments\",\"x\":80,\"y\":1008,\"w\":880,\"h\":192,\"text\":\"担当・優先タスク\\n田中医師：患者1（胸痛）\\n佐藤看護師：田中医師を補助\\n心電図再検・採血・ニトロ準備\\n鈴木医師：患者2（脳卒中疑い）\\n頭部CT・神経内科連絡を優先\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"patient3-care\",\"type\":\"note\"},{\"id\":\"assignments\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 125.9,
+      "end": 149.2,
+      "text": "看護師の高橋さんは鈴木さんにつき、発症時刻の確認、血糖測定、点滴ルートの確保をお願いします。 看護師の山本さんは骨折の患者さんと、残りのベッドの管理をお願いします。 私は全体の指揮と、家族への説明、病床調整を担当します。 優先順位は、脳卒中、胸痛、骨折の順です。 脳卒中は時間が勝負なので、CTを最優先にしてください。",
+      "elapsedMs": 7360,
+      "timedOut": false,
+      "textReply": "高橋看護師・山本看護師と引き継ぎ責任者の役割を追記し、優先順位を「脳卒中（CT最優先）→胸痛→骨折」と記録しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"assignments-2\",\"x\":80,\"y\":1224,\"w\":880,\"h\":176,\"text\":\"追加配置・指揮\\n高橋看護師：患者2｜発症時刻確認・血糖測定・点滴ルート\\n山本看護師：患者3・残ベッド管理\\n引き継ぎ責任者：全体指揮・家族説明・病床調整\\n優先順位：患者2（CT最優先）→患者1→患者3\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"assignments-2\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 149.2,
+      "end": 173.6,
+      "text": "胸痛は安定していますが、トロポニンが陽性ならカテーテル室の準備が必要です。 骨折は痛み止めをして、整形外科の外来予約を取ってください。 ただし、胸痛の患者さんが血圧低下や不整脈を起こした場合は、ただちに私を呼んでください。 病床について。 現在の空きは二床ですが、脳卒中の患者さんが入院になる可能性が高いので、一床は確保しておきます。",
+      "elapsedMs": 6522,
+      "timedOut": false,
+      "textReply": "患者1のトロポニン陽性時と急変時の対応、患者3の鎮痛・整形外科外来予約、患者2の入院に備えた空床確保を追記しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"followup-risks\",\"x\":1040,\"y\":160,\"w\":360,\"h\":228,\"text\":\"追加対応・エスカレーション\\n患者1：トロポニン陽性なら\\nカテーテル室を準備\\n血圧低下・不整脈 →\\n直ちに引き継ぎ責任者へ連絡\\n患者3：鎮痛・整形外科外来予約\\n病床：空き2床のうち1床を\\n患者2の入院に備えて確保\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"followup-risks\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 173.6,
+      "end": 195.9,
+      "text": "胸痛の患者さんも入院の可能性があります。 骨折の患者さんは、固定と痛み止めができれば帰宅可能ですが、一人暮らしではないので、家族の迎えを確認します。 满床になった場合は、近隣の病院に転送を打診します。 転送先は、循環器と脳神経外科の受け入れが可能なところを、私が二箇所確認します。 検査の流れを決めます。",
+      "elapsedMs": 9048,
+      "timedOut": false,
+      "textReply": "入院・帰宅・満床時の転送方針を追記しました。引き継ぎ責任者が、循環器と脳神経外科を受け入れ可能な転送先2施設を確認します。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"disposition-8\",\"x\":1040,\"y\":424,\"w\":360,\"h\":228,\"text\":\"入院・帰宅・転送\\n患者1：入院の可能性あり\\n患者3：固定・鎮痛後、帰宅を検討\\n家族の迎えを確認\\n満床時：近隣病院へ転送打診\\n責任者が2施設を確認\\n循環器・脳神経外科の受入可否\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"disposition-8\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 195.9,
+      "end": 219.5,
+      "text": "脳卒中の患者さんは、CT室に直行、撮影後すぐに神経内科に連絡、血栓溶解の適応を判断します。 胸痛の患者さんは、心電図を十五分おきに再検、トロポニンを今と三時間後に測定、必要なら胸部レントゲンと心エコーを追加します。 骨折の患者さんは、レントゲンを撮影し、整形外科に相談、副木固定と鎮痛を行います。 家族への説明も重要です。",
+      "elapsedMs": 13124,
+      "timedOut": false,
+      "textReply": "検査の流れを患者別に整理し、最後に家族説明の重点を記録します。患者別の検査・処置手順を追記しました。家族への説明も引き継ぎ項目に含めています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"workflow\",\"x\":1040,\"y\":696,\"w\":360,\"h\":300,\"text\":\"検査・処置の流れ\\n患者2：CT室へ直行 → 撮影後すぐ神経内科連絡 → 血栓溶解適応を判断\\n患者1：心電図を15分ごとに再検\\nトロポニン：今・3時間後\\n必要時：胸部X線・心エコー\\n患者3：X線 → 整形外科相談\\n副木固定・鎮痛\\n家族への説明を行う\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"workflow\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 219.5,
+      "end": 241.8,
+      "text": "脳卒中の患者さんは、職場の同僚が来ていますが、家族の連絡先がまだわかりません。 高橋さん、携帯のロックを解除できるか確認してください。 胸痛の患者さんは、娘さんが待合にいます。 私が状況を説明します。 骨折の患者さんは、両親が来る予定です。 山本さん、到着したら声をかけてください。 記録もお願いします。",
+      "elapsedMs": 7465,
+      "timedOut": false,
+      "textReply": "家族連絡と記録の担当を追記しました。患者2の連絡先確認、患者1の娘さんへの説明、患者3のご両親への対応を整理しています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"family-handoff\",\"x\":1040,\"y\":1016,\"w\":360,\"h\":228,\"text\":\"家族連絡・記録\\n患者2：同僚が来院\\n家族連絡先を確認\\n高橋看護師：携帯の解除可否を確認\\n患者1：娘へ責任者が状況説明\\n患者3：両親の到着時に\\n山本看護師が対応\\n各対応を記録\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"family-handoff\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 11,
+      "start": 241.8,
+      "end": 264.8,
+      "text": "発症時刻、最終健常時刻、投与した薬、アレルギーの有無、検査結果、連絡した相手、転送の可否を、時系列で残してください。 特に脳卒中の患者さんは、発症時刻が治療の判断に直結します。 18時40分という情報が変わったら、すぐに共有してください。 最後に、今後の見通しです。 夜間は救急車の受け入れが続く可能性があります。",
+      "elapsedMs": 9626,
+      "timedOut": false,
+      "textReply": "時系列で記録する項目と、患者2の発症時刻が変わった際の即時共有を追記しました。夜間の救急搬送増加への備えも記録しています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"timeline-documentation\",\"x\":1040,\"y\":1264,\"w\":360,\"h\":136,\"text\":\"時系列で記録・共有\\n発症／最終健常時刻・薬剤・アレルギー\\n検査結果・連絡先・転送可否\\n患者2：18:40が変われば即共有\\n夜間の救急搬送増加に備える\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[{\"id\":\"timeline-documentation\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 12,
+      "start": 264.8,
+      "end": 287.5,
+      "text": "二十時までに、脳卒中と胸痛の初期評価を終え、入院か帰宅かの方向を決めます。 二十一時に一度集まって、残りのベッドとスタッフの疲労を確認します。 もし重症患者がもう一例来たら、 elective の予定は延期し、私が指揮を執ります。 以上で引き継ぎを終わります。 質問がなければ、それぞれの担当に移ってください。",
+      "elapsedMs": 42728,
+      "timedOut": false,
+      "error": "An error occurred.",
+      "textReply": "引き継ぎの期限を追加しました。20:00までに患者2・1の初期評価と入院／帰宅の方向を決め、21:00に残床とスタッフの疲労を確認します。重症患者が追加された場合は予定処置を延期し、引き継ぎ責任者が指揮します。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"timeline-deadlines\",\"x\":1040,\"y\":1408,\"w\":360,\"h\":176,\"text\":\"期限・再確認\\n20:00まで：患者2・1の初期評価\\n入院／帰宅の方向を決定\\n21:00：残床・スタッフ疲労を確認\\n重症患者の追加時：予定処置延期\\n引き継ぎ責任者が指揮\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"timeline-deadlines\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":14,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1520},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"救急外来｜夜勤引き継ぎ\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"context\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"平日夜勤帯　｜　優先順位・役割・期限を確認\",\"font\":\"sans\",\"fontSize\":23,\"fontWeight\":600},{\"id\":\"staff\",\"type\":\"rectangle\",\"x\":80,\"y\":232,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"看護師 3人\\n医師 2人\"},{\"id\":\"beds\",\"type\":\"rectangle\",\"x\":368,\"y\":232,\"w\":248,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"ベッド 8床\\n稼働 6｜空き 2\"},{\"id\":\"patient1\",\"type\":\"rectangle\",\"x\":80,\"y\":376,\"w\":320,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"患者1｜72歳 男性\\n夕方から胸痛\\n救急搬送\"},{\"id\":\"patient1-vitals\",\"type\":\"note\",\"x\":432,\"y\":368,\"w\":300,\"h\":176,\"color\":\"#ffe9f0\",\"text\":\"来院時：意識清明\\n血圧 160/90 mmHg｜脈拍 98/分\\n呼吸数 22/分｜SpO₂ 96%\\n心電図：下壁誘導に軽度ST低下\\…",
+          "failed": false
+        }
+      ],
+      "status": "error"
+    }
+  ],
+  "stats": {
+    "segments": 12,
+    "requests": 13,
+    "timedOutSegments": 0,
+    "failedTools": 2,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_boxes": 5,
+      "add_notes": 10,
+      "get_board": 3,
+      "add_html_cards": 1
+    },
+    "shapes": 21,
+    "shapeTypes": {
+      "text": 2,
+      "rectangle": 7,
+      "note": 11,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 747,
+    "totalMs": 178258
+  },
+  "summary": {
+    "index": 13,
+    "start": 287.5,
+    "end": 287.5,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 30403,
+    "timedOut": false,
+    "textReply": "要約カードを既存内容の下に追加しました。最優先は患者2のCTと神経内科連絡、20:00までに患者1・2の初期評価、21:00に病床とスタッフ状況を再確認です。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":14,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":1320,\"h\":1520},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"救急外来｜夜勤引き継ぎ\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"context\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":36,\"color\":\"#00a2e1\",\"text\":\"平日夜勤帯　｜　優先順位・役割・期限を確認\",\"font\":\"sans\",\"fontSize\":23,\"fontWeight\":600},{\"id\":\"staff\",\"type\":\"rectangle\",\"x\":80,\"y\":232,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"看護師 3人\\n医師 2人\"},{\"id\":\"beds\",\"type\":\"rectangle\",\"x\":368,\"y\":232,\"w\":248,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"ベッド 8床\\n稼働 6｜空き 2\"},{\"id\":\"patient1\",\"type\":\"rectangle\",\"x\":80,\"y\":376,\"w\":320,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"患者1｜72歳 男性\\n夕方から胸痛\\n救急搬送\"},{\"id\":\"patient1-vitals\",\"type\":\"note\",\"x\":432,\"y\":368,\"w\":300,\"h\":176,\"color\":\"#ffe9f0\",\"text\":\"来院時：意識清明\\n血圧 160/90 mmHg｜脈拍 98/分\\n呼吸数 22/分｜SpO₂ 96%\\n心電図：下壁誘導に軽度ST低下\\…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"handoff-summary\",\"x\":80,\"y\":1744,\"w\":1280,\"h\":760,\"title\":\"夜勤引き継ぎ｜要約・アクション一覧\",\"html\":\"<div style=\\\"font-family:Arial,'Noto Sans JP',sans-serif;color:#2b3038;background:#fff;padding:22px;line-height:1.45\\\"><div style=\\\"border-bottom:3px solid #00a2e1;padding-bottom:12px;margin-bottom:16px\\\"><div style=\\\"font-size:26px;font-weight:700\\\">救急外来｜夜勤引き継ぎ</div><div style=\\\"font-size:15px;color:#2b3038;margin-top:5px\\\">目的：3症例の緊急度・担当・期限をそろえ、対応と病床の見通しを共有する。</div></div><div style=\\\"display:flex;gap:14px;margin-bottom:16px\\\"><div style=\\\"flex:1;background:#e2f5fc;padding:12px;border-left:5px solid #00a2e1\\\"><b>体制・病床</b><br>看護師3人・医師2人｜8床中6床稼働、空き2床（患者2の入院に備え1床確保）</div><div style=\\\"flex:1;background:#fff8d4;padding:12px;border-left:5px solid #f7de4b\\\"><b>優先順位</b><br>患者2（脳卒中疑い・CT最優先）→患者1（胸痛）→患者3（骨折疑い）</div></div><div style=\\\"font-size:18px;font-weight:700;margin:8px 0\\\">判断・対応の要点</div><tab…",
+        "output": "{\"ok\":true,\"revision\":15,\"created\":[{\"id\":\"handoff-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 15,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 880,
+        "h": 60,
+        "text": "救急外来｜夜勤引き継ぎ",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "context",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 160,
+        "w": 880,
+        "h": 36,
+        "text": "平日夜勤帯　｜　優先順位・役割・期限を確認",
+        "font": "sans",
+        "fontSize": 23,
+        "fontWeight": 600
+      },
+      {
+        "id": "staff",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 80,
+        "y": 232,
+        "w": 248,
+        "h": 96,
+        "text": "看護師 3人\n医師 2人"
+      },
+      {
+        "id": "beds",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 368,
+        "y": 232,
+        "w": 248,
+        "h": 96,
+        "text": "ベッド 8床\n稼働 6｜空き 2"
+      },
+      {
+        "id": "patient1",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 80,
+        "y": 376,
+        "w": 320,
+        "h": 104,
+        "text": "患者1｜72歳 男性\n夕方から胸痛\n救急搬送"
+      },
+      {
+        "id": "patient1-vitals",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 432,
+        "y": 368,
+        "w": 300,
+        "h": 176,
+        "text": "来院時：意識清明\n血圧 160/90 mmHg｜脈拍 98/分\n呼吸数 22/分｜SpO₂ 96%\n心電図：下壁誘導に軽度ST低下\nトロポニン：結果待ち\n既往：高血圧・糖尿病・喫煙歴\n胸痛持続、ニトロで軽減\n要点：急性冠症候群の除外が必要"
+      },
+      {
+        "id": "patient2",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 80,
+        "y": 608,
+        "w": 320,
+        "h": 104,
+        "text": "患者2｜58歳 女性\n構音障害・右片麻痺\n発症 18:40｜現在 19:10"
+      },
+      {
+        "id": "patient2-alert",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 432,
+        "y": 592,
+        "w": 300,
+        "h": 192,
+        "text": "傾眠傾向｜瞳孔左右差なし\n血圧 180/100 mmHg｜脈拍 88/分\n頭部CT：未撮影\n急性神経症状・発症時刻を共有\n緊急評価が必要"
+      },
+      {
+        "id": "patient2-priority",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 768,
+        "y": 592,
+        "w": 300,
+        "h": 192,
+        "text": "優先：頭部CT・採血\n神経内科へ連絡\n発症 18:40 → 現在 19:10\n発症3時間以内\n血栓溶解療法の適応を\n至急評価（医師判断）"
+      },
+      {
+        "id": "patient3",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 80,
+        "y": 832,
+        "w": 320,
+        "h": 104,
+        "text": "患者3｜大学生 男性\n自転車転倒｜右手首痛・腫脹\n橈骨遠位端骨折疑い"
+      },
+      {
+        "id": "patient3-status",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 432,
+        "y": 816,
+        "w": 300,
+        "h": 160,
+        "text": "意識清明｜バイタル安定\n指の動きは保たれる\n痛み強い\n生命の危険は低い"
+      },
+      {
+        "id": "patient3-care",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 768,
+        "y": 816,
+        "w": 300,
+        "h": 160,
+        "text": "後順位\n疼痛コントロール\n患部を固定"
+      },
+      {
+        "id": "assignments",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1008,
+        "w": 880,
+        "h": 192,
+        "text": "担当・優先タスク\n田中医師：患者1（胸痛）\n佐藤看護師：田中医師を補助\n心電図再検・採血・ニトロ準備\n鈴木医師：患者2（脳卒中疑い）\n頭部CT・神経内科連絡を優先"
+      },
+      {
+        "id": "assignments-2",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1224,
+        "w": 880,
+        "h": 176,
+        "text": "追加配置・指揮\n高橋看護師：患者2｜発症時刻確認・血糖測定・点滴ルート\n山本看護師：患者3・残ベッド管理\n引き継ぎ責任者：全体指揮・家族説明・病床調整\n優先順位：患者2（CT最優先）→患者1→患者3"
+      },
+      {
+        "id": "followup-risks",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 160,
+        "w": 360,
+        "h": 228,
+        "text": "追加対応・エスカレーション\n患者1：トロポニン陽性なら\nカテーテル室を準備\n血圧低下・不整脈 →\n直ちに引き継ぎ責任者へ連絡\n患者3：鎮痛・整形外科外来予約\n病床：空き2床のうち1床を\n患者2の入院に備えて確保"
+      },
+      {
+        "id": "disposition-8",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 424,
+        "w": 360,
+        "h": 228,
+        "text": "入院・帰宅・転送\n患者1：入院の可能性あり\n患者3：固定・鎮痛後、帰宅を検討\n家族の迎えを確認\n満床時：近隣病院へ転送打診\n責任者が2施設を確認\n循環器・脳神経外科の受入可否"
+      },
+      {
+        "id": "workflow",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 696,
+        "w": 360,
+        "h": 300,
+        "text": "検査・処置の流れ\n患者2：CT室へ直行 → 撮影後すぐ神経内科連絡 → 血栓溶解適応を判断\n患者1：心電図を15分ごとに再検\nトロポニン：今・3時間後\n必要時：胸部X線・心エコー\n患者3：X線 → 整形外科相談\n副木固定・鎮痛\n家族への説明を行う"
+      },
+      {
+        "id": "family-handoff",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 1016,
+        "w": 360,
+        "h": 228,
+        "text": "家族連絡・記録\n患者2：同僚が来院\n家族連絡先を確認\n高橋看護師：携帯の解除可否を確認\n患者1：娘へ責任者が状況説明\n患者3：両親の到着時に\n山本看護師が対応\n各対応を記録"
+      },
+      {
+        "id": "timeline-documentation",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 1264,
+        "w": 360,
+        "h": 136,
+        "text": "時系列で記録・共有\n発症／最終健常時刻・薬剤・アレルギー\n検査結果・連絡先・転送可否\n患者2：18:40が変われば即共有\n夜間の救急搬送増加に備える"
+      },
+      {
+        "id": "timeline-deadlines",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 1408,
+        "w": 360,
+        "h": 176,
+        "text": "期限・再確認\n20:00まで：患者2・1の初期評価\n入院／帰宅の方向を決定\n21:00：残床・スタッフ疲労を確認\n重症患者の追加時：予定処置延期\n引き継ぎ責任者が指揮"
+      },
+      {
+        "id": "handoff-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 1744,
+        "w": 1280,
+        "h": 760,
+        "title": "夜勤引き継ぎ｜要約・アクション一覧",
+        "html": "<div style=\"font-family:Arial,'Noto Sans JP',sans-serif;color:#2b3038;background:#fff;padding:22px;line-height:1.45\"><div style=\"border-bottom:3px solid #00a2e1;padding-bottom:12px;margin-bottom:16px\"><div style=\"font-size:26px;font-weight:700\">救急外来｜夜勤引き継ぎ</div><div style=\"font-size:15px;color:#2b3038;margin-top:5px\">目的：3症例の緊急度・担当・期限をそろえ、対応と病床の見通しを共有する。</div></div><div style=\"display:flex;gap:14px;margin-bottom:16px\"><div style=\"flex:1;background:#e2f5fc;padding:12px;border-left:5px solid #00a2e1\"><b>体制・病床</b><br>看護師3人・医師2人｜8床中6床稼働、空き2床（患者2の入院に備え1床確保）</div><div style=\"flex:1;background:#fff8d4;padding:12px;border-left:5px solid #f7de4b\"><b>優先順位</b><br>患者2（脳卒中疑い・CT最優先）→患者1（胸痛）→患者3（骨折疑い）</div></div><div style=\"font-size:18px;font-weight:700;margin:8px 0\">判断・対応の要点</div><table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:14px\"><tr style=\"background:#2b3038;color:white\"><th style=\"padding:8px;text-align:left\">症例</th><th style=\"padding:8px;text-align:left\">共有事項・次の対応</th><th style=\"padding:8px;text-align:left\">担当</th></tr><tr style=\"background:#ffe9f0\"><td style=\"padding:8px;border-bottom:1px solid #ddd\"><b>患者2｜58歳</b></td><td style=\"padding:8px;border-bottom:1px solid #ddd\">構音障害・右片麻痺、発症18:40／19:10時点。CTへ直行、撮影後すぐ神経内科連絡。採血・血糖・発症／最終健常時刻を確認し、血栓溶解療法の適応は医師が評価。</td><td style=\"padding:8px;border-bottom:1px solid #ddd\">鈴木医師・高橋看護師</td></tr><tr style=\"background:#fff8d4\"><td style=\"padding:8px;border-bottom:1px solid #ddd\"><b>患者1｜72歳</b></td><td style=\"padding:8px;border-bottom:1px solid #ddd\">胸痛持続、軽度ST低下、トロポニン待ち。心電図15分ごと、トロポニン今と3時間後。陽性時はカテ室準備。血圧低下・不整脈は責任者へ即時連絡。</td><td style=\"padding:8px;border-bottom:1px solid #ddd\">田中医師・佐藤看護師</td></tr><tr style=\"background:#f1fadc\"><td style=\"padding:8px\"><b>患者3｜大学生</b></td><td style=\"padding:8px\">右手首の骨折疑い。X線、整形外科相談、鎮痛・副木固定。帰宅検討時は家族の迎えを確認。</td><td style=\"padding:8px\">山本看護師</td></tr></table><div style=\"font-size:18px;font-weight:700;margin:8px 0\">アクション・期限</div><table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:14px\"><tr style=\"background:#e2f5fc\"><th style=\"padding:7px;text-align:left\">担当</th><th style=\"padding:7px;text-align:left\">行動</th><th style=\"padding:7px;text-align:left\">期限・合図</th></tr><tr><td style=\"padding:6px;border-bottom:1px solid #ddd\">鈴木医師</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">患者2のCT・神経内科連絡・治療適応評価</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">最優先・直ちに</td></tr><tr><td style=\"padding:6px;border-bottom:1px solid #ddd\">高橋看護師</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">患者2の発症時刻確認、血糖、点滴ルート。連絡先確認は適切な手順で行い、時刻変更は即共有</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">直ちに／変更時即時</td></tr><tr><td style=\"padding:6px;border-bottom:1px solid #ddd\">田中医師・佐藤看護師</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">患者1の評価・心電図再検・採血・ニトロ準備</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">20:00まで初期評価、心電図15分ごと、トロポニン3時間後</td></tr><tr><td style=\"padding:6px;border-bottom:1px solid #ddd\">山本看護師</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">患者3の対応、残ベッド管理、両親到着時に対応</td><td style=\"padding:6px;border-bottom:1px solid #ddd\">評価後・到着時</td></tr><tr><td style=\"padding:6px\">引き継ぎ責任者</td><td style=\"padding:6px\">全体指揮、患者1の娘へ説明、病床調整、満床時は受入可能な転送先2施設を確認</td><td style=\"padding:6px\">急変時即時／21:00再確認</td></tr></table><div style=\"display:flex;gap:14px\"><div style=\"flex:1;background:#f3f5f4;padding:12px\"><b>タイムライン</b><br>18:40 発症情報 → 19:10 現在時刻（共有時点） → 20:00 患者2・1の初期評価と入院／帰宅の方向決定 → 21:00 残床・スタッフ疲労を確認。重症患者追加時は予定処置を延期し責任者が指揮。</div><div style=\"flex:1;background:#ffe9f0;padding:12px\"><b>リスク・未確定事項</b><br>患者2：CT未撮影、発症／最終健常時刻と治療適応を確認。患者1：トロポニン結果待ち、急変監視。患者1・2の入院見込みと残床、満床時の転送先受入可否を継続確認。家族連絡先・来院状況も確認。</div></div><div style=\"font-size:12px;color:#555;margin-top:12px\">記録：時刻、薬剤、アレルギー、検査結果、連絡相手、転送可否を時系列で共有。患者状態・検査・治療判断は担当医の評価と施設手順に従う。</div></div>"
+      }
+    ]
+  }
+}

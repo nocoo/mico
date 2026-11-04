@@ -1,0 +1,498 @@
+{
+  "round": 3,
+  "case": {
+    "id": "c04-factory-q3",
+    "lang": "zh",
+    "subject": "生产会议",
+    "title": "工厂第三季度排产与交付计划",
+    "voice": "zh-CN-YunxiNeural",
+    "rate": "+15%",
+    "script": "c04-factory-q3.zh.txt",
+    "duration": 226.2
+  },
+  "canvasId": "0cdb3b93-f9a6-441b-95cf-a2d9ef6322e9",
+  "canvasName": "R3-C04 工厂第三季度排产与交付计划",
+  "startedAt": "2026-11-04T17:12:52.096Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 22.8,
+      "text": "各位，今天开这个会，是把第三季度的生产计划定下来。 我们做的是电动自行车电机，工厂有两条总装线，一条绕线线，一条测试线。 第二季度实际交付九万台，第三季度销售预测十二万台，但按现有产能，满负荷只有十万台。 中间这两万台的缺口，就是今天要解决的问题。 先看订单结构。",
+      "elapsedMs": 14011,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title-q3\",\"x\":80,\"y\":64,\"text\":\"第三季度排产与交付计划\",\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"x\":80,\"y\":160,\"text\":\"目标：填补 2 万台产能缺口\",\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title-q3\",\"type\":\"text\"},{\"id\":\"scope-q3\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"capacity-frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"title\":\"产能与目标\",\"color\":\"#00a2e1\"},{\"id\":\"production-frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":400,\"title\":\"生产资源\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"capacity-frame\",\"type\":\"frame\"},{\"id\":\"production-frame\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"capacity-chart\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"title\":\"交付量与预测（台）\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:8px 18px\\\"><div style=\\\"display:flex;align-items:center;gap:14px;margin:20px 0\\\"><b style=\\\"width:130px\\\">Q2 实际</b><div style=\\\"height:34px;width:540px;background:#e2f5fc;border-left:4px solid #00a2e1;display:flex;align-items:center;padding-left:10px\\\">90,000</div></div><div style=\\\"display:flex;align-items:center;gap:14px;margin:20px 0\\\"><b style=\\\"width:130px\\\">Q3 满负荷</b><div style=\\\"height:34px;width:600px;background:#f1fadc;border-left:4px solid #a6d94f;display:flex;align-items:center;padding-left:10px\\\">100,000</div></div><div style=\\\"display:flex;align-items:center;gap:14px;margin:20px 0\\\"><b style=\\\"width:130px\\\">Q3 预测</b><div style=\\\"height:34px;width:720px;background:#ffe9f0;border-left:4px solid #ff7fa3;display:flex;align-i…",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"capacity-chart\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 22.8,
+      "end": 50.9,
+      "text": "A 客户占四万台，交期集中在七月和八月，要求每周固定发货；B 客户三万台，九月一次性交付，允许分批；C 客户两万台，是新客户，要求首批发五千台做认证；剩下三万台是备件和渠道订单。 A 客户不能延，B 客户可以谈，C 客户的首批认证很关键，不能出问题。 产能这边，两条总装线每天理论产量一千二百台，按二十六天算是三万一千台每月。",
+      "elapsedMs": 12770,
+      "timedOut": false,
+      "textReply": "我把订单优先级与装配线月产能补到生产资源栏，突出不可延期与认证风险。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":3,\"count\":5,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":560},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975}],\"omitted\":0,\"warnings\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"orders-card\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"title\":\"订单结构与交付约束\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:8px 14px;font-size:16px\\\"><table style=\\\"border-collapse:collapse;width:100%\\\"><tr style=\\\"background:#f3f5f4\\\"><th style=\\\"padding:9px;text-align:left;border-bottom:2px solid #a6d94f\\\">订单</th><th style=\\\"padding:9px;text-align:left;border-bottom:2px solid #a6d94f\\\">数量 / 时点</th><th style=\\\"padding:9px;text-align:left;border-bottom:2px solid #a6d94f\\\">约束 / 优先级</th></tr><tr><td style=\\\"padding:9px;border-bottom:1px solid #ddd\\\"><b>A 客户</b></td><td style=\\\"padding:9px;border-bottom:1px solid #ddd\\\">4 万台；7–8 月</td><td style=\\\"padding:9px;border-bottom:1px solid #ddd;color:#c04b70\\\">每周固定发货，不可延期</td></tr><tr><td style=\\\"padding:9px;border-bottom:1px solid #ddd\\\"><b>B 客户</b></td><td style=\\\"padding:9px;border-bottom:1px solid #ddd\\\">3 万台；9 月<…",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"orders-card\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"assembly-capacity-note\",\"x\":1072,\"y\":584,\"w\":816,\"h\":96,\"text\":\"总装线：2 条 × 1,200 台/日 × 26 天 ≈ 31,200 台/月（口述约 31,000）\",\"color\":\"#f1fadc\",\"frameId\":\"production-frame\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"assembly-capacity-note\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 50.9,
+      "end": 77.2,
+      "text": "绕线线是瓶颈，每天只能供九百台，测试线更慢，每天八百五十台。 也就是说，就算总装开满，前端供不上，后端也测不完。 七月的可用产能大约九万八千台，八月有五天设备检修，产能会掉到八万五千台，九月如果新测试台到位，可以到十一万台。 设备部说，绕线机三号主轴有异响，必须在七月第二周停机检修两天，否则可能整线停。",
+      "elapsedMs": 10561,
+      "timedOut": false,
+      "textReply": "已记录绕线与测试瓶颈、月度可用产能，以及绕线机三号主轴的检修风险。已补充订单结构、绕线与测试瓶颈、7–9 月可用产能，以及绕线机三号主轴的检修风险。注意：看板仍提示“总装线产能”便笺超出“生产资源”框。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"bottleneck-note\",\"x\":1040,\"y\":720,\"w\":880,\"h\":176,\"text\":\"瓶颈产线（台/日）\\n绕线：900｜测试：850\\n总装满负荷也会受前后工序约束。\\n\\n季度可用产能（台）\\n7 月：98,000｜8 月：85,000（检修 5 天）\\n9 月：110,000（新测试台到位为前提）\",\"color\":\"#ffe9f0\"},{\"id\":\"maintenance-risk\",\"x\":1040,\"y\":928,\"w\":880,\"h\":128,\"text\":\"设备风险｜绕线机 3 号主轴异响\\n七月第二周停机检修 2 天；否则可能导致整线停产。\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"bottleneck-note\",\"type\":\"note\"},{\"id\":\"maintenance-risk\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":6,\"count\":9,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":992},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"htmlLen…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 77.2,
+      "end": 107.2,
+      "text": "测试线可以加一个夜班，但需要两名测试工程师，招聘最快三周。 临时方案是把部分测试外包给城南的合作伙伴，每台成本增加八块，质量要抽检。 采购部提醒，关键磁钢的供应商七月要检修一周，安全库存只够十天，必须提前锁量。 销售部提出，A 客户可以接受七月少交两千台，但八月必须补上；B 客户如果九月分批，可以接受每周一万台；C 客户的首批认证不能晚于八月中。",
+      "elapsedMs": 8546,
+      "timedOut": false,
+      "textReply": "新增测试线增能选项、磁钢锁量风险，以及 A、B、C 客户的交付弹性与认证期限。已记录测试夜班与外包方案、磁钢供应风险，以及客户交付调整空间和 C 客户认证截止时间。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"test-options-note\",\"x\":1040,\"y\":1080,\"w\":880,\"h\":176,\"text\":\"测试线增能选项\\n• 夜班：需 2 名测试工程师；招聘最快三周\\n• 外包：城南伙伴；每台 +¥8，需抽检\",\"color\":\"#e2f5fc\"},{\"id\":\"supply-sales-note\",\"x\":80,\"y\":720,\"w\":880,\"h\":256,\"text\":\"供应与交期约束\\n关键磁钢：供应商 7 月检修 1 周；库存仅够 10 天，需提前锁量。\\n\\n客户交付弹性\\nA：7 月可少交 2,000 台，8 月必须补齐\\nB：9 月可按每周 10,000 台分批\\nC：首批认证最迟 8 月中，不可延\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"test-options-note\",\"type\":\"note\"},{\"id\":\"supply-sales-note\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 107.2,
+      "end": 131.6,
+      "text": "财务部给出底线：第三季度毛利不能低于百分之十八，外包和加班都要算进去。 现在有三个方案。 方案一，不新增设备，靠加班和外包，产能做到十万五千台，缺口一万五千台需要和客户谈延期。 方案二，七月租一台测试台，八月再买新设备，产能做到十一万五千台，但资本支出增加八十万，回收期大约十个月。",
+      "elapsedMs": 9117,
+      "timedOut": false,
+      "textReply": "已记录财务底线（Q3 毛利率至少 18%，计入外包与加班成本）及方案一、二的产能、缺口和成本对比。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"finance-options-note\",\"x\":1040,\"y\":1280,\"w\":880,\"h\":176,\"text\":\"财务底线\\nQ3 毛利率 ≥18%；外包与加班成本都计入。\\n\\n方案比较（已知）\\n方案一：不新增设备；加班 + 外包；产能 105,000；缺口 15,000，需协商延期。\\n方案二：7 月租测试台、8 月购新设备；产能 115,000；资本支出 +¥800,000；回收期约 10 个月。\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"finance-options-note\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 131.6,
+      "end": 160.1,
+      "text": "方案三，把部分低毛利渠道订单转到第四季度，优先保 A 和 C，产能压力降到十万台以内。 讨论后大家的意见是：A 客户和 C 客户不能丢，B 客户可以谈分批，渠道订单可以延。 设备检修不能省，否则风险太大。 外包只用在测试环节，比例不超过总产量的百分之十五，而且必须做首件和抽检。 新测试台如果七月能租到，就先租，八月再决定买不买。",
+      "elapsedMs": 6732,
+      "timedOut": false,
+      "textReply": "已记录讨论共识：优先保障 A、C，协商 B 分批并将低毛利渠道订单转至 Q4；检修照常执行，测试外包不超过总产量 15% 且须首件与抽检；7 月先租测试台，8 月再决定是否购买。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"consensus-q3\",\"x\":1040,\"y\":1464,\"w\":880,\"h\":120,\"text\":\"当前共识与边界\\n优先保 A、C；B 可谈分批；低毛利渠道订单可转 Q4。\\n检修必须执行；外包仅用于测试 ≤总产量 15%，须首件 + 抽检。\\n7 月能租到新测试台则先租；8 月再决定是否购买。\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"consensus-q3\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 160.1,
+      "end": 195.5,
+      "text": "最后形成一致意见：第一，七月第二周绕线机检修两天，生产部提前把半成品库存拉高到三天；第二，测试线从七月十五日起加夜班，同时启动外包，外包比例控制在百分之十二；第三，采购部本周锁磁钢六周用量，并寻找第二供应商；第四，销售部本周和 A、B、C 三个客户谈交期，A 保四万，B 争取九月分三周，C 首批五千台八月中交付；第五，财务部每周更新毛利，低于百分之十八立即预警；第六，八月十五日复盘，再决定是否购买新测试台。",
+      "elapsedMs": 16009,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"actions-q3\",\"x\":1040,\"y\":1600,\"w\":880,\"h\":176,\"text\":\"行动项｜责任人与期限\\n生产部：7 月第 2 周绕线检修 2 天；提前备足 3 天半成品。\\n测试线：7 月 15 日起加夜班并启动外包；比例 12%。\\n采购部（本周）：锁定磁钢 6 周用量，寻找第二供应商。\\n销售部（本周）：与 A/B/C 谈交期；A 保 4 万，B 争取 9 月分 3 周，C 首批 5,000 台于 8 月中交。\\n财务部：每周更新毛利；低于 18% 立即预警。\\n8 月 15 日复盘：决定是否购买新测试台。\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":false,\"error\":\"LAYOUT_LIMIT\",\"message\":\"Live layout limit is y=1600; this object reaches y=1776. Place it in the second column at x=1040, y=160, or compact the existing sections with update_shapes.\",\"hint\":\"Do not extend the current column. Use the second column at x=1040, starting near y=160.\"}",
+          "failed": true
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":9,\"count\":13,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1520},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"htmlL…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"actions-q3\",\"x\":1040,\"y\":160,\"w\":880,\"h\":400,\"text\":\"行动项｜责任人与期限\\n生产部：7 月第 2 周绕线检修 2 天；提前备足 3 天半成品。\\n测试线：7 月 15 日起加夜班并启动外包；比例 12%。\\n采购部（本周）：锁定磁钢 6 周用量，寻找第二供应商。\\n销售部（本周）：与 A/B/C 谈交期；A 保 4 万，B 争取 9 月分 3 周，C 首批 5,000 台于 8 月中交。\\n财务部：每周更新毛利；低于 18% 立即预警。\\n8 月 15 日复盘：决定是否购买新测试台。\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"actions-q3\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 195.5,
+      "end": 226.2,
+      "text": "分工和时间点也定一下。 生产部负责排产和检修，七月五日前给出周计划；设备部负责测试台租赁，七月十日前完成安装调试；采购部负责磁钢和第二供应商，七月八日前给出到货节点；销售部负责客户交期确认，七月七日前书面确认；质量部负责外包抽检方案，七月十二日前发布；财务部每周五更新成本。 下一次会议定在七月二十日，只看三件事：实际产出、客户交期、毛利。 今天就到这里。",
+      "elapsedMs": 12083,
+      "timedOut": false,
+      "textReply": "我把部门责任、明确期限和 7 月 20 日复盘重点整理为单独的会议跟进卡。已补充分工与期限，并记录 7 月 20 日复盘只检查实际产出、客户交期和毛利。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":10,\"count\":14,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1520},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"html…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"owners-review-q3\",\"x\":80,\"y\":1088,\"w\":880,\"h\":400,\"text\":\"责任分工与期限\\n生产部：7 月 5 日前提交周计划；负责排产与检修。\\n设备部：7 月 10 日前完成测试台租赁安装调试。\\n采购部：7 月 8 日前给出磁钢与第二供应商到货节点。\\n销售部：7 月 7 日前书面确认客户交期。\\n质量部：7 月 12 日前发布外包抽检方案。\\n财务部：每周五更新成本。\\n\\n下次会议｜7 月 20 日\\n只看：实际产出、客户交期、毛利。\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"owners-review-q3\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 8,
+    "requests": 9,
+    "timedOutSegments": 0,
+    "failedTools": 1,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_frames": 1,
+      "add_html_cards": 3,
+      "get_board": 8,
+      "add_notes": 8,
+      "update_shapes": 2
+    },
+    "shapes": 16,
+    "shapeTypes": {
+      "text": 2,
+      "frame": 2,
+      "html": 3,
+      "note": 9
+    },
+    "htmlCards": 3,
+    "totalReplyChars": 431,
+    "totalMs": 179708
+  },
+  "summary": {
+    "index": 9,
+    "start": 226.2,
+    "end": 226.2,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 89879,
+    "timedOut": false,
+    "textReply": "先修复两处布局警告：把总装产能框加高，并将重叠的行动项与分工卡压缩后移入左栏下方空位。布局告警已清除。现在把会议目的、最终共识、行动责任、风险与关键时间点汇总成一张会后卡片。会后总结卡已添加在现有内容下方，包含最终共识、行动责任与期限、产能风险和时间线。此前的重叠与框体越界警告已修复。\n\n**要点：**优先保障 A、C，协商 B 分批；按计划检修并启用受控测试外包，8 月 15 日复盘是否购买新测试台。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":11,\"count\":15,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1520},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"html…",
+        "failed": false
+      },
+      {
+        "name": "update_shapes",
+        "state": "output-available",
+        "input": "{\"updates\":[{\"id\":\"production-frame\",\"patch\":{\"h\":488}},{\"id\":\"actions-q3\",\"patch\":{\"x\":80,\"y\":1296,\"w\":880,\"h\":288,\"text\":\"行动项｜执行与期限\\n生产部：7 月第 2 周检修 2 天；提前备足 3 天半成品。\\n测试线：7 月 15 日起夜班 + 外包，比例 12%。\\n采购部（本周）：锁磁钢 6 周用量，寻找第二供应商。\\n销售部（本周）：谈客户交期；A 保 4 万，B 争取 9 月分 3 周，C 首批 5,000 台于 8 月中交。\\n财务部：每周更新毛利，低于 18% 立即预警。\\n8 月 15 日复盘是否购买新测试台。\"}},{\"id\":\"owners-review-q3\",\"patch\":{\"x\":80,\"y\":1000,\"w\":880,\"h\":264,\"text\":\"责任分工与期限\\n生产部：7 月 5 日前提交周计划，负责排产与检修。\\n设备部：7 月 10 日前完成测试台租赁安装调试。\\n采购部：7 月 8 日前提交磁钢与第二供应商到货节点。\\n销售部：7 月 7 日前书面确认客户交期。\\n质量部：7 月 12 日前发布外包抽检方案。\\n财务部：每周五更新成本。\\n\\n下次会议｜7 月 20 日：实际产出、客户交期、毛利。\"}}]}",
+        "output": "{\"ok\":true,\"revision\":12,\"created\":[],\"updated\":[\"production-frame\",\"actions-q3\",\"owners-review-q3\"]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":12,\"count\":15,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1520},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":488,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"html…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"q3-post-summary\",\"x\":80,\"y\":1744,\"w\":1760,\"h\":920,\"title\":\"会后总结｜第三季度排产与交付\",\"html\":\"<div style=\\\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;padding:22px 26px;line-height:1.45\\\"><div style=\\\"font-size:28px;font-weight:700;margin-bottom:6px\\\">第三季度排产与交付计划</div><div style=\\\"font-size:17px;color:#00a2e1;font-weight:700;margin-bottom:18px\\\">目的：在 Q3 预测 120,000 台、现有满负荷约 100,000 台的条件下，明确客户优先级、产能增能与执行安排。</div><div style=\\\"display:grid;grid-template-columns:1fr 1fr;gap:18px\\\"><section style=\\\"border:1px solid #00a2e1;border-radius:10px;padding:14px 16px\\\"><div style=\\\"font-size:20px;font-weight:700;margin-bottom:8px\\\">最终共识 / 执行规则</div><ul style=\\\"margin:4px 0;padding-left:22px\\\"><li>优先保障 A（40,000 台）与 C（首批 5,000 台认证）；B 可协商九月分三周交付；低毛利渠道订单可转 Q4。</li><li>绕线机三号主轴检修必须执行：七月第二周停机 2 天，生产前备足 3 天半成品。</li><li>测试线自 7 月 15 日起加夜班并启动外包；外包限测试环节，目标 12%、上限总产量 15%，须首件确认与抽检。</li><li>新测…",
+        "output": "{\"ok\":true,\"revision\":13,\"created\":[{\"id\":\"q3-post-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":13,\"count\":16,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":2600},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":488,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"html…",
+        "failed": false
+      },
+      {
+        "name": "update_shapes",
+        "state": "output-available",
+        "input": "{\"updates\":[{\"id\":\"q3-post-summary\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;padding:22px 26px;line-height:1.45\\\"><div style=\\\"font-size:28px;font-weight:700;margin-bottom:6px\\\">第三季度排产与交付计划</div><div style=\\\"font-size:17px;color:#00a2e1;font-weight:700;margin-bottom:18px\\\">目的：在 Q3 预测 120,000 台、现有满负荷约 100,000 台的条件下，明确客户优先级、产能增能与执行安排。</div><div style=\\\"display:grid;grid-template-columns:1fr 1fr;gap:18px\\\"><section style=\\\"border:1px solid #00a2e1;border-radius:10px;padding:14px 16px\\\"><div style=\\\"font-size:20px;font-weight:700;margin-bottom:8px\\\">最终共识 / 执行规则</div><ul style=\\\"margin:4px 0;padding-left:22px\\\"><li>优先保障 A（40,000 台）与 C（首批 5,000 台认证）；B 可协商九月分三周交付；低毛利渠道订单可转 Q4。</li><li>绕线机三号主轴检修必须执行：七月第二周停机 2 天，生产前备足 3 天半成品。</li><li>测试线自 7 月 15 日起加夜班并启动外包；外包限测试环节，目标 12%、上限总产量 15%，须首件确认与抽检。</li><li>新测试台七月能租到则先租；8 月 15 日复盘后再决定是否购买。毛利率底线 ≥18%，外包与加班成…",
+        "output": "{\"ok\":true,\"revision\":14,\"created\":[],\"updated\":[\"q3-post-summary\"]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":14,\"count\":16,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":2600},\"selection\":[],\"shapes\":[{\"id\":\"title-q3\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":880,\"h\":60,\"color\":\"#2b3038\",\"text\":\"第三季度排产与交付计划\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"scope-q3\",\"type\":\"text\",\"x\":80,\"y\":160,\"w\":880,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：填补 2 万台产能缺口\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"capacity-frame\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"产能与目标\"},{\"id\":\"production-frame\",\"type\":\"frame\",\"x\":1040,\"y\":224,\"w\":880,\"h\":488,\"color\":\"#a6d94f\",\"title\":\"生产资源\"},{\"id\":\"capacity-chart\",\"type\":\"html\",\"x\":112,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#00a2e1\",\"title\":\"交付量与预测（台）\",\"frameId\":\"capacity-frame\",\"htmlLength\":975},{\"id\":\"orders-card\",\"type\":\"html\",\"x\":1072,\"y\":288,\"w\":816,\"h\":280,\"color\":\"#a6d94f\",\"title\":\"订单结构与交付约束\",\"frameId\":\"production-frame\",\"html…",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 14,
+    "shapes": [
+      {
+        "id": "title-q3",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 880,
+        "h": 60,
+        "text": "第三季度排产与交付计划",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "scope-q3",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 160,
+        "w": 880,
+        "h": 40,
+        "text": "目标：填补 2 万台产能缺口",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "capacity-frame",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 224,
+        "w": 880,
+        "h": 400,
+        "title": "产能与目标"
+      },
+      {
+        "id": "production-frame",
+        "color": "#a6d94f",
+        "type": "frame",
+        "x": 1040,
+        "y": 224,
+        "w": 880,
+        "h": 488,
+        "title": "生产资源"
+      },
+      {
+        "id": "capacity-chart",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 112,
+        "y": 288,
+        "w": 816,
+        "h": 280,
+        "title": "交付量与预测（台）",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:8px 18px\"><div style=\"display:flex;align-items:center;gap:14px;margin:20px 0\"><b style=\"width:130px\">Q2 实际</b><div style=\"height:34px;width:540px;background:#e2f5fc;border-left:4px solid #00a2e1;display:flex;align-items:center;padding-left:10px\">90,000</div></div><div style=\"display:flex;align-items:center;gap:14px;margin:20px 0\"><b style=\"width:130px\">Q3 满负荷</b><div style=\"height:34px;width:600px;background:#f1fadc;border-left:4px solid #a6d94f;display:flex;align-items:center;padding-left:10px\">100,000</div></div><div style=\"display:flex;align-items:center;gap:14px;margin:20px 0\"><b style=\"width:130px\">Q3 预测</b><div style=\"height:34px;width:720px;background:#ffe9f0;border-left:4px solid #ff7fa3;display:flex;align-items:center;padding-left:10px\">120,000</div></div><div style=\"margin:20px 0 0 144px;padding:12px 16px;border:2px solid #ff7fa3;border-radius:10px;font-weight:bold\">缺口：20,000 台</div></div>",
+        "frameId": "capacity-frame"
+      },
+      {
+        "id": "orders-card",
+        "color": "#a6d94f",
+        "type": "html",
+        "x": 1072,
+        "y": 288,
+        "w": 816,
+        "h": 280,
+        "title": "订单结构与交付约束",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:8px 14px;font-size:16px\"><table style=\"border-collapse:collapse;width:100%\"><tr style=\"background:#f3f5f4\"><th style=\"padding:9px;text-align:left;border-bottom:2px solid #a6d94f\">订单</th><th style=\"padding:9px;text-align:left;border-bottom:2px solid #a6d94f\">数量 / 时点</th><th style=\"padding:9px;text-align:left;border-bottom:2px solid #a6d94f\">约束 / 优先级</th></tr><tr><td style=\"padding:9px;border-bottom:1px solid #ddd\"><b>A 客户</b></td><td style=\"padding:9px;border-bottom:1px solid #ddd\">4 万台；7–8 月</td><td style=\"padding:9px;border-bottom:1px solid #ddd;color:#c04b70\">每周固定发货，不可延期</td></tr><tr><td style=\"padding:9px;border-bottom:1px solid #ddd\"><b>B 客户</b></td><td style=\"padding:9px;border-bottom:1px solid #ddd\">3 万台；9 月</td><td style=\"padding:9px;border-bottom:1px solid #ddd\">一次性交付，可分批协商</td></tr><tr><td style=\"padding:9px;border-bottom:1px solid #ddd\"><b>C 客户</b></td><td style=\"padding:9px;border-bottom:1px solid #ddd\">2 万台；首批 5,000</td><td style=\"padding:9px;border-bottom:1px solid #ddd;color:#c04b70\">首批认证关键，严控质量</td></tr><tr><td style=\"padding:9px\"><b>备件 / 渠道</b></td><td style=\"padding:9px\">3 万台</td><td style=\"padding:9px\">尚未给出时点约束</td></tr></table></div>",
+        "frameId": "production-frame"
+      },
+      {
+        "id": "assembly-capacity-note",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1072,
+        "y": 584,
+        "w": 816,
+        "h": 96,
+        "text": "总装线：2 条 × 1,200 台/日 × 26 天 ≈ 31,200 台/月（口述约 31,000）",
+        "frameId": "production-frame"
+      },
+      {
+        "id": "bottleneck-note",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1040,
+        "y": 720,
+        "w": 880,
+        "h": 176,
+        "text": "瓶颈产线（台/日）\n绕线：900｜测试：850\n总装满负荷也会受前后工序约束。\n\n季度可用产能（台）\n7 月：98,000｜8 月：85,000（检修 5 天）\n9 月：110,000（新测试台到位为前提）"
+      },
+      {
+        "id": "maintenance-risk",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 928,
+        "w": 880,
+        "h": 128,
+        "text": "设备风险｜绕线机 3 号主轴异响\n七月第二周停机检修 2 天；否则可能导致整线停产。"
+      },
+      {
+        "id": "test-options-note",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 1080,
+        "w": 880,
+        "h": 176,
+        "text": "测试线增能选项\n• 夜班：需 2 名测试工程师；招聘最快三周\n• 外包：城南伙伴；每台 +¥8，需抽检"
+      },
+      {
+        "id": "supply-sales-note",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 720,
+        "w": 880,
+        "h": 256,
+        "text": "供应与交期约束\n关键磁钢：供应商 7 月检修 1 周；库存仅够 10 天，需提前锁量。\n\n客户交付弹性\nA：7 月可少交 2,000 台，8 月必须补齐\nB：9 月可按每周 10,000 台分批\nC：首批认证最迟 8 月中，不可延"
+      },
+      {
+        "id": "finance-options-note",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1040,
+        "y": 1280,
+        "w": 880,
+        "h": 176,
+        "text": "财务底线\nQ3 毛利率 ≥18%；外包与加班成本都计入。\n\n方案比较（已知）\n方案一：不新增设备；加班 + 外包；产能 105,000；缺口 15,000，需协商延期。\n方案二：7 月租测试台、8 月购新设备；产能 115,000；资本支出 +¥800,000；回收期约 10 个月。"
+      },
+      {
+        "id": "consensus-q3",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1040,
+        "y": 1464,
+        "w": 880,
+        "h": 120,
+        "text": "当前共识与边界\n优先保 A、C；B 可谈分批；低毛利渠道订单可转 Q4。\n检修必须执行；外包仅用于测试 ≤总产量 15%，须首件 + 抽检。\n7 月能租到新测试台则先租；8 月再决定是否购买。"
+      },
+      {
+        "id": "actions-q3",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1296,
+        "w": 880,
+        "h": 288,
+        "text": "行动项｜执行与期限\n生产部：7 月第 2 周检修 2 天；提前备足 3 天半成品。\n测试线：7 月 15 日起夜班 + 外包，比例 12%。\n采购部（本周）：锁磁钢 6 周用量，寻找第二供应商。\n销售部（本周）：谈客户交期；A 保 4 万，B 争取 9 月分 3 周，C 首批 5,000 台于 8 月中交。\n财务部：每周更新毛利，低于 18% 立即预警。\n8 月 15 日复盘是否购买新测试台。"
+      },
+      {
+        "id": "owners-review-q3",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1000,
+        "w": 880,
+        "h": 264,
+        "text": "责任分工与期限\n生产部：7 月 5 日前提交周计划，负责排产与检修。\n设备部：7 月 10 日前完成测试台租赁安装调试。\n采购部：7 月 8 日前提交磁钢与第二供应商到货节点。\n销售部：7 月 7 日前书面确认客户交期。\n质量部：7 月 12 日前发布外包抽检方案。\n财务部：每周五更新成本。\n\n下次会议｜7 月 20 日：实际产出、客户交期、毛利。"
+      },
+      {
+        "id": "q3-post-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 1744,
+        "w": 1760,
+        "h": 920,
+        "title": "会后总结｜第三季度排产与交付",
+        "html": "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;padding:22px 26px;line-height:1.45\"><div style=\"font-size:28px;font-weight:700;margin-bottom:6px\">第三季度排产与交付计划</div><div style=\"font-size:17px;color:#00a2e1;font-weight:700;margin-bottom:18px\">目的：在 Q3 预测 120,000 台、现有满负荷约 100,000 台的条件下，明确客户优先级、产能增能与执行安排。</div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:18px\"><section style=\"border:1px solid #00a2e1;border-radius:10px;padding:14px 16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">最终共识 / 执行规则</div><ul style=\"margin:4px 0;padding-left:22px\"><li>优先保障 A（40,000 台）与 C（首批 5,000 台认证）；B 可协商九月分三周交付；低毛利渠道订单可转 Q4。</li><li>绕线机三号主轴检修必须执行：七月第二周停机 2 天，生产前备足 3 天半成品。</li><li>测试线自 7 月 15 日起加夜班并启动外包；外包限测试环节，目标 12%、上限总产量 15%，须首件确认与抽检。</li><li>新测试台七月能租到则先租；8 月 15 日复盘后再决定是否购买。毛利率底线 ≥18%，外包与加班成本均计入。</li></ul></section><section style=\"border:1px solid #a6d94f;border-radius:10px;padding:14px 16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">产能与待关注风险</div><div style=\"font-size:15px\"><b>基线：</b>Q2 实际 90,000；Q3 预测 120,000；现有满负荷约 100,000，缺口约 20,000。总装理论约 31,200/月；绕线 900 台/日、测试 850 台/日为瓶颈。</div><div style=\"font-size:15px;margin-top:8px\"><b>月份可用产能：</b>7 月约 98,000；8 月约 85,000（检修 5 天）；9 月约 110,000（依赖新测试台）。方案一加班+外包可达 105,000，仍缺 15,000；方案二租台后购设备可达 115,000，新增资本支出 ¥800,000、回收约 10 个月。方案三转移低毛利渠道订单，产能压力降至 100,000 以下。</div><div style=\"font-size:15px;margin-top:8px\"><b>风险 / 未决：</b>磁钢供应商七月检修一周、库存仅 10 天；本周需锁 6 周用量并找第二供应商。夜班需 2 名测试工程师（招聘最快三周）；城南外包 +¥8/台并需质量管控。测试台租赁是否可及时到位、8 月购置决策及毛利是否达标，持续跟踪。</div></section></div><section style=\"margin-top:18px;border:1px solid #2b3038;border-radius:10px;padding:14px 16px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">行动表｜责任人与期限</div><table style=\"width:100%;border-collapse:collapse;font-size:14px\"><thead><tr style=\"background:#e2f5fc\"><th style=\"padding:8px;text-align:left;border-bottom:2px solid #00a2e1\">负责人</th><th style=\"padding:8px;text-align:left;border-bottom:2px solid #00a2e1\">行动</th><th style=\"padding:8px;text-align:left;border-bottom:2px solid #00a2e1\">期限</th></tr></thead><tbody><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">生产部</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">提交周计划；排产、检修；备足 3 天半成品</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">7 月 5 日前；检修在 7 月第 2 周</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">销售部</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">书面确认 A/B/C 交期：A 保 4 万，B 争取九月分三周，C 首批 5,000 台</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">7 月 7 日前；C 首批 8 月中交付</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">采购部</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">锁定磁钢六周用量，寻找第二供应商并给出到货节点</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">7 月 8 日前</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">设备部</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">完成测试台租赁、安装与调试</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">7 月 10 日前</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">质量部</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">发布外包首件与抽检方案</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">7 月 12 日前</td></tr><tr><td style=\"padding:7px;border-bottom:1px solid #ddd\">测试线</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">启动夜班与测试外包，外包比例控制 12%</td><td style=\"padding:7px;border-bottom:1px solid #ddd\">7 月 15 日起</td></tr><tr><td style=\"padding:7px\">财务部</td><td style=\"padding:7px\">每周更新成本与毛利；低于 18% 立即预警</td><td style=\"padding:7px\">每周五</td></tr></tbody></table></section><div style=\"margin-top:14px;padding:10px 14px;background:#fff8d4;border-left:5px solid #f7de4b;border-radius:6px;font-size:15px\"><b>关键时间线：</b>7 月 5 日周计划 → 7 月 7–12 日客户、采购、设备与质量事项 → 7 月 15 日夜班/外包启动 → 7 月 20 日下次会议（实际产出、客户交期、毛利）→ 8 月中 C 首批交付 → 8 月 15 日复盘是否购置测试台。</div></div>"
+      }
+    ]
+  }
+}

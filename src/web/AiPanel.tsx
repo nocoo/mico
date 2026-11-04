@@ -226,8 +226,10 @@ export function AiPanel({
 			summaryInFlight.current = false
 			setSummaryRequesting(false)
 			const created = message.parts.some((part) => {
-				if (!isToolUIPart(part)) return false
-				return getToolName(part) === 'add_html_cards' && part.state === 'output-available'
+				if (!isToolUIPart(part) || part.state !== 'output-available') return false
+				const name = getToolName(part)
+				if (name === 'add_html_cards') return true
+				return name === 'update_shapes' && JSON.stringify(part.input).includes('"html"')
 			})
 			if (created) setSummaryDone(true)
 		},
