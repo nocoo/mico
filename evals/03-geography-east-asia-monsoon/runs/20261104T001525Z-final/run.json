@@ -1,0 +1,20 @@
+{
+	"case": "03-geography-east-asia-monsoon",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "880a84f",
+	"rubricRevision": "880a84f",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-13-05-066Z_01a1a3e6-f6aa-7282-b5c3-31c3527f56f8",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 3,
+	"shapeCount": 110,
+	"score": 8,
+	"scoreMaximum": 10
+}
