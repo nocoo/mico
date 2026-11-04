@@ -47,7 +47,9 @@ export function maiRealtimeProxy({ host, apiKey, deployment }: MaiProxyOptions):
 				})
 				upstream.on('close', (code, reason) => {
 					if (client.readyState === WebSocket.OPEN) {
-						client.close(code === 1005 ? 1000 : code, reason.toString().slice(0, 120))
+						const safeCode =
+							code >= 1000 && code <= 4999 && ![1004, 1005, 1006, 1015].includes(code) ? code : 1011
+						client.close(safeCode, reason.toString().slice(0, 120))
 					}
 				})
 				client.on('close', () => upstream.close())

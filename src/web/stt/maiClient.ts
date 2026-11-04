@@ -48,10 +48,10 @@ export class MaiClient {
 		this.ws = ws
 
 		return new Promise((resolve, reject) => {
-			const timer = window.setTimeout(
-				() => reject(new Error('Timed out waiting for session.updated')),
-				15_000,
-			)
+			const timer = window.setTimeout(() => {
+				ws.close()
+				reject(new Error('Timed out waiting for session.updated'))
+			}, 15_000)
 
 			ws.onerror = () => reject(new Error('WebSocket connection failed'))
 			ws.onclose = (event) => {

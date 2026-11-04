@@ -14,7 +14,7 @@
 		"mico": "node src/cli/index.ts",
 		"build": "tsc --noEmit && vite build",
 		"check": "biome check . && tsc --noEmit",
-		"test": "node --test src/**/*.test.ts scripts/*.test.ts",
+		"test": "node --test src/**/*.test.ts src/web/stt/*.test.ts scripts/*.test.ts",
 		"test:unit": "node --test src/web/*.test.ts src/web/stt/*.test.ts src/server/store.test.ts",
 		"test:api": "node --test src/server/api.test.ts src/server/index.test.ts src/server/ai.test.ts",
 		"test:cli": "node --test src/cli/index.test.ts",

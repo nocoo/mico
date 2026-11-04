@@ -131,7 +131,14 @@ export async function streamAiChat({
 			canvasId,
 			revision: board.revision,
 		}),
-		stopWhen: isStepCount(request.mode === 'lecture' ? 12 : 40),
+		stopWhen:
+			request.mode === 'lecture'
+				? [
+						(options) =>
+							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 3,
+						isStepCount(12),
+					]
+				: isStepCount(40),
 		maxRetries: 1,
 		abortSignal: abort.signal,
 		providerOptions:

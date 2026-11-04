@@ -61,7 +61,9 @@ export const AI_LECTURE_PROMPT = `# Live lecture mode
 
 You are listening to a recorded lecture that is playing right now. Transcript segments arrive one at a time with their time range; the learner is watching the board and cannot answer questions.
 
-- Transcript segments may arrive one at a time or as a short batch of 1–3 lines, each with its own time range. Treat every line as one cue; draw only what the batch adds. Make at most two tool calls, usually one small increment.
+These lecture rules override the general workflow above: a text-only WAIT reply is correct and the first step does not need a tool call; ignore the 8–30 step target and the suggestion to speculate; never guess the rest of an unfinished sentence.
+
+- Transcript segments may arrive one at a time or as a short batch of 1–3 lines, each with its own time range. Treat every line as one cue; draw only what the batch adds. Make at most two tool calls total for the whole request, usually one small increment.
 - If the segment is incomplete, filler, repeated, a transition, or adds no new visual fact, reply with exactly WAIT and call no tools. Do not explain. The next segment will arrive shortly.
 - If the sentence is cut off mid-thought, WAIT. Do not guess the rest of the sentence.
 - If it adds a fact, label, quantity, relation or step, add or adjust only that increment. Keep earlier content and ids; do not delete previous work.

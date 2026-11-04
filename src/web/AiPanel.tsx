@@ -201,8 +201,9 @@ export function AiPanel({
 	const wasOpen = useRef(false)
 	const lastCanvasId = useRef(canvasId)
 	const lectureQueue = useRef<string[]>([])
-	const lectureInFlight = useRef(false)
+	const requestLock = useRef(false)
 	const [lectureQueued, setLectureQueued] = useState(0)
+	const [lessonClipId, setLessonClipId] = useState('')
 	const selectionRef = useRef(selectedIds)
 	selectionRef.current = selectedIds
 
@@ -218,9 +219,12 @@ export function AiPanel({
 	const send = useCallback(
 		(text: string) => {
 			const value = text.trim()
-			if (!value || status === 'submitted' || status === 'streaming') return
+			if (!value || requestLock.current || status === 'submitted' || status === 'streaming') return
+			requestLock.current = true
 			setDraft('')
-			void sendMessage({ text: value }, { body: { selection, mode: 'chat' } })
+			void sendMessage({ text: value }, { body: { selection, mode: 'chat' } }).catch(() => {
+				requestLock.current = false
+			})
 		},
 		[sendMessage, selection, status],
 	)
@@ -243,20 +247,32 @@ export function AiPanel({
 
 	const resetLectureQueue = useCallback(() => {
 		lectureQueue.current = []
-		lectureInFlight.current = false
+		requestLock.current = false
 		setLectureQueued(0)
 	}, [])
 
 	const pumpLecture = useCallback(() => {
-		if (lectureInFlight.current) return
-		const text = lectureQueue.current.shift()
-		if (!text) {
+		if (requestLock.current) return
+		const batch: string[] = []
+		let size = 0
+		while (lectureQueue.current.length > 0 && batch.length < 3) {
+			const next = lectureQueue.current[0]
+			if (batch.length > 0 && size + next.length > 900) break
+			batch.push(lectureQueue.current.shift() as string)
+			size += next.length
+		}
+		if (batch.length === 0) {
 			setLectureQueued(0)
 			return
 		}
-		lectureInFlight.current = true
+		requestLock.current = true
 		setLectureQueued(lectureQueue.current.length)
-		void sendMessage({ text }, { body: { selection: selectionRef.current, mode: 'lecture' } })
+		void sendMessage(
+			{ text: batch.join('\n\n') },
+			{ body: { selection: selectionRef.current, mode: 'lecture' } },
+		).catch(() => {
+			requestLock.current = false
+		})
 	}, [sendMessage])
 
 	const enqueueLecture = useCallback(
@@ -277,10 +293,10 @@ export function AiPanel({
 
 	useEffect(() => {
 		if (status === 'ready') {
-			lectureInFlight.current = false
+			requestLock.current = false
 			pumpLecture()
 		} else if (status === 'error') {
-			lectureInFlight.current = false
+			requestLock.current = false
 		}
 	}, [status, pumpLecture])
 
@@ -522,13 +538,17 @@ export function AiPanel({
 						<button
 							type="button"
 							onClick={() => {
+								if (requestLock.current) return
+								requestLock.current = true
 								clearError()
 								void sendMessage(
 									{
 										text: 'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
 									},
-									{ body: { selection } },
-								)
+									{ body: { selection, mode: 'chat' } },
+								).catch(() => {
+									requestLock.current = false
+								})
 							}}
 						>
 							Continue
@@ -603,6 +623,8 @@ export function AiPanel({
 				<LessonPanel
 					key={canvasId}
 					active={open && tab === 'lesson'}
+					initialClipId={lessonClipId}
+					onClipChange={setLessonClipId}
 					aiBusy={busy}
 					aiQueued={lectureQueued}
 					aiError={Boolean(error)}

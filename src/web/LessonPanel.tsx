@@ -16,6 +16,8 @@ export interface LessonSegment {
 
 interface LessonPanelProps {
 	active: boolean
+	initialClipId?: string
+	onClipChange?: (id: string) => void
 	aiBusy: boolean
 	aiQueued: number
 	aiError?: boolean
@@ -54,6 +56,8 @@ interface Runtime {
 	latencies: number[]
 	closing: boolean
 	stopping: boolean
+	starting: boolean
+	generation: number
 	timer: number | null
 	nextSegmentId: number
 }
@@ -103,6 +107,8 @@ function newRuntime(): Runtime {
 		latencies: [],
 		closing: false,
 		stopping: false,
+		starting: false,
+		generation: 0,
 		timer: null,
 		nextSegmentId: 1,
 	}
@@ -134,7 +140,7 @@ function drawWave(
 	const buckets = peaks.length / 2
 	const mid = height / 2
 	const step = width / buckets
-	const played = progress * width
+	const played = duration > 0 ? Math.min(1, progress / duration) * width : 0
 	for (let bucket = 0; bucket < buckets; bucket++) {
 		const x = bucket * step
 		const min = peaks[bucket * 2]
@@ -156,6 +162,8 @@ function drawWave(
 
 export function LessonPanel({
 	active,
+	initialClipId,
+	onClipChange,
 	aiBusy,
 	aiQueued,
 	aiError,
@@ -171,7 +179,7 @@ export function LessonPanel({
 
 	const [clips, setClips] = useState<LessonClip[]>([])
 	const [config, setConfig] = useState<MaiConfig | null>(null)
-	const [selectedId, setSelectedId] = useState('')
+	const [selectedId, setSelectedId] = useState(initialClipId ?? '')
 	const [phase, setPhase] = useState<Phase>('idle')
 	const [detail, setDetail] = useState('')
 	const [live, setLive] = useState({ confirmed: '', hypothesis: '' })
@@ -199,7 +207,11 @@ export function LessonPanel({
 				if (cancelled) return
 				setConfig(nextConfig)
 				setClips(manifest.evals)
-				setSelectedId((current) => current || manifest.evals[0]?.id || '')
+				setSelectedId((current) =>
+					manifest.evals.some((clip) => clip.id === current)
+						? current
+						: manifest.evals[0]?.id || '',
+				)
 			})
 			.catch((error: Error) => {
 				if (!cancelled) {
@@ -223,6 +235,8 @@ export function LessonPanel({
 			if (rt.timer !== null) window.clearInterval(rt.timer)
 			rt.timer = null
 			rt.closing = true
+			rt.generation++
+			rt.starting = false
 			rt.client?.close()
 			rt.client = null
 			rt.player?.pause()
@@ -267,6 +281,8 @@ export function LessonPanel({
 		rt.commits = 0
 		rt.latencies = []
 		rt.stopping = false
+		rt.starting = false
+		rt.generation++
 		rt.nextSegmentId = 1
 		rt.segmenter.reset()
 		setLive({ confirmed: '', hypothesis: '' })
@@ -277,19 +293,23 @@ export function LessonPanel({
 		onResetRef.current()
 	}
 
-	const ensureSetup = async (clip: LessonClip) => {
+	const ensureSetup = async (clip: LessonClip, generation: number): Promise<boolean> => {
 		const rt = runtime.current
+		if (rt.generation !== generation) return false
 		if (!rt.ctx) rt.ctx = new AudioContext()
 		if (rt.ctx.state === 'suspended') await rt.ctx.resume()
-		if (rt.loadedId === clip.id && rt.lecture) return
+		if (rt.loadedId === clip.id && rt.lecture) return true
+		if (rt.generation !== generation) return false
 		setPhase('loading')
 		setDetail('')
 		const lecture = await loadLecture(rt.ctx, `/evals/${clip.audio}`)
+		if (rt.generation !== generation) return false
 		rt.lecture = lecture
 		rt.loadedId = clip.id
 		rt.player = new Player(rt.ctx, lecture)
 		setPeaks(new Float32Array(lecture.peaks))
 		setPhase('idle')
+		return true
 	}
 
 	const finish = () => {
@@ -303,7 +323,23 @@ export function LessonPanel({
 		setVad({ db: -90, speaking: false })
 	}
 
-	const connect = async (clip: LessonClip) => {
+	const failSession = (message: string) => {
+		const rt = runtime.current
+		rt.closing = true
+		rt.player?.pause()
+		if (rt.timer !== null) window.clearTimeout(rt.timer)
+		rt.timer = null
+		rt.pendingCommits = []
+		rt.stopping = false
+		rt.starting = false
+		rt.client?.close()
+		rt.client = null
+		setPhase('error')
+		setDetail(message)
+		setVad({ db: -90, speaking: false })
+	}
+
+	const connect = async (clip: LessonClip, generation: number) => {
 		if (!config) throw new Error('MAI transcription config is missing')
 		const rt = runtime.current
 		const client = new MaiClient({
@@ -313,30 +349,35 @@ export function LessonPanel({
 		})
 		rt.client = client
 		rt.closing = false
+		const current = () => rt.client === client && rt.generation === generation
 
 		client.on('error', (event) => {
-			if (rt.client !== client) return
+			if (!current()) return
 			const nested = event.error as { message?: string } | undefined
-			setPhase('error')
-			setDetail(nested?.message ?? 'Transcription model error')
+			failSession(nested?.message ?? 'Transcription model error')
 		})
 		client.on('closed', (event) => {
-			if (rt.client !== client) return
+			if (!current()) return
+			if (rt.closing) {
+				rt.client = null
+				return
+			}
 			rt.client = null
-			if (rt.closing) return
-			setPhase('closed')
-			setDetail(`Connection closed ${String(event.code ?? '')}`)
+			failSession(`Connection closed ${String(event.code ?? '')}`)
 		})
 		client.on('delta', (event) => {
+			if (!current()) return
 			rt.deltas.push(typeof event.delta === 'string' ? event.delta : '')
 			refreshLive()
 		})
 		client.on('intermediate', (event) => {
+			if (!current()) return
 			rt.intermediate = typeof event.intermediate === 'string' ? event.intermediate : ''
 			rt.partials++
 			refreshLive()
 		})
 		client.on('completed', (event) => {
+			if (!current()) return
 			const pending = rt.pendingCommits.shift()
 			if (pending) rt.latencies.push(performance.now() - pending.at)
 			const text = typeof event.transcript === 'string' ? event.transcript : rt.deltas.join('')
@@ -359,6 +400,10 @@ export function LessonPanel({
 
 		setPhase('connecting')
 		await client.open()
+		if (!current()) {
+			client.close()
+			return
+		}
 		setPhase('ready')
 	}
 
@@ -382,11 +427,15 @@ export function LessonPanel({
 		if (!rt.lecture || !rt.client) return
 		const target = Math.min(rt.lecture.pcm.length, Math.floor(seconds * TARGET_RATE))
 		if (target <= rt.sentSamples) return
-		const from = rt.sentSamples
-		rt.client.append(rt.lecture.pcm, from, target)
-		rt.sentSamples = target
-		rt.frames++
-		if (rt.segmenter.push(rt.lecture.pcm.subarray(from, target))) commit()
+		const maxChunk = TARGET_RATE / 5
+		while (rt.sentSamples < target) {
+			const from = rt.sentSamples
+			const end = Math.min(target, from + maxChunk)
+			rt.client.append(rt.lecture.pcm, from, end)
+			rt.sentSamples = end
+			rt.frames++
+			if (rt.segmenter.push(rt.lecture.pcm.subarray(from, end))) commit()
+		}
 	}
 
 	const endOfAudio = () => {
@@ -425,29 +474,40 @@ export function LessonPanel({
 	}
 
 	const start = async (clip: LessonClip) => {
-		try {
-			await ensureSetup(clip)
-		} catch (error) {
-			setPhase('error')
-			setDetail(`Audio load failed: ${(error as Error).message}`)
-			return
-		}
 		const rt = runtime.current
-		if (!rt.client) {
+		if (rt.starting) return
+		rt.starting = true
+		const generation = rt.generation
+		try {
+			let ready: boolean
 			try {
-				await connect(clip)
+				ready = await ensureSetup(clip, generation)
 			} catch (error) {
-				setPhase('error')
-				setDetail(`Transcription connection failed: ${(error as Error).message}`)
+				if (rt.generation === generation) {
+					failSession(`Audio load failed: ${(error as Error).message}`)
+				}
 				return
 			}
+			if (!ready || rt.generation !== generation) return
+			if (!rt.client) {
+				try {
+					await connect(clip, generation)
+				} catch (error) {
+					if (rt.generation === generation) {
+						failSession(`Transcription connection failed: ${(error as Error).message}`)
+					}
+					return
+				}
+			}
+			if (!rt.player || rt.generation !== generation) return
+			rt.player.play(rate)
+			setPhase('streaming')
+			setVad({ db: rt.segmenter.db, speaking: false })
+			if (rt.timer !== null) window.clearTimeout(rt.timer)
+			rt.timer = window.setTimeout(loop, 100)
+		} finally {
+			if (rt.generation === generation) rt.starting = false
 		}
-		if (!rt.player) return
-		rt.player.play(rate)
-		setPhase('streaming')
-		setVad({ db: rt.segmenter.db, speaking: false })
-		if (rt.timer !== null) window.clearTimeout(rt.timer)
-		rt.timer = window.setTimeout(loop, 100)
 	}
 
 	const pause = () => {
@@ -488,6 +548,7 @@ export function LessonPanel({
 		rt.player = null
 		setPeaks(null)
 		setSelectedId(id)
+		onClipChange?.(id)
 		setPhase('idle')
 	}
 
