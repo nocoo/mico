@@ -489,7 +489,11 @@ test('rich widgets sit in isolated cards with editable items', async ({ page, re
 	).toHaveCount(2)
 
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
-	await page.mouse.click(1300, 300)
+	await expect(page.getByRole('button', { name: 'Sticky note', exact: true })).toHaveAttribute(
+		'aria-pressed',
+		'true',
+	)
+	await page.mouse.click(1000, 150)
 	await expect
 		.poll(async () => (await board(request)).shapes.filter((shape) => shape.type === 'note').length)
 		.toBe(1)
@@ -860,7 +864,8 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 			expect(box.x + box.width).toBeLessThanOrEqual(viewport.width)
 		}
 	}
-	await page.getByRole('button', { name: 'Close properties', exact: true }).click()
+	const closePanel = page.getByRole('button', { name: 'Close properties', exact: true })
+	if (await closePanel.count()) await closePanel.click()
 	await page.mouse.move(0, 0)
 	await page.screenshot({ path: '/tmp/mico-frame-mobile.png', animations: 'disabled' })
 })

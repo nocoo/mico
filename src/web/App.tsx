@@ -1337,18 +1337,20 @@ export default function App() {
 				toolOptions={toolOptions}
 			/>
 
-			<SelectionPanel
-				shape={selected}
-				count={selectedIds.length}
-				shapes={board.shapes}
-				onClose={() => setSelectedIds([])}
-				onPatch={(patch) => {
-					if (!selected) return
-					void postOperations([{ type: 'update', id: selected.id, patch }])
-				}}
-				onColor={updateSelectedColor}
-				onReconnect={(endpoint, id) => changeEndpoint(endpoint, id)}
-			/>
+			{tool === 'select' && (
+				<SelectionPanel
+					shape={selected}
+					count={selectedIds.length}
+					shapes={board.shapes}
+					onClose={() => setSelectedIds([])}
+					onPatch={(patch) => {
+						if (!selected) return
+						void postOperations([{ type: 'update', id: selected.id, patch }])
+					}}
+					onColor={updateSelectedColor}
+					onReconnect={(endpoint, id) => changeEndpoint(endpoint, id)}
+				/>
+			)}
 
 			{(tool === 'connector' || connection.draft) && (
 				<div className="connector-tip" role="status">

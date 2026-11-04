@@ -863,14 +863,45 @@ svg {
 
 .selection-panel {
 	position: fixed;
-	left: 50%;
-	bottom: calc(var(--frame-block-end) + var(--dock-height, 56px) + var(--space-2));
-	transform: translateX(-50%);
+	top: calc(var(--frame-inset) + var(--space-8) + var(--space-2));
+	right: var(--frame-inset);
+	left: auto;
+	transform: none;
 	z-index: 30;
-	width: min(440px, calc(100vw - var(--space-4)));
-	max-height: calc(100dvh - var(--dock-height, 56px) - var(--space-8));
+	width: 320px;
+	max-height: calc(100dvh - var(--frame-inset) * 2 - var(--dock-height, 64px) - var(--space-8));
 	overflow-y: auto;
 	box-shadow: var(--shadow-popover);
+}
+.selection-panel .rt-Separator {
+	margin: var(--space-1) 0;
+}
+.selection-panel .rt-TextFieldRoot,
+.selection-panel .rt-TextAreaRoot,
+.selection-panel .select-trigger {
+	width: 100%;
+}
+.selection-panel .rt-TextAreaRoot textarea {
+	min-height: 64px;
+}
+.selection-panel .widget-add {
+	width: 100%;
+}
+.selection-panel .widget-rows {
+	max-height: 168px;
+	overflow-y: auto;
+	padding-right: var(--space-05);
+}
+@media (max-width: 768px) {
+	.selection-panel {
+		top: auto;
+		left: 50%;
+		right: auto;
+		bottom: calc(var(--frame-block-end) + var(--dock-height, 64px) + var(--space-2));
+		transform: translateX(-50%);
+		width: min(440px, calc(100vw - var(--space-4)));
+		max-height: 55dvh;
+	}
 }
 .selection-icon {
 	width: 24px;

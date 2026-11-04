@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.5
+
+- Move the selection editor to a fixed right-side inspector rail on desktop, only falling back to a bottom sheet on narrow screens.
+- Normalize panel rhythm on a 4px grid: 12px padding, 8px field gaps, 4px label gaps and 32px controls.
+- Hide the inspector while a drawing tool is active so it never blocks canvas creation.
+
 ## v0.6.4
 
 - Move the selection editor into an independent floating Radix Themes card, fully decoupled from the bottom tool dock.

@@ -154,16 +154,16 @@ export function SelectionPanel({
 										}}
 									/>,
 								)}
-								<Grid columns="3" gap="2">
-									{field(
-										'Font',
-										<SelectField
-											label="Font family"
-											value={shape.font ?? 'sans'}
-											options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
-											onChange={(font) => onPatch({ font })}
-										/>,
-									)}
+								{field(
+									'Font',
+									<SelectField
+										label="Font family"
+										value={shape.font ?? 'sans'}
+										options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
+										onChange={(font) => onPatch({ font })}
+									/>,
+								)}
+								<Grid columns="2" gap="2">
 									{field(
 										'Size',
 										<SelectField
