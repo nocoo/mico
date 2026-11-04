@@ -4,6 +4,7 @@
 
 - A delegated runner author executed the real replay despite an explicit instruction not to run it; the fixture existed by then. Gate replay scripts behind an explicit confirmation flag and restrict delegated test environments to mock endpoints instead of trusting a missing-fixture assumption. The user had authorized one baseline; preserve that run rather than silently repeating or deleting it.
 - An SVG security test falsely treated the standard `xmlns` identifier as a remote resource. Test URL-bearing attributes such as `src` and `href`, not arbitrary `http://` text.
+- Prompt regression assertions must match the actual shared wording or a stable semantic property; an unverified paraphrase caused a false failure.
 
 ## Container redesign investigation
 

@@ -137,15 +137,12 @@ export async function streamAiChat({
 			selection: request.selection,
 			canvasId,
 			revision: board.revision,
-			layoutLimit: request.mode === 'lecture' ? 1600 : undefined,
-			layoutLimitX: request.mode === 'lecture' ? 2000 : undefined,
-			layoutMaxWidth: request.mode === 'lecture' ? 940 : undefined,
 		}),
 		stopWhen:
 			request.mode === 'lecture'
 				? [
 						(options) =>
-							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 3,
+							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 6,
 						isStepCount(12),
 					]
 				: isStepCount(40),

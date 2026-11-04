@@ -162,7 +162,7 @@ test('lecture instructions tell the model to wait on incomplete sentences', () =
 	const prompt = buildInstructions({ revision: 0, shapes: [] }, [], 'lecture')
 	assert.match(prompt, /Live session mode/)
 	assert.match(prompt, /reply with exactly WAIT/)
-	assert.match(prompt, /at most two tool calls/)
+	assert.match(prompt, /text-only WAIT reply is correct/)
 	assert.match(prompt, /Do not guess the rest of the sentence/)
 	assert.doesNotMatch(buildInstructions({ revision: 0, shapes: [] }, []), /Live session mode/)
 })
@@ -649,56 +649,6 @@ test('re-creating an existing id updates it instead of failing', async () => {
 	})
 })
 
-test('lecture tools reject content below the live layout limit', async () => {
-	await withStore(async (store) => {
-		const tools = createCanvasTools({
-			store,
-			broadcast: () => {},
-			selection: [],
-			canvasId: store.getActiveCanvasId(),
-			layoutLimit: 1600,
-		})
-		const tooLow = (await run(tools.add_notes, {
-			notes: [{ id: 'low', x: 10, y: 1550, h: 120, text: 'Too low' }],
-		})) as { ok: boolean; error?: string }
-		assert.equal(tooLow.ok, false)
-		assert.equal(tooLow.error, 'LAYOUT_LIMIT')
-		const ok = (await run(tools.add_notes, {
-			notes: [{ id: 'ok', x: 10, y: 1400, h: 120, text: 'Fits' }],
-		})) as { ok: boolean }
-		assert.equal(ok.ok, true)
-	})
-})
-
-test('layout limits cover upserts and updates', async () => {
-	await withStore(async (store) => {
-		const tools = createCanvasTools({
-			store,
-			broadcast: () => {},
-			selection: [],
-			canvasId: store.getActiveCanvasId(),
-			layoutLimit: 1600,
-		})
-		await run(tools.add_notes, {
-			notes: [{ id: 'note', x: 10, y: 10, w: 200, h: 100, text: 'First' }],
-		})
-		const upsert = (await run(tools.add_notes, {
-			notes: [{ id: 'note', x: 10, y: 5000, w: 200, h: 100, text: 'Moved too low' }],
-		})) as { ok: boolean; error?: string }
-		assert.equal(upsert.ok, false)
-		assert.equal(upsert.error, 'LAYOUT_LIMIT')
-		const update = (await run(tools.update_shapes, {
-			updates: [{ id: 'note', patch: { y: 9000 } }],
-		})) as { ok: boolean; error?: string }
-		assert.equal(update.ok, false)
-		assert.equal(update.error, 'LAYOUT_LIMIT')
-		const shrink = (await run(tools.update_shapes, {
-			updates: [{ id: 'note', patch: { y: 1400 } }],
-		})) as { ok: boolean }
-		assert.equal(shrink.ok, true)
-	})
-})
-
 test('same-batch duplicate ids collapse into one object', async () => {
 	await withStore(async (store) => {
 		const tools = createCanvasTools({
@@ -750,25 +700,307 @@ test('connector upserts reset anchors when endpoints change', async () => {
 	})
 })
 
-test('live layout also caps horizontal bounds and object width', async () => {
+test('add_frames computes padded bounds and attaches every member atomically', async () => {
 	await withStore(async (store) => {
 		const tools = createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
 			canvasId: store.getActiveCanvasId(),
-			layoutLimitX: 2000,
-			layoutMaxWidth: 940,
 		})
-		const right = (await run(tools.add_notes, {
-			notes: [{ id: 'right', x: 1500, y: 100, w: 800, h: 120, text: 'Too wide right' }],
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'a', x: 100, y: 100, w: 200, h: 120 },
+				{ id: 'b', kind: 'ellipse', x: 400, y: 250, w: 100, h: 80 },
+			],
+		})
+		const reply = (await run(tools.add_frames, {
+			frames: [{ id: 'lesson', title: 'Lesson', memberIds: ['a', 'b'] }],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const frame = store.getBoard().shapes.find((shape) => shape.id === 'lesson')
+		assert.ok(frame && frame.type === 'frame')
+		assert.equal(frame.x, 60)
+		assert.equal(frame.y, 60)
+		assert.equal(frame.w, 480)
+		assert.equal(frame.h, 310)
+		for (const memberId of ['a', 'b']) {
+			const member = store.getBoard().shapes.find((shape) => shape.id === memberId)
+			assert.ok(member && member.type !== 'connector')
+			assert.equal(member.frameId, 'lesson')
+		}
+	})
+})
+
+test('add_frames accepts off-screen and signed-line geometry', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_lines, {
+			lines: [{ id: 'signed', from: { x: 2500, y: 3500 }, to: { x: 2300, y: 3300 } }],
+		})
+		await run(tools.add_notes, {
+			notes: [{ id: 'outside', x: 2600, y: 3600, w: 300, h: 200, text: 'Far away' }],
+		})
+		const reply = (await run(tools.add_frames, {
+			frames: [{ id: 'far', title: 'Far', memberIds: ['signed', 'outside'] }],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const frame = store.getBoard().shapes.find((shape) => shape.id === 'far')
+		assert.ok(frame && frame.type === 'frame')
+		assert.equal(frame.x, 2260)
+		assert.equal(frame.y, 3260)
+		assert.equal(frame.w, 680)
+		assert.equal(frame.h, 580)
+	})
+})
+
+test('add_frames rejects invalid membership and frame id collisions without mutation', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_notes, {
+			notes: [{ id: 'a', x: 100, y: 100, text: 'A' }],
+		})
+		await run(tools.add_boxes, {
+			boxes: [{ id: 'b', x: 400, y: 100, w: 100, h: 100 }],
+		})
+		const missing = (await run(tools.add_frames, {
+			frames: [{ id: 'missing-frame', title: 'Missing', memberIds: ['a', 'ghost'] }],
 		})) as { ok: boolean; error?: string }
-		assert.equal(right.ok, false)
-		assert.equal(right.error, 'LAYOUT_LIMIT_X')
-		const wide = (await run(tools.add_frames, {
-			frames: [{ id: 'wide', x: 80, y: 100, w: 1200, h: 400, title: 'Too wide' }],
+		assert.equal(missing.ok, false)
+		assert.equal(missing.error, 'NOT_FOUND')
+
+		const collisionId = (await run(tools.add_frames, {
+			frames: [{ id: 'a', title: 'Collision', memberIds: ['a', 'b'] }],
 		})) as { ok: boolean; error?: string }
-		assert.equal(wide.ok, false)
-		assert.equal(wide.error, 'LAYOUT_WIDTH')
+		assert.equal(collisionId.ok, false)
+		assert.equal(collisionId.error, 'DUPLICATE_ID')
+		assert.equal(
+			store.getBoard().shapes.some((shape) => shape.type === 'frame'),
+			false,
+		)
+	})
+})
+
+test('add_frames rejects unrelated overlap and already framed members', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'a', x: 100, y: 100, w: 100, h: 100 },
+				{ id: 'b', x: 500, y: 100, w: 100, h: 100 },
+				{ id: 'unrelated', x: 200, y: 120, w: 100, h: 100 },
+			],
+		})
+		const reply = (await run(tools.add_frames, {
+			frames: [{ id: 'blocked', title: 'Blocked', memberIds: ['a', 'b'] }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(reply.ok, false)
+		assert.equal(reply.error, 'FRAME_COLLISION')
+		assert.equal(
+			store.getBoard().shapes.some((shape) => shape.type === 'frame'),
+			false,
+		)
+
+		await run(tools.delete_shapes, {
+			ids: ['unrelated'],
+		})
+		await run(tools.add_frames, {
+			frames: [{ id: 'first', title: 'First', memberIds: ['a', 'b'] }],
+		})
+		await run(tools.add_boxes, {
+			boxes: [{ id: 'c', x: 700, y: 100, w: 100, h: 100 }],
+		})
+		const framed = (await run(tools.add_frames, {
+			frames: [{ id: 'second', title: 'Second', memberIds: ['a', 'c'] }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(framed.ok, false)
+		assert.equal(framed.error, 'FRAME_MEMBER')
+	})
+})
+
+test('explicit frame membership grows in a batched update and never shrinks', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'a', x: 100, y: 100, w: 100, h: 100 },
+				{ id: 'b', x: 400, y: 100, w: 100, h: 100 },
+				{ id: 'c', x: 800, y: 100, w: 100, h: 100 },
+			],
+		})
+		await run(tools.add_frames, {
+			frames: [{ id: 'frame', title: 'Frame', memberIds: ['a', 'b'] }],
+		})
+		const reply = (await run(tools.update_shapes, {
+			updates: [
+				{ id: 'b', patch: { x: 650 } },
+				{ id: 'c', patch: { frameId: 'frame' } },
+			],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const frame = store.getBoard().shapes.find((shape) => shape.id === 'frame')
+		assert.ok(frame && frame.type === 'frame')
+		assert.equal(frame.x, 60)
+		assert.equal(frame.y, 60)
+		assert.equal(frame.w, 880)
+		assert.equal(frame.h, 180)
+		for (const memberId of ['a', 'b', 'c']) {
+			const member = store.getBoard().shapes.find((shape) => shape.id === memberId)
+			assert.ok(member && member.type !== 'connector')
+			assert.equal(member.frameId, 'frame')
+		}
+	})
+})
+
+test('growth rejects collision atomically and stale revisions', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'a', x: 100, y: 100, w: 100, h: 100 },
+				{ id: 'b', x: 400, y: 100, w: 100, h: 100 },
+				{ id: 'human', x: 700, y: 100, w: 100, h: 100 },
+			],
+		})
+		await run(tools.add_frames, {
+			frames: [{ id: 'frame', title: 'Frame', memberIds: ['a', 'b'] }],
+		})
+		const frameBefore = store.getBoard().shapes.find((shape) => shape.id === 'frame')
+		const collision = (await run(tools.update_shapes, {
+			updates: [{ id: 'a', patch: { x: 600 } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(collision.ok, false)
+		assert.equal(collision.error, 'FRAME_COLLISION')
+		const frameAfter = store.getBoard().shapes.find((shape) => shape.id === 'frame')
+		assert.deepEqual(frameAfter, frameBefore)
+		const movedA = store.getBoard().shapes.find((shape) => shape.id === 'a')
+		assert.equal(movedA?.type === 'ellipse' || movedA?.type === 'rectangle' ? movedA.x : null, 100)
+
+		store.applyRequest({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'external',
+						type: 'note',
+						x: 900,
+						y: 900,
+						w: 100,
+						h: 100,
+						color: '#fff8d4',
+						text: 'External',
+					},
+				},
+			],
+			canvasId: store.getActiveCanvasId(),
+		})
+		const stale = (await run(tools.update_shapes, {
+			updates: [{ id: 'b', patch: { x: 650 } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(stale.ok, false)
+		assert.equal(stale.error, 'REVISION_CONFLICT')
+		const b = store.getBoard().shapes.find((shape) => shape.id === 'b')
+		assert.ok(b && b.type !== 'connector')
+		assert.equal(b.x, 400)
+	})
+})
+
+test('multiple frame batches and frame nesting are rejected safely', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'a', x: 100, y: 100, w: 100, h: 100 },
+				{ id: 'b', x: 300, y: 100, w: 100, h: 100 },
+				{ id: 'c', x: 700, y: 100, w: 100, h: 100 },
+				{ id: 'd', x: 900, y: 100, w: 100, h: 100 },
+			],
+		})
+		const reply = (await run(tools.add_frames, {
+			frames: [
+				{ id: 'left', title: 'Left', memberIds: ['a', 'b'] },
+				{ id: 'right', title: 'Right', memberIds: ['c', 'd'] },
+			],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		assert.equal(store.getBoard().shapes.filter((shape) => shape.type === 'frame').length, 2)
+
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'e', x: 120, y: 120, w: 100, h: 100 },
+				{ id: 'f', x: 820, y: 120, w: 100, h: 100 },
+			],
+		})
+		const nested = (await run(tools.add_frames, {
+			frames: [{ id: 'nested', title: 'Nested', memberIds: ['e', 'f'] }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(nested.ok, false)
+		assert.equal(nested.error, 'FRAME_COLLISION')
+	})
+})
+
+test('AI HTML cards embed Lucide icons and expose full markup for later updates', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		const created = (await run(tools.add_html_cards, {
+			cards: [
+				{
+					id: 'summary',
+					title: 'Summary',
+					x: 80,
+					y: 200,
+					w: 1200,
+					h: 800,
+					html: '<i data-lucide="heart-pulse"></i>',
+				},
+			],
+		})) as { ok: boolean }
+		assert.equal(created.ok, true)
+		const detail = (await run(tools.get_board, { ids: ['summary'], include_html: true })) as {
+			shapes: { html: string }[]
+		}
+		assert.match(detail.shapes[0].html, /<svg[^>]*lucide-heart-pulse/)
+		const updated = (await run(tools.update_shapes, {
+			updates: [{ id: 'summary', patch: { html: '<i data-lucide="clipboard-list"></i>' } }],
+		})) as { ok: boolean }
+		assert.equal(updated.ok, true)
+		const card = store.getBoard().shapes.find((shape) => shape.id === 'summary')
+		assert.ok(card?.type === 'html')
+		assert.match(card.html ?? '', /<svg[^>]*lucide-clipboard-list/)
 	})
 })

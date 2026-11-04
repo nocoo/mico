@@ -3,8 +3,10 @@ import { tool } from 'ai'
 import { z } from 'zod'
 import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
 import type { CanvasShape, Operation, Point, Shape } from '../shared/types.ts'
+import { isMemberType } from '../shared/types.ts'
 import { boardDigest } from './aiBoard.ts'
 import { type BoardStore, OperationError } from './store.ts'
+import { expandLucideIcons } from './summaryIcons.ts'
 
 const idSchema = z
 	.string()
@@ -40,10 +42,12 @@ const anyColorSchema = z
 
 const frameIdSchema = idSchema
 	.optional()
-	.describe('Optional existing frame id; members must fit inside.')
+	.describe(
+		'Optional existing frame id; the AI must grow it to include the member with 40px padding.',
+	)
 const pointSchema = z.object({ x: z.number(), y: z.number() })
-const coord = (label: string) => z.number().min(-100000).max(100000).describe(label)
-const size = (label: string) => z.number().min(1).max(20000).describe(label)
+const coord = (label: string) => z.number().describe(label)
+const size = (label: string) => z.number().min(1).describe(label)
 
 const NOTE_FILL: Record<string, string> = {
 	[CANDY_COLORS.blue]: CANDY_TINTS.blue,
@@ -93,9 +97,74 @@ interface ToolContext {
 	selection: string[]
 	canvasId: string
 	revision: number
-	layoutLimit?: number
-	layoutLimitX?: number
-	layoutMaxWidth?: number
+}
+
+interface Bounds {
+	left: number
+	top: number
+	right: number
+	bottom: number
+}
+
+function shapeBounds(shape: Shape): Bounds | undefined {
+	if (shape.type === 'connector') return undefined
+	const left = shape.type === 'line' ? Math.min(shape.x, shape.x + shape.w) : shape.x
+	const top = shape.type === 'line' ? Math.min(shape.y, shape.y + shape.h) : shape.y
+	const right = shape.type === 'line' ? Math.max(shape.x, shape.x + shape.w) : shape.x + shape.w
+	const bottom = shape.type === 'line' ? Math.max(shape.y, shape.y + shape.h) : shape.y + shape.h
+	return { left, top, right, bottom }
+}
+
+function trueOverlap(a: Bounds, b: Bounds): boolean {
+	return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+function touchOverlap(a: Bounds, b: Bounds): boolean {
+	return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top
+}
+
+function paddedMemberBounds(shapes: Shape[], frameId: string): Bounds | undefined {
+	const memberBounds = shapes.flatMap((shape) => {
+		if (shape.type === 'connector' || shape.frameId !== frameId) return []
+		const bounds = shapeBounds(shape)
+		return bounds ? [bounds] : []
+	})
+	if (memberBounds.length === 0) return undefined
+	return {
+		left: Math.min(...memberBounds.map((bounds) => bounds.left)) - 40,
+		top: Math.min(...memberBounds.map((bounds) => bounds.top)) - 40,
+		right: Math.max(...memberBounds.map((bounds) => bounds.right)) + 40,
+		bottom: Math.max(...memberBounds.map((bounds) => bounds.bottom)) + 40,
+	}
+}
+
+function projectOperations(current: Shape[], operations: Operation[]): Shape[] {
+	const projected = current.map((shape) => ({ ...shape })) as Shape[]
+	for (const operation of operations) {
+		if (operation.type === 'create') {
+			const index = projected.findIndex((shape) => shape.id === operation.shape.id)
+			if (index >= 0) projected[index] = { ...operation.shape }
+			else projected.push({ ...operation.shape })
+			continue
+		}
+		if (operation.type === 'update') {
+			const index = projected.findIndex((shape) => shape.id === operation.id)
+			if (index < 0) continue
+			const target = projected[index]
+			if (target.type === 'connector') continue
+			const updated = { ...target, ...operation.patch } as Shape
+			if (updated.type !== 'connector' && updated.frameId === null) {
+				const { frameId: _frameId, ...rest } = updated
+				projected[index] = rest as Shape
+			} else {
+				projected[index] = updated
+			}
+			continue
+		}
+		const index = projected.findIndex((shape) => shape.id === operation.id)
+		if (index >= 0) projected.splice(index, 1)
+	}
+	return projected
 }
 
 function normalizeOperations(current: Shape[], operations: Operation[]): Operation[] {
@@ -132,7 +201,7 @@ function normalizeOperations(current: Shape[], operations: Operation[]): Operati
 }
 
 function apply(
-	{ store, broadcast, canvasId, layoutLimit, layoutLimitX, layoutMaxWidth }: ToolContext,
+	{ store, broadcast, canvasId }: ToolContext,
 	operations: Operation[],
 	observedRevision: number,
 ): ToolReply | { ok: true; revision: number; updated: string[] } {
@@ -141,74 +210,15 @@ function apply(
 	}
 	const current = store.getBoard(canvasId)
 	const normalized = normalizeOperations(current.shapes, operations)
-	if (layoutLimit !== undefined || layoutLimitX !== undefined || layoutMaxWidth !== undefined) {
-		const byId = new Map<string, Shape>(current.shapes.map((shape) => [shape.id, shape]))
-		for (const operation of normalized) {
-			let shape: Shape | undefined
-			let previous: Shape | undefined
-			if (operation.type === 'create') {
-				shape = operation.shape
-			} else if (operation.type === 'update') {
-				previous = byId.get(operation.id)
-				if (previous && previous.type !== 'connector') {
-					shape = { ...previous, ...operation.patch } as Shape
-				}
-			}
-			if (!shape || shape.type === 'connector') continue
-			const bottom = Math.max(shape.y, shape.y + shape.h)
-			const right = Math.max(shape.x, shape.x + shape.w)
-			const width = Math.abs(shape.w)
-			const previousBottom =
-				previous && previous.type !== 'connector'
-					? Math.max(previous.y, previous.y + previous.h)
-					: Number.NEGATIVE_INFINITY
-			const previousRight =
-				previous && previous.type !== 'connector'
-					? Math.max(previous.x, previous.x + previous.w)
-					: Number.NEGATIVE_INFINITY
-			const previousWidth =
-				previous && previous.type !== 'connector' ? Math.abs(previous.w) : Number.NEGATIVE_INFINITY
-			if (
-				layoutLimit !== undefined &&
-				bottom > layoutLimit &&
-				(previousBottom <= layoutLimit || bottom > previousBottom)
-			) {
-				return {
-					ok: false,
-					error: 'LAYOUT_LIMIT',
-					message: `Live layout limit is y=${layoutLimit}; this object reaches y=${Math.round(bottom)}. Place it in the second column at x=1040, y=160, or compact the existing sections with update_shapes.`,
-					hint: 'Do not extend the current column. Use the second column at x=1040, starting near y=160.',
-				}
-			}
-			if (
-				layoutLimitX !== undefined &&
-				right > layoutLimitX &&
-				(previousRight <= layoutLimitX || right > previousRight)
-			) {
-				return {
-					ok: false,
-					error: 'LAYOUT_LIMIT_X',
-					message: `Live layout limit is x=${layoutLimitX}; this object reaches x=${Math.round(right)}. Use only two columns (x=80 and x=1040) and compact the existing sections.`,
-					hint: 'Move the section into the second column or shrink it; do not add a third column.',
-				}
-			}
-			if (
-				layoutMaxWidth !== undefined &&
-				shape.type !== 'line' &&
-				shape.type !== 'path' &&
-				width > layoutMaxWidth &&
-				(previousWidth <= layoutMaxWidth || width > previousWidth)
-			) {
-				return {
-					ok: false,
-					error: 'LAYOUT_WIDTH',
-					message: `Live section width is limited to ${layoutMaxWidth}px; this object is ${Math.round(width)}px wide. Split it into a note/card that fits two columns.`,
-					hint: 'Keep frames and cards at most 900px wide.',
-				}
-			}
-		}
-	}
-	const mutatesExisting = normalized.some((operation) => operation.type !== 'create')
+	const projected = projectOperations(current.shapes, normalized)
+	const explicitFrameIdCreates = normalized.some(
+		(operation) =>
+			operation.type === 'create' &&
+			operation.shape.type !== 'connector' &&
+			operation.shape.frameId !== undefined,
+	)
+	const mutatesExisting =
+		normalized.some((operation) => operation.type !== 'create') || explicitFrameIdCreates
 	if (mutatesExisting && current.revision !== observedRevision) {
 		return {
 			ok: false,
@@ -216,8 +226,114 @@ function apply(
 			message: `The board changed since your last read (revision ${observedRevision} → ${current.revision}). Call get_board and retry with the current layout.`,
 		}
 	}
+	const frameIds = new Set<string>()
+	for (const operation of normalized) {
+		if (operation.type === 'create') {
+			if (operation.shape.type === 'connector' || !isMemberType(operation.shape.type)) continue
+			if (operation.shape.frameId !== undefined) frameIds.add(operation.shape.frameId)
+			continue
+		}
+		if (operation.type !== 'update') continue
+		const target = current.shapes.find((shape) => shape.id === operation.id)
+		if (!target || target.type === 'connector' || !isMemberType(target.type)) continue
+		if (operation.patch.frameId !== undefined && operation.patch.frameId !== null) {
+			frameIds.add(operation.patch.frameId)
+			continue
+		}
+		if (
+			operation.patch.frameId === undefined &&
+			target.frameId &&
+			(operation.patch.x !== undefined ||
+				operation.patch.y !== undefined ||
+				operation.patch.w !== undefined ||
+				operation.patch.h !== undefined)
+		) {
+			frameIds.add(target.frameId)
+		}
+	}
+
+	for (const frameId of frameIds) {
+		const frame = projected.find((shape) => shape.id === frameId)
+		if (!frame) {
+			return { ok: false, error: 'NOT_FOUND', message: `frame not found: ${frameId}` }
+		}
+		if (frame.type !== 'frame') {
+			return {
+				ok: false,
+				error: 'INVALID_REQUEST',
+				message: `frameId must reference a frame: ${frameId}`,
+			}
+		}
+	}
+
+	const growthCandidates = new Map<string, Bounds>()
+	const growthOperations: Operation[] = []
+	for (const frameId of frameIds) {
+		const frame = projected.find((shape) => shape.id === frameId)
+		if (!frame || frame.type !== 'frame') continue
+		const memberUnion = paddedMemberBounds(projected, frameId)
+		if (!memberUnion) continue
+		const frameBounds = shapeBounds(frame)
+		if (!frameBounds) continue
+		const candidate = {
+			left: Math.min(frameBounds.left, memberUnion.left),
+			top: Math.min(frameBounds.top, memberUnion.top),
+			right: Math.max(frameBounds.right, memberUnion.right),
+			bottom: Math.max(frameBounds.bottom, memberUnion.bottom),
+		}
+		const candidateW = candidate.right - candidate.left
+		const candidateH = candidate.bottom - candidate.top
+		if (
+			candidate.left === frameBounds.left &&
+			candidate.top === frameBounds.top &&
+			candidate.right === frameBounds.right &&
+			candidate.bottom === frameBounds.bottom
+		) {
+			continue
+		}
+		growthCandidates.set(frameId, candidate)
+
+		for (const shape of projected) {
+			if (shape.id === frameId) continue
+			if (shape.type !== 'connector' && shape.frameId === frameId) continue
+			const bounds = shapeBounds(shape)
+			if (bounds && touchOverlap(candidate, bounds)) {
+				return {
+					ok: false,
+					error: 'FRAME_COLLISION',
+					message: `Frame ${frameId} would touch unrelated shape ${shape.id}; growth is rejected without mutation.`,
+				}
+			}
+		}
+		growthOperations.push({
+			type: 'update',
+			id: frameId,
+			patch: { x: candidate.left, y: candidate.top, w: candidateW, h: candidateH },
+		})
+	}
+
+	for (const [frameId, candidate] of growthCandidates) {
+		for (const [otherId, other] of growthCandidates) {
+			if (frameId === otherId) continue
+			if (touchOverlap(candidate, other)) {
+				return {
+					ok: false,
+					error: 'FRAME_COLLISION',
+					message: `Frame ${frameId} would touch other frame ${otherId}; growth is rejected without mutation.`,
+				}
+			}
+		}
+	}
+
+	const fullOperations = [...normalized, ...growthOperations]
 	try {
-		const result = store.applyRequest({ operations: normalized, canvasId })
+		const result = store.applyRequest({
+			operations: fullOperations,
+			canvasId,
+			...(fullOperations.some((operation) => operation.type !== 'create')
+				? { expectedRevision: observedRevision }
+				: {}),
+		})
 		broadcast({
 			type: 'board',
 			canvasId: result.canvasId,
@@ -262,9 +378,6 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 export function createCanvasTools(
 	input: Omit<ToolContext, 'revision'> & {
 		revision?: number
-		layoutLimit?: number
-		layoutLimitX?: number
-		layoutMaxWidth?: number
 	},
 ) {
 	const { store, selection, canvasId } = input
@@ -279,7 +392,7 @@ export function createCanvasTools(
 	return {
 		get_board: tool({
 			description:
-				'Read the current canvas: revision, bounds, the user selection, and every object with ids and geometry. Use it before starting, before connectors or rewrites, and near the end. Pass ids to inspect only specific objects.',
+				'Read the current canvas: revision, bounds, the user selection, and every object with ids and geometry. Use it before starting, before connectors or rewrites, and near the end. Pass ids to inspect only specific objects; set include_html=true with ids to inspect existing card markup for safe edits.',
 			inputSchema: z.object({
 				ids: z.array(z.string()).max(40).optional().describe('Only return these object ids.'),
 				include_html: z
@@ -494,36 +607,143 @@ export function createCanvasTools(
 
 		add_frames: tool({
 			description:
-				'Add a titled frame to group a stage, panel, comparison column or a whole lesson. Frames cannot nest. Leave 40px padding around members and pass frameId when creating members inside.',
+				'Add titled frames from at least two existing unframed regular objects. Frame bounds are computed from member geometry with 40px padding; members are attached atomically and the frame may never nest or overlap unrelated content. Frames cannot cover an object that is not in memberIds.',
 			inputSchema: z.object({
 				frames: z
 					.array(
 						z.object({
 							id: idSchema.optional(),
-							x: coord('Left edge.'),
-							y: coord('Top edge.'),
-							w: size('Width.'),
-							h: size('Height.'),
 							title: z.string().min(1).max(120),
 							color: colorSchema.optional(),
+							memberIds: z
+								.array(idSchema)
+								.min(2)
+								.max(64)
+								.describe('Existing unframed regular object ids; at least two distinct ids.'),
 						}),
 					)
 					.min(1)
 					.max(8),
 			}),
 			execute: async ({ frames }) => {
-				const operations: Operation[] = frames.map((frame) => ({
-					type: 'create',
-					shape: {
-						...baseShape(frame.id, 'frame', frame.color ?? CANDY_COLORS.blue),
-						type: 'frame',
-						x: frame.x,
-						y: frame.y,
-						w: frame.w,
-						h: frame.h,
-						title: frame.title,
-					},
-				}))
+				const current = store.getBoard(canvasId)
+				const allocatedIds = new Set(current.shapes.map((shape) => shape.id))
+				const memberFrames = new Map<string, string>()
+				const candidates: Array<{ id: string; bounds: Bounds; memberIds: Set<string> }> = []
+				const operations: Operation[] = []
+
+				for (const frame of frames) {
+					let id = frame.id
+					if (!id) {
+						do id = generatedId('frame')
+						while (allocatedIds.has(id))
+					}
+					if (allocatedIds.has(id)) {
+						return {
+							ok: false,
+							error: 'DUPLICATE_ID',
+							message: `shape id already exists: ${id}`,
+						}
+					}
+					allocatedIds.add(id)
+
+					const memberIds = new Set(frame.memberIds)
+					if (memberIds.size < 2) {
+						return {
+							ok: false,
+							error: 'INVALID_REQUEST',
+							message: 'A frame requires at least two distinct existing regular member ids.',
+						}
+					}
+
+					const memberBounds: Bounds[] = []
+					for (const memberId of memberIds) {
+						const member = current.shapes.find((shape) => shape.id === memberId)
+						if (!member) {
+							return { ok: false, error: 'NOT_FOUND', message: `shape not found: ${memberId}` }
+						}
+						if (member.type === 'connector' || !isMemberType(member.type)) {
+							return {
+								ok: false,
+								error: 'INVALID_REQUEST',
+								message: `shape is not a regular frame member: ${memberId}`,
+							}
+						}
+						if (member.frameId) {
+							return {
+								ok: false,
+								error: 'FRAME_MEMBER',
+								message: `shape is already framed: ${memberId}`,
+							}
+						}
+						if (memberFrames.has(memberId)) {
+							return {
+								ok: false,
+								error: 'FRAME_MEMBER',
+								message: `shape is already assigned to a frame in this batch: ${memberId}`,
+							}
+						}
+						const bounds = shapeBounds(member)
+						if (!bounds) {
+							return {
+								ok: false,
+								error: 'INVALID_REQUEST',
+								message: `shape has no bounds: ${memberId}`,
+							}
+						}
+						memberFrames.set(memberId, id)
+						memberBounds.push(bounds)
+					}
+
+					const bounds: Bounds = {
+						left: Math.min(...memberBounds.map((bound) => bound.left)) - 40,
+						top: Math.min(...memberBounds.map((bound) => bound.top)) - 40,
+						right: Math.max(...memberBounds.map((bound) => bound.right)) + 40,
+						bottom: Math.max(...memberBounds.map((bound) => bound.bottom)) + 40,
+					}
+
+					for (const candidate of candidates) {
+						if (trueOverlap(bounds, candidate.bounds)) {
+							return {
+								ok: false,
+								error: 'FRAME_COLLISION',
+								message: `Frame ${id} overlaps other frame ${candidate.id}; frame creation is rejected without mutation.`,
+							}
+						}
+					}
+					for (const shape of current.shapes) {
+						if (shape.type === 'connector' || memberIds.has(shape.id)) continue
+						const unrelatedBounds = shapeBounds(shape)
+						if (unrelatedBounds && trueOverlap(bounds, unrelatedBounds)) {
+							return {
+								ok: false,
+								error: 'FRAME_COLLISION',
+								message: `Frame ${id} overlaps unrelated shape ${shape.id}; frame creation is rejected without mutation.`,
+							}
+						}
+					}
+					candidates.push({ id, bounds, memberIds })
+
+					operations.push({
+						type: 'create',
+						shape: {
+							...baseShape(id, 'frame', frame.color ?? CANDY_COLORS.blue),
+							type: 'frame',
+							x: bounds.left,
+							y: bounds.top,
+							w: bounds.right - bounds.left,
+							h: bounds.bottom - bounds.top,
+							title: frame.title,
+						},
+					})
+					for (const memberId of memberIds) {
+						operations.push({
+							type: 'update',
+							id: memberId,
+							patch: { frameId: id },
+						})
+					}
+				}
 				return applyOperations(operations)
 			},
 		}),
@@ -540,6 +760,7 @@ export function createCanvasTools(
 							color: colorSchema.optional(),
 							brush: z.enum(['pencil', 'marker', 'brush']).optional(),
 							strokeWidth: z.number().min(1).max(64).optional(),
+							frameId: frameIdSchema,
 						}),
 					)
 					.min(1)
@@ -573,6 +794,7 @@ export function createCanvasTools(
 							points,
 							brush: stroke.brush ?? 'brush',
 							strokeWidth: stroke.strokeWidth ?? 4,
+							...(stroke.frameId ? { frameId: stroke.frameId } : {}),
 						},
 					}
 				})
@@ -582,7 +804,7 @@ export function createCanvasTools(
 
 		add_html_cards: tool({
 			description:
-				'Add a rich HTML card for precise tables, charts, annotated SVG diagrams, chemistry equations or formatted math. Use inline styles only; no scripts or external resources; keep markup under 20,000 characters.',
+				'Add a rich HTML card for precise tables, charts, annotated SVG diagrams, chemistry equations or formatted math. Use inline styles only; no scripts or external resources; keep markup under 20,000 characters. Use exact Lucide placeholders such as <i data-lucide="heart-pulse"></i>; only the provided icon names may be used.',
 			inputSchema: z.object({
 				cards: z
 					.array(
@@ -612,7 +834,7 @@ export function createCanvasTools(
 						w: card.w,
 						h: card.h,
 						title: card.title,
-						html: card.html,
+						html: expandLucideIcons(card.html),
 						...(card.frameId ? { frameId: card.frameId } : {}),
 					},
 				}))
@@ -622,7 +844,7 @@ export function createCanvasTools(
 
 		update_shapes: tool({
 			description:
-				'Move, resize, recolor or relabel existing objects, reparent them into a frame, or rewire a connector. Patches are applied atomically. Keys must be valid for the object type.',
+				'Move, resize, recolor or relabel existing objects, reparent them into a frame, or rewire a connector. Patches are applied atomically. Keys must be valid for the object type. For HTML patches, use exact Lucide placeholders such as <i data-lucide="heart-pulse"></i>.',
 			inputSchema: z.object({
 				updates: z
 					.array(
@@ -632,12 +854,12 @@ export function createCanvasTools(
 								.object({
 									x: coord('Left edge.').optional(),
 									y: coord('Top edge.').optional(),
-									w: z.number().min(-20000).max(20000).optional(),
-									h: z.number().min(-20000).max(20000).optional(),
+									w: z.number().optional(),
+									h: z.number().optional(),
 									color: colorSchema.optional(),
 									text: z.string().max(6000).optional(),
 									title: z.string().min(1).max(120).optional(),
-									html: z.string().min(1).max(40000).optional(),
+									html: z.string().min(1).max(200000).optional(),
 									frameId: z.string().nullable().optional(),
 									font: z.enum(['sans', 'serif', 'hand', 'mono']).optional(),
 									fontSize: z.number().min(8).max(256).optional(),
@@ -657,7 +879,10 @@ export function createCanvasTools(
 				const operations: Operation[] = updates.map((update) => ({
 					type: 'update',
 					id: update.id,
-					patch: update.patch,
+					patch:
+						update.patch.html === undefined
+							? update.patch
+							: { ...update.patch, html: expandLucideIcons(update.patch.html) },
 				}))
 				return applyOperations(operations)
 			},
