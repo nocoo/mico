@@ -541,3 +541,36 @@ test('zoom buttons, reset and fit keep objects reachable', async ({ page, reques
 		expect(box.y + box.height).toBeLessThanOrEqual(960)
 	}
 })
+
+test('identity, dock and properties panels share one surface style', async ({ page, request }) => {
+	await seed(page, request, [rect('surface-rect', 200, 200, 200, 100)])
+	await clickWorld(page, 300, 250)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+
+	const panelStyles = await page.evaluate(() => {
+		const read = (selector: string) => {
+			const element = document.querySelector(selector)
+			if (!element) throw new Error(`Missing panel ${selector}`)
+			const style = getComputedStyle(element)
+			return {
+				background: style.backgroundColor,
+				radius: style.borderRadius,
+				shadow: style.boxShadow,
+				border: `${style.borderTopWidth} ${style.borderTopColor}`,
+			}
+		}
+		return {
+			identity: read('.identity-panel'),
+			dock: read('.toolbar'),
+			properties: read('.selection-panel'),
+		}
+	})
+
+	for (const panel of Object.values(panelStyles)) {
+		expect(panel.background).toBe('rgb(255, 255, 255)')
+		expect(panel.radius).toBe('20px')
+		expect(panel.shadow).not.toBe('none')
+	}
+	expect(panelStyles.identity).toEqual(panelStyles.dock)
+	expect(panelStyles.dock).toEqual(panelStyles.properties)
+})

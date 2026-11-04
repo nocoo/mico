@@ -53,6 +53,9 @@
 	--tooltip-ink: #ffffff;
 	--shadow-panel: 0 2px 8px #24304a08, 0 8px 24px #24304a06;
 	--shadow-popover: 0 8px 32px #24304a14;
+	--panel-radius: 20px;
+	--panel-shadow:
+		inset 0 0 0 var(--hairline) var(--border), 0 1px 2px #24304a0d, 0 12px 32px #24304a14;
 	--motion-fast: 120ms;
 	--panel-width: 320px;
 	--property-label-width: 96px;
@@ -155,11 +158,8 @@ svg {
 }
 .floating-panel {
 	background: var(--surface);
-	border-radius: var(--radius-panel);
-	box-shadow:
-		inset 0 0 0 var(--hairline) var(--border),
-		var(--shadow-panel);
-	background-clip: padding-box;
+	border-radius: var(--panel-radius);
+	box-shadow: var(--panel-shadow);
 }
 .topbar {
 	position: fixed;
@@ -180,9 +180,6 @@ svg {
 	min-height: calc(var(--control-size) + var(--space-1));
 	gap: var(--space-05);
 	pointer-events: auto;
-}
-.identity-panel {
-	background: var(--candy-blue-tint);
 }
 .brand {
 	display: flex;
@@ -320,7 +317,6 @@ svg {
 	flex-wrap: nowrap;
 	flex-direction: column;
 	gap: 0;
-	background: var(--candy-neutral-tint);
 }
 .dock-main {
 	display: flex;
@@ -804,7 +800,10 @@ svg {
 	width: 320px;
 	max-height: calc(100dvh - var(--frame-inset) * 2 - var(--dock-height, 64px) - var(--space-8));
 	overflow-y: auto;
-	box-shadow: var(--shadow-popover);
+	background: var(--surface);
+	border: 0;
+	border-radius: var(--panel-radius);
+	box-shadow: var(--panel-shadow);
 }
 .selection-panel .rt-Separator {
 	margin: var(--space-1) 0;
