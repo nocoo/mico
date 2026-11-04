@@ -33,12 +33,18 @@ test('the AI panel sends a message and answers in the chat log', async ({ page }
 	await expect(panel.locator('.ai-typing')).toHaveCount(0)
 	await expect(composer).toHaveValue('')
 
+	await composer.fill('Group the field and the button into a frame')
+	await panel.getByRole('button', { name: 'Send message' }).click()
+	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveCount(2)
+	await expect(panel.locator('.ai-message.assistant .ai-message-text')).toHaveCount(3)
+
 	await page.keyboard.press('Escape')
 	await expect(panel).toBeHidden()
 	await expect(trigger).toHaveAttribute('aria-expanded', 'false')
+	await expect(trigger).toBeFocused()
 
 	await trigger.click()
-	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveText('Sketch a login flow')
+	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveCount(2)
 })
 
 test('the audio tab fills the dialog with a recording microphone', async ({ page }) => {
@@ -69,4 +75,10 @@ test('the audio tab fills the dialog with a recording microphone', async ({ page
 		'false',
 	)
 	await expect(panel.getByText('Talk to Mico')).toBeVisible()
+
+	await page.setViewportSize({ width: 667, height: 375 })
+	await expect(panel).toBeVisible()
+	const compactBox = await panel.getByRole('button', { name: 'Start recording' }).boundingBox()
+	if (!compactBox) throw new Error('Missing compact microphone')
+	expect(compactBox.height).toBeGreaterThan(90)
 })

@@ -20,6 +20,7 @@ export function IconButton({
 	children,
 	active,
 	compact,
+	type = 'button',
 	...props
 }: IconButtonProps) {
 	return (
@@ -35,7 +36,7 @@ export function IconButton({
 		>
 			<RadixIconButton
 				{...props}
-				type="button"
+				type={type}
 				aria-label={label}
 				variant={active || props['aria-pressed'] ? 'solid' : 'ghost'}
 				color={active || props['aria-pressed'] ? undefined : 'gray'}

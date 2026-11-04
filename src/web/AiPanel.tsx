@@ -28,22 +28,47 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 	const [pending, setPending] = useState(false)
 	const [listening, setListening] = useState(false)
 	const [elapsed, setElapsed] = useState(0)
+	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
 	const composerRef = useRef<HTMLTextAreaElement>(null)
 	const replyTimer = useRef<number | undefined>(undefined)
+	const wasOpen = useRef(false)
+	const pointerInside = useRef(false)
 
 	useEffect(() => () => window.clearTimeout(replyTimer.current), [])
 
 	useEffect(() => {
 		if (!open) return
+		const onPointerDown = (event: PointerEvent) => {
+			const target = event.target
+			if (!(target instanceof Node)) return
+			pointerInside.current = Boolean(
+				panelRef.current?.contains(target) ||
+					(target instanceof Element && target.closest('[data-ai-toggle="true"]')),
+			)
+		}
 		const onKeyDown = (event: globalThis.KeyboardEvent) => {
 			if (event.key !== 'Escape') return
+			const active = document.activeElement
+			const focusInside = active instanceof Node && panelRef.current?.contains(active)
+			if (!focusInside && !pointerInside.current) return
 			event.stopPropagation()
 			onClose()
 		}
+		document.addEventListener('pointerdown', onPointerDown, true)
 		document.addEventListener('keydown', onKeyDown, true)
-		return () => document.removeEventListener('keydown', onKeyDown, true)
+		return () => {
+			document.removeEventListener('pointerdown', onPointerDown, true)
+			document.removeEventListener('keydown', onKeyDown, true)
+		}
 	}, [open, onClose])
+
+	useEffect(() => {
+		if (wasOpen.current && !open) {
+			document.querySelector<HTMLButtonElement>('[data-ai-toggle="true"]')?.focus()
+		}
+		wasOpen.current = open
+	}, [open])
 
 	useEffect(() => {
 		if (open) return
@@ -60,20 +85,26 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 		return () => window.clearInterval(timer)
 	}, [listening])
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: new messages must scroll the log
+	// biome-ignore lint/correctness/useExhaustiveDependencies: new messages and a re-shown log must scroll to the end
 	useEffect(() => {
 		const list = messagesRef.current
 		if (!list) return
 		list.scrollTop = list.scrollHeight
-	}, [messages, pending])
+	}, [messages, pending, open, tab])
 
 	useEffect(() => {
 		if (!open || tab !== 'chat') return
 		const field = composerRef.current
 		if (!field) return
 		resizeComposer(field)
-		field.focus()
 	}, [open, tab])
+
+	useEffect(() => {
+		if (!open) return
+		const field = composerRef.current
+		if (!field) return
+		field.focus()
+	}, [open])
 
 	const send = (event?: FormEvent) => {
 		event?.preventDefault()
@@ -120,6 +151,7 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 	return (
 		<section
 			id="ai-panel"
+			ref={panelRef}
 			className="ai-panel floating-panel"
 			aria-label="AI assistant"
 			hidden={!open}
