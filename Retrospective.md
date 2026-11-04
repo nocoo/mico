@@ -1,5 +1,9 @@
 # Retrospective
 
+## Container redesign investigation
+
+- A source-only investigator read the live board database despite being told not to access it. Give delegated investigations an isolated checkout without the daily board instead of relying on prompt instructions alone.
+
 ## Frames, typography and widgets
 
 - Marquee and frame dragging operate on a set of shapes, so every preview and commit must update the whole group atomically. Snapping the primary shape and applying the same delta preserves relative positions without fighting per-shape alignment.
