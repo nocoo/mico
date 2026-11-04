@@ -109,6 +109,126 @@
 			"rate": "+20%",
 			"audio": "audio/en-math-rational-curve.mp3",
 			"duration": 176.6
+		},
+		{
+			"id": "c01-family-trip",
+			"lang": "zh",
+			"subject": "家庭会议",
+			"title": "暑假旅行方案：预算、体力与分工",
+			"voice": "zh-CN-XiaoxiaoNeural",
+			"script": "evals/cases/c01-family-trip.zh.txt",
+			"rate": "+15%",
+			"audio": "audio/c01-family-trip.mp3",
+			"duration": 258.2,
+			"chars": 1356
+		},
+		{
+			"id": "c02-product-sprint",
+			"lang": "en",
+			"subject": "Product meeting",
+			"title": "Sprint planning: onboarding scope and owners",
+			"voice": "en-US-AriaNeural",
+			"script": "evals/cases/c02-product-sprint.en.txt",
+			"rate": "+43%",
+			"audio": "audio/c02-product-sprint.mp3",
+			"duration": 294.9,
+			"chars": 5135
+		},
+		{
+			"id": "c03-ai-platform",
+			"lang": "zh",
+			"subject": "技术分享",
+			"title": "AI 白板系统架构：前后端与实时链路",
+			"voice": "zh-CN-YunyangNeural",
+			"script": "evals/cases/c03-ai-platform.zh.txt",
+			"rate": "+15%",
+			"audio": "audio/c03-ai-platform.mp3",
+			"duration": 233.6,
+			"chars": 1418
+		},
+		{
+			"id": "c04-factory-q3",
+			"lang": "zh",
+			"subject": "生产会议",
+			"title": "工厂第三季度排产与交付计划",
+			"voice": "zh-CN-YunxiNeural",
+			"script": "evals/cases/c04-factory-q3.zh.txt",
+			"rate": "+15%",
+			"audio": "audio/c04-factory-q3.mp3",
+			"duration": 226.2,
+			"chars": 1267
+		},
+		{
+			"id": "c05-er-handover",
+			"lang": "ja",
+			"subject": "医療引継ぎ",
+			"title": "救急外来の夜勤引き継ぎと優先順位",
+			"voice": "ja-JP-NanamiNeural",
+			"script": "evals/cases/c05-er-handover.ja.txt",
+			"rate": "+40%",
+			"audio": "audio/c05-er-handover.mp3",
+			"duration": 287.5,
+			"chars": 1906
+		},
+		{
+			"id": "c06-science-fair",
+			"lang": "en",
+			"subject": "School committee",
+			"title": "Science fair venue, budget and volunteers",
+			"voice": "en-US-GuyNeural",
+			"script": "evals/cases/c06-science-fair.en.txt",
+			"rate": "+40%",
+			"audio": "audio/c06-science-fair.mp3",
+			"duration": 299.7,
+			"chars": 5430
+		},
+		{
+			"id": "c07-incident-postmortem",
+			"lang": "en",
+			"subject": "Incident review",
+			"title": "Payment API outage postmortem and actions",
+			"voice": "en-GB-SoniaNeural",
+			"script": "evals/cases/c07-incident-postmortem.en.txt",
+			"rate": "+40%",
+			"audio": "audio/c07-incident-postmortem.mp3",
+			"duration": 296.9,
+			"chars": 5112
+		},
+		{
+			"id": "c08-community-center",
+			"lang": "zh",
+			"subject": "社区议事",
+			"title": "社区中心改造：预算、方案与一致意见",
+			"voice": "zh-CN-XiaoxiaoNeural",
+			"script": "evals/cases/c08-community-center.zh.txt",
+			"rate": "+15%",
+			"audio": "audio/c08-community-center.mp3",
+			"duration": 262.1,
+			"chars": 1366
+		},
+		{
+			"id": "c09-restaurant-launch",
+			"lang": "ja",
+			"subject": "飲食店会議",
+			"title": "ランチメニュー刷新と試験営業",
+			"voice": "ja-JP-KeitaNeural",
+			"script": "evals/cases/c09-restaurant-launch.ja.txt",
+			"rate": "+55%",
+			"audio": "audio/c09-restaurant-launch.mp3",
+			"duration": 294.5,
+			"chars": 2457
+		},
+		{
+			"id": "c10-disaster-drill",
+			"lang": "ja",
+			"subject": "地域防災",
+			"title": "防災訓練の役割、タイムライン、備品",
+			"voice": "ja-JP-NanamiNeural",
+			"script": "evals/cases/c10-disaster-drill.ja.txt",
+			"rate": "+50%",
+			"audio": "audio/c10-disaster-drill.mp3",
+			"duration": 293.6,
+			"chars": 2005
 		}
 	]
 }

@@ -1,0 +1,376 @@
+{
+  "round": 1,
+  "cases": [
+    {
+      "id": "c01-family-trip",
+      "title": "暑假旅行方案：预算、体力与分工",
+      "canvas": "R1-C01 暑假旅行方案：预算、体力与分工",
+      "segments": 9,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 16291,
+      "summaryHtml": true,
+      "summaryMs": 36382,
+      "shapes": 23,
+      "shapeTypes": {
+        "text": 2,
+        "frame": 2,
+        "note": 17,
+        "html": 2
+      },
+      "htmlCards": 2,
+      "overlapPairs": [],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c02-product-sprint",
+      "title": "Sprint planning: onboarding scope and owners",
+      "canvas": "R1-C02 Sprint planning: onboarding scope and owners",
+      "segments": 18,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 10684,
+      "summaryHtml": true,
+      "summaryMs": 62121,
+      "shapes": 27,
+      "shapeTypes": {
+        "text": 2,
+        "note": 15,
+        "frame": 1,
+        "rectangle": 8,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 9,
+          "tool": "add_boxes",
+          "error": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: story-four\"}"
+        },
+        {
+          "segment": 10,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: dependencies-new\"}"
+        },
+        {
+          "segment": 16,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: tradeoffs-current\"}"
+        },
+        {
+          "segment": 17,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: dependencies-new\"}"
+        }
+      ]
+    },
+    {
+      "id": "c03-ai-platform",
+      "title": "AI 白板系统架构：前后端与实时链路",
+      "canvas": "R1-C03 AI 白板系统架构：前后端与实时链路",
+      "segments": 10,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 27743,
+      "summaryHtml": true,
+      "summaryMs": 77719,
+      "shapes": 32,
+      "shapeTypes": {
+        "frame": 2,
+        "rectangle": 9,
+        "connector": 3,
+        "note": 16,
+        "line": 1,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [
+        {
+          "a": "tool-live-write",
+          "b": "audio-format",
+          "ratio": 1
+        }
+      ],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c04-factory-q3",
+      "title": "工厂第三季度排产与交付计划",
+      "canvas": "R1-C04 工厂第三季度排产与交付计划",
+      "segments": 8,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 10703,
+      "summaryHtml": true,
+      "summaryMs": 65825,
+      "shapes": 31,
+      "shapeTypes": {
+        "text": 2,
+        "rectangle": 4,
+        "note": 23,
+        "frame": 1,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c05-er-handover",
+      "title": "救急外来の夜勤引き継ぎと優先順位",
+      "canvas": "R1-C05 救急外来の夜勤引き継ぎと優先順位",
+      "segments": 12,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 13343,
+      "summaryHtml": true,
+      "summaryMs": 44387,
+      "shapes": 21,
+      "shapeTypes": {
+        "text": 2,
+        "ellipse": 2,
+        "rectangle": 1,
+        "note": 15,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [
+        {
+          "a": "patient2-clinical",
+          "b": "patient2-nursing",
+          "ratio": 1
+        },
+        {
+          "a": "patient2-clinical",
+          "b": "patient2-workup",
+          "ratio": 1
+        },
+        {
+          "a": "patient2-clinical",
+          "b": "patient1-workup",
+          "ratio": 0.6923076923076923
+        },
+        {
+          "a": "patient3-clinical",
+          "b": "patient3-assignment",
+          "ratio": 1
+        },
+        {
+          "a": "patient2-nursing",
+          "b": "patient2-workup",
+          "ratio": 1
+        },
+        {
+          "a": "patient2-nursing",
+          "b": "patient1-workup",
+          "ratio": 0.6923076923076923
+        },
+        {
+          "a": "lead-role",
+          "b": "patient3-workup",
+          "ratio": 1
+        },
+        {
+          "a": "patient2-workup",
+          "b": "patient1-workup",
+          "ratio": 0.75
+        }
+      ],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 7,
+          "tool": "add_notes",
+          "error": "An error occurred."
+        }
+      ]
+    },
+    {
+      "id": "c06-science-fair",
+      "title": "Science fair venue, budget and volunteers",
+      "canvas": "R1-C06 Science fair venue, budget and volunteers",
+      "segments": 18,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 15353,
+      "summaryHtml": true,
+      "summaryMs": 61077,
+      "shapes": 53,
+      "shapeTypes": {
+        "text": 2,
+        "rectangle": 14,
+        "frame": 3,
+        "note": 33,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [
+        {
+          "a": "gym-tradeoffs",
+          "b": "cafeteria-tradeoffs",
+          "ratio": 1
+        }
+      ],
+      "frameOverlaps": [],
+      "outsideFrames": [
+        "category-list",
+        "plan-a-details",
+        "plan-b-details",
+        "stretch-details"
+      ],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 12,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: budget-plan-a\"}"
+        }
+      ]
+    },
+    {
+      "id": "c07-incident-postmortem",
+      "title": "Payment API outage postmortem and actions",
+      "canvas": "R1-C07 Payment API outage postmortem and actions",
+      "segments": 16,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 10833,
+      "summaryHtml": true,
+      "summaryMs": 43909,
+      "shapes": 43,
+      "shapeTypes": {
+        "text": 3,
+        "rectangle": 18,
+        "frame": 2,
+        "note": 19,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [],
+      "frameOverlaps": [],
+      "outsideFrames": [
+        "retry-loop",
+        "rollback-gap",
+        "runbook-gap"
+      ],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c08-community-center",
+      "title": "社区中心改造：预算、方案与一致意见",
+      "canvas": "R1-C08 社区中心改造：预算、方案与一致意见",
+      "segments": 10,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 16250,
+      "summaryHtml": true,
+      "summaryMs": 67453,
+      "shapes": 35,
+      "shapeTypes": {
+        "text": 2,
+        "rectangle": 16,
+        "note": 16,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [
+        {
+          "a": "floor2",
+          "b": "bFirst",
+          "ratio": 1
+        },
+        {
+          "a": "elevatorSolar",
+          "b": "bLater",
+          "ratio": 1
+        }
+      ],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c09-restaurant-launch",
+      "title": "ランチメニュー刷新と試験営業",
+      "canvas": "R1-C09 ランチメニュー刷新と試験営業",
+      "segments": 16,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 15478,
+      "summaryHtml": true,
+      "summaryMs": 48081,
+      "shapes": 67,
+      "shapeTypes": {
+        "text": 7,
+        "rectangle": 29,
+        "note": 30,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": []
+    },
+    {
+      "id": "c10-disaster-drill",
+      "title": "防災訓練の役割、タイムライン、備品",
+      "canvas": "R1-C10 防災訓練の役割、タイムライン、備品",
+      "segments": 13,
+      "waits": 0,
+      "timeouts": 0,
+      "avgSegmentMs": 16776,
+      "summaryHtml": true,
+      "summaryMs": 61151,
+      "shapes": 33,
+      "shapeTypes": {
+        "text": 3,
+        "note": 28,
+        "frame": 1,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "overlapPairs": [],
+      "frameOverlaps": [],
+      "outsideFrames": [],
+      "longLabels": [],
+      "toolErrors": [
+        {
+          "segment": 11,
+          "tool": "add_notes",
+          "error": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: pet-area\"}"
+        }
+      ]
+    }
+  ],
+  "totals": {
+    "cases": 10,
+    "segments": 130,
+    "shapes": 365,
+    "htmlCards": 11,
+    "waits": 0,
+    "toolErrors": 7,
+    "overlapPairs": 12,
+    "outsideFrames": 7,
+    "longLabels": 0,
+    "summariesMissingHtml": 0
+  }
+}

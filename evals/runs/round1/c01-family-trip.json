@@ -1,0 +1,545 @@
+{
+  "round": 1,
+  "case": {
+    "id": "c01-family-trip",
+    "lang": "zh",
+    "subject": "家庭会议",
+    "title": "暑假旅行方案：预算、体力与分工",
+    "voice": "zh-CN-XiaoxiaoNeural",
+    "rate": "+15%",
+    "script": "c01-family-trip.zh.txt",
+    "duration": 258.2
+  },
+  "canvasId": "86b2f9f8-633d-4aea-9779-82dd80ad7784",
+  "canvasName": "R1-C01 暑假旅行方案：预算、体力与分工",
+  "startedAt": "2026-11-04T13:26:35.970Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 32.7,
+      "text": "我们家今年暑假想一起出去旅行，今天先把大方向定下来。 四个人，爸爸妈妈，十二岁的女儿小雨，还有七十岁的外公。 时间是七月下旬，最多八天，总预算希望控制在三万五以内，尽量不要超。 外公膝盖不太好，不能长时间走路，也不能爬太多台阶；小雨想看自然风景，最好能拍星星；爸爸想看海、想吃海鲜；妈妈最在意的是不要每天赶路，最好有两天可以慢慢休息。 现在有三个方案。",
+      "elapsedMs": 16110,
+      "timedOut": false,
+      "textReply": "",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title\",\"x\":80,\"y\":80,\"text\":\"暑假旅行方案｜先定大方向\",\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"brief\",\"x\":80,\"y\":152,\"text\":\"4人 · 7月下旬 · 最多8天 · 总预算≤¥35,000\",\"w\":760,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":22,\"fontWeight\":500}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title\",\"type\":\"text\"},{\"id\":\"brief\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"needs\",\"x\":80,\"y\":224,\"w\":824,\"h\":400,\"title\":\"家庭成员需求与约束\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"needs\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"family\",\"x\":120,\"y\":296,\"w\":300,\"h\":136,\"text\":\"同行：爸爸、妈妈、小雨（12岁）、外公（70岁）\\n时间：七月下旬，最多8天\\n预算：尽量控制在¥35,000以内\",\"color\":\"#e2f5fc\",\"frameId\":\"needs\"},{\"id\":\"constraints\",\"x\":456,\"y\":296,\"w\":300,\"h\":136,\"text\":\"外公：膝盖不适，少走路、少台阶\\n妈妈：不想天天赶路，最好安排2天慢休\\n小雨：自然风景、希望拍星星\\n爸爸：看海、吃海鲜\",\"color\":\"#fff8d4\",\"frameId\":\"needs\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"family\",\"type\":\"note\"},{\"id\":\"constraints\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 32.7,
+      "end": 55.9,
+      "text": "第一个是北海道自驾，札幌进、富良野出，中间去美瑛和小樽。 第二个是东京加迪士尼，城市交通方便，但人多、走路多。 第三个是冲绳，海边住两晚，节奏慢，但七月底台风风险高。 我们不要只看照片，要把花费、体力、天气、预订时间都摆在一张表上比较。 先看北海道。",
+      "elapsedMs": 15735,
+      "timedOut": false,
+      "textReply": "先把三个目的地和比较维度放进同一张方案表，后续再逐项补充信息。已把北海道自驾、东京＋迪士尼和冲绳放入比较表，列出行程、体力、天气风险、花费与预订时间；目前未知项标为待核实。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"options\",\"x\":952,\"y\":80,\"w\":1120,\"h\":680,\"title\":\"三方案比较｜逐项核对\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"options\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"compare-table\",\"x\":992,\"y\":160,\"w\":1040,\"h\":540,\"title\":\"先列已知信息；未知项待核实\",\"html\":\"<table style=\\\"width:100%;border-collapse:collapse;font:18px sans-serif;color:#2b3038\\\"><thead><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:12px;border:1px solid #9aa\\\">方案</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">行程/节奏</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">体力</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">天气/风险</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">花费、预订</th></tr></thead><tbody><tr><td style=\\\"padding:14px;border:1px solid #9aa;font-weight:bold\\\">北海道自驾</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">札幌进、富良野出；美瑛、小樽</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">待评估</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">待核实</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">待估算 / 待确认</td></tr><tr><td style=\\\"padding:14px;border:…",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"compare-table\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 55.9,
+      "end": 84.1,
+      "text": "八天，机票四个人往返大概一万二，租车五天大概三千，酒店七晚平均一晚一千二，吃饭和门票再留八千，总共大概三万三，刚好在预算内。 自驾的好处是看到风景就停，外公不用走太多；缺点是爸爸一个人开长途会很累，而且富良野到美瑛的山路要提前查好。 我们可以安排两天只开一小时，下午回酒店休息。 第二个方案东京加迪士尼。",
+      "elapsedMs": 41649,
+      "timedOut": false,
+      "textReply": "北海道估算约¥33,000，预算内；补上费用拆分、驾驶负担与两天轻松安排。已补上北海道的费用拆分与驾驶安排：按明细约¥31,400，会议口述总额约¥33,000，暂在预算内；独自长途驾驶和山路路况列为待关注风险。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":7,\"bounds\":{\"x\":80,\"y\":80,\"w\":1992,\"h\":680},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"暑假旅行方案｜先定大方向\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"brief\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":760,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"4人 · 7月下旬 · 最多8天 · 总预算≤¥35,000\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":500},{\"id\":\"needs\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":824,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"家庭成员需求与约束\"},{\"id\":\"family\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"同行：爸爸、妈妈、小雨（12岁）、外公（70岁）\\n时间：七月下旬，最多8天\\n预算：尽量控制在¥35,000以内\",\"frameId\":\"needs\"},{\"id\":\"constraints\",\"type\":\"note\",\"x\":456,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#fff8d4\",\"text\":\"外公：膝盖不适，少走路、少台阶\\n妈妈：不想天天赶路，最好安排2天慢休\\n小雨：自然风景、希望拍星星\\n爸爸：看海、吃海鲜\",\"frameId\":\"needs\"},{\"id\":\"options\",\"type\":\"frame\",\"x\":952,\"y\":80,\"w\":1120,\"…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"hokkaido-budget\",\"x\":120,\"y\":656,\"w\":360,\"h\":176,\"text\":\"北海道｜8天预算粗估\\n机票 ¥12,000 + 租车 ¥3,000\\n酒店：7晚 × ¥1,200 = ¥8,400\\n餐饮与门票 ¥8,000\\n合计约 ¥31,400（口述约¥33,000）\\n预算余量约 ¥2,000\",\"color\":\"#f1fadc\"},{\"id\":\"hokkaido-driving\",\"x\":520,\"y\":656,\"w\":360,\"h\":176,\"text\":\"体力与节奏\\n优点：自驾可就近停车，减少步行\\n风险：爸爸独自长途驾驶易疲劳\\n富良野—美瑛山路需提前查路况\\n建议：两天驾驶≤1小时，下午回酒店休息\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"hokkaido-budget\",\"type\":\"note\"},{\"id\":\"hokkaido-driving\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 84.1,
+      "end": 116,
+      "text": "机票便宜一点，大概九千；酒店七晚要一万，迪士尼门票和交通再加五千，总共两万八左右。 但东京地铁换乘多，外公每天走一万步不现实。 除非我们住迪士尼附近，只在台场和上野安排两天，其他时间取消。 这样孩子开心，老人也不会太累，可是自然风景基本没有，拍星星更不可能。 第三个方案冲绳。 机票加酒店大概两万六，租车四天两千，出海和门票四千，总预算三万二。",
+      "elapsedMs": 13832,
+      "timedOut": false,
+      "textReply": "东京方案约¥28,000，但需精简行程；冲绳已知成本约¥32,000，先补进对比。已更新比较表：东京约¥28,000，需大幅精简路线以照顾外公，但自然景观和观星体验有限；冲绳约¥32,000，台风风险仍需评估。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"compare-table\",\"patch\":{\"html\":\"<table style=\\\"width:100%;border-collapse:collapse;font:18px sans-serif;color:#2b3038\\\"><thead><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:12px;border:1px solid #9aa\\\">方案</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">行程/节奏</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">体力</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">天气/风险</th><th style=\\\"padding:12px;border:1px solid #9aa\\\">花费、预订</th></tr></thead><tbody><tr><td style=\\\"padding:14px;border:1px solid #9aa;font-weight:bold\\\">北海道自驾</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">札幌进、富良野出；美瑛、小樽</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">停车近；驾驶负担待管控</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">山路路况需提前查</td><td style=\\\"padding:14px;border:1px solid #9aa\\\">约¥33,000；明细约¥31,400</td></tr><tr><td style=\\\"padding:14px;border:1px solid #9aa;font-wei…",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[],\"updated\":[\"compare-table\",\"hokkaido-budget\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"tokyo-tradeoff\",\"x\":920,\"y\":784,\"w\":360,\"h\":176,\"text\":\"东京方案｜取舍\\n孩子有迪士尼；简化路线可减轻长辈负担\\n地铁换乘与步行仍需控制\\n自然风景少，不满足拍星星期待\\n预算约¥28,000\",\"color\":\"#e2f5fc\"},{\"id\":\"okinawa-budget\",\"x\":1320,\"y\":784,\"w\":360,\"h\":176,\"text\":\"冲绳｜预算粗估\\n机票＋酒店 ¥26,000\\n租车4天 ¥2,000\\n出海与门票 ¥4,000\\n合计约 ¥32,000\\n七月底台风风险仍待纳入评估\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"tokyo-tradeoff\",\"type\":\"note\"},{\"id\":\"okinawa-budget\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 116,
+      "end": 146.5,
+      "text": "海边节奏慢，老人可以在酒店休息，孩子可以浮潜。 但七月底是台风季，如果航班取消，后面所有预订都要改。 我们需要买可退改的机票，酒店也要选能免费取消的。 这个风险要写进计划里，不能当作不会发生。 妈妈提了一个条件：不管去哪里，每天最多两个主要景点，中午必须坐下来吃饭，晚上八点前回酒店。 爸爸同意，但希望至少有一顿正式的海鲜晚餐。",
+      "elapsedMs": 13209,
+      "timedOut": false,
+      "textReply": "加入全方案通用的每日节奏约束，并把冲绳台风的可退改预订要求写成明确风险缓解项。已加入全方案的每日节奏条件：每天最多两个主要景点、中午坐下吃饭、晚上八点前回酒店，并安排两天慢休和一顿正式海鲜晚餐。冲绳台风风险已列为计划事项：机票需可退改、酒店需免费取消，并确认相关期限与费用。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":8,\"count\":11,\"bounds\":{\"x\":80,\"y\":80,\"w\":1992,\"h\":880},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"暑假旅行方案｜先定大方向\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"brief\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":760,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"4人 · 7月下旬 · 最多8天 · 总预算≤¥35,000\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":500},{\"id\":\"needs\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":824,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"家庭成员需求与约束\"},{\"id\":\"family\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"同行：爸爸、妈妈、小雨（12岁）、外公（70岁）\\n时间：七月下旬，最多8天\\n预算：尽量控制在¥35,000以内\",\"frameId\":\"needs\"},{\"id\":\"constraints\",\"type\":\"note\",\"x\":456,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#fff8d4\",\"text\":\"外公：膝盖不适，少走路、少台阶\\n妈妈：不想天天赶路，最好安排2天慢休\\n小雨：自然风景、希望拍星星\\n爸爸：看海、吃海鲜\",\"frameId\":\"needs\"},{\"id\":\"options\",\"type\":\"frame\",\"x\":952,\"y\":80,\"w\":1120,…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"daily-pace\",\"x\":1720,\"y\":784,\"w\":320,\"h\":176,\"text\":\"全方案每日节奏\\n最多2个主要景点\\n中午坐下吃饭\\n20:00前回酒店\\n至少安排2天慢休\\n另留1顿正式海鲜晚餐\",\"color\":\"#f1fadc\"},{\"id\":\"typhoon-plan\",\"x\":1680,\"y\":976,\"w\":360,\"h\":168,\"text\":\"冲绳台风风险｜需主动应对\\n七月底航班可能取消，连带影响后续预订\\n机票选可退改；酒店选免费取消\\n确认取消期限与改签费用\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"daily-pace\",\"type\":\"note\"},{\"id\":\"typhoon-plan\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 146.5,
+      "end": 178.9,
+      "text": "小雨说她可以少去一个游乐园，但想看一次银河。 外公说他不挑剔，只要不爬坡、不走远路就行。 我们比较之后，倾向选北海道。 理由有三个：第一，风景和休息能兼顾；第二，自驾可以减少步行；第三，预算刚好够，不用透支。 冲绳作为备选，如果台风预警提前一周出现，我们就改冲绳或者把日期挪到八月。 东京方案先放弃，等小雨再大一点、外公体力好一些再去。 接下来分工。",
+      "elapsedMs": 8889,
+      "timedOut": false,
+      "textReply": "记录目前倾向北海道及其理由、冲绳备用触发条件，并注明东京暂缓；下一段再补分工。已记录目前倾向北海道及三项理由，并保留观星愿望与外公“不爬坡、不走远路”的要求。冲绳作为备选：若台风预警提前一周出现，则改去冲绳或调整到八月；东京暂缓。当前仍是会议倾向，尚未作最终预订决定。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"decision\",\"x\":80,\"y\":1160,\"w\":520,\"h\":200,\"text\":\"当前倾向｜北海道\\n① 风景与休息兼顾\\n② 自驾可减少步行\\n③ 预算约¥33,000，控制在¥35,000内\\n小雨：少去一个游乐园，保留观星愿望\\n外公：不爬坡、不走远路\",\"color\":\"#f1fadc\"},{\"id\":\"fallback\",\"x\":640,\"y\":1160,\"w\":520,\"h\":200,\"text\":\"备选与暂缓\\n冲绳：备选方案\\n若台风预警提前一周出现：改冲绳或改到八月\\n东京：暂缓，待小雨年纪更大、外公体力更好再考虑\\n状态：会议倾向，尚非最终预订决定\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"decision\",\"type\":\"note\"},{\"id\":\"fallback\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 178.9,
+      "end": 209.6,
+      "text": "爸爸负责机票和租车，三天内比价，优先选可退改；妈妈负责酒店，要求有电梯、附近有便利店、房间不要太小，七天里至少两晚带温泉；小雨负责查富良野和美瑛的拍照点，还有夜间观星的活动，做一个清单；外公负责确认自己的身体状况和常备药，出发前一周去医院复查。 我负责把行程表、预算表和紧急联系人做成一张总表，每天晚上更新一次。 行程先按八天排。",
+      "elapsedMs": 13756,
+      "timedOut": false,
+      "textReply": "补充分工、各自时间要求，并标注八天行程和每晚更新的总表安排。已补上分工与时间节点：爸爸三天内比价机票和租车；妈妈负责符合条件的酒店；小雨整理拍照点与观星活动；外公出发前一周复查；总表每天晚上更新。行程先按八天规划。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":10,\"count\":15,\"bounds\":{\"x\":80,\"y\":80,\"w\":1992,\"h\":1280},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"暑假旅行方案｜先定大方向\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"brief\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":760,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"4人 · 7月下旬 · 最多8天 · 总预算≤¥35,000\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":500},{\"id\":\"needs\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":824,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"家庭成员需求与约束\"},{\"id\":\"family\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"同行：爸爸、妈妈、小雨（12岁）、外公（70岁）\\n时间：七月下旬，最多8天\\n预算：尽量控制在¥35,000以内\",\"frameId\":\"needs\"},{\"id\":\"constraints\",\"type\":\"note\",\"x\":456,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#fff8d4\",\"text\":\"外公：膝盖不适，少走路、少台阶\\n妈妈：不想天天赶路，最好安排2天慢休\\n小雨：自然风景、希望拍星星\\n爸爸：看海、吃海鲜\",\"frameId\":\"needs\"},{\"id\":\"options\",\"type\":\"frame\",\"x\":952,\"y\":80,\"w\":112…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"roles\",\"x\":1200,\"y\":1160,\"w\":400,\"h\":240,\"text\":\"分工｜北海道方案\\n爸爸：3天内比价机票与租车；优先可退改\\n妈妈：订酒店；需电梯、近便利店、房间不小；7晚至少2晚温泉\\n小雨：查富良野/美瑛拍照点与夜间观星，列清单\\n外公：确认身体与常备药；出发前1周复查\\n我：行程、预算、紧急联系人总表；每晚更新\",\"color\":\"#fff8d4\"},{\"id\":\"itinerary-plan\",\"x\":1640,\"y\":1160,\"w\":400,\"h\":180,\"text\":\"下一步｜行程表\\n先按8天排\\n每日≤2个主要景点\\n预留至少2天慢休\\n同步预算与紧急联系人\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"roles\",\"type\":\"note\"},{\"id\":\"itinerary-plan\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 209.6,
+      "end": 242.4,
+      "text": "第一天飞到札幌，只休息和吃饭；第二天札幌市区，慢慢逛；第三天取车去富良野，路上只停一个点；第四天美瑛，下午回酒店；第五天小樽，晚上海鲜晚餐；第六天还车回札幌，自由活动；第七天备选休息或购物；第八天返程。 每天最多两个主要安排，中间留出两小时午休。 预算上再留两千块应急金，不动用。 机票和酒店这周内定下来，租车等航班确认后再订。 所有预订都记录取消政策。",
+      "elapsedMs": 11737,
+      "timedOut": false,
+      "textReply": "加入八天行程、两小时午休、¥2,000应急金与预订顺序；预算口述约¥33,000下应急金需额外核算。已加入北海道八天初稿、每天最多两个安排与两小时午休，并记录了预订顺序及取消政策。另标出预算核算点：若约¥33,000尚未包含¥2,000应急金，总额将达¥35,000，需确认明细后再锁定预算。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"itinerary-8day\",\"x\":80,\"y\":1400,\"w\":720,\"h\":240,\"text\":\"北海道｜8天初稿\\nD1 飞札幌：休息、吃饭\\nD2 札幌市区：慢逛\\nD3 取车去富良野：途中只停1点\\nD4 美瑛：下午回酒店\\nD5 小樽：晚上海鲜晚餐\\nD6 还车回札幌：自由活动\\nD7 休息或购物｜D8 返程\",\"color\":\"#e2f5fc\"},{\"id\":\"booking-next\",\"x\":840,\"y\":1400,\"w\":520,\"h\":200,\"text\":\"节奏与预订\\n每天≤2个主要安排\\n中间留2小时午休\\n本周内定机票与酒店\\n确认航班后再订租车\\n所有预订记录取消政策\",\"color\":\"#fff8d4\"},{\"id\":\"emergency-fund\",\"x\":1400,\"y\":1400,\"w\":400,\"h\":168,\"text\":\"应急金｜¥2,000\\n单独预留，不动用\\n核对是否已计入总预算\\n口述约¥33,000 + ¥2,000\\n= ¥35,000｜无预算余量\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"itinerary-8day\",\"type\":\"note\"},{\"id\":\"booking-next\",\"type\":\"note\"},{\"id\":\"emergency-fund\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 242.4,
+      "end": 258.2,
+      "text": "最后我们确认一下：目的地北海道，八天，预算三万五，四个人，重点是慢节奏、自然风景和一家人一起吃顿饭。 下次开会只看三件事：机票价格、酒店位置、台风和天气。 今天就到这里。",
+      "elapsedMs": 11703,
+      "timedOut": false,
+      "textReply": "已记录会议结论：北海道、8天、4人，预算上限¥35,000；重点是慢节奏、自然风景和全家一起吃顿饭。下次会议聚焦机票价格、酒店位置、台风与天气。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"final-summary\",\"x\":80,\"y\":1680,\"w\":720,\"h\":176,\"text\":\"会议确认｜北海道 · 8天 · 4人\\n预算上限：¥35,000\\n重点：慢节奏、自然风景\\n一家人一起吃顿饭\\n状态：目的地与方向已确认\",\"color\":\"#f1fadc\"},{\"id\":\"next-meeting\",\"x\":840,\"y\":1680,\"w\":520,\"h\":160,\"text\":\"下次会议｜只核对三项\\n① 机票价格\\n② 酒店位置\\n③ 台风与天气\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[{\"id\":\"final-summary\",\"type\":\"note\"},{\"id\":\"next-meeting\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 9,
+    "requests": 10,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_frames": 2,
+      "add_notes": 8,
+      "add_html_cards": 2,
+      "get_board": 4,
+      "update_shapes": 1
+    },
+    "shapes": 23,
+    "shapeTypes": {
+      "text": 2,
+      "frame": 2,
+      "note": 17,
+      "html": 2
+    },
+    "htmlCards": 2,
+    "totalReplyChars": 893,
+    "totalMs": 183002
+  },
+  "summary": {
+    "index": 10,
+    "start": 258.2,
+    "end": 258.2,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 36382,
+    "timedOut": false,
+    "textReply": "已在现有内容下方新增会后总结卡片，汇总了旅行决定、负责人和期限、8天行程、预订原则，以及预算、路线与天气等待核实事项。\n\n**要点：**北海道、8天、4人；预订前优先核对总预算是否包含¥2,000应急金，并统一札幌往返与“札幌进、富良野出”的路线方案。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"postmeeting-summary\",\"x\":80,\"y\":1984,\"w\":1320,\"h\":1100,\"title\":\"会后总结｜北海道家庭暑假旅行\",\"html\":\"<div style=\\\"font-family:sans-serif;color:#2b3038;line-height:1.45;padding:8px\\\"><div style=\\\"font-size:30px;font-weight:700;margin-bottom:4px\\\">北海道家庭暑假旅行｜会后总结</div><div style=\\\"font-size:17px;color:#00a2e1;margin-bottom:18px\\\">目的：为4人家庭确定一个兼顾预算、体力与节奏的暑假方案，并明确预订和准备分工。</div><div style=\\\"display:grid;grid-template-columns:1fr 1fr;gap:14px\\\"><section style=\\\"border:2px solid #a6d94f;border-radius:10px;padding:14px;background:#f1fadc\\\"><div style=\\\"font-size:20px;font-weight:700;margin-bottom:8px\\\">已确认的方向</div><ul style=\\\"margin:0;padding-left:22px\\\"><li>目的地：北海道；行程先按8天、4人规划。</li><li>预算上限¥35,000；重点是慢节奏、自然风景和全家一起吃顿饭。</li><li>每日最多2个主要安排；中午坐下吃饭并留约2小时午休，20:00前回酒店；至少2天慢休。</li><li>照顾外公：不爬坡、不走远路；驾驶日控制强度并提前查路况。</li><li>保留小雨观星愿望；安排一顿正式海鲜晚餐。</li></ul></section><section style=\\\"border:2px solid #00a2e…",
+        "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"postmeeting-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":14,\"count\":23,\"bounds\":{\"x\":80,\"y\":80,\"w\":1992,\"h\":3004},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":760,\"h\":60,\"color\":\"#2b3038\",\"text\":\"暑假旅行方案｜先定大方向\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"brief\",\"type\":\"text\",\"x\":80,\"y\":152,\"w\":760,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"4人 · 7月下旬 · 最多8天 · 总预算≤¥35,000\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":500},{\"id\":\"needs\",\"type\":\"frame\",\"x\":80,\"y\":224,\"w\":824,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"家庭成员需求与约束\"},{\"id\":\"family\",\"type\":\"note\",\"x\":120,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"同行：爸爸、妈妈、小雨（12岁）、外公（70岁）\\n时间：七月下旬，最多8天\\n预算：尽量控制在¥35,000以内\",\"frameId\":\"needs\"},{\"id\":\"constraints\",\"type\":\"note\",\"x\":456,\"y\":296,\"w\":300,\"h\":136,\"color\":\"#fff8d4\",\"text\":\"外公：膝盖不适，少走路、少台阶\\n妈妈：不想天天赶路，最好安排2天慢休\\n小雨：自然风景、希望拍星星\\n爸爸：看海、吃海鲜\",\"frameId\":\"needs\"},{\"id\":\"options\",\"type\":\"frame\",\"x\":952,\"y\":80,\"w\":112…",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 14,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 80,
+        "w": 760,
+        "h": 60,
+        "text": "暑假旅行方案｜先定大方向",
+        "font": "sans",
+        "fontSize": 42,
+        "fontWeight": 700
+      },
+      {
+        "id": "brief",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 152,
+        "w": 760,
+        "h": 40,
+        "text": "4人 · 7月下旬 · 最多8天 · 总预算≤¥35,000",
+        "font": "sans",
+        "fontSize": 22,
+        "fontWeight": 500
+      },
+      {
+        "id": "needs",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 224,
+        "w": 824,
+        "h": 400,
+        "title": "家庭成员需求与约束"
+      },
+      {
+        "id": "family",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 120,
+        "y": 296,
+        "w": 300,
+        "h": 136,
+        "text": "同行：爸爸、妈妈、小雨（12岁）、外公（70岁）\n时间：七月下旬，最多8天\n预算：尽量控制在¥35,000以内",
+        "frameId": "needs"
+      },
+      {
+        "id": "constraints",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 456,
+        "y": 296,
+        "w": 300,
+        "h": 136,
+        "text": "外公：膝盖不适，少走路、少台阶\n妈妈：不想天天赶路，最好安排2天慢休\n小雨：自然风景、希望拍星星\n爸爸：看海、吃海鲜",
+        "frameId": "needs"
+      },
+      {
+        "id": "options",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 952,
+        "y": 80,
+        "w": 1120,
+        "h": 680,
+        "title": "三方案比较｜逐项核对"
+      },
+      {
+        "id": "compare-table",
+        "color": "#2b3038",
+        "type": "html",
+        "x": 992,
+        "y": 160,
+        "w": 1040,
+        "h": 540,
+        "title": "先列已知信息；未知项待核实",
+        "html": "<table style=\"width:100%;border-collapse:collapse;font:18px sans-serif;color:#2b3038\"><thead><tr style=\"background:#e2f5fc\"><th style=\"padding:12px;border:1px solid #9aa\">方案</th><th style=\"padding:12px;border:1px solid #9aa\">行程/节奏</th><th style=\"padding:12px;border:1px solid #9aa\">体力</th><th style=\"padding:12px;border:1px solid #9aa\">天气/风险</th><th style=\"padding:12px;border:1px solid #9aa\">花费、预订</th></tr></thead><tbody><tr><td style=\"padding:14px;border:1px solid #9aa;font-weight:bold\">北海道自驾</td><td style=\"padding:14px;border:1px solid #9aa\">札幌进、富良野出；美瑛、小樽</td><td style=\"padding:14px;border:1px solid #9aa\">停车近；驾驶负担待管控</td><td style=\"padding:14px;border:1px solid #9aa\">山路路况需提前查</td><td style=\"padding:14px;border:1px solid #9aa\">约¥33,000；明细约¥31,400</td></tr><tr><td style=\"padding:14px;border:1px solid #9aa;font-weight:bold\">东京＋迪士尼</td><td style=\"padding:14px;border:1px solid #9aa\">迪士尼附近住宿；台场、上野两天，其余取消</td><td style=\"padding:14px;border:1px solid #9aa\">地铁换乘多；外公不宜日行万步</td><td style=\"padding:14px;border:1px solid #9aa\">自然风景少；不适合拍星星</td><td style=\"padding:14px;border:1px solid #9aa\">约¥28,000（机票¥9,000、酒店¥10,000、票务交通¥5,000）</td></tr><tr><td style=\"padding:14px;border:1px solid #9aa;font-weight:bold\">冲绳</td><td style=\"padding:14px;border:1px solid #9aa\">海边住两晚；节奏慢</td><td style=\"padding:14px;border:1px solid #9aa\">租车4天；待评估</td><td style=\"padding:14px;border:1px solid #9aa\">七月底台风风险高</td><td style=\"padding:14px;border:1px solid #9aa\">约¥32,000（机酒¥26,000、租车¥2,000、出海门票¥4,000）</td></tr></tbody></table>",
+        "frameId": "options"
+      },
+      {
+        "id": "hokkaido-budget",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 120,
+        "y": 656,
+        "w": 360,
+        "h": 176,
+        "text": "北海道｜8天预算粗估\n机票 ¥12,000 + 租车 ¥3,000\n酒店：7晚 × ¥1,200 = ¥8,400\n餐饮与门票 ¥8,000\n明细合计约 ¥31,400\n会议口述约 ¥33,000｜≤¥35,000\n余量：按口述约 ¥2,000"
+      },
+      {
+        "id": "hokkaido-driving",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 520,
+        "y": 656,
+        "w": 360,
+        "h": 176,
+        "text": "体力与节奏\n优点：自驾可就近停车，减少步行\n风险：爸爸独自长途驾驶易疲劳\n富良野—美瑛山路需提前查路况\n建议：两天驾驶≤1小时，下午回酒店休息"
+      },
+      {
+        "id": "tokyo-tradeoff",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 920,
+        "y": 784,
+        "w": 360,
+        "h": 176,
+        "text": "东京方案｜取舍\n孩子有迪士尼；简化路线可减轻长辈负担\n地铁换乘与步行仍需控制\n自然风景少，不满足拍星星期待\n预算约¥28,000"
+      },
+      {
+        "id": "okinawa-budget",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1320,
+        "y": 784,
+        "w": 360,
+        "h": 176,
+        "text": "冲绳｜预算粗估\n机票＋酒店 ¥26,000\n租车4天 ¥2,000\n出海与门票 ¥4,000\n合计约 ¥32,000\n七月底台风风险仍待纳入评估"
+      },
+      {
+        "id": "daily-pace",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1720,
+        "y": 784,
+        "w": 320,
+        "h": 176,
+        "text": "全方案每日节奏\n最多2个主要景点\n中午坐下吃饭\n20:00前回酒店\n至少安排2天慢休\n另留1顿正式海鲜晚餐"
+      },
+      {
+        "id": "typhoon-plan",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1680,
+        "y": 976,
+        "w": 360,
+        "h": 168,
+        "text": "冲绳台风风险｜需主动应对\n七月底航班可能取消，连带影响后续预订\n机票选可退改；酒店选免费取消\n确认取消期限与改签费用"
+      },
+      {
+        "id": "decision",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 1160,
+        "w": 520,
+        "h": 200,
+        "text": "当前倾向｜北海道\n① 风景与休息兼顾\n② 自驾可减少步行\n③ 预算约¥33,000，控制在¥35,000内\n小雨：少去一个游乐园，保留观星愿望\n外公：不爬坡、不走远路"
+      },
+      {
+        "id": "fallback",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 640,
+        "y": 1160,
+        "w": 520,
+        "h": 200,
+        "text": "备选与暂缓\n冲绳：备选方案\n若台风预警提前一周出现：改冲绳或改到八月\n东京：暂缓，待小雨年纪更大、外公体力更好再考虑\n状态：会议倾向，尚非最终预订决定"
+      },
+      {
+        "id": "roles",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1200,
+        "y": 1160,
+        "w": 400,
+        "h": 240,
+        "text": "分工｜北海道方案\n爸爸：3天内比价机票与租车；优先可退改\n妈妈：订酒店；需电梯、近便利店、房间不小；7晚至少2晚温泉\n小雨：查富良野/美瑛拍照点与夜间观星，列清单\n外公：确认身体与常备药；出发前1周复查\n我：行程、预算、紧急联系人总表；每晚更新"
+      },
+      {
+        "id": "itinerary-plan",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1640,
+        "y": 1160,
+        "w": 400,
+        "h": 180,
+        "text": "下一步｜行程表\n先按8天排\n每日≤2个主要景点\n预留至少2天慢休\n同步预算与紧急联系人"
+      },
+      {
+        "id": "itinerary-8day",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1400,
+        "w": 720,
+        "h": 240,
+        "text": "北海道｜8天初稿\nD1 飞札幌：休息、吃饭\nD2 札幌市区：慢逛\nD3 取车去富良野：途中只停1点\nD4 美瑛：下午回酒店\nD5 小樽：晚上海鲜晚餐\nD6 还车回札幌：自由活动\nD7 休息或购物｜D8 返程"
+      },
+      {
+        "id": "booking-next",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 840,
+        "y": 1400,
+        "w": 520,
+        "h": 200,
+        "text": "节奏与预订\n每天≤2个主要安排\n中间留2小时午休\n本周内定机票与酒店\n确认航班后再订租车\n所有预订记录取消政策"
+      },
+      {
+        "id": "emergency-fund",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1400,
+        "y": 1400,
+        "w": 400,
+        "h": 168,
+        "text": "应急金｜¥2,000\n单独预留，不动用\n核对是否已计入总预算\n口述约¥33,000 + ¥2,000\n= ¥35,000｜无预算余量"
+      },
+      {
+        "id": "final-summary",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 1680,
+        "w": 720,
+        "h": 176,
+        "text": "会议确认｜北海道 · 8天 · 4人\n预算上限：¥35,000\n重点：慢节奏、自然风景\n一家人一起吃顿饭\n状态：目的地与方向已确认"
+      },
+      {
+        "id": "next-meeting",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 840,
+        "y": 1680,
+        "w": 520,
+        "h": 160,
+        "text": "下次会议｜只核对三项\n① 机票价格\n② 酒店位置\n③ 台风与天气"
+      },
+      {
+        "id": "postmeeting-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 1984,
+        "w": 1320,
+        "h": 1100,
+        "title": "会后总结｜北海道家庭暑假旅行",
+        "html": "<div style=\"font-family:sans-serif;color:#2b3038;line-height:1.45;padding:8px\"><div style=\"font-size:30px;font-weight:700;margin-bottom:4px\">北海道家庭暑假旅行｜会后总结</div><div style=\"font-size:17px;color:#00a2e1;margin-bottom:18px\">目的：为4人家庭确定一个兼顾预算、体力与节奏的暑假方案，并明确预订和准备分工。</div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px\"><section style=\"border:2px solid #a6d94f;border-radius:10px;padding:14px;background:#f1fadc\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">已确认的方向</div><ul style=\"margin:0;padding-left:22px\"><li>目的地：北海道；行程先按8天、4人规划。</li><li>预算上限¥35,000；重点是慢节奏、自然风景和全家一起吃顿饭。</li><li>每日最多2个主要安排；中午坐下吃饭并留约2小时午休，20:00前回酒店；至少2天慢休。</li><li>照顾外公：不爬坡、不走远路；驾驶日控制强度并提前查路况。</li><li>保留小雨观星愿望；安排一顿正式海鲜晚餐。</li></ul></section><section style=\"border:2px solid #00a2e1;border-radius:10px;padding:14px;background:#e2f5fc\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">方案取舍与预订原则</div><ul style=\"margin:0;padding-left:22px\"><li>东京＋迪士尼暂缓；冲绳为备选，若台风预警提前一周出现，可改冲绳或改到八月。</li><li>机票优先可退改；酒店优先免费取消，所有预订记录取消期限与费用。</li><li>酒店条件：有电梯、近便利店、房间不要太小；7晚至少2晚带温泉。</li><li>预算估算口述约¥33,000；另留¥2,000应急金，不动用。</li></ul></section></div><section style=\"margin-top:14px;border:1px solid #aab4bb;border-radius:10px;padding:14px\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">行动项</div><table style=\"width:100%;border-collapse:collapse;font-size:15px\"><thead><tr style=\"background:#fff8d4\"><th style=\"padding:8px;border:1px solid #9aa;text-align:left\">事项</th><th style=\"padding:8px;border:1px solid #9aa;text-align:left\">负责人</th><th style=\"padding:8px;border:1px solid #9aa;text-align:left\">期限</th></tr></thead><tbody><tr><td style=\"padding:8px;border:1px solid #9aa\">比价机票与租车；机票优先可退改</td><td style=\"padding:8px;border:1px solid #9aa\">爸爸</td><td style=\"padding:8px;border:1px solid #9aa\">3天内；航班确认后再订租车</td></tr><tr><td style=\"padding:8px;border:1px solid #9aa\">预订酒店，核对电梯、位置、房间及温泉条件</td><td style=\"padding:8px;border:1px solid #9aa\">妈妈</td><td style=\"padding:8px;border:1px solid #9aa\">本周内；优先免费取消</td></tr><tr><td style=\"padding:8px;border:1px solid #9aa\">整理富良野／美瑛拍照点与夜间观星活动清单</td><td style=\"padding:8px;border:1px solid #9aa\">小雨</td><td style=\"padding:8px;border:1px solid #9aa\">行程定稿前（具体日期待定）</td></tr><tr><td style=\"padding:8px;border:1px solid #9aa\">确认身体状况和常备药，出发前复查</td><td style=\"padding:8px;border:1px solid #9aa\">外公</td><td style=\"padding:8px;border:1px solid #9aa\">出发前1周</td></tr><tr><td style=\"padding:8px;border:1px solid #9aa\">汇总行程、预算、紧急联系人；每日晚间更新</td><td style=\"padding:8px;border:1px solid #9aa\">会议记录者（“我”）</td><td style=\"padding:8px;border:1px solid #9aa\">每天晚上；出发前完成总表</td></tr><tr><td style=\"padding:8px;border:1px solid #9aa\">下次会议核对机票价格、酒店位置、台风与天气</td><td style=\"padding:8px;border:1px solid #9aa\">全家</td><td style=\"padding:8px;border:1px solid #9aa\">下次会议（日期待定）</td></tr></tbody></table></section><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px\"><section style=\"border:2px solid #ff7fa3;border-radius:10px;padding:14px;background:#ffe9f0\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">待核实的问题与风险</div><ul style=\"margin:0;padding-left:22px\"><li><b>预算：</b>明细约¥31,400，口述约¥33,000；若另加¥2,000应急金即约¥35,000。确认应急金是否已计入，避免超上限。</li><li><b>路线：</b>早先提到“札幌进、富良野出”，八天初稿则返札幌还车；需按航班、租车还车点统一路线。</li><li><b>天气：</b>出发前持续查看北海道天气；冲绳备选涉及七月底台风及航班取消，确认改签、取消期限与费用。</li><li><b>安全与体力：</b>爸爸独自长途驾驶易疲劳；富良野—美瑛山路查路况，安排短驾驶、休息与就近停车。</li><li><b>观星：</b>确认夜间活动、天气和交通可行性，并避免牺牲休息安排。</li></ul></section><section style=\"border:2px solid #f7de4b;border-radius:10px;padding:14px;background:#fff8d4\"><div style=\"font-size:20px;font-weight:700;margin-bottom:8px\">8天紧凑时间线（初稿）</div><div style=\"font-size:15px\"><b>D1</b> 抵达札幌｜休息、吃饭　　<b>D2</b> 札幌慢逛<br><b>D3</b> 取车去富良野｜途中最多停1点　　<b>D4</b> 美瑛｜下午回酒店<br><b>D5</b> 小樽｜正式海鲜晚餐　　<b>D6</b> 还车回札幌｜自由活动<br><b>D7</b> 休息或购物（慢休日）　　<b>D8</b> 返程<br><div style=\"margin-top:8px\">全程每日≤2个主要安排；中间预留午休。行程需与最终航线、酒店位置和外公体力复核。</div></div></section></div><div style=\"margin-top:14px;padding:10px 12px;border-left:5px solid #00a2e1;background:#e2f5fc;font-size:15px\"><b>预订顺序：</b>本周内确认机票与酒店 → 航班确认后再订租车 → 所有预订登记取消政策。目的地和方向已确认，具体预订与行程细节仍待落实。</div></div>"
+      }
+    ]
+  }
+}

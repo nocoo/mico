@@ -1,0 +1,719 @@
+{
+  "round": 1,
+  "case": {
+    "id": "c03-ai-platform",
+    "lang": "zh",
+    "subject": "技术分享",
+    "title": "AI 白板系统架构：前后端与实时链路",
+    "voice": "zh-CN-YunyangNeural",
+    "rate": "+15%",
+    "script": "c03-ai-platform.zh.txt",
+    "duration": 233.6
+  },
+  "canvasId": "4f8e7cfb-89a9-4342-97db-ee22885012ad",
+  "canvasName": "R1-C03 AI 白板系统架构：前后端与实时链路",
+  "startedAt": "2026-11-04T13:33:53.430Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 27.4,
+      "text": "今天我用十分钟介绍我们这套 AI 白板系统的架构，从前端到后端，再到模型和语音，一条链路讲清楚。 大家可以在白板上跟着我画，最后我会把关键取舍和风险总结出来。 先从用户看到的部分说起。 浏览器里是一个 React 应用，画布用 SVG 渲染，所有的图形、文字、便签、框架和连线都是数据驱动的。 用户拖动一个矩形，前端先产生一个本地预览，再把操作发给后端。",
+      "elapsedMs": 28864,
+      "timedOut": false,
+      "textReply": "先画出浏览器端的渲染与交互：React 应用用 SVG 呈现数据驱动的白板对象。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"arch-frontend\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"title\":\"前端｜浏览器中的可视层\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"arch-frontend\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"react-app\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"text\":\"React 应用\",\"color\":\"#00a2e1\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"text\":\"SVG 画布\\n数据驱动对象\",\"color\":\"#00a2e1\",\"frameId\":\"arch-frontend\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"react-app\",\"type\":\"rectangle\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_connectors",
+          "state": "output-available",
+          "input": "{\"connectors\":[{\"id\":\"render-flow\",\"from\":\"react-app\",\"to\":\"svg-canvas\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"render-flow\",\"type\":\"connector\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 27.4,
+      "end": 50.2,
+      "text": "为了保证多人同时看同一块白板，前端维护一个版本号，后端返回新版本后，前端才确认这次修改。 这里最重要的设计是：界面永远先响应，网络请求在后台排队。 前端之上是 Vite 开发服务器，生产环境可以是任意静态服务器。 开发和本地使用时，Vite 把 /api 请求代理到后台的 Node 守护进程。",
+      "elapsedMs": 39524,
+      "timedOut": false,
+      "textReply": "补上本地预览与版本确认，并标出 Vite 将开发期 API 请求代理到 Node 后台。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"optimistic-version\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\",\"color\":\"#e2f5fc\"},{\"id\":\"vite-env\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"optimistic-version\",\"type\":\"note\"},{\"id\":\"vite-env\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"vite-proxy\",\"x\":768,\"y\":408,\"w\":224,\"h\":88,\"text\":\"Vite 代理 /api\",\"color\":\"#f7de4b\"},{\"id\":\"node-daemon\",\"x\":1080,\"y\":408,\"w\":240,\"h\":88,\"text\":\"Node 守护进程\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"vite-proxy\",\"type\":\"rectangle\"},{\"id\":\"node-daemon\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_connectors",
+          "state": "output-available",
+          "input": "{\"connectors\":[{\"id\":\"vite-to-node\",\"from\":\"vite-proxy\",\"to\":\"node-daemon\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"vite-to-node\",\"type\":\"connector\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 50.2,
+      "end": 71.4,
+      "text": "AI 对话走 /api/ai/chat，返回的是流式的 UI message，不是一次性 JSON。 语音转写走 /mai/realtime，由 Vite 的 WebSocket 代理转发到 Azure 的转写服务。 这样浏览器只和同源地址通信，不会遇到混合内容和跨域问题。",
+      "elapsedMs": 38853,
+      "timedOut": false,
+      "textReply": "加入两条同源代理链路：AI 对话返回流式 UI message，语音通过 WebSocket 转发 Azure 转写服务。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":6,\"count\":9,\"bounds\":{\"x\":80,\"y\":160,\"w\":1240,\"h\":368},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":224,\"…",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"ai-chat-route\",\"x\":768,\"y\":560,\"w\":224,\"h\":88,\"text\":\"/api/ai/chat\\n流式 UI message\",\"color\":\"#00a2e1\"},{\"id\":\"voice-route\",\"x\":768,\"y\":696,\"w\":224,\"h\":88,\"text\":\"/mai/realtime\\nWebSocket 代理\",\"color\":\"#ff7fa3\"},{\"id\":\"azure-transcription\",\"x\":1080,\"y\":696,\"w\":240,\"h\":88,\"text\":\"Azure 转写服务\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"ai-chat-route\",\"type\":\"rectangle\"},{\"id\":\"voice-route\",\"type\":\"rectangle\"},{\"id\":\"azure-transcription\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_connectors",
+          "state": "output-available",
+          "input": "{\"connectors\":[{\"id\":\"voice-to-azure\",\"from\":\"voice-route\",\"to\":\"azure-transcription\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"voice-to-azure\",\"type\":\"connector\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 71.4,
+      "end": 92.7,
+      "text": "后台是一个 Node 守护进程，负责三件事：第一，管理多张画布和当前激活的画布；第二，把所有画布操作原子化地写入 SQLite；第三，通过 WebSocket 把变更广播给所有打开的浏览器。 每张画布有自己的版本号，批量操作要么全部成功，要么全部失败，避免画到一半留下半成品。",
+      "elapsedMs": 39182,
+      "timedOut": false,
+      "textReply": "展开 Node 守护进程的职责：画布管理、SQLite 原子写入，以及通过 WebSocket 广播版本化变更。已在 Node 服务旁补充职责清单，并突出每画布独立版本与批量操作的全成全败语义。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":8,\"count\":13,\"bounds\":{\"x\":80,\"y\":160,\"w\":1240,\"h\":624},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":224,…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"node-duties\",\"x\":1360,\"y\":408,\"w\":288,\"h\":176,\"text\":\"Node 守护进程职责\\n• 管理多张画布与当前激活画布\\n• 画布操作写入 SQLite\\n• WebSocket 广播变更给浏览器\",\"color\":\"#f1fadc\"},{\"id\":\"canvas-version-atomic\",\"x\":1360,\"y\":616,\"w\":288,\"h\":168,\"text\":\"版本与原子性\\n每张画布独立版本号。\\n批量操作：全部成功或全部失败，避免半成品状态。\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"node-duties\",\"type\":\"note\"},{\"id\":\"canvas-version-atomic\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":9,\"count\":15,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":624},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":224,…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 92.7,
+      "end": 118.7,
+      "text": "每次写入之后，后台广播一个 board 事件，里面包含画布信息、版本号和完整图形列表。 AI 这一层是关键。 浏览器把用户消息和当前框选的对象发给后台，后台把画布压缩成一份结构化上下文，再交给 AI SDK。 模型不是直接改数据库，而是通过工具调用：读画布、加文字、加便签、加形状、连线、加框架、画曲线、加 HTML 卡片、更新和删除。",
+      "elapsedMs": 24308,
+      "timedOut": false,
+      "textReply": "补充实时事件载荷与 AI 工具边界：模型经 SDK 调用白板操作工具，不直接写数据库。加入 board 事件的完整快照信息，以及 AI 上下文整理与受控工具调用边界。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"board-event\",\"x\":1080,\"y\":552,\"w\":240,\"h\":88,\"text\":\"board 事件\\n画布＋版本＋图形列表\",\"color\":\"#a6d94f\"},{\"id\":\"ai-tools\",\"x\":1080,\"y\":840,\"w\":240,\"h\":88,\"text\":\"AI SDK 工具调用\\n读 / 写 / 更新白板\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"board-event\",\"type\":\"rectangle\"},{\"id\":\"ai-tools\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"ai-context-flow\",\"x\":768,\"y\":840,\"w\":264,\"h\":176,\"text\":\"AI 请求上下文\\n浏览器发送用户消息与当前框选对象。\\n后台压缩画布为结构化上下文，再交给 AI SDK。\",\"color\":\"#e2f5fc\"},{\"id\":\"ai-tool-boundary\",\"x\":1360,\"y\":840,\"w\":288,\"h\":176,\"text\":\"工具边界\\n模型通过工具读画布、添加文字/便签/形状/连线/框架/曲线/HTML 卡片，并可更新或删除。\\n不直接修改数据库。\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"ai-context-flow\",\"type\":\"note\"},{\"id\":\"ai-tool-boundary\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":11,\"count\":19,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":856},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":224…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 118.7,
+      "end": 142.7,
+      "text": "每个工具在后台执行，执行完立刻写库并广播。 也就是说，模型一边说，用户一边看到图形出现。 这里有一个很重要的边界：模型只能通过工具操作画布，不能直接执行任意代码。 再往上是模型网关。 我们本地用 Magpie，它兼容 OpenAI 的 Chat Completions 协议，默认模型是 GPT-6 Luna。",
+      "elapsedMs": 20400,
+      "timedOut": false,
+      "textReply": "补上工具执行后即时持久化与广播的实时反馈，并标出模型网关的协议兼容与默认模型信息。已记录工具调用的即时写库/广播机制，以及 Magpie 网关兼容协议和默认模型。实时执行与网关信息已放在 AI 工具层下方，跟现有 AI 机制纵向衔接。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"tool-live-write\",\"x\":768,\"y\":1048,\"w\":264,\"h\":152,\"text\":\"实时工具执行\\n每个工具在后台执行后立即写库并广播。\\n模型生成过程中，用户可同步看到图形出现。\\n仅允许白板工具操作，不执行任意代码。\",\"color\":\"#fff8d4\"},{\"id\":\"model-gateway\",\"x\":1080,\"y\":1048,\"w\":240,\"h\":152,\"text\":\"模型网关｜Magpie\\n兼容 OpenAI Chat Completions\\n默认模型：GPT-6 Luna\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"tool-live-write\",\"type\":\"note\"},{\"id\":\"model-gateway\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":12,\"count\":21,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":1040},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":22…",
+          "failed": false
+        },
+        {
+          "name": "add_lines",
+          "state": "output-available",
+          "input": "{\"lines\":[{\"id\":\"ai-generation-flow\",\"from\":{\"x\":1200,\"y\":928},\"to\":{\"x\":1200,\"y\":1048},\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[{\"id\":\"ai-generation-flow\",\"type\":\"line\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 142.7,
+      "end": 169.2,
+      "text": "AI SDK 负责把工具定义转换成模型能理解的 schema，处理流式返回，并在模型调用工具后把结果喂回去，让模型继续下一步。 为了防止模型画到别的画布，后台在处理一次 AI 请求时会把 canvasId 固定下来，后续所有工具都写这张画布。 语音这一层是另一条链路。 课程音频在浏览器里解码成十六 k 单声道 PCM，按时间片送给转写服务。",
+      "elapsedMs": 28402,
+      "timedOut": false,
+      "textReply": "补充 SDK 的 schema 与流式工具循环，以及 AI 请求固定 canvasId；语音分支注明 16 kHz 单声道 PCM 分片。SDK 循环与请求画布绑定已加入；语音分支新增音频解码和分片格式说明。语音格式便签与 AI 上下文便签重叠了；我把音频说明移到语音服务下方的空白区域。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"ai-sdk-cycle\",\"x\":1360,\"y\":1048,\"w\":288,\"h\":176,\"text\":\"AI SDK 流程\\n工具定义转为模型可理解的 schema；处理流式输出与工具结果回传，让模型继续下一步。\\n一次请求固定 canvasId，工具始终操作同一画布。\",\"color\":\"#f1fadc\"},{\"id\":\"audio-format\",\"x\":768,\"y\":856,\"w\":264,\"h\":144,\"text\":\"浏览器音频预处理\\n解码为 16 kHz 单声道 PCM\\n按时间片发送转写服务\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"ai-sdk-cycle\",\"type\":\"note\"},{\"id\":\"audio-format\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":14,\"count\":24,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":1064},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":22…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"audio-format\",\"patch\":{\"x\":768,\"y\":1056}}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"audio-format\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 169.2,
+      "end": 194.9,
+      "text": "客户端的能量检测判断一句话有没有说完，静音超过阈值就提交一段。 转写结果按段落进入 AI 队列，队列一次只允许一个请求，AI 落后时会把最多三段合并，避免积压。 如果一句话没说完，模型可以只回复 WAIT，不画东西。 最后说取舍。 第一，我们选择了本地优先：SQLite 加本地 daemon，部署简单，但多机协作需要额外的同步层。",
+      "elapsedMs": 27441,
+      "timedOut": false,
+      "textReply": "加入语音分段和串行 AI 队列的取舍，并记录第一项架构选择：本地 SQLite＋daemon，跨设备同步需额外设计。补充了静音分段、单请求队列与最多三段合并，并记下本地优先方案的部署收益和同步代价。语音队列便签与音频格式便签只留少量间距；我将队列说明下移，保留分阶段阅读。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"voice-queue\",\"x\":768,\"y\":1224,\"w\":264,\"h\":176,\"text\":\"语音分段与队列\\n能量检测：静音超阈值即提交。\\n转写段落进入串行 AI 队列；落后时最多合并 3 段。\\n句子未完可回复 WAIT，不绘制。\",\"color\":\"#ffe9f0\"},{\"id\":\"tradeoff-local-first\",\"x\":1360,\"y\":1232,\"w\":288,\"h\":168,\"text\":\"取舍 1｜本地优先\\nSQLite + 本地 daemon：部署简单。\\n多机协作需要额外同步层。\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"voice-queue\",\"type\":\"note\"},{\"id\":\"tradeoff-local-first\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":16,\"count\":26,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":1240},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":22…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"voice-queue\",\"patch\":{\"y\":1248}},{\"id\":\"tradeoff-local-first\",\"patch\":{\"y\":1248}}]}",
+          "output": "{\"ok\":true,\"revision\":17,\"created\":[],\"updated\":[\"voice-queue\",\"tradeoff-local-first\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 194.9,
+      "end": 213.5,
+      "text": "第二，我们选择了服务端执行工具，安全和一致性更好，但模型每一步都要经过后台，延迟比前端直接执行高。 第三，我们选择了流式事件而不是轮询，实时性更好，但消息顺序和断线重连要小心。 第四，画布用完整快照广播，代码简单，画布很大时要考虑增量同步。",
+      "elapsedMs": 17304,
+      "timedOut": false,
+      "textReply": "记录另外三项明确取舍：服务端工具执行、流式事件和完整快照广播，各自收益及对应代价。取舍 2–4 已补到架构图底部，突出安全/一致性、实时性与大画布同步复杂度的平衡。已补齐白板架构中的实时事件、AI 工具执行与模型网关、语音分段队列，以及四项关键取舍。重点注意：流式事件的顺序与断线重连，以及大画布完整快照广播带来的同步压力。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"tradeoffs-execution-events\",\"x\":1360,\"y\":1424,\"w\":288,\"h\":224,\"text\":\"取舍 2–3｜执行与事件\\n服务端执行工具：安全、一致性更好；代价是每步经后台，延迟较高。\\n流式事件：实时性好；需处理顺序与断线重连。\",\"color\":\"#f1fadc\"},{\"id\":\"tradeoff-snapshot\",\"x\":1080,\"y\":1424,\"w\":240,\"h\":184,\"text\":\"取舍 4｜完整快照广播\\n实现简单。\\n画布较大时需考虑增量同步。\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":18,\"created\":[{\"id\":\"tradeoffs-execution-events\",\"type\":\"note\"},{\"id\":\"tradeoff-snapshot\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 213.5,
+      "end": 233.6,
+      "text": "风险主要有三个：模型生成的布局可能重叠，需要读画布和更新工具来纠正；语音转写会断句错误，需要允许 WAIT 和合批；长会话的上下文会越来越大，需要压缩历史或者只保留最近的关键操作。 下一步先做布局检查和总结卡片，再做多人权限和增量同步。 今天的架构就讲到这里。",
+      "elapsedMs": 13148,
+      "timedOut": false,
+      "textReply": "已补上三项主要风险（布局重叠、转写断句、长会话上下文膨胀）和后续计划：先做布局检查与总结卡片，再推进多人权限和增量同步。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"architecture-risks\",\"x\":1360,\"y\":1664,\"w\":288,\"h\":224,\"text\":\"主要风险\\n• 模型布局重叠：读画布并用更新工具纠正\\n• 转写断句错误：允许 WAIT 与合批\\n• 长会话上下文膨胀：压缩历史，只留近期关键操作\",\"color\":\"#ffe9f0\"},{\"id\":\"next-steps\",\"x\":1080,\"y\":1664,\"w\":240,\"h\":184,\"text\":\"下一步\\n1. 布局检查与总结卡片\\n2. 多人权限\\n3. 增量同步\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":19,\"created\":[{\"id\":\"architecture-risks\",\"type\":\"note\"},{\"id\":\"next-steps\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 10,
+    "requests": 11,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 0,
+    "toolNames": {
+      "add_frames": 2,
+      "add_boxes": 4,
+      "add_connectors": 3,
+      "add_notes": 8,
+      "get_board": 9,
+      "add_lines": 1,
+      "update_shapes": 2,
+      "add_html_cards": 1
+    },
+    "shapes": 32,
+    "shapeTypes": {
+      "frame": 2,
+      "rectangle": 9,
+      "connector": 3,
+      "note": 16,
+      "line": 1,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 944,
+    "totalMs": 355145
+  },
+  "summary": {
+    "index": 11,
+    "start": 233.6,
+    "end": 233.6,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 77719,
+    "timedOut": false,
+    "textReply": "我会在现有内容下方留出 120px 间距，新增一张会后总结卡；行动项负责人和截止日期在讨论中未指定，我会明确标为待定。已在原有内容下方新增「AI 白板系统架构｜会后摘要」HTML 卡片，包含关键决策、行动项表、开放问题与风险，以及链路速览。行动项的负责人和截止时间在会议中未明确，卡片中标注为“待指派 / 未定”。\n\n**要点：**系统以本地优先和服务端受控工具执行为基础，通过流式事件保持实时反馈；后续优先做布局检查与总结卡片，再推进多人权限和增量同步。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":19,\"count\":30,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":1728},\"selection\":[],\"shapes\":[{\"id\":\"arch-frontend\",\"type\":\"frame\",\"x\":80,\"y\":160,\"w\":352,\"h\":368,\"color\":\"#00a2e1\",\"title\":\"前端｜浏览器中的可视层\"},{\"id\":\"react-app\",\"type\":\"rectangle\",\"x\":128,\"y\":240,\"w\":248,\"h\":88,\"color\":\"#00a2e1\",\"text\":\"React 应用\",\"frameId\":\"arch-frontend\"},{\"id\":\"svg-canvas\",\"type\":\"rectangle\",\"x\":128,\"y\":376,\"w\":248,\"h\":96,\"color\":\"#00a2e1\",\"text\":\"SVG 画布\\n数据驱动对象\",\"frameId\":\"arch-frontend\"},{\"id\":\"render-flow\",\"type\":\"connector\",\"color\":\"#00a2e1\",\"from\":\"react-app\",\"to\":\"svg-canvas\"},{\"id\":\"optimistic-version\",\"type\":\"note\",\"x\":464,\"y\":208,\"w\":264,\"h\":152,\"color\":\"#e2f5fc\",\"text\":\"交互策略\\n先本地预览，界面立即响应；请求后台排队。\\n后端返回新版本后，前端确认修改。\"},{\"id\":\"vite-env\",\"type\":\"note\",\"x\":464,\"y\":408,\"w\":264,\"h\":120,\"color\":\"#fff8d4\",\"text\":\"Vite：开发服务器\\n生产部署：任意静态服务器\"},{\"id\":\"vite-proxy\",\"type\":\"rectangle\",\"x\":768,\"y\":408,\"w\":22…",
+        "failed": false
+      },
+      {
+        "name": "add_frames",
+        "state": "output-available",
+        "input": "{\"frames\":[{\"id\":\"summary-frame\",\"x\":80,\"y\":2008,\"w\":1568,\"h\":960,\"title\":\"会后总结｜决策、风险与后续行动\",\"color\":\"#00a2e1\"}]}",
+        "output": "{\"ok\":true,\"revision\":20,\"created\":[{\"id\":\"summary-frame\",\"type\":\"frame\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"architecture-summary-card\",\"x\":120,\"y\":2064,\"w\":1488,\"h\":856,\"title\":\"AI 白板系统架构｜会后摘要\",\"html\":\"<div style=\\\"box-sizing:border-box;width:100%;height:100%;padding:24px 28px;background:#ffffff;color:#2b3038;font-family:Arial,'Noto Sans SC',sans-serif;line-height:1.35;overflow:hidden\\\"><div style=\\\"display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00a2e1;padding-bottom:14px;margin-bottom:16px\\\"><div><div style=\\\"font-size:30px;font-weight:800;letter-spacing:.2px\\\">AI 白板系统架构｜会后摘要</div><div style=\\\"font-size:16px;margin-top:6px;color:#2b3038\\\">目的：梳理浏览器、Node、模型与语音链路，并明确架构取舍和下一步。</div></div><div style=\\\"font-size:13px;font-weight:700;color:#2b3038;background:#e2f5fc;border-radius:18px;padding:8px 14px\\\">技术分享 · 总结</div></div><div style=\\\"font-size:19px;font-weight:800;margin:0 0 10px\\\">关键决策</div><div style=\\\"display:grid;grid-template-colum…",
+        "output": "{\"ok\":true,\"revision\":21,\"created\":[{\"id\":\"architecture-summary-card\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{\"ids\":[\"summary-frame\",\"architecture-summary-card\"],\"include_html\":true}",
+        "output": "{\"ok\":true,\"revision\":21,\"count\":32,\"bounds\":{\"x\":80,\"y\":160,\"w\":1568,\"h\":2808},\"selection\":[],\"shapes\":[{\"id\":\"summary-frame\",\"type\":\"frame\",\"x\":80,\"y\":2008,\"w\":1568,\"h\":960,\"color\":\"#00a2e1\",\"title\":\"会后总结｜决策、风险与后续行动\"},{\"id\":\"architecture-summary-card\",\"type\":\"html\",\"x\":120,\"y\":2064,\"w\":1488,\"h\":856,\"color\":\"#00a2e1\",\"title\":\"AI 白板系统架构｜会后摘要\",\"frameId\":\"summary-frame\",\"htmlLength\":4214}],\"omitted\":0}",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 21,
+    "shapes": [
+      {
+        "id": "arch-frontend",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 160,
+        "w": 352,
+        "h": 368,
+        "title": "前端｜浏览器中的可视层"
+      },
+      {
+        "id": "react-app",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 128,
+        "y": 240,
+        "w": 248,
+        "h": 88,
+        "text": "React 应用",
+        "frameId": "arch-frontend"
+      },
+      {
+        "id": "svg-canvas",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 128,
+        "y": 376,
+        "w": 248,
+        "h": 96,
+        "text": "SVG 画布\n数据驱动对象",
+        "frameId": "arch-frontend"
+      },
+      {
+        "id": "render-flow",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "react-app",
+        "to": "svg-canvas"
+      },
+      {
+        "id": "optimistic-version",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 464,
+        "y": 208,
+        "w": 264,
+        "h": 152,
+        "text": "交互策略\n先本地预览，界面立即响应；请求后台排队。\n后端返回新版本后，前端确认修改。"
+      },
+      {
+        "id": "vite-env",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 464,
+        "y": 408,
+        "w": 264,
+        "h": 120,
+        "text": "Vite：开发服务器\n生产部署：任意静态服务器"
+      },
+      {
+        "id": "vite-proxy",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 768,
+        "y": 408,
+        "w": 224,
+        "h": 88,
+        "text": "Vite 代理 /api"
+      },
+      {
+        "id": "node-daemon",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 1080,
+        "y": 408,
+        "w": 240,
+        "h": 88,
+        "text": "Node 守护进程"
+      },
+      {
+        "id": "vite-to-node",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "vite-proxy",
+        "to": "node-daemon"
+      },
+      {
+        "id": "ai-chat-route",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 768,
+        "y": 560,
+        "w": 224,
+        "h": 88,
+        "text": "/api/ai/chat\n流式 UI message"
+      },
+      {
+        "id": "voice-route",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 768,
+        "y": 696,
+        "w": 224,
+        "h": 88,
+        "text": "/mai/realtime\nWebSocket 代理"
+      },
+      {
+        "id": "azure-transcription",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1080,
+        "y": 696,
+        "w": 240,
+        "h": 88,
+        "text": "Azure 转写服务"
+      },
+      {
+        "id": "voice-to-azure",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "voice-route",
+        "to": "azure-transcription"
+      },
+      {
+        "id": "node-duties",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1360,
+        "y": 408,
+        "w": 288,
+        "h": 176,
+        "text": "Node 守护进程职责\n• 管理多张画布与当前激活画布\n• 画布操作写入 SQLite\n• WebSocket 广播变更给浏览器"
+      },
+      {
+        "id": "canvas-version-atomic",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1360,
+        "y": 616,
+        "w": 288,
+        "h": 168,
+        "text": "版本与原子性\n每张画布独立版本号。\n批量操作：全部成功或全部失败，避免半成品状态。"
+      },
+      {
+        "id": "board-event",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 1080,
+        "y": 552,
+        "w": 240,
+        "h": 88,
+        "text": "board 事件\n画布＋版本＋图形列表"
+      },
+      {
+        "id": "ai-tools",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1080,
+        "y": 840,
+        "w": 240,
+        "h": 88,
+        "text": "AI SDK 工具调用\n读 / 写 / 更新白板"
+      },
+      {
+        "id": "ai-context-flow",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 768,
+        "y": 840,
+        "w": 264,
+        "h": 176,
+        "text": "AI 请求上下文\n浏览器发送用户消息与当前框选对象。\n后台压缩画布为结构化上下文，再交给 AI SDK。"
+      },
+      {
+        "id": "ai-tool-boundary",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1360,
+        "y": 840,
+        "w": 288,
+        "h": 176,
+        "text": "工具边界\n模型通过工具读画布、添加文字/便签/形状/连线/框架/曲线/HTML 卡片，并可更新或删除。\n不直接修改数据库。"
+      },
+      {
+        "id": "tool-live-write",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 768,
+        "y": 1048,
+        "w": 264,
+        "h": 152,
+        "text": "实时工具执行\n每个工具在后台执行后立即写库并广播。\n模型生成过程中，用户可同步看到图形出现。\n仅允许白板工具操作，不执行任意代码。"
+      },
+      {
+        "id": "model-gateway",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1080,
+        "y": 1048,
+        "w": 240,
+        "h": 152,
+        "text": "模型网关｜Magpie\n兼容 OpenAI Chat Completions\n默认模型：GPT-6 Luna"
+      },
+      {
+        "id": "ai-generation-flow",
+        "color": "#00a2e1",
+        "type": "line",
+        "x": 1200,
+        "y": 928,
+        "w": 0,
+        "h": 120
+      },
+      {
+        "id": "ai-sdk-cycle",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1360,
+        "y": 1048,
+        "w": 288,
+        "h": 176,
+        "text": "AI SDK 流程\n工具定义转为模型可理解的 schema；处理流式输出与工具结果回传，让模型继续下一步。\n一次请求固定 canvasId，工具始终操作同一画布。"
+      },
+      {
+        "id": "audio-format",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 768,
+        "y": 1056,
+        "w": 264,
+        "h": 144,
+        "text": "浏览器音频预处理\n解码为 16 kHz 单声道 PCM\n按时间片发送转写服务"
+      },
+      {
+        "id": "voice-queue",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 768,
+        "y": 1248,
+        "w": 264,
+        "h": 176,
+        "text": "语音分段与队列\n能量检测：静音超阈值即提交。\n转写段落进入串行 AI 队列；落后时最多合并 3 段。\n句子未完可回复 WAIT，不绘制。"
+      },
+      {
+        "id": "tradeoff-local-first",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1360,
+        "y": 1248,
+        "w": 288,
+        "h": 168,
+        "text": "取舍 1｜本地优先\nSQLite + 本地 daemon：部署简单。\n多机协作需要额外同步层。"
+      },
+      {
+        "id": "tradeoffs-execution-events",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1360,
+        "y": 1424,
+        "w": 288,
+        "h": 224,
+        "text": "取舍 2–3｜执行与事件\n服务端执行工具：安全、一致性更好；代价是每步经后台，延迟较高。\n流式事件：实时性好；需处理顺序与断线重连。"
+      },
+      {
+        "id": "tradeoff-snapshot",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1080,
+        "y": 1424,
+        "w": 240,
+        "h": 184,
+        "text": "取舍 4｜完整快照广播\n实现简单。\n画布较大时需考虑增量同步。"
+      },
+      {
+        "id": "architecture-risks",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1360,
+        "y": 1664,
+        "w": 288,
+        "h": 224,
+        "text": "主要风险\n• 模型布局重叠：读画布并用更新工具纠正\n• 转写断句错误：允许 WAIT 与合批\n• 长会话上下文膨胀：压缩历史，只留近期关键操作"
+      },
+      {
+        "id": "next-steps",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1080,
+        "y": 1664,
+        "w": 240,
+        "h": 184,
+        "text": "下一步\n1. 布局检查与总结卡片\n2. 多人权限\n3. 增量同步"
+      },
+      {
+        "id": "summary-frame",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 2008,
+        "w": 1568,
+        "h": 960,
+        "title": "会后总结｜决策、风险与后续行动"
+      },
+      {
+        "id": "architecture-summary-card",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 120,
+        "y": 2064,
+        "w": 1488,
+        "h": 856,
+        "title": "AI 白板系统架构｜会后摘要",
+        "html": "<div style=\"box-sizing:border-box;width:100%;height:100%;padding:24px 28px;background:#ffffff;color:#2b3038;font-family:Arial,'Noto Sans SC',sans-serif;line-height:1.35;overflow:hidden\"><div style=\"display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00a2e1;padding-bottom:14px;margin-bottom:16px\"><div><div style=\"font-size:30px;font-weight:800;letter-spacing:.2px\">AI 白板系统架构｜会后摘要</div><div style=\"font-size:16px;margin-top:6px;color:#2b3038\">目的：梳理浏览器、Node、模型与语音链路，并明确架构取舍和下一步。</div></div><div style=\"font-size:13px;font-weight:700;color:#2b3038;background:#e2f5fc;border-radius:18px;padding:8px 14px\">技术分享 · 总结</div></div><div style=\"font-size:19px;font-weight:800;margin:0 0 10px\">关键决策</div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px\"><div style=\"border-left:5px solid #00a2e1;background:#e2f5fc;padding:10px 13px;border-radius:7px\"><b>01｜本地优先</b><div style=\"font-size:14px;margin-top:4px\">SQLite + 本地 Node daemon；部署简单，多机协作需另加同步层。</div></div><div style=\"border-left:5px solid #a6d94f;background:#f1fadc;padding:10px 13px;border-radius:7px\"><b>02｜服务端执行工具</b><div style=\"font-size:14px;margin-top:4px\">白板工具受控执行，不让模型直接写库或执行任意代码；每次请求固定 canvasId。</div></div><div style=\"border-left:5px solid #f7de4b;background:#fff8d4;padding:10px 13px;border-radius:7px\"><b>03｜流式事件 + 版本化状态</b><div style=\"font-size:14px;margin-top:4px\">操作原子写入；按画布递增版本并广播 board 完整快照，前端先预览、后确认。</div></div><div style=\"border-left:5px solid #ff7fa3;background:#ffe9f0;padding:10px 13px;border-radius:7px\"><b>04｜语音分段排队</b><div style=\"font-size:14px;margin-top:4px\">16 kHz 单声道 PCM；静音触发分段，串行 AI 队列最多合并 3 段，未完句可 WAIT。</div></div></div><div style=\"display:grid;grid-template-columns:1.15fr .85fr;gap:18px;margin-bottom:14px\"><div><div style=\"font-size:19px;font-weight:800;margin:0 0 8px\">行动项</div><table style=\"width:100%;border-collapse:collapse;font-size:14px\"><thead><tr style=\"background:#2b3038;color:#ffffff\"><th style=\"padding:8px;text-align:left\">事项</th><th style=\"padding:8px;text-align:left\">负责人</th><th style=\"padding:8px;text-align:left\">截止时间</th></tr></thead><tbody><tr style=\"background:#f3f5f4\"><td style=\"padding:8px;border-bottom:1px solid #d5d9dc\">布局检查与总结卡片</td><td style=\"padding:8px;border-bottom:1px solid #d5d9dc\">待指派</td><td style=\"padding:8px;border-bottom:1px solid #d5d9dc\">未定</td></tr><tr><td style=\"padding:8px;border-bottom:1px solid #d5d9dc\">多人权限方案</td><td style=\"padding:8px;border-bottom:1px solid #d5d9dc\">待指派</td><td style=\"padding:8px;border-bottom:1px solid #d5d9dc\">未定</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:8px\">增量同步设计</td><td style=\"padding:8px\">待指派</td><td style=\"padding:8px\">未定</td></tr></tbody></table><div style=\"font-size:12px;margin-top:6px;color:#2b3038\">分享未明确个人负责人或日期，后续需确认。</div></div><div><div style=\"font-size:19px;font-weight:800;margin:0 0 8px\">开放问题与风险</div><div style=\"background:#ffe9f0;border-radius:7px;padding:10px 13px;font-size:14px\"><div style=\"margin-bottom:5px\"><b>可靠性：</b>流式事件顺序、断线重连如何保证？</div><div style=\"margin-bottom:5px\"><b>规模：</b>何时从完整快照切换到增量同步？</div><div style=\"margin-bottom:5px\"><b>协作：</b>多人权限和跨设备同步策略待定。</div><div><b>运行风险：</b>布局重叠需读画布纠正；转写误断靠 WAIT/合批；长会话需压缩历史。</div></div></div></div><div style=\"border-top:1px solid #b9c1c6;padding-top:10px\"><div style=\"font-size:17px;font-weight:800;margin-bottom:8px\">链路速览</div><div style=\"display:flex;align-items:stretch;gap:6px;font-size:12px;text-align:center\"><div style=\"flex:1;background:#e2f5fc;padding:8px;border-radius:6px\"><b>浏览器</b><br>React / SVG<br>本地预览</div><div style=\"align-self:center;color:#00a2e1;font-weight:900\">→</div><div style=\"flex:1;background:#fff8d4;padding:8px;border-radius:6px\"><b>Vite / API</b><br>AI 流式消息<br>语音 WebSocket</div><div style=\"align-self:center;color:#00a2e1;font-weight:900\">→</div><div style=\"flex:1;background:#f1fadc;padding:8px;border-radius:6px\"><b>Node daemon</b><br>原子写 SQLite<br>版本化广播</div><div style=\"align-self:center;color:#00a2e1;font-weight:900\">→</div><div style=\"flex:1;background:#e2f5fc;padding:8px;border-radius:6px\"><b>AI / 语音</b><br>Magpie + AI SDK<br>Azure 转写</div></div><div style=\"font-size:12px;margin-top:8px;color:#2b3038\">近期顺序：① 布局检查与总结卡片　→　② 多人权限　→　③ 增量同步</div></div></div>",
+        "frameId": "summary-frame"
+      }
+    ]
+  }
+}

@@ -13,7 +13,7 @@ import {
 	magpieSettings,
 	sanitizeInterruptedMessages,
 } from './ai.ts'
-import { digestShape } from './aiBoard.ts'
+import { boardDigest, digestShape } from './aiBoard.ts'
 import { createMockAiModel } from './aiMock.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
@@ -160,11 +160,11 @@ test('AI tools estimate text bounds and derive stroke bounds from absolute point
 
 test('lecture instructions tell the model to wait on incomplete sentences', () => {
 	const prompt = buildInstructions({ revision: 0, shapes: [] }, [], 'lecture')
-	assert.match(prompt, /Live lecture mode/)
+	assert.match(prompt, /Live session mode/)
 	assert.match(prompt, /reply with exactly WAIT/)
 	assert.match(prompt, /at most two tool calls/)
 	assert.match(prompt, /Do not guess the rest of the sentence/)
-	assert.doesNotMatch(buildInstructions({ revision: 0, shapes: [] }, []), /Live lecture mode/)
+	assert.doesNotMatch(buildInstructions({ revision: 0, shapes: [] }, []), /Live session mode/)
 })
 
 test('board context marks the user selection as primary context', () => {
@@ -524,4 +524,55 @@ test('lecture mode can answer WAIT without forcing a tool call', async () => {
 		assert.match(streamed, /WAIT/)
 		assert.equal(daemon.store.getBoard().shapes.length, 0)
 	}, model)
+})
+
+test('board digests warn about overlaps and frame escapes', () => {
+	const board = {
+		revision: 1,
+		shapes: [
+			{
+				id: 'frame',
+				type: 'frame' as const,
+				x: 0,
+				y: 0,
+				w: 400,
+				h: 300,
+				color: '#00a2e1',
+				title: 'Frame',
+			},
+			{
+				id: 'a',
+				type: 'note' as const,
+				x: 20,
+				y: 20,
+				w: 200,
+				h: 120,
+				color: '#fff8d4',
+				frameId: 'frame',
+			},
+			{
+				id: 'b',
+				type: 'note' as const,
+				x: 60,
+				y: 40,
+				w: 200,
+				h: 120,
+				color: '#ffe9f0',
+				frameId: 'frame',
+			},
+			{
+				id: 'outside',
+				type: 'note' as const,
+				x: 360,
+				y: 240,
+				w: 200,
+				h: 120,
+				color: '#f1fadc',
+				frameId: 'frame',
+			},
+		],
+	}
+	const digest = boardDigest(board, [])
+	assert.ok(digest.warnings.some((warning) => warning.includes('a overlaps b')))
+	assert.ok(digest.warnings.some((warning) => warning.includes('outside is outside its frame')))
 })

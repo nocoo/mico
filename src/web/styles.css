@@ -2068,3 +2068,25 @@ svg {
 	background: var(--danger);
 	animation: none;
 }
+.lesson-summary-row {
+	display: flex;
+}
+.lesson-summary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1;
+	gap: var(--space-05);
+	height: var(--control-compact);
+	border: var(--hairline) dashed var(--border-strong);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	color: var(--ink-secondary);
+	font-size: var(--type-caption);
+	line-height: var(--line-caption);
+}
+.lesson-summary:hover:not(:disabled) {
+	border-color: var(--accent);
+	background: var(--accent-tint);
+	color: var(--ink);
+}

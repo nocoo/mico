@@ -23,16 +23,6 @@ const colorSchema = z
 	])
 	.describe('Outline or text color from the fixed palette.')
 
-const noteColorSchema = z
-	.enum([
-		CANDY_TINTS.yellow,
-		CANDY_TINTS.pink,
-		CANDY_TINTS.green,
-		CANDY_TINTS.blue,
-		CANDY_TINTS.neutral,
-	])
-	.describe('Pale sticky-note fill.')
-
 const anyColorSchema = z
 	.enum([
 		CANDY_COLORS.blue,
@@ -54,6 +44,19 @@ const frameIdSchema = idSchema
 const pointSchema = z.object({ x: z.number(), y: z.number() })
 const coord = (label: string) => z.number().min(-100000).max(100000).describe(label)
 const size = (label: string) => z.number().min(1).max(20000).describe(label)
+
+const NOTE_FILL: Record<string, string> = {
+	[CANDY_COLORS.blue]: CANDY_TINTS.blue,
+	[CANDY_COLORS.green]: CANDY_TINTS.green,
+	[CANDY_COLORS.yellow]: CANDY_TINTS.yellow,
+	[CANDY_COLORS.pink]: CANDY_TINTS.pink,
+	[CANDY_COLORS.ink]: CANDY_TINTS.neutral,
+}
+
+function noteFill(color?: string): string {
+	if (!color) return CANDY_TINTS.yellow
+	return NOTE_FILL[color] ?? color
+}
 
 const generatedId = (kind: string): string => `${kind}-${randomUUID().slice(0, 8)}`
 
@@ -233,7 +236,7 @@ export function createCanvasTools(input: Omit<ToolContext, 'revision'> & { revis
 							w: size('Width.').optional(),
 							h: size('Height.').optional(),
 							text: z.string().min(1).max(2000),
-							color: noteColorSchema.optional(),
+							color: anyColorSchema.optional(),
 							frameId: frameIdSchema,
 						}),
 					)
@@ -244,7 +247,7 @@ export function createCanvasTools(input: Omit<ToolContext, 'revision'> & { revis
 				const operations: Operation[] = notes.map((note) => ({
 					type: 'create',
 					shape: {
-						...baseShape(note.id, 'note', note.color ?? CANDY_TINTS.yellow),
+						...baseShape(note.id, 'note', noteFill(note.color)),
 						type: 'note',
 						x: note.x,
 						y: note.y,

@@ -54,17 +54,19 @@ The assistant uses the OpenAI-compatible Chat Completions API. Configuration is 
 
 The daemon owns the key and the browser never receives it. If the gateway is unreachable, the panel shows an actionable error and a Continue button. The assistant can only operate the canvas; it is not a general chat endpoint.
 
-## Live lecture mode
+## Live session mode
 
-The Lesson tab plays one of ten recorded school lectures through the browser and streams its audio to Azure `MAI-Transcribe-2-Streaming` over the Realtime WebSocket API. Confirmed transcript segments are queued to the AI one by one while the audio keeps playing; the board is drawn incrementally at the same time.
+The Live tab plays one of twenty recorded lectures or meeting cases through the browser and streams its audio to Azure `MAI-Transcribe-2-Streaming` over the Realtime WebSocket API. Confirmed transcript segments are queued to the AI one by one while the audio keeps playing; the board is drawn incrementally at the same time.
 
 - `src/web/stt/` contains the PCM resampler, WebSocket client and energy-based silence segmenter. Segment boundaries default to 500 ms of silence and are adjustable in the panel.
 - `src/server/maiProxy.ts` is a dev-only Vite WebSocket proxy that attaches the `api-key` header (browsers cannot set headers on WebSockets). It serves `/mai/config` and proxies `/mai/realtime`.
 - `.env` supplies `AZURE_MAI_HOST`, `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_DEPLOYMENT`. Copy `.env.example` to `.env` and fill the values; `.env` is ignored by Git.
-- `public/evals/` holds the ten generated lecture MP3s and `manifest.json`. The clips are 2:54–3:26 each, five Chinese and five English.
-- The Lesson panel includes the waveform with commit markers, live confirmed/hypothesis text, a VAD energy meter, playback speed, silence threshold, per-segment latency and a `New canvas` button.
+- `public/evals/` holds twenty generated session MP3s and `manifest.json`: ten school lectures plus ten new meeting/planning cases. The new cases are 3:46–4:59 each, with Chinese, English and Japanese voices; source scripts and the catalog live in `evals/cases/`.
+- The Live panel includes the waveform with commit markers, live confirmed/hypothesis text, a VAD energy meter, playback speed, silence threshold, per-segment latency, a `New canvas` button and a `Create session summary` action. When a session ends and the AI queue drains, the summary is also requested automatically; it calls get_board, fixes layout warnings, then creates one rich HTML summary card.
 - `New canvas` creates and activates a named canvas so a lecture starts from an empty board. The AI keeps its queue serialized: one lecture request at a time, with up to three pending segments coalesced when it falls behind. Segments that are incomplete or carry no new visual fact can return exactly `WAIT`; those replies render as a small waiting chip and do not draw.
 - `?ai=<prompt>` still opens the chat and submits immediately for scripted tests.
+
+The evaluation harness `scripts/run-ai-cases.ts` feeds the case scripts to the real daemon sentence by sentence, then requests the post-session summary. Round artifacts, board snapshots and screenshots live under `evals/runs/roundN/`.
 
 The MAI proxy exists only in the Vite dev server. A static production build serves the audio and UI but needs an equivalent server-side WebSocket proxy for live transcription.
 
@@ -136,4 +138,4 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 
 ## MVP limits
 
-This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet. Live microphone capture is still interface-only; Lesson mode plays recorded audio. Lecture transcription needs the Azure MAI deployment and the dev proxy. The AI assistant depends on the local Magpie gateway and has no authentication of its own beyond the daemon's loopback and origin restrictions.
+This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet. Live microphone capture is still interface-only; Live mode plays recorded audio. Lecture transcription needs the Azure MAI deployment and the dev proxy. The AI assistant depends on the local Magpie gateway and has no authentication of its own beyond the daemon's loopback and origin restrictions.

@@ -1,0 +1,92 @@
+[
+	{
+		"id": "c01-family-trip",
+		"lang": "zh",
+		"subject": "家庭会议",
+		"title": "暑假旅行方案：预算、体力与分工",
+		"voice": "zh-CN-XiaoxiaoNeural",
+		"rate": "+15%",
+		"script": "c01-family-trip.zh.txt"
+	},
+	{
+		"id": "c02-product-sprint",
+		"lang": "en",
+		"subject": "Product meeting",
+		"title": "Sprint planning: onboarding scope and owners",
+		"voice": "en-US-AriaNeural",
+		"rate": "+43%",
+		"script": "c02-product-sprint.en.txt"
+	},
+	{
+		"id": "c03-ai-platform",
+		"lang": "zh",
+		"subject": "技术分享",
+		"title": "AI 白板系统架构：前后端与实时链路",
+		"voice": "zh-CN-YunyangNeural",
+		"rate": "+15%",
+		"script": "c03-ai-platform.zh.txt"
+	},
+	{
+		"id": "c04-factory-q3",
+		"lang": "zh",
+		"subject": "生产会议",
+		"title": "工厂第三季度排产与交付计划",
+		"voice": "zh-CN-YunxiNeural",
+		"rate": "+15%",
+		"script": "c04-factory-q3.zh.txt"
+	},
+	{
+		"id": "c05-er-handover",
+		"lang": "ja",
+		"subject": "医療引継ぎ",
+		"title": "救急外来の夜勤引き継ぎと優先順位",
+		"voice": "ja-JP-NanamiNeural",
+		"rate": "+40%",
+		"script": "c05-er-handover.ja.txt"
+	},
+	{
+		"id": "c06-science-fair",
+		"lang": "en",
+		"subject": "School committee",
+		"title": "Science fair venue, budget and volunteers",
+		"voice": "en-US-GuyNeural",
+		"rate": "+40%",
+		"script": "c06-science-fair.en.txt"
+	},
+	{
+		"id": "c07-incident-postmortem",
+		"lang": "en",
+		"subject": "Incident review",
+		"title": "Payment API outage postmortem and actions",
+		"voice": "en-GB-SoniaNeural",
+		"rate": "+40%",
+		"script": "c07-incident-postmortem.en.txt"
+	},
+	{
+		"id": "c08-community-center",
+		"lang": "zh",
+		"subject": "社区议事",
+		"title": "社区中心改造：预算、方案与一致意见",
+		"voice": "zh-CN-XiaoxiaoNeural",
+		"rate": "+15%",
+		"script": "c08-community-center.zh.txt"
+	},
+	{
+		"id": "c09-restaurant-launch",
+		"lang": "ja",
+		"subject": "飲食店会議",
+		"title": "ランチメニュー刷新と試験営業",
+		"voice": "ja-JP-KeitaNeural",
+		"rate": "+58%",
+		"script": "c09-restaurant-launch.ja.txt"
+	},
+	{
+		"id": "c10-disaster-drill",
+		"lang": "ja",
+		"subject": "地域防災",
+		"title": "防災訓練の役割、タイムライン、備品",
+		"voice": "ja-JP-NanamiNeural",
+		"rate": "+50%",
+		"script": "c10-disaster-drill.ja.txt"
+	}
+]

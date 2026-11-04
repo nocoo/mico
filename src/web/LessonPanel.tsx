@@ -1,4 +1,4 @@
-import { LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-react'
+import { FileText, LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { CANDY_COLORS } from '../shared/palette'
 import { SelectField } from './SelectField'
@@ -24,6 +24,9 @@ interface LessonPanelProps {
 	onSegment: (segment: LessonSegment, clip: LessonClip) => void
 	onReset: () => void
 	onCreateCanvas: (name: string) => void
+	onSessionEnd: () => void
+	onSummary: () => void
+	canSummarize: boolean
 }
 
 type Phase =
@@ -170,12 +173,17 @@ export function LessonPanel({
 	onSegment,
 	onReset,
 	onCreateCanvas,
+	onSessionEnd,
+	onSummary,
+	canSummarize,
 }: LessonPanelProps) {
 	const runtime = useRef<Runtime>(newRuntime())
 	const onSegmentRef = useRef(onSegment)
 	const onResetRef = useRef(onReset)
+	const onSessionEndRef = useRef(onSessionEnd)
 	onSegmentRef.current = onSegment
 	onResetRef.current = onReset
+	onSessionEndRef.current = onSessionEnd
 
 	const [clips, setClips] = useState<LessonClip[]>([])
 	const [config, setConfig] = useState<MaiConfig | null>(null)
@@ -191,6 +199,7 @@ export function LessonPanel({
 	const [silenceMs, setSilenceMs] = useState(500)
 	const [rate, setRate] = useState(1)
 	const waveRef = useRef<HTMLCanvasElement>(null)
+	const endedNotified = useRef(false)
 
 	const selected = clips.find((clip) => clip.id === selectedId) ?? clips[0]
 	const duration = selected?.duration ?? 0
@@ -284,6 +293,7 @@ export function LessonPanel({
 		rt.starting = false
 		rt.generation++
 		rt.nextSegmentId = 1
+		endedNotified.current = false
 		rt.segmenter.reset()
 		setLive({ confirmed: '', hypothesis: '' })
 		setSegments([])
@@ -321,6 +331,10 @@ export function LessonPanel({
 		rt.timer = null
 		setPhase('done')
 		setVad({ db: -90, speaking: false })
+		if (!endedNotified.current) {
+			endedNotified.current = true
+			onSessionEndRef.current()
+		}
 	}
 
 	const failSession = (message: string) => {
@@ -652,6 +666,18 @@ export function LessonPanel({
 				<button type="button" className="lesson-button" onClick={createCanvas}>
 					<Plus size={15} strokeWidth={2} aria-hidden="true" />
 					New canvas
+				</button>
+			</div>
+
+			<div className="lesson-summary-row">
+				<button
+					type="button"
+					className="lesson-summary"
+					disabled={!canSummarize}
+					onClick={onSummary}
+				>
+					<FileText size={15} strokeWidth={2} aria-hidden="true" />
+					Create session summary
 				</button>
 			</div>
 

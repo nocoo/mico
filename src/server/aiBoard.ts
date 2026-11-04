@@ -140,6 +140,73 @@ export interface BoardDigest {
 	selection: string[]
 	shapes: ShapeDigest[]
 	omitted: number
+	warnings: string[]
+}
+
+function overlapRatio(a: BoardRect, b: BoardRect): number {
+	const left = Math.max(a.x, b.x)
+	const top = Math.max(a.y, b.y)
+	const right = Math.min(a.x + a.w, b.x + b.w)
+	const bottom = Math.min(a.y + a.h, b.y + b.h)
+	if (right <= left || bottom <= top) return 0
+	const area = (right - left) * (bottom - top)
+	const smaller = Math.min(a.w * a.h, b.w * b.h)
+	return smaller > 0 ? area / smaller : 0
+}
+
+function contains(outer: BoardRect, inner: BoardRect): boolean {
+	return (
+		inner.x >= outer.x - 1 &&
+		inner.y >= outer.y - 1 &&
+		inner.x + inner.w <= outer.x + outer.w + 1 &&
+		inner.y + inner.h <= outer.y + outer.h + 1
+	)
+}
+
+function layoutWarnings(shapes: Shape[]): string[] {
+	const warnings: string[] = []
+	const rects = new Map<string, BoardRect>()
+	const frames = new Map<string, BoardRect>()
+	for (const shape of shapes) {
+		if (shape.type === 'connector') continue
+		const rect = rectOf(shape)
+		rects.set(shape.id, rect)
+		if (shape.type === 'frame') frames.set(shape.id, rect)
+	}
+	for (const shape of shapes) {
+		if (shape.type === 'connector' || !shape.frameId) continue
+		const frame = frames.get(shape.frameId)
+		const rect = rects.get(shape.id)
+		if (frame && rect && !contains(frame, rect)) {
+			warnings.push(
+				`${shape.id} is outside its frame ${shape.frameId}; resize the frame or move the object`,
+			)
+		}
+	}
+	const content = shapes.filter((shape) => !['connector', 'frame', 'text'].includes(shape.type))
+	for (let index = 0; index < content.length && warnings.length < 16; index++) {
+		const a = content[index]
+		const rectA = rects.get(a.id)
+		if (!rectA) continue
+		for (let peer = index + 1; peer < content.length && warnings.length < 16; peer++) {
+			const b = content[peer]
+			const rectB = rects.get(b.id)
+			if (!rectB) continue
+			const ratio = overlapRatio(rectA, rectB)
+			if (ratio > 0.4) {
+				warnings.push(
+					`${a.id} overlaps ${b.id} (${Math.round(ratio * 100)}%); move or resize one of them`,
+				)
+			}
+		}
+	}
+	const bounds = boardBounds(shapes)
+	if (bounds && (bounds.h > 2200 || bounds.w > 2800)) {
+		warnings.push(
+			`Board is very large (${bounds.w}×${bounds.h}); use a 2–3 column layout and compact instead of extending further`,
+		)
+	}
+	return warnings.slice(0, 20)
 }
 
 export function boardDigest(
@@ -165,6 +232,7 @@ export function boardDigest(
 			),
 		),
 		omitted,
+		warnings: layoutWarnings(board.shapes),
 	}
 }
 
@@ -190,6 +258,11 @@ export function formatBoardContext(board: Board, selection: string[]): string {
 	}
 	lines.push(`Board objects: ${JSON.stringify(digest.shapes)}`)
 	if (digest.omitted > 0) lines.push(`(${digest.omitted} older objects omitted.)`)
+	lines.push(
+		digest.warnings.length > 0
+			? `Layout warnings: ${digest.warnings.join(' | ')}`
+			: 'Layout warnings: none',
+	)
 	return lines.join('\n')
 }
 

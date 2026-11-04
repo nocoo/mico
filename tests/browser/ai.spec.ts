@@ -49,20 +49,21 @@ test('the AI panel streams a tool loop and draws on the board', async ({ page, r
 	)
 })
 
-test('the lesson tab loads the lecture catalogue and playback controls', async ({ page }) => {
+test('the live tab loads the session catalogue and playback controls', async ({ page }) => {
 	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Lesson' }).click()
-	await expect(panel.getByRole('tab', { name: 'Lesson' })).toHaveAttribute('aria-selected', 'true')
+	await panel.getByRole('tab', { name: 'Live' }).click()
+	await expect(panel.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true')
 	await expect(panel.getByText('Live transcript')).toBeVisible()
 	await expect(panel.getByRole('button', { name: /Play lecture/ })).toBeVisible()
 	await expect(panel.getByRole('button', { name: 'New canvas' })).toBeVisible()
+	await expect(panel.getByRole('button', { name: 'Create session summary' })).toBeVisible()
 	await expect(panel.locator('.lesson-wave')).toBeVisible()
 
 	const picker = panel.getByRole('combobox', { name: 'Lecture' })
 	await expect(picker).toBeVisible()
 	await picker.click()
-	await expect(page.getByRole('option')).toHaveCount(10)
+	await expect(page.getByRole('option')).toHaveCount(20)
 	await page.keyboard.press('Escape')
 })
 

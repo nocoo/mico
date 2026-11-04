@@ -34,7 +34,7 @@ pnpm build
 - The browser fixture (`scripts/browser-server.ts`) owns `127.0.0.1:27063`, an ephemeral daemon, a temporary SQLite file and a separate Vite cache. Every spec refuses to run against another origin.
 - `pnpm test:browser` runs one worker at a time; tests reset the board through the API at the start of each case.
 - Do not run a dev server for tests. The Playwright config starts and stops its own fixture.
-- The browser fixture sets `MICO_AI_MOCK=1`, so AI specs use `src/server/aiMock.ts` and never call the Magpie gateway. Keep the real gateway out of CI.
+- The browser fixture sets `MICO_AI_MOCK=1`, so AI specs use `src/server/aiMock.ts` and never call the Magpie gateway. Keep the real gateway out of CI. Real-session evaluation is run explicitly against the daily daemon and writes only new `R<n>-…` canvases.
 - The browser fixture exposes the MAI config endpoint for the Lesson UI, but no automated test starts audio; real MAI transcription is a manual acceptance check because it depends on the Azure deployment and network.
 
 ## Browser conventions

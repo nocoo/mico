@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { CSSProperties, FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { POST_SESSION_SUMMARY_PROMPT } from '../shared/summaryPrompt'
 import { formatDuration } from './aiAudio'
 import { IconButton } from './IconButton'
 import { LessonPanel, type LessonSegment } from './LessonPanel'
@@ -206,6 +207,9 @@ export function AiPanel({
 	const releaseRequestRef = useRef<(seq: number) => void>(() => {})
 	const [lectureQueued, setLectureQueued] = useState(0)
 	const [lessonClipId, setLessonClipId] = useState('')
+	const [sessionEnded, setSessionEnded] = useState(false)
+	const [summaryDone, setSummaryDone] = useState(false)
+	const summarized = useRef(false)
 	const selectionRef = useRef(selectedIds)
 	selectionRef.current = selectedIds
 
@@ -222,7 +226,10 @@ export function AiPanel({
 		lectureQueue.current = []
 		requestSeq.current++
 		requestLock.current = false
+		summarized.current = false
 		setLectureQueued(0)
+		setSessionEnded(false)
+		setSummaryDone(false)
 	}, [])
 
 	useEffect(
@@ -295,6 +302,9 @@ export function AiPanel({
 
 	const enqueueLecture = useCallback(
 		(segment: LessonSegment, clip: LessonClip) => {
+			summarized.current = false
+			setSummaryDone(false)
+			setSessionEnded(false)
 			lectureQueue.current.push(
 				lectureSegmentText(clip, segment.id, segment.start, segment.end, segment.text),
 			)
@@ -303,6 +313,34 @@ export function AiPanel({
 		},
 		[pumpLecture],
 	)
+
+	const requestSummary = useCallback(() => {
+		if (requestLock.current || summarized.current) return
+		requestLock.current = true
+		summarized.current = true
+		setSummaryDone(true)
+		const seq = ++requestSeq.current
+		void sendMessage(
+			{ text: POST_SESSION_SUMMARY_PROMPT },
+			{ body: { selection: selectionRef.current, mode: 'chat' } },
+		).finally(() => releaseRequestRef.current(seq))
+	}, [sendMessage])
+
+	const endSession = useCallback(() => {
+		setSessionEnded(true)
+	}, [])
+
+	useEffect(() => {
+		if (!sessionEnded || error || busy || summaryDone || messages.length === 0) return
+		if (requestLock.current || lectureQueue.current.length > 0) return
+		requestSummary()
+	}, [sessionEnded, error, busy, summaryDone, messages.length, requestSummary])
+
+	useEffect(() => {
+		if (!error) return
+		summarized.current = false
+		setSummaryDone(false)
+	}, [error])
 
 	const resetLecture = useCallback(() => {
 		resetLectureQueue()
@@ -449,7 +487,7 @@ export function AiPanel({
 						onClick={() => setTab('lesson')}
 					>
 						<PlayCircle size={16} strokeWidth={1.75} aria-hidden="true" />
-						Lesson
+						Live
 					</button>
 					<button
 						id="ai-tab-audio"
@@ -639,6 +677,9 @@ export function AiPanel({
 					onSegment={enqueueLecture}
 					onReset={resetLecture}
 					onCreateCanvas={onCreateCanvas}
+					onSessionEnd={endSession}
+					onSummary={requestSummary}
+					canSummarize={!busy && lectureQueued === 0 && messages.length > 0 && !summaryDone}
 				/>
 			</div>
 

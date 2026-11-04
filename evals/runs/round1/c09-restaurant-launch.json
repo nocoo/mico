@@ -1,0 +1,1171 @@
+{
+  "round": 1,
+  "case": {
+    "id": "c09-restaurant-launch",
+    "lang": "ja",
+    "subject": "飲食店会議",
+    "title": "ランチメニュー刷新と試験営業",
+    "voice": "ja-JP-KeitaNeural",
+    "rate": "+58%",
+    "script": "c09-restaurant-launch.ja.txt",
+    "duration": 294.5
+  },
+  "canvasId": "2f99fd90-0853-4184-aed7-2a2d86d9fc49",
+  "canvasName": "R1-C09 ランチメニュー刷新と試験営業",
+  "startedAt": "2026-11-04T13:58:49.226Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 18,
+      "text": "今日は、来月のランチメニュー刷新について話します。 新しい店長の方針で、平日のランチ売上を今より二割上げたい。 客単価は千二百円前後、回転率は一時間に一・五回転を目標にします。 現在の課題は、厨房のキャパシティが小さいこと、仕入れ先が一社に集中していること、そして新しいメニューの認知がまだ足りないことです。",
+      "elapsedMs": 11180,
+      "timedOut": false,
+      "textReply": "平日ランチ売上の目標（＋20%）と、客単価・回転率の指標、現状の3つの課題をボードに整理しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title\",\"x\":80,\"y\":80,\"text\":\"ランチ刷新｜試験営業の設計\",\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"goal-head\",\"x\":80,\"y\":176,\"text\":\"目標と現状課題\",\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title\",\"type\":\"text\"},{\"id\":\"goal-head\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"sales-goal\",\"kind\":\"rectangle\",\"x\":80,\"y\":240,\"w\":224,\"h\":96,\"text\":\"平日ランチ売上\\n＋20%\",\"color\":\"#f7de4b\"},{\"id\":\"check-goal\",\"kind\":\"rectangle\",\"x\":360,\"y\":240,\"w\":224,\"h\":96,\"text\":\"客単価\\n約 ¥1,200\",\"color\":\"#a6d94f\"},{\"id\":\"turnover-goal\",\"kind\":\"rectangle\",\"x\":640,\"y\":240,\"w\":224,\"h\":96,\"text\":\"回転率\\n1.5回／時\",\"color\":\"#a6d94f\"},{\"id\":\"capacity-issue\",\"kind\":\"rectangle\",\"x\":80,\"y\":408,\"w\":224,\"h\":104,\"text\":\"厨房キャパ\\n小さい\",\"color\":\"#ff7fa3\"},{\"id\":\"supplier-issue\",\"kind\":\"rectangle\",\"x\":360,\"y\":408,\"w\":224,\"h\":104,\"text\":\"仕入れ先\\n一社に集中\",\"color\":\"#ff7fa3\"},{\"id\":\"awareness-issue\",\"kind\":\"rectangle\",\"x\":640,\"y\":408,\"w\":224,\"h\":104,\"text\":\"新メニュー\\n認知不足\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"sales-goal\",\"type\":\"rectangle\"},{\"id\":\"check-goal\",\"type\":\"rectangle\"},{\"id\":\"turnover-goal\",\"type\":\"rectangle\"},{\"id\":\"capacity-issue\",\"type\":\"rectangle\"},{\"id\":\"supplier-issue\",\"type\":\"rectangle\"},{\"id\":\"awareness-issue\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 18,
+      "end": 38.6,
+      "text": "今日は、メニュー、価格、仕入れ、オペレーション、販促の五つを決めます。 まず、現在の状況を共有します。 席数は四十席、厨房は三人、ホールは二人です。 平日のランチは十一時半から十四時までで、ピークは十二時から十二時四十五分です。 今のメニューは八品で、日替わり、パスタ、カレー、サンドイッチが中心です。 調理時間は平均八分、長いもので十二分かかります。",
+      "elapsedMs": 14257,
+      "timedOut": false,
+      "textReply": "決める5領域と、現状の席・人員・時間帯・品数・調理時間を追記します。決定対象の5項目と、40席・スタッフ構成・営業時間とピーク・現行8品・調理時間をボードに追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"decision-head\",\"x\":80,\"y\":560,\"text\":\"決める5項目\",\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"current-head\",\"x\":80,\"y\":800,\"text\":\"営業の現状\",\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"decision-head\",\"type\":\"text\"},{\"id\":\"current-head\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"menu-topic\",\"x\":80,\"y\":624,\"w\":144,\"h\":72,\"text\":\"メニュー\",\"color\":\"#00a2e1\"},{\"id\":\"price-topic\",\"x\":248,\"y\":624,\"w\":144,\"h\":72,\"text\":\"価格\",\"color\":\"#00a2e1\"},{\"id\":\"supply-topic\",\"x\":416,\"y\":624,\"w\":144,\"h\":72,\"text\":\"仕入れ\",\"color\":\"#00a2e1\"},{\"id\":\"ops-topic\",\"x\":584,\"y\":624,\"w\":144,\"h\":72,\"text\":\"オペレーション\",\"color\":\"#00a2e1\"},{\"id\":\"promo-topic\",\"x\":752,\"y\":624,\"w\":144,\"h\":72,\"text\":\"販促\",\"color\":\"#00a2e1\"},{\"id\":\"staff-seat\",\"x\":80,\"y\":864,\"w\":240,\"h\":88,\"text\":\"40席｜厨房3人\\nホール2人\",\"color\":\"#a6d94f\"},{\"id\":\"service-time\",\"x\":352,\"y\":864,\"w\":240,\"h\":88,\"text\":\"平日 11:30–14:00\\nピーク 12:00–12:45\",\"color\":\"#a6d94f\"},{\"id\":\"menu-time\",\"x\":624,\"y\":864,\"w\":272,\"h\":88,\"text\":\"現行8品｜平均8分\\n最長12分\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"menu-topic\",\"type\":\"rectangle\"},{\"id\":\"price-topic\",\"type\":\"rectangle\"},{\"id\":\"supply-topic\",\"type\":\"rectangle\"},{\"id\":\"ops-topic\",\"type\":\"rectangle\"},{\"id\":\"promo-topic\",\"type\":\"rectangle\"},{\"id\":\"staff-seat\",\"type\":\"rectangle\"},{\"id\":\"service-time\",\"type\":\"rectangle\"},{\"id\":\"menu-time\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 38.6,
+      "end": 58.8,
+      "text": "客単価は千円、回転率は一・二回転です。 売上は一日平均四万八千円ですが、雨の日は三割落ちます。 新しいメニューの候補は三つあります。 案Aは、日替わりを二品に絞り、副菜とドリンクをセットにする。 調理時間を短くして回転率を上げる狙いです。 案Bは、季節の食材を使った丼とスープのセットを追加する。 単価は千三百円で、見た目が良く、写真映えします。",
+      "elapsedMs": 13099,
+      "timedOut": false,
+      "textReply": "現状の基準値と、候補A・Bの内容と狙いを追加します。現状の客単価・回転率・日売上と雨天時の落ち込みを記録し、メニュー案A・Bの内容と狙いを並べました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"baseline-metrics\",\"x\":80,\"y\":1008,\"w\":240,\"h\":96,\"text\":\"現状：客単価 ¥1,000\\n回転率 1.2回／時\",\"color\":\"#a6d94f\"},{\"id\":\"baseline-sales\",\"x\":352,\"y\":1008,\"w\":240,\"h\":96,\"text\":\"平均売上 ¥48,000／日\\n雨天は −30%\",\"color\":\"#ff7fa3\"},{\"id\":\"plan-a\",\"x\":80,\"y\":1160,\"w\":352,\"h\":136,\"text\":\"案A｜日替わり2品＋\\n副菜・ドリンクセット\",\"color\":\"#00a2e1\"},{\"id\":\"plan-b\",\"x\":496,\"y\":1160,\"w\":352,\"h\":136,\"text\":\"案B｜季節の丼＋スープ\\n客単価 ¥1,300\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"baseline-metrics\",\"type\":\"rectangle\"},{\"id\":\"baseline-sales\",\"type\":\"rectangle\"},{\"id\":\"plan-a\",\"type\":\"rectangle\"},{\"id\":\"plan-b\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"plan-a-intent\",\"x\":80,\"y\":1320,\"w\":352,\"h\":104,\"text\":\"狙い：調理時間を短縮し、回転率を上げる。\",\"color\":\"#e2f5fc\"},{\"id\":\"plan-b-intent\",\"x\":496,\"y\":1320,\"w\":352,\"h\":104,\"text\":\"特徴：見た目が良く、写真映えする。\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"plan-a-intent\",\"type\":\"note\"},{\"id\":\"plan-b-intent\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 58.8,
+      "end": 77.9,
+      "text": "案Cは、テイクアウト専用の弁当を三種類用意する。 厨房の負荷は増えますが、近隣のオフィス需要を取り込めます。 厨房の意見では、案Aは現実的だが、メニューが減ると常連が離れる可能性がある。 案Bは食材の仕入れが不安定で、季節によっては原価が上がる。 案Cは弁当の容器と保冷のスペースが必要で、今の厨房では昼のピークに手が回らない。",
+      "elapsedMs": 13826,
+      "timedOut": false,
+      "textReply": "案Cを加え、厨房側の見立てと各案の懸念を比較できる形で並べます。案C（弁当3種）と、各案の厨房側の利点・懸念を追記しました。案Cはオフィス需要を取り込める一方、昼ピークの厨房負荷や容器・保冷スペースが課題です。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"plan-c\",\"x\":80,\"y\":1480,\"w\":352,\"h\":136,\"text\":\"案C｜テイクアウト弁当\\n3種類\",\"color\":\"#ff7fa3\"},{\"id\":\"risk-a\",\"x\":496,\"y\":1480,\"w\":352,\"h\":112,\"text\":\"A｜現実的\\n常連離れの懸念\",\"color\":\"#ff7fa3\"},{\"id\":\"risk-b\",\"x\":496,\"y\":1624,\"w\":352,\"h\":112,\"text\":\"B｜仕入れ不安定\\n季節で原価上昇\",\"color\":\"#ff7fa3\"},{\"id\":\"risk-c\",\"x\":80,\"y\":1648,\"w\":352,\"h\":112,\"text\":\"C｜厨房負荷増\\n容器・保冷の場所不足\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"plan-c\",\"type\":\"rectangle\"},{\"id\":\"risk-a\",\"type\":\"rectangle\"},{\"id\":\"risk-b\",\"type\":\"rectangle\"},{\"id\":\"risk-c\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"plan-c-potential\",\"x\":80,\"y\":1784,\"w\":352,\"h\":104,\"text\":\"期待：近隣オフィス需要を取り込む。\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"plan-c-potential\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 77.9,
+      "end": 98.2,
+      "text": "特に、電子レンジと保温庫の置き場所がない。 厨房の最大処理能力は、今のオペレーションで一時間に六十食、改善しても七十五食です。 仕入れについて。 野菜は現在、市場の一社から毎朝仕入れています。 魚は週に三回、肉は週に二回です。 新しいメニューで魚を増やすと、仕入れ先を二社にしないとリスクが高い。 冷凍の魚を使えば安定するが、鮮度の説明が必要です。",
+      "elapsedMs": 13960,
+      "timedOut": false,
+      "textReply": "厨房能力と仕入れ条件・魚の調達リスクを、現状課題の続きとして追加します。既存ボード下端に続けて、処理能力と調達条件をまとめたカードを配置します。厨房の処理能力（現状60食／時、改善後75食／時）と、野菜・魚・肉の仕入れ頻度、魚を増やす場合の調達先・冷凍魚の課題を追記しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":8,\"count\":29,\"bounds\":{\"x\":80,\"y\":80,\"w\":816,\"h\":1808},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"ランチ刷新｜試験営業の設計\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"goal-head\",\"type\":\"text\",\"x\":80,\"y\":176,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目標と現状課題\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"sales-goal\",\"type\":\"rectangle\",\"x\":80,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#f7de4b\",\"text\":\"平日ランチ売上\\n＋20%\"},{\"id\":\"check-goal\",\"type\":\"rectangle\",\"x\":360,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"客単価\\n約 ¥1,200\"},{\"id\":\"turnover-goal\",\"type\":\"rectangle\",\"x\":640,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"回転率\\n1.5回／時\"},{\"id\":\"capacity-issue\",\"type\":\"rectangle\",\"x\":80,\"y\":408,\"w\":224,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"厨房キャパ\\n小さい\"},{\"id\":\"supplier-issue\",\"type\":\"rectangle\",\"x\":360,\"y\":408,\"w\":224,…",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"capacity-limit\",\"x\":496,\"y\":1784,\"w\":352,\"h\":104,\"text\":\"厨房処理能力\\n現状60食／時 → 改善75食／時\",\"color\":\"#ff7fa3\"},{\"id\":\"supply-current\",\"x\":80,\"y\":1936,\"w\":352,\"h\":112,\"text\":\"仕入れ頻度\\n野菜：市場1社・毎朝\\n魚：週3回｜肉：週2回\",\"color\":\"#a6d94f\"},{\"id\":\"fish-risk\",\"x\":496,\"y\":1936,\"w\":352,\"h\":112,\"text\":\"魚を増やす場合\\n仕入れ先2社が必要\\n冷凍魚は鮮度説明が課題\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"capacity-limit\",\"type\":\"rectangle\"},{\"id\":\"supply-current\",\"type\":\"rectangle\"},{\"id\":\"fish-risk\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 98.2,
+      "end": 116.1,
+      "text": "包装材は、環境に配慮した容器にすると一食あたり三十円上がります。 原価率は現在三十二パーセントで、四十パーセントを超えると利益が出ません。 価格の候補を見ます。 案Aのセットは千二百円、原価は三百八十円、原価率は約三十二パーセント。 案Bの丼セットは千四百円、原価は五百二十円、原価率は約三十七パーセント。",
+      "elapsedMs": 22583,
+      "timedOut": false,
+      "textReply": "包装材の追加コストと原価率の上限、案A・Bの価格と原価を価格検討欄に追加します。原価率の上限と環境配慮容器の追加費用を記録し、案A・Bの価格、原価、原価率を価格検討欄にまとめました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"cost-guardrails\",\"x\":80,\"y\":2080,\"w\":352,\"h\":136,\"text\":\"原価率：現状 32%\\n40%超で利益が出ない\\n環境配慮容器：＋¥30／食\",\"color\":\"#fff8d4\"},{\"id\":\"price-a\",\"x\":496,\"y\":2080,\"w\":352,\"h\":136,\"text\":\"案A セット：¥1,200\\n原価 ¥380｜原価率 約32%\",\"color\":\"#e2f5fc\"},{\"id\":\"price-b\",\"x\":80,\"y\":2240,\"w\":352,\"h\":136,\"text\":\"案B 丼セット：¥1,400\\n原価 ¥520｜原価率 約37%\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"cost-guardrails\",\"type\":\"note\"},{\"id\":\"price-a\",\"type\":\"note\"},{\"id\":\"price-b\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 116.1,
+      "end": 134.9,
+      "text": "案Cの弁当は九百円、原価は三百四十円、原価率は約三十八パーセント。 テイクアウトは容器代がかかるので、百円のデポジットか、五十円の容器代を取る必要があります。 客単価を上げるなら案B、回転率を上げるなら案A、新規客を取るなら案Cです。 販促はどうするか。 案Bは写真が強いので、インスタグラムと近隣の掲示板に向いています。",
+      "elapsedMs": 14695,
+      "timedOut": false,
+      "textReply": "案Cの価格条件と、各案の狙い、案Bに合う販促チャネルを追加します。案Cの価格・原価と容器費用の選択肢を記録し、Aは回転率、Bは客単価、Cは新規客を狙う案として整理しました。案Bの販促先（Instagram・近隣掲示板）も追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"price-c\",\"x\":496,\"y\":2240,\"w\":352,\"h\":136,\"text\":\"案C 弁当：¥900\\n原価 ¥340｜原価率 約38%\\n容器：預かり金 ¥100 または\\n容器代 ¥50 が必要\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"price-c\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"promo-b\",\"x\":80,\"y\":2400,\"w\":352,\"h\":104,\"text\":\"案Bの販促\\nInstagram＋近隣掲示板\",\"color\":\"#00a2e1\"},{\"id\":\"aim-a\",\"x\":496,\"y\":2400,\"w\":112,\"h\":104,\"text\":\"案A\\n回転率\",\"color\":\"#00a2e1\"},{\"id\":\"aim-b\",\"x\":624,\"y\":2400,\"w\":112,\"h\":104,\"text\":\"案B\\n客単価\",\"color\":\"#f7de4b\"},{\"id\":\"aim-c\",\"x\":752,\"y\":2400,\"w\":112,\"h\":104,\"text\":\"案C\\n新規客\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"promo-b\",\"type\":\"rectangle\"},{\"id\":\"aim-a\",\"type\":\"rectangle\"},{\"id\":\"aim-b\",\"type\":\"rectangle\"},{\"id\":\"aim-c\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 134.9,
+      "end": 155.4,
+      "text": "案Aはリピーター向けで、ポイントカードや平日限定のクーポンが効きます。 案Cはオフィス向けで、チラシと事前予約が中心になります。 オープン記念として、第一週はドリンク無料、第二週は二品目半額、第三週はテイクアウト十個以上で配達無料、という段階的な施策が考えられます。 ただし、値引きをやりすぎると利益が残りません。 オペレーションの課題を整理します。",
+      "elapsedMs": 11141,
+      "timedOut": false,
+      "textReply": "案A・Cの販促と3週間の記念施策を追加し、値引きには利益面の注意を添えます。案A・Cの販促方法と3週間のオープン記念施策を追加し、値引きによる利益圧迫の注意も記しました。オペレーション課題に移ります。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"promo-a\",\"x\":496,\"y\":2544,\"w\":352,\"h\":112,\"text\":\"案A｜リピーター向け\\nポイントカード・平日限定クーポン\",\"color\":\"#e2f5fc\"},{\"id\":\"promo-c\",\"x\":80,\"y\":2544,\"w\":352,\"h\":112,\"text\":\"案C｜オフィス向け\\nチラシ・事前予約\",\"color\":\"#ffe9f0\"},{\"id\":\"launch-promo\",\"x\":80,\"y\":2704,\"w\":352,\"h\":176,\"text\":\"オープン記念（段階施策）\\n第1週：ドリンク無料\\n第2週：2品目半額\\n第3週：弁当10個以上で配達無料\",\"color\":\"#fff8d4\"},{\"id\":\"discount-warning\",\"x\":496,\"y\":2704,\"w\":352,\"h\":112,\"text\":\"注意｜値引き過多は\\n利益を圧迫\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[{\"id\":\"promo-a\",\"type\":\"note\"},{\"id\":\"promo-c\",\"type\":\"note\"},{\"id\":\"launch-promo\",\"type\":\"note\"},{\"id\":\"discount-warning\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 155.4,
+      "end": 173.8,
+      "text": "案Aを採用する場合、日替わりを二品に絞るので、仕込みの見込みが立てやすい。 ただし、常連向けに週替わりの小鉢を一品残す。 案Bを採用する場合、魚の仕入れを二社に分け、丼のご飯を保温する場所を確保する。 案Cを採用する場合、弁当の組み立てを十一時から十二時の間に集中させ、ホールのスタッフ一人をテイクアウト担当にする。",
+      "elapsedMs": 12603,
+      "timedOut": false,
+      "textReply": "オペレーション条件を案ごとに並べ、Aの常連対応も残る設計として明示します。オペレーション案を追加しました。Aは仕込みを絞りつつ週替わり小鉢を残す、Bは魚の仕入れ先分散と保温場所確保、Cは弁当作業の時間帯と担当者を明記しています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"ops-head\",\"x\":80,\"y\":2912,\"text\":\"オペレーション案\",\"w\":360,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"ops-head\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"ops-a\",\"x\":80,\"y\":2976,\"w\":352,\"h\":152,\"text\":\"案A｜日替わり2品で仕込み安定\\n常連向けに週替わり小鉢を1品残す\",\"color\":\"#e2f5fc\"},{\"id\":\"ops-b\",\"x\":496,\"y\":2976,\"w\":352,\"h\":152,\"text\":\"案B｜魚の仕入れ先を2社に分散\\n丼用ご飯の保温場所を確保\",\"color\":\"#fff8d4\"},{\"id\":\"ops-c\",\"x\":80,\"y\":3160,\"w\":352,\"h\":152,\"text\":\"案C｜11〜12時に弁当を組み立て\\nホール1人をテイクアウト担当へ\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[{\"id\":\"ops-a\",\"type\":\"note\"},{\"id\":\"ops-b\",\"type\":\"note\"},{\"id\":\"ops-c\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 173.8,
+      "end": 191.5,
+      "text": "どの案でも、十二時から十二時四十五分のピークに、厨房に一人、ホールに一人を追加で入れる必要があります。 議論の結果、最初の一ヶ月は案Aと案Bの二本柱にします。 案Aは日替わりセット千二百円、案Bは週に二日だけ季節の丼千四百円を提供します。 案Cのテイクアウトは、容器と保温庫の準備が整うまで延期します。",
+      "elapsedMs": 14231,
+      "timedOut": false,
+      "textReply": "ピーク時の増員要件と、初月のA・B採用、C延期という決定をボードに記録します。ピーク時間帯には厨房・ホール各1人の追加が必要と記録し、初月は案Aと案Bを採用、案Cは容器・保温庫の準備まで延期する決定をまとめました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"decision-result-head\",\"x\":80,\"y\":3360,\"text\":\"決定｜初月の試験営業\",\"w\":420,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"decision-result-head\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"peak-staffing\",\"x\":80,\"y\":3424,\"w\":352,\"h\":120,\"text\":\"ピーク 12:00–12:45\\n厨房＋1人｜ホール＋1人\\n※どの案でも必要\",\"color\":\"#ffe9f0\"},{\"id\":\"decision-month1\",\"x\":496,\"y\":3424,\"w\":352,\"h\":160,\"text\":\"初月：案A＋案B\\nA｜日替わりセット ¥1,200\\nB｜季節の丼 ¥1,400・週2日\\nC｜容器・保温庫準備まで延期\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":17,\"created\":[{\"id\":\"peak-staffing\",\"type\":\"note\"},{\"id\":\"decision-month1\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 11,
+      "start": 191.5,
+      "end": 208.5,
+      "text": "ただし、近隣のオフィスから事前予約が十件以上集まった場合だけ、試験的に金曜日だけ実施します。 これなら厨房の負荷を抑えながら、単価と写真映えの両方を試せます。 仕入れは、魚を二社に分け、片方は冷凍、片方は鮮魚にします。 野菜は市場の一社のままだが、価格が高騰した場合の代替先を一社確保します。",
+      "elapsedMs": 20161,
+      "timedOut": false,
+      "textReply": "案Cは予約条件付きの金曜限定試験に更新し、魚と野菜の仕入れ分散策を追加します。決定条件の追加として、案Cの試験実施条件と仕入れ先の分散案を下部に記録します。案Cは「近隣オフィスの事前予約10件以上なら金曜のみ試験実施」として条件を追記しました。仕入れは魚を冷凍・鮮魚の2社に分け、野菜も価格高騰時の代替先を確保する方針です。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":17,\"count\":51,\"bounds\":{\"x\":80,\"y\":80,\"w\":816,\"h\":3504},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"ランチ刷新｜試験営業の設計\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"goal-head\",\"type\":\"text\",\"x\":80,\"y\":176,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目標と現状課題\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"sales-goal\",\"type\":\"rectangle\",\"x\":80,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#f7de4b\",\"text\":\"平日ランチ売上\\n＋20%\"},{\"id\":\"check-goal\",\"type\":\"rectangle\",\"x\":360,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"客単価\\n約 ¥1,200\"},{\"id\":\"turnover-goal\",\"type\":\"rectangle\",\"x\":640,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"回転率\\n1.5回／時\"},{\"id\":\"capacity-issue\",\"type\":\"rectangle\",\"x\":80,\"y\":408,\"w\":224,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"厨房キャパ\\n小さい\"},{\"id\":\"supplier-issue\",\"type\":\"rectangle\",\"x\":360,\"y\":408,\"w\":224…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"c-trial-condition\",\"x\":80,\"y\":3592,\"w\":352,\"h\":136,\"text\":\"案C｜条件付き試験\\nオフィス予約10件以上なら\\n金曜のみ実施\\n単価・写真映えを検証\",\"color\":\"#fff8d4\"},{\"id\":\"supply-plan-update\",\"x\":496,\"y\":3592,\"w\":352,\"h\":152,\"text\":\"仕入れ分散\\n魚：2社（冷凍＋鮮魚）\\n野菜：市場1社＋高騰時の代替先1社\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":18,\"created\":[{\"id\":\"c-trial-condition\",\"type\":\"note\"},{\"id\":\"supply-plan-update\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 12,
+      "start": 208.5,
+      "end": 229.1,
+      "text": "包装材は、最初の一ヶ月は現行の容器を使い、テイクアウトの試験実施までに環境容器の見積もりを取ります。 販促は、第一週にドリンク無料、第二週に丼の写真投稿キャンペーン、第三週に平日ランチのポイント二倍にします。 チラシは近隣のオフィスビル十棟に配り、テイクアウトの事前予約用のQRコードを載せます。 SNSは店のアカウントで毎日一品ずつ写真を投稿します。",
+      "elapsedMs": 21906,
+      "timedOut": false,
+      "textReply": "容器は初月現行品で運用し、試験前に環境容器を見積もる方針と、販促の更新内容を追加します。販促を更新しました。第1週はドリンク無料、第2週は丼の写真投稿、第3週は平日ポイント2倍。近隣オフィスビル10棟へのチラシには予約QRを載せ、SNSでは毎日1品を投稿します。初月は現行容器を使い、テイクアウト試験前に環境容器の見積もりを取る方針です。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":18,\"count\":53,\"bounds\":{\"x\":80,\"y\":80,\"w\":816,\"h\":3664},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"ランチ刷新｜試験営業の設計\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"goal-head\",\"type\":\"text\",\"x\":80,\"y\":176,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目標と現状課題\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"sales-goal\",\"type\":\"rectangle\",\"x\":80,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#f7de4b\",\"text\":\"平日ランチ売上\\n＋20%\"},{\"id\":\"check-goal\",\"type\":\"rectangle\",\"x\":360,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"客単価\\n約 ¥1,200\"},{\"id\":\"turnover-goal\",\"type\":\"rectangle\",\"x\":640,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"回転率\\n1.5回／時\"},{\"id\":\"capacity-issue\",\"type\":\"rectangle\",\"x\":80,\"y\":408,\"w\":224,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"厨房キャパ\\n小さい\"},{\"id\":\"supplier-issue\",\"type\":\"rectangle\",\"x\":360,\"y\":408,\"w\":224…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"launch-promo\",\"patch\":{\"text\":\"販促（週替わり）\\n第1週：ドリンク無料\\n第2週：丼の写真投稿\\n第3週：平日ランチポイント2倍\"}},{\"id\":\"promo-c\",\"patch\":{\"text\":\"案C｜オフィス向け\\n近隣ビル10棟にチラシ\\n予約QRコードを掲載\"}},{\"id\":\"promo-b\",\"patch\":{\"text\":\"SNS｜店アカウントで\\n毎日1品ずつ写真投稿\"}},{\"id\":\"decision-month1\",\"patch\":{\"text\":\"初月：案A＋案B\\nA｜日替わりセット ¥1,200\\nB｜季節の丼 ¥1,400・週2日\\nC｜容器・保温庫準備まで延期\\n初月は現行容器を使用\"}},{\"id\":\"cost-guardrails\",\"patch\":{\"text\":\"原価率：現状 32%\\n40%超で利益が出ない\\n環境容器：＋¥30／食\\n試験前に見積もりを取得\"}}]}",
+          "output": "{\"ok\":true,\"revision\":19,\"created\":[],\"updated\":[\"launch-promo\",\"promo-c\",\"promo-b\",\"decision-month1\",\"cost-guardrails\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 13,
+      "start": 229.1,
+      "end": 247.7,
+      "text": "値引きは第一週だけにして、第二週以降は付加価値で勝負します。 役割と期限を決めます。 店長はメニュー最終決定と価格承認、今週金曜まで。 厨房リーダーは仕込み手順と盛り付け写真、来週火曜まで。 仕入れ担当は魚の二社見積もりと代替野菜先、来週水曜まで。 ホールリーダーはテイクアウト試験の動線と容器見積もり、来週木曜まで。",
+      "elapsedMs": 16098,
+      "timedOut": false,
+      "textReply": "値引き方針の変更と、担当者・成果物・期限をアクション欄として追加します。値引きは第1週のみとし、第2週以降は付加価値を訴求する方針に更新しました。店長・厨房・仕入れ・ホール各担当の成果物と期限もボードに追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"action-head\",\"x\":80,\"y\":3784,\"text\":\"方針・担当と期限\",\"w\":360,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":20,\"created\":[{\"id\":\"action-head\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"promo-adjust\",\"x\":80,\"y\":3848,\"w\":352,\"h\":112,\"text\":\"値引きは第1週のみ\\n第2週以降は付加価値で勝負\",\"color\":\"#fff8d4\"},{\"id\":\"owner-manager\",\"x\":496,\"y\":3848,\"w\":352,\"h\":112,\"text\":\"店長｜メニュー最終決定・価格承認\\n期限：今週金曜\",\"color\":\"#e2f5fc\"},{\"id\":\"owner-kitchen\",\"x\":80,\"y\":3992,\"w\":352,\"h\":112,\"text\":\"厨房リーダー｜仕込み手順・盛り付け写真\\n期限：来週火曜\",\"color\":\"#f1fadc\"},{\"id\":\"owner-supply\",\"x\":496,\"y\":3992,\"w\":352,\"h\":112,\"text\":\"仕入れ担当｜魚2社見積もり・代替野菜先\\n期限：来週水曜\",\"color\":\"#fff8d4\"},{\"id\":\"owner-hall\",\"x\":80,\"y\":4136,\"w\":352,\"h\":112,\"text\":\"ホールリーダー｜試験動線・容器見積もり\\n期限：来週木曜\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":21,\"created\":[{\"id\":\"promo-adjust\",\"type\":\"note\"},{\"id\":\"owner-manager\",\"type\":\"note\"},{\"id\":\"owner-kitchen\",\"type\":\"note\"},{\"id\":\"owner-supply\",\"type\":\"note\"},{\"id\":\"owner-hall\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 14,
+      "start": 247.7,
+      "end": 268.1,
+      "text": "私、マーケティング担当はチラシとSNSの投稿計画、来週金曜まで。 アルバイトの追加採用は、来週月曜から募集を始めます。 試験営業は再来週の火曜から金曜、毎日二十食限定で行い、売上、原価、待ち時間、クレームを記録します。 リスクとして、魚の鮮度、厨房の遅延、テイクアウトの容器不足、そしてスタッフの疲労があります。 魚は毎朝検品し、温度記録を残します。",
+      "elapsedMs": 13549,
+      "timedOut": false,
+      "textReply": "マーケ担当・採用・試験営業の期間と測定項目、リスク対策を追記します。マーケ担当の期限、追加採用の開始日、試験営業（再来週火〜金・1日20食）の測定項目を追記しました。魚の鮮度・厨房遅延・容器不足・疲労をリスクとして記録し、魚は毎朝検品して温度を記録する対策も追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"owner-marketing\",\"x\":496,\"y\":4136,\"w\":352,\"h\":112,\"text\":\"マーケ担当｜チラシ・SNS投稿計画\\n期限：来週金曜\"},{\"id\":\"hiring-start\",\"x\":496,\"y\":4280,\"w\":352,\"h\":112,\"text\":\"追加採用｜募集開始\\n来週月曜\"},{\"id\":\"trial-schedule\",\"x\":80,\"y\":4280,\"w\":352,\"h\":152,\"text\":\"試験営業｜再来週 火〜金\\n1日20食限定\\n売上・原価・待ち時間・クレームを記録\",\"color\":\"#f1fadc\"},{\"id\":\"risk-controls\",\"x\":496,\"y\":4424,\"w\":352,\"h\":176,\"text\":\"リスク｜魚の鮮度・厨房遅延\\n容器不足・スタッフ疲労\\n対策：魚は毎朝検品し\\n温度記録を残す\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":22,\"created\":[{\"id\":\"owner-marketing\",\"type\":\"note\"},{\"id\":\"hiring-start\",\"type\":\"note\"},{\"id\":\"trial-schedule\",\"type\":\"note\"},{\"id\":\"risk-controls\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 15,
+      "start": 268.1,
+      "end": 287,
+      "text": "厨房が十五分以上遅れたら、日替わりを一つに絞ります。 テイクアウトの容器は二週間分を確保します。 スタッフの休憩は必ず一時間おきに十五分取ります。 この四つを守れない場合は、試験営業を中止します。 最後に、成功の判断基準を決めます。 ランチ売上が一割増、客単価が千二百円以上、待ち時間が平均十分以内、クレームが一日三件以下。",
+      "elapsedMs": 11028,
+      "timedOut": false,
+      "textReply": "遅延時の縮小策・備品・休憩・中止条件と、試験営業の成功基準を追記します。遅延時のメニュー縮小、容器の確保、休憩、中止条件を運営ガードレールとして追加しました。成功基準は売上＋10%、客単価1,200円以上、平均待ち時間10分以内、クレーム1日3件以下です。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"trial-guardrails\",\"x\":80,\"y\":4616,\"w\":352,\"h\":176,\"text\":\"運営ガードレール\\n遅延15分超：日替わり1品に縮小\\n容器：2週間分を確保\\n休憩：1時間ごとに15分\\nいずれか守れなければ中止\",\"color\":\"#ffe9f0\"},{\"id\":\"success-criteria\",\"x\":496,\"y\":4616,\"w\":352,\"h\":176,\"text\":\"成功基準\\nランチ売上：＋10%\\n客単価：¥1,200以上\\n平均待ち時間：10分以内\\nクレーム：1日3件以下\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":23,\"created\":[{\"id\":\"trial-guardrails\",\"type\":\"note\"},{\"id\":\"success-criteria\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 16,
+      "start": 287,
+      "end": 294.5,
+      "text": "この四つを二週間続けられたら、テイクアウトの本格導入に進みます。 今日の決定はここまでです。 異議がなければ、明日から動きます。",
+      "elapsedMs": 23323,
+      "timedOut": false,
+      "textReply": "2週間連続で基準を満たした後にテイクアウト本格導入へ進む、という次段階を決定欄に追加します。成功基準を2週間連続で達成した後、テイクアウトの本格導入へ進む次段階を追加しました。今日の決定に異議がなければ、明日から着手する方針です。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"scale-up-condition\",\"x\":80,\"y\":4816,\"w\":352,\"h\":136,\"text\":\"次段階｜本格導入\\n成功基準を2週間連続で達成後\\nテイクアウト導入へ進む\\n明日から着手（異議なしの場合）\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":24,\"created\":[{\"id\":\"scale-up-condition\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 16,
+    "requests": 17,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 5,
+      "add_boxes": 6,
+      "add_notes": 12,
+      "get_board": 5,
+      "update_shapes": 1,
+      "add_html_cards": 1
+    },
+    "shapes": 67,
+    "shapeTypes": {
+      "text": 7,
+      "rectangle": 29,
+      "note": 30,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 1799,
+    "totalMs": 295721
+  },
+  "summary": {
+    "index": 17,
+    "start": 294.5,
+    "end": 294.5,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 48081,
+    "timedOut": false,
+    "textReply": "全体を確認しました。既存ボードの右側にサマリーを置き、決定・担当と期限・リスク・相対日程を1枚にまとめます。既存ボードの右側に、会議サマリーカードを追加しました。決定事項、担当者と期限、試験営業の基準・ガードレール、相対タイムライン、未確認事項とリスクをまとめています。\n\n**要確認ポイント:** 売上目標は＋20%ですが、試験営業の成功基準は＋10%です。初月の評価と本格導入の目標を区別して運用するか、確認事項として記載しました。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":24,\"count\":66,\"bounds\":{\"x\":80,\"y\":80,\"w\":816,\"h\":4872},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":80,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"ランチ刷新｜試験営業の設計\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"goal-head\",\"type\":\"text\",\"x\":80,\"y\":176,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目標と現状課題\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"sales-goal\",\"type\":\"rectangle\",\"x\":80,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#f7de4b\",\"text\":\"平日ランチ売上\\n＋20%\"},{\"id\":\"check-goal\",\"type\":\"rectangle\",\"x\":360,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"客単価\\n約 ¥1,200\"},{\"id\":\"turnover-goal\",\"type\":\"rectangle\",\"x\":640,\"y\":240,\"w\":224,\"h\":96,\"color\":\"#a6d94f\",\"text\":\"回転率\\n1.5回／時\"},{\"id\":\"capacity-issue\",\"type\":\"rectangle\",\"x\":80,\"y\":408,\"w\":224,\"h\":104,\"color\":\"#ff7fa3\",\"text\":\"厨房キャパ\\n小さい\"},{\"id\":\"supplier-issue\",\"type\":\"rectangle\",\"x\":360,\"y\":408,\"w\":224…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"meeting-summary\",\"x\":1032,\"y\":80,\"w\":1120,\"h\":1824,\"title\":\"ランチメニュー刷新｜会議サマリー\",\"html\":\"<div style=\\\"font-family:Arial,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;color:#2b3038;background:#ffffff;padding:22px;line-height:1.45\\\"><div style=\\\"border-bottom:4px solid #00a2e1;padding-bottom:12px;margin-bottom:16px\\\"><div style=\\\"font-size:28px;font-weight:800\\\">ランチメニュー刷新｜会議サマリー</div><div style=\\\"font-size:15px;margin-top:6px;color:#46505a\\\">目的：初月は案A・Bで平日ランチを試験し、売上・客単価・回転を改善。安全な運営条件のもと、成果を測って次段階を判断する。</div></div><div style=\\\"background:#e2f5fc;border-left:5px solid #00a2e1;padding:12px 14px;margin-bottom:14px\\\"><b>決定の要点</b><br>初月は案A（日替わりセット ¥1,200）＋案B（季節の丼 ¥1,400・週2日）。ピーク12:00–12:45は厨房・ホール各1人を追加。案Cは準備完了まで延期し、近隣オフィスの予約10件以上なら金曜のみ限定試験。</div><div style=\\\"display:flex;gap:14px;margin-bottom:14px\\\"><div style=\\\"flex:1;background:#f1fadc;padding:12px;border-radius:8px\\\"><b style=\\\"…",
+        "output": "{\"ok\":true,\"revision\":25,\"created\":[{\"id\":\"meeting-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{\"ids\":[\"meeting-summary\"]}",
+        "output": "{\"ok\":true,\"revision\":25,\"count\":67,\"bounds\":{\"x\":80,\"y\":80,\"w\":2072,\"h\":4872},\"selection\":[],\"shapes\":[{\"id\":\"meeting-summary\",\"type\":\"html\",\"x\":1032,\"y\":80,\"w\":1120,\"h\":1824,\"color\":\"#00a2e1\",\"title\":\"ランチメニュー刷新｜会議サマリー\",\"htmlLength\":4958}],\"omitted\":0}",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 25,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 80,
+        "w": 720,
+        "h": 64,
+        "text": "ランチ刷新｜試験営業の設計",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "goal-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 176,
+        "w": 280,
+        "h": 40,
+        "text": "目標と現状課題",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "sales-goal",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 80,
+        "y": 240,
+        "w": 224,
+        "h": 96,
+        "text": "平日ランチ売上\n＋20%"
+      },
+      {
+        "id": "check-goal",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 360,
+        "y": 240,
+        "w": 224,
+        "h": 96,
+        "text": "客単価\n約 ¥1,200"
+      },
+      {
+        "id": "turnover-goal",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 640,
+        "y": 240,
+        "w": 224,
+        "h": 96,
+        "text": "回転率\n1.5回／時"
+      },
+      {
+        "id": "capacity-issue",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 80,
+        "y": 408,
+        "w": 224,
+        "h": 104,
+        "text": "厨房キャパ\n小さい"
+      },
+      {
+        "id": "supplier-issue",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 360,
+        "y": 408,
+        "w": 224,
+        "h": 104,
+        "text": "仕入れ先\n一社に集中"
+      },
+      {
+        "id": "awareness-issue",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 640,
+        "y": 408,
+        "w": 224,
+        "h": 104,
+        "text": "新メニュー\n認知不足"
+      },
+      {
+        "id": "decision-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 560,
+        "w": 280,
+        "h": 40,
+        "text": "決める5項目",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "current-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 800,
+        "w": 280,
+        "h": 40,
+        "text": "営業の現状",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "menu-topic",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 80,
+        "y": 624,
+        "w": 144,
+        "h": 72,
+        "text": "メニュー"
+      },
+      {
+        "id": "price-topic",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 248,
+        "y": 624,
+        "w": 144,
+        "h": 72,
+        "text": "価格"
+      },
+      {
+        "id": "supply-topic",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 416,
+        "y": 624,
+        "w": 144,
+        "h": 72,
+        "text": "仕入れ"
+      },
+      {
+        "id": "ops-topic",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 584,
+        "y": 624,
+        "w": 144,
+        "h": 72,
+        "text": "オペレーション"
+      },
+      {
+        "id": "promo-topic",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 752,
+        "y": 624,
+        "w": 144,
+        "h": 72,
+        "text": "販促"
+      },
+      {
+        "id": "staff-seat",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 80,
+        "y": 864,
+        "w": 240,
+        "h": 88,
+        "text": "40席｜厨房3人\nホール2人"
+      },
+      {
+        "id": "service-time",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 352,
+        "y": 864,
+        "w": 240,
+        "h": 88,
+        "text": "平日 11:30–14:00\nピーク 12:00–12:45"
+      },
+      {
+        "id": "menu-time",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 624,
+        "y": 864,
+        "w": 272,
+        "h": 88,
+        "text": "現行8品｜平均8分\n最長12分"
+      },
+      {
+        "id": "baseline-metrics",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 80,
+        "y": 1008,
+        "w": 240,
+        "h": 96,
+        "text": "現状：客単価 ¥1,000\n回転率 1.2回／時"
+      },
+      {
+        "id": "baseline-sales",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 352,
+        "y": 1008,
+        "w": 240,
+        "h": 96,
+        "text": "平均売上 ¥48,000／日\n雨天は −30%"
+      },
+      {
+        "id": "plan-a",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 80,
+        "y": 1160,
+        "w": 352,
+        "h": 136,
+        "text": "案A｜日替わり2品＋\n副菜・ドリンクセット"
+      },
+      {
+        "id": "plan-b",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 496,
+        "y": 1160,
+        "w": 352,
+        "h": 136,
+        "text": "案B｜季節の丼＋スープ\n客単価 ¥1,300"
+      },
+      {
+        "id": "plan-a-intent",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1320,
+        "w": 352,
+        "h": 104,
+        "text": "狙い：調理時間を短縮し、回転率を上げる。"
+      },
+      {
+        "id": "plan-b-intent",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 496,
+        "y": 1320,
+        "w": 352,
+        "h": 104,
+        "text": "特徴：見た目が良く、写真映えする。"
+      },
+      {
+        "id": "plan-c",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 80,
+        "y": 1480,
+        "w": 352,
+        "h": 136,
+        "text": "案C｜テイクアウト弁当\n3種類"
+      },
+      {
+        "id": "risk-a",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 496,
+        "y": 1480,
+        "w": 352,
+        "h": 112,
+        "text": "A｜現実的\n常連離れの懸念"
+      },
+      {
+        "id": "risk-b",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 496,
+        "y": 1624,
+        "w": 352,
+        "h": 112,
+        "text": "B｜仕入れ不安定\n季節で原価上昇"
+      },
+      {
+        "id": "risk-c",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 80,
+        "y": 1648,
+        "w": 352,
+        "h": 112,
+        "text": "C｜厨房負荷増\n容器・保冷の場所不足"
+      },
+      {
+        "id": "plan-c-potential",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1784,
+        "w": 352,
+        "h": 104,
+        "text": "期待：近隣オフィス需要を取り込む。"
+      },
+      {
+        "id": "capacity-limit",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 496,
+        "y": 1784,
+        "w": 352,
+        "h": 104,
+        "text": "厨房処理能力\n現状60食／時 → 改善75食／時"
+      },
+      {
+        "id": "supply-current",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 80,
+        "y": 1936,
+        "w": 352,
+        "h": 112,
+        "text": "仕入れ頻度\n野菜：市場1社・毎朝\n魚：週3回｜肉：週2回"
+      },
+      {
+        "id": "fish-risk",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 496,
+        "y": 1936,
+        "w": 352,
+        "h": 112,
+        "text": "魚を増やす場合\n仕入れ先2社が必要\n冷凍魚は鮮度説明が課題"
+      },
+      {
+        "id": "cost-guardrails",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 2080,
+        "w": 352,
+        "h": 136,
+        "text": "原価率：現状 32%\n40%超で利益が出ない\n環境容器：＋¥30／食\n試験前に見積もりを取得"
+      },
+      {
+        "id": "price-a",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 496,
+        "y": 2080,
+        "w": 352,
+        "h": 136,
+        "text": "案A セット：¥1,200\n原価 ¥380｜原価率 約32%"
+      },
+      {
+        "id": "price-b",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 2240,
+        "w": 352,
+        "h": 136,
+        "text": "案B 丼セット：¥1,400\n原価 ¥520｜原価率 約37%"
+      },
+      {
+        "id": "price-c",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 496,
+        "y": 2240,
+        "w": 352,
+        "h": 136,
+        "text": "案C 弁当：¥900\n原価 ¥340｜原価率 約38%\n容器：預かり金 ¥100 または\n容器代 ¥50 が必要"
+      },
+      {
+        "id": "promo-b",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 80,
+        "y": 2400,
+        "w": 352,
+        "h": 104,
+        "text": "SNS｜店アカウントで\n毎日1品ずつ写真投稿"
+      },
+      {
+        "id": "aim-a",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 496,
+        "y": 2400,
+        "w": 112,
+        "h": 104,
+        "text": "案A\n回転率"
+      },
+      {
+        "id": "aim-b",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 624,
+        "y": 2400,
+        "w": 112,
+        "h": 104,
+        "text": "案B\n客単価"
+      },
+      {
+        "id": "aim-c",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 752,
+        "y": 2400,
+        "w": 112,
+        "h": 104,
+        "text": "案C\n新規客"
+      },
+      {
+        "id": "promo-a",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 496,
+        "y": 2544,
+        "w": 352,
+        "h": 112,
+        "text": "案A｜リピーター向け\nポイントカード・平日限定クーポン"
+      },
+      {
+        "id": "promo-c",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 2544,
+        "w": 352,
+        "h": 112,
+        "text": "案C｜オフィス向け\n近隣ビル10棟にチラシ\n予約QRコードを掲載"
+      },
+      {
+        "id": "launch-promo",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 2704,
+        "w": 352,
+        "h": 176,
+        "text": "販促（週替わり）\n第1週：ドリンク無料\n第2週：丼の写真投稿\n第3週：平日ランチポイント2倍"
+      },
+      {
+        "id": "discount-warning",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 496,
+        "y": 2704,
+        "w": 352,
+        "h": 112,
+        "text": "注意｜値引き過多は\n利益を圧迫"
+      },
+      {
+        "id": "ops-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 2912,
+        "w": 360,
+        "h": 40,
+        "text": "オペレーション案",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "ops-a",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 2976,
+        "w": 352,
+        "h": 152,
+        "text": "案A｜日替わり2品で仕込み安定\n常連向けに週替わり小鉢を1品残す"
+      },
+      {
+        "id": "ops-b",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 496,
+        "y": 2976,
+        "w": 352,
+        "h": 152,
+        "text": "案B｜魚の仕入れ先を2社に分散\n丼用ご飯の保温場所を確保"
+      },
+      {
+        "id": "ops-c",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 3160,
+        "w": 352,
+        "h": 152,
+        "text": "案C｜11〜12時に弁当を組み立て\nホール1人をテイクアウト担当へ"
+      },
+      {
+        "id": "decision-result-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 3360,
+        "w": 420,
+        "h": 40,
+        "text": "決定｜初月の試験営業",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "peak-staffing",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 3424,
+        "w": 352,
+        "h": 120,
+        "text": "ピーク 12:00–12:45\n厨房＋1人｜ホール＋1人\n※どの案でも必要"
+      },
+      {
+        "id": "decision-month1",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 496,
+        "y": 3424,
+        "w": 352,
+        "h": 160,
+        "text": "初月：案A＋案B\nA｜日替わりセット ¥1,200\nB｜季節の丼 ¥1,400・週2日\nC｜容器・保温庫準備まで延期\n初月は現行容器を使用"
+      },
+      {
+        "id": "c-trial-condition",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 3592,
+        "w": 352,
+        "h": 136,
+        "text": "案C｜条件付き試験\nオフィス予約10件以上なら\n金曜のみ実施\n単価・写真映えを検証"
+      },
+      {
+        "id": "supply-plan-update",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 496,
+        "y": 3592,
+        "w": 352,
+        "h": 152,
+        "text": "仕入れ分散\n魚：2社（冷凍＋鮮魚）\n野菜：市場1社＋高騰時の代替先1社"
+      },
+      {
+        "id": "action-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 3784,
+        "w": 360,
+        "h": 40,
+        "text": "方針・担当と期限",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "promo-adjust",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 3848,
+        "w": 352,
+        "h": 112,
+        "text": "値引きは第1週のみ\n第2週以降は付加価値で勝負"
+      },
+      {
+        "id": "owner-manager",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 496,
+        "y": 3848,
+        "w": 352,
+        "h": 112,
+        "text": "店長｜メニュー最終決定・価格承認\n期限：今週金曜"
+      },
+      {
+        "id": "owner-kitchen",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 3992,
+        "w": 352,
+        "h": 112,
+        "text": "厨房リーダー｜仕込み手順・盛り付け写真\n期限：来週火曜"
+      },
+      {
+        "id": "owner-supply",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 496,
+        "y": 3992,
+        "w": 352,
+        "h": 112,
+        "text": "仕入れ担当｜魚2社見積もり・代替野菜先\n期限：来週水曜"
+      },
+      {
+        "id": "owner-hall",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 4136,
+        "w": 352,
+        "h": 112,
+        "text": "ホールリーダー｜試験動線・容器見積もり\n期限：来週木曜"
+      },
+      {
+        "id": "owner-marketing",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 496,
+        "y": 4136,
+        "w": 352,
+        "h": 112,
+        "text": "マーケ担当｜チラシ・SNS投稿計画\n期限：来週金曜"
+      },
+      {
+        "id": "hiring-start",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 496,
+        "y": 4280,
+        "w": 352,
+        "h": 112,
+        "text": "追加採用｜募集開始\n来週月曜"
+      },
+      {
+        "id": "trial-schedule",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 4280,
+        "w": 352,
+        "h": 152,
+        "text": "試験営業｜再来週 火〜金\n1日20食限定\n売上・原価・待ち時間・クレームを記録"
+      },
+      {
+        "id": "risk-controls",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 496,
+        "y": 4424,
+        "w": 352,
+        "h": 176,
+        "text": "リスク｜魚の鮮度・厨房遅延\n容器不足・スタッフ疲労\n対策：魚は毎朝検品し\n温度記録を残す"
+      },
+      {
+        "id": "trial-guardrails",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 4616,
+        "w": 352,
+        "h": 176,
+        "text": "運営ガードレール\n遅延15分超：日替わり1品に縮小\n容器：2週間分を確保\n休憩：1時間ごとに15分\nいずれか守れなければ中止"
+      },
+      {
+        "id": "success-criteria",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 496,
+        "y": 4616,
+        "w": 352,
+        "h": 176,
+        "text": "成功基準\nランチ売上：＋10%\n客単価：¥1,200以上\n平均待ち時間：10分以内\nクレーム：1日3件以下"
+      },
+      {
+        "id": "scale-up-condition",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 4816,
+        "w": 352,
+        "h": 136,
+        "text": "次段階｜本格導入\n成功基準を2週間連続で達成後\nテイクアウト導入へ進む\n明日から着手（異議なしの場合）"
+      },
+      {
+        "id": "meeting-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 1032,
+        "y": 80,
+        "w": 1120,
+        "h": 1824,
+        "title": "ランチメニュー刷新｜会議サマリー",
+        "html": "<div style=\"font-family:Arial,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;color:#2b3038;background:#ffffff;padding:22px;line-height:1.45\"><div style=\"border-bottom:4px solid #00a2e1;padding-bottom:12px;margin-bottom:16px\"><div style=\"font-size:28px;font-weight:800\">ランチメニュー刷新｜会議サマリー</div><div style=\"font-size:15px;margin-top:6px;color:#46505a\">目的：初月は案A・Bで平日ランチを試験し、売上・客単価・回転を改善。安全な運営条件のもと、成果を測って次段階を判断する。</div></div><div style=\"background:#e2f5fc;border-left:5px solid #00a2e1;padding:12px 14px;margin-bottom:14px\"><b>決定の要点</b><br>初月は案A（日替わりセット ¥1,200）＋案B（季節の丼 ¥1,400・週2日）。ピーク12:00–12:45は厨房・ホール各1人を追加。案Cは準備完了まで延期し、近隣オフィスの予約10件以上なら金曜のみ限定試験。</div><div style=\"display:flex;gap:14px;margin-bottom:14px\"><div style=\"flex:1;background:#f1fadc;padding:12px;border-radius:8px\"><b style=\"color:#42631d\">運営・調達</b><br>魚は冷凍＋鮮魚の2社、野菜は高騰時の代替先を確保。初月は現行容器を使用し、テイクアウト試験前に環境容器を見積もる（＋¥30/食）。魚は毎朝検品し温度記録。</div><div style=\"flex:1;background:#fff8d4;padding:12px;border-radius:8px\"><b>販促</b><br>第1週：ドリンク無料（値引きはこの週のみ）。第2週：丼の写真投稿。第3週：平日ランチのポイント2倍。店アカウントで毎日1品投稿。オフィスビル10棟に予約QR付きチラシ。</div></div><div style=\"font-size:19px;font-weight:800;margin:8px 0;color:#00a2e1\">担当・期限</div><table style=\"width:100%;border-collapse:collapse;font-size:13px;margin-bottom:14px\"><thead><tr style=\"background:#2b3038;color:white\"><th style=\"padding:8px;text-align:left;border:1px solid #cbd2d8\">担当</th><th style=\"padding:8px;text-align:left;border:1px solid #cbd2d8\">成果物・行動</th><th style=\"padding:8px;text-align:left;border:1px solid #cbd2d8\">期限</th></tr></thead><tbody><tr><td style=\"padding:7px;border:1px solid #cbd2d8\">店長</td><td style=\"padding:7px;border:1px solid #cbd2d8\">メニュー最終決定・価格承認</td><td style=\"padding:7px;border:1px solid #cbd2d8\">今週金曜</td></tr><tr style=\"background:#f5f8fa\"><td style=\"padding:7px;border:1px solid #cbd2d8\">厨房リーダー</td><td style=\"padding:7px;border:1px solid #cbd2d8\">仕込み手順・盛り付け写真</td><td style=\"padding:7px;border:1px solid #cbd2d8\">来週火曜</td></tr><tr><td style=\"padding:7px;border:1px solid #cbd2d8\">仕入れ担当</td><td style=\"padding:7px;border:1px solid #cbd2d8\">魚2社の見積もり・代替野菜先</td><td style=\"padding:7px;border:1px solid #cbd2d8\">来週水曜</td></tr><tr style=\"background:#f5f8fa\"><td style=\"padding:7px;border:1px solid #cbd2d8\">ホールリーダー</td><td style=\"padding:7px;border:1px solid #cbd2d8\">試験動線・容器見積もり</td><td style=\"padding:7px;border:1px solid #cbd2d8\">来週木曜</td></tr><tr><td style=\"padding:7px;border:1px solid #cbd2d8\">マーケ担当</td><td style=\"padding:7px;border:1px solid #cbd2d8\">チラシ・SNS投稿計画</td><td style=\"padding:7px;border:1px solid #cbd2d8\">来週金曜</td></tr><tr style=\"background:#f5f8fa\"><td style=\"padding:7px;border:1px solid #cbd2d8\">採用担当</td><td style=\"padding:7px;border:1px solid #cbd2d8\">追加アルバイト募集開始</td><td style=\"padding:7px;border:1px solid #cbd2d8\">来週月曜</td></tr><tr><td style=\"padding:7px;border:1px solid #cbd2d8\">試験営業チーム</td><td style=\"padding:7px;border:1px solid #cbd2d8\">火〜金、1日20食限定。売上・原価・待ち時間・クレームを記録</td><td style=\"padding:7px;border:1px solid #cbd2d8\">再来週</td></tr></tbody></table><div style=\"font-size:19px;font-weight:800;margin:8px 0;color:#00a2e1\">試験の基準・ガードレール</div><div style=\"display:flex;gap:14px;margin-bottom:14px\"><div style=\"flex:1;border:1px solid #a6d94f;padding:11px;border-radius:8px\"><b>成功基準</b><br>売上＋10%／客単価 ¥1,200以上／平均待ち時間10分以内／クレーム1日3件以下。4項目を2週間連続で達成後、テイクアウト本格導入へ。</div><div style=\"flex:1;background:#ffe9f0;padding:11px;border-radius:8px\"><b>中止・縮小条件</b><br>厨房遅延15分超なら日替わり1品に縮小。容器は2週間分を確保し、休憩は1時間ごとに15分。これらの条件を守れなければ試験営業を中止。</div></div><div style=\"font-size:19px;font-weight:800;margin:8px 0;color:#00a2e1\">相対タイムライン</div><div style=\"display:flex;align-items:stretch;gap:6px;font-size:12px;margin-bottom:14px\"><div style=\"flex:1;background:#e2f5fc;padding:9px;border-radius:6px\"><b>明日</b><br>異議がなければ着手</div><div style=\"align-self:center;color:#00a2e1;font-weight:bold\">→</div><div style=\"flex:1;background:#fff8d4;padding:9px;border-radius:6px\"><b>来週</b><br>月〜金：採用・各準備を完了</div><div style=\"align-self:center;color:#00a2e1;font-weight:bold\">→</div><div style=\"flex:1;background:#f1fadc;padding:9px;border-radius:6px\"><b>再来週 火〜金</b><br>限定試験・記録</div><div style=\"align-self:center;color:#00a2e1;font-weight:bold\">→</div><div style=\"flex:1;background:#ffe9f0;padding:9px;border-radius:6px\"><b>判定後</b><br>基準2週連続達成で拡大</div></div><div style=\"font-size:19px;font-weight:800;margin:8px 0;color:#00a2e1\">要確認の論点・リスク</div><ul style=\"margin:4px 0 0;padding-left:22px;font-size:13px\"><li><b>目標の整合：</b>冒頭目標は平日売上＋20%、試験の成功基準は＋10%。初月の評価値と本格導入の目標を区別して運用するか確認。</li><li><b>計測定義：</b>売上・客単価の比較基準期間、待ち時間の測り方、クレームの集計単位を試験前に統一。</li><li><b>要員・能力：</b>ピーク増員の確保状況を確認。厨房処理能力は現状60食/時、改善後75食/時の想定。遅延とスタッフ疲労を監視。</li><li><b>供給・設備：</b>魚の鮮度と季節原価、保温庫の置き場所、容器在庫不足に注意。魚は朝の検品・温度記録を徹底。</li><li><b>案Cの条件：</b>予約10件以上の場合の金曜限定試験は、容器・保温設備などの準備条件と実施時期を事前確認。</li><li><b>利益管理：</b>原価率40%超で利益が出ない想定。第1週以外は値引きに頼らず付加価値で訴求。</li></ul><div style=\"margin-top:14px;padding-top:9px;border-top:1px solid #d5dce1;font-size:11px;color:#5a646e\">会議記録｜日付は会話上の相対表現（今週・来週・再来週）。実日付は担当者間で確定。</div></div>"
+      }
+    ]
+  }
+}

@@ -1,0 +1,726 @@
+{
+  "round": 1,
+  "case": {
+    "id": "c10-disaster-drill",
+    "lang": "ja",
+    "subject": "地域防災",
+    "title": "防災訓練の役割、タイムライン、備品",
+    "voice": "ja-JP-NanamiNeural",
+    "rate": "+50%",
+    "script": "c10-disaster-drill.ja.txt",
+    "duration": 293.6
+  },
+  "canvasId": "7609144d-859b-44a2-93b1-ffab051f8819",
+  "canvasName": "R1-C10 防災訓練の役割、タイムライン、備品",
+  "startedAt": "2026-11-04T14:03:44.964Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 22.4,
+      "text": "今日は、来月の地域防災訓練の実行委員会です。 参加者は町内会、消防団、学校、福祉施設、そして私たちのボランティアチームです。 訓練は土曜日の午前九時から十二時まで、会場は小学校の校庭と体育館、そして周辺の三つの避難経路です。 目標は、住民が自分の避難場所と行動を確認すること、そして私たちが課題を見つけることです。",
+      "elapsedMs": 18757,
+      "timedOut": false,
+      "textReply": "実行委員会の目的、参加団体、訓練の日時・会場を整理しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title\",\"x\":80,\"y\":72,\"text\":\"地域防災訓練｜実行委員会\",\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"purpose-head\",\"x\":88,\"y\":160,\"text\":\"目的\",\"w\":240,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"venue-head\",\"x\":488,\"y\":160,\"text\":\"日時・会場\",\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":28,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title\",\"type\":\"text\"},{\"id\":\"purpose-head\",\"type\":\"text\"},{\"id\":\"venue-head\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"purpose\",\"x\":80,\"y\":208,\"w\":336,\"h\":136,\"text\":\"住民：避難場所と行動を確認\\n委員会：訓練で課題を見つける\",\"color\":\"#e2f5fc\"},{\"id\":\"when-where\",\"x\":480,\"y\":208,\"w\":368,\"h\":160,\"text\":\"土曜日 9:00–12:00\\n会場：小学校の校庭・体育館\\n周辺の避難経路：3ルート\",\"color\":\"#fff8d4\"},{\"id\":\"participants\",\"x\":80,\"y\":392,\"w\":768,\"h\":136,\"text\":\"参加団体\\n町内会　｜　消防団　｜　学校\\n福祉施設　｜　ボランティアチーム\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"purpose\",\"type\":\"note\"},{\"id\":\"when-where\",\"type\":\"note\"},{\"id\":\"participants\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 22.4,
+      "end": 48,
+      "text": "今日は、役割、タイムライン、備品、そして当日の判断ルールを決めます。 まず、想定する災害を確認します。 今回は、震度六弱の地震が朝八時三十分に発生し、その後、火災が二箇所で発生、道路が一部通行止めになる、という想定です。 津波は想定しませんが、揺れによる建物被害とけが人を想定します。 参加目標は住民百五十人、小学生六十人、高齢者四十人、福祉施設から十人です。",
+      "elapsedMs": 11953,
+      "timedOut": false,
+      "textReply": "「想定・参加目標」を追加しました。震度6弱の地震、火災2箇所、道路の一部通行止めなどの条件と参加人数を記録しています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"scenario-frame\",\"x\":80,\"y\":576,\"w\":768,\"h\":368,\"title\":\"想定・参加目標\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"scenario-frame\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"scenario\",\"x\":120,\"y\":640,\"w\":320,\"h\":176,\"text\":\"想定：震度6弱（8:30発生）\\n火災2箇所／道路一部通行止め\\n津波なし\\n建物被害・けが人を想定\",\"color\":\"#ffe9f0\",\"frameId\":\"scenario-frame\"},{\"id\":\"attendance\",\"x\":488,\"y\":640,\"w\":320,\"h\":176,\"text\":\"参加目標\\n住民 150人\\n小学生 60人\\n高齢者 40人\\n福祉施設 10人\",\"color\":\"#f1fadc\",\"frameId\":\"scenario-frame\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"scenario\",\"type\":\"note\"},{\"id\":\"attendance\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 48,
+      "end": 70.5,
+      "text": "スタッフは三十人で、消防団が八人、町内会が十人、学校が五人、医療ボランティアが三人、私たちが四人です。 会場の使い方を決めます。 校庭は受付、安否確認、消火訓練、救護所に分けます。 体育館は避難所体験と要配慮者のスペースにします。 避難経路は三つで、北門は車いす対応、東門は徒歩、南門は自転車とペットの経路にします。",
+      "elapsedMs": 9071,
+      "timedOut": false,
+      "textReply": "スタッフ構成と会場・避難経路の割り当てを追加します。スタッフ30人の内訳、校庭・体育館の用途、北門・東門・南門それぞれの避難経路を追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":4,\"count\":9,\"bounds\":{\"x\":80,\"y\":72,\"w\":768,\"h\":872},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":72,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"地域防災訓練｜実行委員会\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"purpose-head\",\"type\":\"text\",\"x\":88,\"y\":160,\"w\":240,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目的\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"venue-head\",\"type\":\"text\",\"x\":488,\"y\":160,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"日時・会場\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"purpose\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":336,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"住民：避難場所と行動を確認\\n委員会：訓練で課題を見つける\"},{\"id\":\"when-where\",\"type\":\"note\",\"x\":480,\"y\":208,\"w\":368,\"h\":160,\"color\":\"#fff8d4\",\"text\":\"土曜日 9:00–12:00\\n会場：小学校の校庭・体育館\\n周辺の避難経路：3ルート\"},{\"id\":\"participants\",\"type\":\"note\",\"x\":80,\"y\":392,\"w\":768,\"h\":136,\"color\":\"#f1fadc\",\"text\":\"参加団体\\n町内会　｜　消防団　｜　学校\\n福祉施…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"staff\",\"x\":80,\"y\":984,\"w\":360,\"h\":176,\"text\":\"スタッフ：30人\\n消防団 8｜町内会 10\\n学校 5｜医療ボランティア 3\\nボランティアチーム 4\",\"color\":\"#f1fadc\"},{\"id\":\"grounds\",\"x\":480,\"y\":984,\"w\":368,\"h\":176,\"text\":\"校庭\\n受付・安否確認\\n消火訓練・救護所\\n体育館：避難所体験\\n要配慮者スペース\",\"color\":\"#e2f5fc\"},{\"id\":\"routes\",\"x\":80,\"y\":1184,\"w\":768,\"h\":152,\"text\":\"避難経路\\n北門：車いす対応　｜　東門：徒歩\\n南門：自転車・ペット\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"staff\",\"type\":\"note\"},{\"id\":\"grounds\",\"type\":\"note\"},{\"id\":\"routes\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 70.5,
+      "end": 93.7,
+      "text": "ただし、南門は道路が狭いので、車は入れません。 北門のスロープは昨年修繕しましたが、雨天時は滑りやすいので、当日はマットを敷きます。 タイムラインはこうです。 八時三十分、訓練開始の放送。 八時三十五分、住民は最寄りの避難経路へ移動。 八時五十分、受付開始、安否確認票を回収。 九時十分、校庭で消火器訓練、体育館で避難所設営。",
+      "elapsedMs": 7937,
+      "timedOut": false,
+      "textReply": "南門の車両制限と北門の雨天対策、午前の訓練タイムラインを追記します。南門は車両進入不可、北門は雨天時にスロープへマットを敷く注意点を記録しました。8:30から9:10までの訓練タイムラインも追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"route-safety\",\"x\":80,\"y\":1376,\"w\":768,\"h\":136,\"text\":\"経路上の注意\\n南門：道路が狭いため車両進入不可\\n北門：雨天時はスロープにマットを敷く\",\"color\":\"#ffe9f0\"},{\"id\":\"timeline-am\",\"x\":80,\"y\":1552,\"w\":768,\"h\":216,\"text\":\"当日タイムライン\\n8:30　訓練開始の放送\\n8:35　最寄りの避難経路へ移動\\n8:50　受付開始・安否確認票回収\\n9:10　校庭：消火器訓練\\n　　　体育館：避難所設営\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"route-safety\",\"type\":\"note\"},{\"id\":\"timeline-am\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 93.7,
+      "end": 116,
+      "text": "九時四十分、救護所で応急救護のデモ。 十時十分、要配慮者の避難支援訓練。 十時四十分、全員集合して振り返り。 十一時十分、片付け。 十一時四十分、スタッフ反省会。 十二時終了です。 役割を決めます。 全体指揮は町内会の山田さん、副指揮は私です。 受付と安否確認は町内会の女性部が担当し、名簿と筆記用具を用意します。",
+      "elapsedMs": 10956,
+      "timedOut": false,
+      "textReply": "午前後半の時刻と、全体指揮・受付担当および必要備品を追加します。9:40から12:00までの予定を加え、全体指揮・副指揮と、受付担当および備品を記録しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"timeline-pm\",\"x\":80,\"y\":1792,\"w\":768,\"h\":224,\"text\":\"当日タイムライン（続き）\\n9:40　救護所：応急救護デモ\\n10:10　要配慮者の避難支援訓練\\n10:40　全員集合・振り返り\\n11:10　片付け　｜　11:40 スタッフ反省会\\n12:00　終了\",\"color\":\"#e2f5fc\"},{\"id\":\"roles-command\",\"x\":80,\"y\":2040,\"w\":360,\"h\":152,\"text\":\"全体指揮：町内会・山田さん\\n副指揮：発言者\\n当日の指揮系統を共有\",\"color\":\"#f1fadc\"},{\"id\":\"roles-checkin\",\"x\":480,\"y\":2040,\"w\":368,\"h\":152,\"text\":\"受付・安否確認\\n担当：町内会 女性部\\n備品：名簿・筆記用具\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"timeline-pm\",\"type\":\"note\"},{\"id\":\"roles-command\",\"type\":\"note\"},{\"id\":\"roles-checkin\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 116,
+      "end": 138.3,
+      "text": "消火訓練は消防団の佐々木さん、水消火器を六本使います。 避難所設営は学校の先生と私たちで、簡易ベッド十台、間仕切り六張り、毛布二十枚を体育館に設置します。 救護所は医療ボランティアの田中さん、救急箱二つ、担架一台、AED一台を用意します。 要配慮者の支援は福祉施設の高橋さん、車いす二台、誘導員四人を配置します。",
+      "elapsedMs": 31999,
+      "timedOut": false,
+      "textReply": "訓練ごとの担当者と必要備品を、既存の役割欄の下に整理します。消火訓練・避難所設営・救護所・要配慮者支援について、担当者と備品数を追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":7,\"count\":17,\"bounds\":{\"x\":80,\"y\":72,\"w\":768,\"h\":2120},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":72,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"地域防災訓練｜実行委員会\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"purpose-head\",\"type\":\"text\",\"x\":88,\"y\":160,\"w\":240,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目的\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"venue-head\",\"type\":\"text\",\"x\":488,\"y\":160,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"日時・会場\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"purpose\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":336,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"住民：避難場所と行動を確認\\n委員会：訓練で課題を見つける\"},{\"id\":\"when-where\",\"type\":\"note\",\"x\":480,\"y\":208,\"w\":368,\"h\":160,\"color\":\"#fff8d4\",\"text\":\"土曜日 9:00–12:00\\n会場：小学校の校庭・体育館\\n周辺の避難経路：3ルート\"},{\"id\":\"participants\",\"type\":\"note\",\"x\":80,\"y\":392,\"w\":768,\"h\":136,\"color\":\"#f1fadc\",\"text\":\"参加団体\\n町内会　｜　消防団　｜　学校\\n福…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"roles-drill\",\"x\":80,\"y\":2224,\"w\":360,\"h\":176,\"text\":\"消火訓練｜消防団・佐々木さん\\n水消火器 6本\",\"color\":\"#ffe9f0\"},{\"id\":\"roles-shelter\",\"x\":480,\"y\":2224,\"w\":368,\"h\":176,\"text\":\"避難所設営｜学校・ボランティア\\n簡易ベッド 10台\\n間仕切り 6張り｜毛布 20枚\",\"color\":\"#e2f5fc\"},{\"id\":\"roles-medical\",\"x\":80,\"y\":2424,\"w\":360,\"h\":176,\"text\":\"救護所｜医療ボランティア・田中さん\\n救急箱 2｜担架 1｜AED 1\",\"color\":\"#fff8d4\"},{\"id\":\"roles-support\",\"x\":480,\"y\":2424,\"w\":368,\"h\":176,\"text\":\"要配慮者支援｜福祉施設・高橋さん\\n車いす 2台\\n誘導員 4人\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"roles-drill\",\"type\":\"note\"},{\"id\":\"roles-shelter\",\"type\":\"note\"},{\"id\":\"roles-medical\",\"type\":\"note\"},{\"id\":\"roles-support\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 138.3,
+      "end": 163.9,
+      "text": "受付の外にペット用の待機場所を作り、水とリードを用意します。 備品の確認をします。 前回の訓練で足りなかったものは、筆記用具、安否確認票、軍手、懐中電灯、救急箱の補充、そして車いすの予備です。 今回は、安否確認票三百枚、軍手百双、懐中電灯二十本、単三電池四十本、救急箱二つ、毛布二十枚、簡易ベッド十台、間仕切り六張り、水二十リットル、非常食一百食を用意します。",
+      "elapsedMs": 22005,
+      "timedOut": false,
+      "textReply": "ペット待機場所と、前回の不足品・今回の数量付き備品一覧を追加します。受付外のペット待機場所（飲み水・リード）と、前回の不足品を記録しました。今回の備品は数量付きで一覧にしています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"pet-area\",\"x\":80,\"y\":2648,\"w\":360,\"h\":152,\"text\":\"受付外：ペット待機場所\\n用意：水・リード\",\"color\":\"#fff8d4\"},{\"id\":\"shortages\",\"x\":480,\"y\":2648,\"w\":368,\"h\":152,\"text\":\"前回の不足品\\n筆記用具・安否確認票\\n軍手・懐中電灯\\n救急箱の補充・予備車いす\",\"color\":\"#ffe9f0\"},{\"id\":\"supply-list\",\"x\":80,\"y\":2824,\"w\":768,\"h\":240,\"text\":\"今回の備品\\n安否確認票 300枚｜軍手 100双\\n懐中電灯 20本｜単三電池 40本\\n救急箱 2｜毛布 20枚\\n簡易ベッド 10台｜間仕切り 6張り\\n水 20L｜非常食 100食\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"pet-area\",\"type\":\"note\"},{\"id\":\"shortages\",\"type\":\"note\"},{\"id\":\"supply-list\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 163.9,
+      "end": 187.8,
+      "text": "予算は五万円で、備品購入に三万五千円、印刷に五千円、飲料に五千円、予備に五千円を使います。 当日の判断ルールも決めます。 雨天の場合は、受付と消火訓練を体育館に移し、避難経路の訓練は中止します。 暑さ指数が三十一度を超えた場合は、屋外の訓練を短縮し、水分補給を優先します。 けが人が出た場合は、ただちに訓練を中断し、救護所で対応します。",
+      "elapsedMs": 15235,
+      "timedOut": false,
+      "textReply": "予算配分と、雨天・暑さ・けが人発生時の当日判断ルールを追加します。予算50,000円の配分と、雨天・暑さ指数31℃超・けが人発生時の判断ルールを追加しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"budget\",\"x\":80,\"y\":3104,\"w\":360,\"h\":184,\"text\":\"予算：50,000円\\n備品購入 35,000円\\n印刷 5,000円｜飲料 5,000円\\n予備 5,000円\",\"color\":\"#fff8d4\"},{\"id\":\"decision-rules\",\"x\":480,\"y\":3104,\"w\":368,\"h\":240,\"text\":\"当日の判断ルール\\n雨天：受付・消火訓練は体育館へ\\n　　　避難経路訓練は中止\\n暑さ指数 >31℃：屋外訓練を短縮\\n　　　水分補給を優先\\nけが人：訓練を中断し救護所対応\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"budget\",\"type\":\"note\"},{\"id\":\"decision-rules\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 187.8,
+      "end": 208.2,
+      "text": "参加者が百人を下回った場合は、消火訓練を二回から一回に減らします。 車いすの利用者が来た場合は、北門のスロープを使い、誘導員を二人つけます。 広報はどうするか。 一週間前に町内会の回覧板とメールで案内し、前日にリマインドします。 当日は受付で参加者に訓練の流れを書いた一枚紙を渡します。",
+      "elapsedMs": 17521,
+      "timedOut": false,
+      "textReply": "参加人数・車いす利用者への対応条件と、事前告知から当日の案内までを追記します。参加者100人未満の場合の訓練縮小、車いす利用者への誘導体制を追加しました。広報は1週間前の案内、前日のリマインド、当日の一枚紙配布で整理しています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"contingency-rules\",\"x\":80,\"y\":3384,\"w\":768,\"h\":176,\"text\":\"追加の当日対応\\n参加者が100人未満：消火訓練を2回から1回へ\\n車いす利用者：北門スロープを使用し、誘導員2人を配置\",\"color\":\"#f1fadc\"},{\"id\":\"communications\",\"x\":80,\"y\":3576,\"w\":768,\"h\":176,\"text\":\"広報・参加者案内\\n1週間前：回覧板・メールで案内\\n前日：リマインド\\n当日：受付で訓練の流れの一枚紙を配布\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"contingency-rules\",\"type\":\"note\"},{\"id\":\"communications\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 208.2,
+      "end": 233.8,
+      "text": "写真撮影は許可を取った上で行い、個人が特定できる写真は広報以外に使いません。 終了後は、参加者アンケートをQRコードで配り、良かった点と改善点を集めます。 課題として、高齢者の移動、車いすの経路、ペットの扱い、そしてスタッフの連絡手段があります。 高齢者には、町内会の見守り隊が声をかけ、必要なら車で送ります。 車いすは北門に限定し、当日は誘導員を固定します。",
+      "elapsedMs": 24979,
+      "timedOut": false,
+      "textReply": "写真の扱いと事後アンケート、挙がった課題に対する高齢者・車いす対応を追記します。撮影・写真利用の条件、QRアンケートによる振り返りを追加しました。高齢者の移動と車いす経路の対応を記録し、ペットの扱いとスタッフ連絡手段は要検討として残しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"photo-survey\",\"x\":80,\"y\":3784,\"w\":768,\"h\":176,\"text\":\"記録・振り返り\\n撮影は許可を得て実施\\n個人特定可能な写真は広報以外に使用しない\\n終了後：QRコードのアンケートで良かった点・改善点を収集\",\"color\":\"#fff8d4\"},{\"id\":\"accessibility-issues\",\"x\":80,\"y\":3984,\"w\":768,\"h\":224,\"text\":\"課題と対応\\n高齢者の移動：見守り隊が声かけ、必要なら車で送迎\\n車いす経路：北門に限定し、誘導員を固定\\n要検討：ペットの扱い／スタッフの連絡手段\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"photo-survey\",\"type\":\"note\"},{\"id\":\"accessibility-issues\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 11,
+      "start": 233.8,
+      "end": 257.3,
+      "text": "ペットは南門の待機場所でリードをつなぎ、訓練中は体育館に入れません。 スタッフの連絡は、トランシーバー六台とLINEのグループを使いますが、LINEは遅れることがあるので、緊急時はトランシーバーを優先します。 最後に、訓練後の改善サイクルを決めます。 当日の反省会で、良かった点、困った点、次回の改善点をそれぞれ三つ以上出します。",
+      "elapsedMs": 25530,
+      "timedOut": false,
+      "textReply": "ペットの運用、連絡手段の優先順位、訓練後の改善サイクルを追記します。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"pet-area\",\"x\":80,\"y\":2648,\"w\":360,\"h\":152,\"text\":\"南門：ペット待機場所\\nリードにつなぐ・水を用意\\n訓練中は体育館に入れない\",\"color\":\"#fff8d4\"},{\"id\":\"accessibility-issues\",\"x\":80,\"y\":3984,\"w\":768,\"h\":224,\"text\":\"課題と対応\\n高齢者：見守り隊が声かけ、必要なら車で送迎\\n車いす：北門に限定し、誘導員を固定\\nペット：南門で待機、体育館不可\\n連絡：トランシーバー6台＋LINEグループ\\n緊急時はトランシーバーを優先\",\"color\":\"#ffe9f0\"},{\"id\":\"improvement-cycle\",\"x\":80,\"y\":4224,\"w\":768,\"h\":160,\"text\":\"訓練後の改善サイクル\\n反省会で各3つ以上出す\\n良かった点｜困った点｜次回の改善点\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: pet-area\"}",
+          "failed": true
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":12,\"count\":30,\"bounds\":{\"x\":80,\"y\":72,\"w\":768,\"h\":4136},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":72,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"地域防災訓練｜実行委員会\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"purpose-head\",\"type\":\"text\",\"x\":88,\"y\":160,\"w\":240,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目的\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"venue-head\",\"type\":\"text\",\"x\":488,\"y\":160,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"日時・会場\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"purpose\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":336,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"住民：避難場所と行動を確認\\n委員会：訓練で課題を見つける\"},{\"id\":\"when-where\",\"type\":\"note\",\"x\":480,\"y\":208,\"w\":368,\"h\":160,\"color\":\"#fff8d4\",\"text\":\"土曜日 9:00–12:00\\n会場：小学校の校庭・体育館\\n周辺の避難経路：3ルート\"},{\"id\":\"participants\",\"type\":\"note\",\"x\":80,\"y\":392,\"w\":768,\"h\":136,\"color\":\"#f1fadc\",\"text\":\"参加団体\\n町内会　｜　消防団　｜　学校\\n…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"pet-area\",\"patch\":{\"text\":\"南門：ペット待機場所\\nリードにつなぐ・水を用意\\n訓練中は体育館に入れない\"}},{\"id\":\"accessibility-issues\",\"patch\":{\"text\":\"課題と対応\\n高齢者：見守り隊が声かけ、必要なら車で送迎\\n車いす：北門に限定し、誘導員を固定\\nペット：南門で待機、体育館不可\\n連絡：トランシーバー6台＋LINEグループ\\n緊急時はトランシーバーを優先\"}}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[],\"updated\":[\"pet-area\",\"accessibility-issues\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 12,
+      "start": 257.3,
+      "end": 282.2,
+      "text": "一週間以内に簡単な報告書を作り、町内会と学校に共有します。 一ヶ月以内に、改善点のうち二つを実際に直します。 今回は、車いす経路のマットと、受付の動線を優先します。 次の訓練は半年後を予定しています。 今日の合意事項を確認します。 訓練は予定通り実施、会場は校庭と体育館、三つの避難経路を使う。 タイムラインと役割は共有した通り。 備品予算は五万円。",
+      "elapsedMs": 11562,
+      "timedOut": false,
+      "textReply": "訓練後の期限付きフォロー、優先改善2点、次回時期と、本日の合意事項を記録します。訓練後1週間以内の報告書共有、1か月以内に行う改善（車いす経路のマット・受付動線）、半年後の次回訓練を追加しました。本日の合意事項もまとめています。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"follow-up\",\"x\":80,\"y\":4400,\"w\":768,\"h\":176,\"text\":\"訓練後のフォロー\\n1週間以内：報告書を作成し町内会・学校へ共有\\n1か月以内：改善点を2つ実施\\n優先：車いす経路のマット／受付の動線\\n次回訓練：半年後を予定\",\"color\":\"#e2f5fc\"},{\"id\":\"consensus\",\"x\":80,\"y\":4592,\"w\":768,\"h\":184,\"text\":\"本日の合意事項\\n訓練は予定通り実施\\n会場：校庭・体育館｜避難経路：3ルート\\nタイムライン・役割は共有内容の通り\\n備品予算：50,000円\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"follow-up\",\"type\":\"note\"},{\"id\":\"consensus\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 13,
+      "start": 282.2,
+      "end": 293.6,
+      "text": "雨天と暑さの判断ルールを適用する。 広報は一週間前と前日。 振り返りは当日と一週間後。 異議がなければ、私は明日、実行計画を全員に送ります。 以上で終わります。",
+      "elapsedMs": 10578,
+      "timedOut": false,
+      "textReply": "最終合意に雨天・暑さの運用、広報・振り返り時期、明日の計画送付を追記します。合意事項に、雨天・暑さの判断ルール、広報と振り返りの時期、明日の実行計画送付を追記しました。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"consensus\",\"patch\":{\"text\":\"本日の合意事項\\n訓練は予定通り実施｜会場：校庭・体育館\\n避難経路：3ルート｜タイムライン・役割は共有通り\\n備品予算：50,000円\\n雨天・暑さの判断ルールを適用\\n広報：1週間前・前日｜振り返り：当日・1週間後\\n明日：実行計画を全員に送付\"}}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"consensus\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 13,
+    "requests": 14,
+    "timedOutSegments": 0,
+    "failedTools": 1,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_notes": 12,
+      "add_frames": 1,
+      "get_board": 5,
+      "update_shapes": 2,
+      "add_html_cards": 1
+    },
+    "shapes": 33,
+    "shapeTypes": {
+      "text": 3,
+      "note": 28,
+      "frame": 1,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 1049,
+    "totalMs": 279234
+  },
+  "summary": {
+    "index": 14,
+    "start": 293.6,
+    "end": 293.6,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 61151,
+    "timedOut": false,
+    "textReply": "既存ボードの右側に、決定事項・担当付きアクション・未解決リスク・当日タイムラインをまとめたサマリーカードを置きます。期限は会議で合意された相対期限で記し、担当が特定されていないものは未指定と明示します。会議サマリーを既存ボードの右側に追加しました。開催・運営の決定事項、担当と期限付きのアクション、当日タイムライン、未解決リスクをまとめています。\n\n**要確認:** 冒頭の開催枠は9:00開始ですが、訓練放送は8:30予定です。また、参加目標の属性別人数は合計260人となるため、重複の有無と総目標の扱いを確認してください。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":15,\"count\":32,\"bounds\":{\"x\":80,\"y\":72,\"w\":768,\"h\":4704},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":72,\"w\":720,\"h\":64,\"color\":\"#2b3038\",\"text\":\"地域防災訓練｜実行委員会\",\"font\":\"sans\",\"fontSize\":44,\"fontWeight\":700},{\"id\":\"purpose-head\",\"type\":\"text\",\"x\":88,\"y\":160,\"w\":240,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目的\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"venue-head\",\"type\":\"text\",\"x\":488,\"y\":160,\"w\":280,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"日時・会場\",\"font\":\"sans\",\"fontSize\":28,\"fontWeight\":700},{\"id\":\"purpose\",\"type\":\"note\",\"x\":80,\"y\":208,\"w\":336,\"h\":136,\"color\":\"#e2f5fc\",\"text\":\"住民：避難場所と行動を確認\\n委員会：訓練で課題を見つける\"},{\"id\":\"when-where\",\"type\":\"note\",\"x\":480,\"y\":208,\"w\":368,\"h\":160,\"color\":\"#fff8d4\",\"text\":\"土曜日 9:00–12:00\\n会場：小学校の校庭・体育館\\n周辺の避難経路：3ルート\"},{\"id\":\"participants\",\"type\":\"note\",\"x\":80,\"y\":392,\"w\":768,\"h\":136,\"color\":\"#f1fadc\",\"text\":\"参加団体\\n町内会　｜　消防団　｜　学校\\n…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"meeting-summary-card\",\"x\":976,\"y\":72,\"w\":840,\"h\":2280,\"title\":\"地域防災訓練｜会議サマリー\",\"html\":\"<div style=\\\"font-family:Arial,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;color:#2b3038;line-height:1.55;background:#fff;padding:22px;border-radius:14px\\\"><div style=\\\"border-bottom:4px solid #00a2e1;padding-bottom:14px;margin-bottom:16px\\\"><div style=\\\"font-size:12px;letter-spacing:1px;color:#00a2e1;font-weight:700\\\">実行委員会｜決定・実行サマリー</div><h1 style=\\\"font-size:28px;line-height:1.25;margin:6px 0\\\">地域防災訓練</h1><div style=\\\"font-size:16px\\\">目的：住民が避難場所と行動を確認し、委員会が訓練を通じて課題を見つける。</div></div><div style=\\\"background:#e2f5fc;border-left:5px solid #00a2e1;padding:12px 14px;margin:14px 0\\\"><b>開催合意</b>　土曜日 9:00–12:00｜小学校の校庭・体育館｜避難経路3ルート｜予定通り実施</div><h2 style=\\\"font-size:19px;margin:20px 0 8px;color:#007eae\\\">主な決定事項</h2><ul style=\\\"padding-left:22px;margin:6px 0\\\"><li><b>想定：</b>8:30に震度6弱、火災2箇所、道路一…",
+        "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"meeting-summary-card\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{\"ids\":[\"meeting-summary-card\"]}",
+        "output": "{\"ok\":true,\"revision\":16,\"count\":33,\"bounds\":{\"x\":80,\"y\":72,\"w\":1736,\"h\":4704},\"selection\":[],\"shapes\":[{\"id\":\"meeting-summary-card\",\"type\":\"html\",\"x\":976,\"y\":72,\"w\":840,\"h\":2280,\"color\":\"#00a2e1\",\"title\":\"地域防災訓練｜会議サマリー\",\"htmlLength\":5488}],\"omitted\":0}",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 16,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 72,
+        "w": 720,
+        "h": 64,
+        "text": "地域防災訓練｜実行委員会",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "purpose-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 88,
+        "y": 160,
+        "w": 240,
+        "h": 40,
+        "text": "目的",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "venue-head",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 488,
+        "y": 160,
+        "w": 280,
+        "h": 40,
+        "text": "日時・会場",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "purpose",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 208,
+        "w": 336,
+        "h": 136,
+        "text": "住民：避難場所と行動を確認\n委員会：訓練で課題を見つける"
+      },
+      {
+        "id": "when-where",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 480,
+        "y": 208,
+        "w": 368,
+        "h": 160,
+        "text": "土曜日 9:00–12:00\n会場：小学校の校庭・体育館\n周辺の避難経路：3ルート"
+      },
+      {
+        "id": "participants",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 392,
+        "w": 768,
+        "h": 136,
+        "text": "参加団体\n町内会　｜　消防団　｜　学校\n福祉施設　｜　ボランティアチーム"
+      },
+      {
+        "id": "scenario-frame",
+        "color": "#ff7fa3",
+        "type": "frame",
+        "x": 80,
+        "y": 576,
+        "w": 768,
+        "h": 368,
+        "title": "想定・参加目標"
+      },
+      {
+        "id": "scenario",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 120,
+        "y": 640,
+        "w": 320,
+        "h": 176,
+        "text": "想定：震度6弱（8:30発生）\n火災2箇所／道路一部通行止め\n津波なし\n建物被害・けが人を想定",
+        "frameId": "scenario-frame"
+      },
+      {
+        "id": "attendance",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 488,
+        "y": 640,
+        "w": 320,
+        "h": 176,
+        "text": "参加目標\n住民 150人\n小学生 60人\n高齢者 40人\n福祉施設 10人",
+        "frameId": "scenario-frame"
+      },
+      {
+        "id": "staff",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 984,
+        "w": 360,
+        "h": 176,
+        "text": "スタッフ：30人\n消防団 8｜町内会 10\n学校 5｜医療ボランティア 3\nボランティアチーム 4"
+      },
+      {
+        "id": "grounds",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 480,
+        "y": 984,
+        "w": 368,
+        "h": 176,
+        "text": "校庭\n受付・安否確認\n消火訓練・救護所\n体育館：避難所体験\n要配慮者スペース"
+      },
+      {
+        "id": "routes",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1184,
+        "w": 768,
+        "h": 152,
+        "text": "避難経路\n北門：車いす対応　｜　東門：徒歩\n南門：自転車・ペット"
+      },
+      {
+        "id": "route-safety",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 1376,
+        "w": 768,
+        "h": 136,
+        "text": "経路上の注意\n南門：道路が狭いため車両進入不可\n北門：雨天時はスロープにマットを敷く"
+      },
+      {
+        "id": "timeline-am",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1552,
+        "w": 768,
+        "h": 216,
+        "text": "当日タイムライン\n8:30　訓練開始の放送\n8:35　最寄りの避難経路へ移動\n8:50　受付開始・安否確認票回収\n9:10　校庭：消火器訓練\n　　　体育館：避難所設営"
+      },
+      {
+        "id": "timeline-pm",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1792,
+        "w": 768,
+        "h": 224,
+        "text": "当日タイムライン（続き）\n9:40　救護所：応急救護デモ\n10:10　要配慮者の避難支援訓練\n10:40　全員集合・振り返り\n11:10　片付け　｜　11:40 スタッフ反省会\n12:00　終了"
+      },
+      {
+        "id": "roles-command",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 2040,
+        "w": 360,
+        "h": 152,
+        "text": "全体指揮：町内会・山田さん\n副指揮：発言者\n当日の指揮系統を共有"
+      },
+      {
+        "id": "roles-checkin",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 480,
+        "y": 2040,
+        "w": 368,
+        "h": 152,
+        "text": "受付・安否確認\n担当：町内会 女性部\n備品：名簿・筆記用具"
+      },
+      {
+        "id": "roles-drill",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 2224,
+        "w": 360,
+        "h": 176,
+        "text": "消火訓練｜消防団・佐々木さん\n水消火器 6本"
+      },
+      {
+        "id": "roles-shelter",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 480,
+        "y": 2224,
+        "w": 368,
+        "h": 176,
+        "text": "避難所設営｜学校・ボランティア\n簡易ベッド 10台\n間仕切り 6張り｜毛布 20枚"
+      },
+      {
+        "id": "roles-medical",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 2424,
+        "w": 360,
+        "h": 176,
+        "text": "救護所｜医療ボランティア・田中さん\n救急箱 2｜担架 1｜AED 1"
+      },
+      {
+        "id": "roles-support",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 480,
+        "y": 2424,
+        "w": 368,
+        "h": 176,
+        "text": "要配慮者支援｜福祉施設・高橋さん\n車いす 2台\n誘導員 4人"
+      },
+      {
+        "id": "pet-area",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 2648,
+        "w": 360,
+        "h": 152,
+        "text": "南門：ペット待機場所\nリードにつなぐ・水を用意\n訓練中は体育館に入れない"
+      },
+      {
+        "id": "shortages",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 480,
+        "y": 2648,
+        "w": 368,
+        "h": 152,
+        "text": "前回の不足品\n筆記用具・安否確認票\n軍手・懐中電灯\n救急箱の補充・予備車いす"
+      },
+      {
+        "id": "supply-list",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 2824,
+        "w": 768,
+        "h": 240,
+        "text": "今回の備品\n安否確認票 300枚｜軍手 100双\n懐中電灯 20本｜単三電池 40本\n救急箱 2｜毛布 20枚\n簡易ベッド 10台｜間仕切り 6張り\n水 20L｜非常食 100食"
+      },
+      {
+        "id": "budget",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 3104,
+        "w": 360,
+        "h": 184,
+        "text": "予算：50,000円\n備品購入 35,000円\n印刷 5,000円｜飲料 5,000円\n予備 5,000円"
+      },
+      {
+        "id": "decision-rules",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 480,
+        "y": 3104,
+        "w": 368,
+        "h": 240,
+        "text": "当日の判断ルール\n雨天：受付・消火訓練は体育館へ\n　　　避難経路訓練は中止\n暑さ指数 >31℃：屋外訓練を短縮\n　　　水分補給を優先\nけが人：訓練を中断し救護所対応"
+      },
+      {
+        "id": "contingency-rules",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 3384,
+        "w": 768,
+        "h": 176,
+        "text": "追加の当日対応\n参加者が100人未満：消火訓練を2回から1回へ\n車いす利用者：北門スロープを使用し、誘導員2人を配置"
+      },
+      {
+        "id": "communications",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 3576,
+        "w": 768,
+        "h": 176,
+        "text": "広報・参加者案内\n1週間前：回覧板・メールで案内\n前日：リマインド\n当日：受付で訓練の流れの一枚紙を配布"
+      },
+      {
+        "id": "photo-survey",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 3784,
+        "w": 768,
+        "h": 176,
+        "text": "記録・振り返り\n撮影は許可を得て実施\n個人特定可能な写真は広報以外に使用しない\n終了後：QRコードのアンケートで良かった点・改善点を収集"
+      },
+      {
+        "id": "accessibility-issues",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 3984,
+        "w": 768,
+        "h": 224,
+        "text": "課題と対応\n高齢者：見守り隊が声かけ、必要なら車で送迎\n車いす：北門に限定し、誘導員を固定\nペット：南門で待機、体育館不可\n連絡：トランシーバー6台＋LINEグループ\n緊急時はトランシーバーを優先"
+      },
+      {
+        "id": "follow-up",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 4400,
+        "w": 768,
+        "h": 176,
+        "text": "訓練後のフォロー\n1週間以内：報告書を作成し町内会・学校へ共有\n1か月以内：改善点を2つ実施\n優先：車いす経路のマット／受付の動線\n次回訓練：半年後を予定"
+      },
+      {
+        "id": "consensus",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 4592,
+        "w": 768,
+        "h": 184,
+        "text": "本日の合意事項\n訓練は予定通り実施｜会場：校庭・体育館\n避難経路：3ルート｜タイムライン・役割は共有通り\n備品予算：50,000円\n雨天・暑さの判断ルールを適用\n広報：1週間前・前日｜振り返り：当日・1週間後\n明日：実行計画を全員に送付"
+      },
+      {
+        "id": "meeting-summary-card",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 976,
+        "y": 72,
+        "w": 840,
+        "h": 2280,
+        "title": "地域防災訓練｜会議サマリー",
+        "html": "<div style=\"font-family:Arial,'Hiragino Kaku Gothic ProN',Meiryo,sans-serif;color:#2b3038;line-height:1.55;background:#fff;padding:22px;border-radius:14px\"><div style=\"border-bottom:4px solid #00a2e1;padding-bottom:14px;margin-bottom:16px\"><div style=\"font-size:12px;letter-spacing:1px;color:#00a2e1;font-weight:700\">実行委員会｜決定・実行サマリー</div><h1 style=\"font-size:28px;line-height:1.25;margin:6px 0\">地域防災訓練</h1><div style=\"font-size:16px\">目的：住民が避難場所と行動を確認し、委員会が訓練を通じて課題を見つける。</div></div><div style=\"background:#e2f5fc;border-left:5px solid #00a2e1;padding:12px 14px;margin:14px 0\"><b>開催合意</b>　土曜日 9:00–12:00｜小学校の校庭・体育館｜避難経路3ルート｜予定通り実施</div><h2 style=\"font-size:19px;margin:20px 0 8px;color:#007eae\">主な決定事項</h2><ul style=\"padding-left:22px;margin:6px 0\"><li><b>想定：</b>8:30に震度6弱、火災2箇所、道路一部通行止め。津波なし。建物被害・けが人を想定。</li><li><b>参加目標：</b>住民150人、小学生60人、高齢者40人、福祉施設10人。スタッフ30人。</li><li><b>会場：</b>校庭＝受付・安否確認・消火訓練・救護所。体育館＝避難所体験・要配慮者スペース。</li><li><b>経路：</b>北門＝車いす（雨天時はスロープにマット）、東門＝徒歩、南門＝自転車・ペット。南門は道路が狭く車両進入不可。</li><li><b>判断：</b>雨天は受付・消火訓練を体育館へ移し、避難経路訓練中止。暑さ指数31℃超は屋外訓練短縮・水分補給優先。けが人発生時は訓練中断し救護所対応。</li><li><b>規模調整：</b>参加者100人未満なら消火訓練を2回から1回に。車いす利用者は北門を使い誘導員2人を配置。</li><li><b>予算：</b>50,000円（備品35,000円、印刷5,000円、飲料5,000円、予備5,000円）。</li><li><b>連絡・記録：</b>トランシーバー6台＋LINE。緊急時はトランシーバー優先。撮影は許可を得て行い、個人特定可能な写真は広報以外に使わない。</li></ul><h2 style=\"font-size:19px;margin:20px 0 8px;color:#007eae\">アクションアイテム</h2><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><thead><tr style=\"background:#2b3038;color:white\"><th style=\"padding:8px;text-align:left;border:1px solid #d5dce0\">作業</th><th style=\"padding:8px;text-align:left;border:1px solid #d5dce0\">担当</th><th style=\"padding:8px;text-align:left;border:1px solid #d5dce0\">期限</th></tr></thead><tbody><tr style=\"background:#f3f5f4\"><td style=\"padding:8px;border:1px solid #d5dce0\">実行計画を全員へ送付</td><td style=\"padding:8px;border:1px solid #d5dce0\">副指揮（発言者）</td><td style=\"padding:8px;border:1px solid #d5dce0\"><b>明日</b></td></tr><tr><td style=\"padding:8px;border:1px solid #d5dce0\">回覧板・メールで参加案内</td><td style=\"padding:8px;border:1px solid #d5dce0\">未指定（実行委員会で調整）</td><td style=\"padding:8px;border:1px solid #d5dce0\">訓練1週間前</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:8px;border:1px solid #d5dce0\">参加者へリマインド</td><td style=\"padding:8px;border:1px solid #d5dce0\">未指定（実行委員会で調整）</td><td style=\"padding:8px;border:1px solid #d5dce0\">前日</td></tr><tr><td style=\"padding:8px;border:1px solid #d5dce0\">受付で訓練の流れの一枚紙を配布</td><td style=\"padding:8px;border:1px solid #d5dce0\">町内会 女性部（受付）</td><td style=\"padding:8px;border:1px solid #d5dce0\">当日</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:8px;border:1px solid #d5dce0\">反省会で良かった点・困った点・改善点を各3つ以上整理</td><td style=\"padding:8px;border:1px solid #d5dce0\">実行委員会・スタッフ</td><td style=\"padding:8px;border:1px solid #d5dce0\">当日（11:40反省会）</td></tr><tr><td style=\"padding:8px;border:1px solid #d5dce0\">簡単な報告書を作成し町内会・学校へ共有</td><td style=\"padding:8px;border:1px solid #d5dce0\">未指定（実行委員会で担当決定）</td><td style=\"padding:8px;border:1px solid #d5dce0\">終了後1週間以内</td></tr><tr style=\"background:#f3f5f4\"><td style=\"padding:8px;border:1px solid #d5dce0\">改善を2件実施：北門スロープのマット／受付動線</td><td style=\"padding:8px;border:1px solid #d5dce0\">未指定（担当割当が必要）</td><td style=\"padding:8px;border:1px solid #d5dce0\">終了後1か月以内</td></tr><tr><td style=\"padding:8px;border:1px solid #d5dce0\">次回訓練を計画</td><td style=\"padding:8px;border:1px solid #d5dce0\">実行委員会</td><td style=\"padding:8px;border:1px solid #d5dce0\">半年後を予定</td></tr></tbody></table><h2 style=\"font-size:19px;margin:20px 0 8px;color:#007eae\">当日タイムライン</h2><div style=\"display:grid;grid-template-columns:78px 1fr;gap:0 10px;font-size:13px\"><div style=\"padding:5px;color:#007eae;font-weight:700\">8:30</div><div style=\"padding:5px\">訓練開始の放送</div><div style=\"padding:5px;color:#007eae;font-weight:700\">8:35</div><div style=\"padding:5px\">最寄りの避難経路へ移動</div><div style=\"padding:5px;color:#007eae;font-weight:700\">8:50</div><div style=\"padding:5px\">受付開始・安否確認票回収</div><div style=\"padding:5px;color:#007eae;font-weight:700\">9:10</div><div style=\"padding:5px\">消火器訓練／体育館で避難所設営</div><div style=\"padding:5px;color:#007eae;font-weight:700\">9:40</div><div style=\"padding:5px\">救護所で応急救護デモ</div><div style=\"padding:5px;color:#007eae;font-weight:700\">10:10</div><div style=\"padding:5px\">要配慮者の避難支援訓練</div><div style=\"padding:5px;color:#007eae;font-weight:700\">10:40</div><div style=\"padding:5px\">全員集合・振り返り</div><div style=\"padding:5px;color:#007eae;font-weight:700\">11:10</div><div style=\"padding:5px\">片付け</div><div style=\"padding:5px;color:#007eae;font-weight:700\">11:40</div><div style=\"padding:5px\">スタッフ反省会</div><div style=\"padding:5px;color:#007eae;font-weight:700\">12:00</div><div style=\"padding:5px\">終了</div></div><h2 style=\"font-size:19px;margin:20px 0 8px;color:#c84f74\">未解決事項・リスク</h2><div style=\"background:#ffe9f0;border-left:5px solid #ff7fa3;padding:10px 14px;font-size:13px\"><ul style=\"padding-left:20px;margin:3px 0\"><li><b>開催時刻の整合：</b>会議冒頭の開催枠は9:00–12:00だが、訓練放送・避難開始は8:30から。9:00開始との関係（準備／参加者集合時刻）を案内前に明確化。</li><li><b>参加目標の数え方：</b>属性別人数の合計は260人。区分の重複有無と、総参加目標として扱うか確認。</li><li><b>担当未確定：</b>広報、報告書作成、改善2件の実行責任者と備品調達・チェック担当を割り当てる。</li><li><b>安全：</b>南門へ車両を入れない。北門スロープは雨天時に滑りやすいためマット設置を確認。雨天・暑さ・けが人の判断を当日周知。</li><li><b>連絡：</b>LINE遅延に備え、緊急連絡はトランシーバーを優先する運用を全スタッフで共有。</li><li><b>ペット：</b>南門待機場所でリードにつなぎ、訓練中は体育館に入れない。水の配置も確認。</li></ul></div><div style=\"margin-top:16px;padding:10px 12px;background:#fff8d4;border-radius:8px;font-size:13px\"><b>実行前の確認ポイント：</b>8:30と9:00の時刻整理／担当者の割当／当日判断ルールとルート案内の周知。</div></div>"
+      }
+    ]
+  }
+}

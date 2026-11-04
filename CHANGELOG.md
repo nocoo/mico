@@ -9,7 +9,10 @@
 - Keep the Audio tab as a recording microphone interface placeholder.
 - Add a Lesson tab that plays ten recorded school lectures, streams PCM to Azure MAI-Transcribe-2-Streaming over a Vite WebSocket proxy, and shows live transcript, segment list, waveform, VAD meter and playback controls.
 - Queue confirmed transcript segments into the AI while audio keeps playing; lecture requests run one at a time, coalesce under lag and let the model answer `WAIT` for incomplete sentences.
-- Use low-latency lecture reasoning and incremental drawing prompts so the board grows with the lecture instead of waiting for a final plan.
+- Use low-latency live reasoning and incremental drawing prompts so the board grows with the session instead of waiting for a final plan.
+- Add ten meeting and planning cases with generated Chinese, English and Japanese audio, plus the source scripts and a reusable real-daemon case runner.
+- Add a post-session summary action and automatic summary when a live session ends; the assistant checks layout warnings, fixes overlaps, then builds one rich HTML summary card.
+- Give `get_board` layout warnings for overlaps and frame escapes, and map vivid colors to note tint fills instead of failing the tool.
 - Pin each AI request to the active canvas, guard stale updates, sanitize interrupted tool calls, and block scripts and external resources in HTML cards.
 - Add multiple saved canvases with names, timestamps and generated SVG previews; the top-left Canvases panel creates, switches, renames and deletes them.
 - Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.
