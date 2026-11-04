@@ -20,6 +20,9 @@
 
 ## Automated test architecture
 
+- A persisted API write can precede its WebSocket-driven browser render. Wait for the new note's DOM element before double-clicking; polling the database alone left the full browser suite flaky.
+- A test-owned browser server left running after an interrupted full suite occupied its fixture ports. Stop the orphaned fixture and use Playwright's managed webServer lifecycle with a sufficient global timeout.
+- Use exact accessible-name matching when labels overlap: `API key` also matches `Remove current API key` in Playwright and causes a strict-mode failure.
 - A WebSocket broadcast is sent before the HTTP response body is read. Attach the next-message listener before issuing the mutation, or the assertion waits for a message that was already delivered.
 - Rejecting a foreign WebSocket origin must assert the 403 handshake and treat `open` as a failure. `terminate()` after a failed handshake emits a late error, so absorb it with a long-lived error listener before cleanup.
 - Absence assertions need a lifecycle, not a sleep: count browser `POST /api/operations` requests for cancelled gestures, and use a following successful mutation as a message barrier to prove a rejected batch did not broadcast.
@@ -56,6 +59,8 @@
 
 ## Four-pixel dock refinement
 
+- Application `--space-*` tokens collide with Radix Themes' internal scale. Nest a Radix Theme for Settings controls instead of overriding the input height inside a shorter field.
+- Resizing a canvas inside its own ResizeObserver callback can trigger a loop. Observe the stable parent and redraw only at the calculated backing size.
 - A formatting pass rewrote CSS selectors, so a later scripted replacement silently matched nothing and left the old `width: 0; min-width: 100%` rule in place. Verify scripted edits with a follow-up search instead of assuming success.
 - Aligning to a four-pixel grid requires the panel height to be a multiple of four too. Replace layout borders with inset shadows so padding plus control height stays on the grid at odd viewport sizes.
 - Sampling the reference image directly (quarter-scale pixel counts) is faster and more reliable than judging "lighter" by eye.

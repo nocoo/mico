@@ -383,6 +383,7 @@ test('sticky note text edits inline and in the properties panel', async ({ page,
 		| undefined
 	if (!note || note.type !== 'note') throw new Error('Expected a note')
 	expect(note).toMatchObject({ color: CANDY_TINTS.pink, text: 'Note' })
+	await expect(page.locator(`[data-shape-id="${note.id}"]`).first()).toBeVisible()
 
 	const center = await worldPoint(page, note.x + note.w / 2, note.y + note.h / 2)
 	await page.mouse.dblclick(center.x, center.y)
