@@ -52,7 +52,7 @@ The canvas fixes add explicit fill, honor board paint order, preserve connector 
 ## Remaining limits
 
 - Agents can still choose opaque fills, put labels on top of each other, draw unclear figures or make scientifically inconsistent diagrams. The final quadratic and energy cases demonstrate this. Mico does not automatically solve layout or verify subject facts.
-- Case 01 still lacks a clear two-pose transition and frost, and its final score matches baseline. The agent initially tried a rectangle/ellipse `strokeWidth` unsupported by the evaluated revision; any later fix is recorded separately rather than silently changing the comparison.
+- Case 01 still lacks a clear two-pose transition and frost, and its final score matches baseline. The agent initially tried a rectangle/ellipse `strokeWidth` unsupported by the evaluated revision. Follow-up commit `022b022` adds it, with store and Chrome interaction regressions; it was made after the paired runs and is not included in their scores.
 - Small labels, crowded annotations and whitespace remain in several final screenshots, even where subject-specific rubric scores are high.
 
 Incorrect factual reasoning, arbitrary layout choices and weak illustration are recorded separately in the assessments; they are not automatically attributed to the drawing engine.
