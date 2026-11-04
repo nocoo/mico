@@ -1,0 +1,20 @@
+{
+	"case": "05-physics-projectile",
+	"round": "final",
+	"sourceRevision": "b86eb89",
+	"canvasRevision": "b86eb89",
+	"promptRevision": "50c5690",
+	"rubricRevision": "880a84f",
+	"agent": "pi",
+	"provider": "magpie",
+	"model": "group/coding",
+	"thinking": "high",
+	"session": "2026-11-04T00-19-46-868Z_01a1a3ed-1833-7402-aed0-d63a9a1a2fc9",
+	"daemonPort": 57063,
+	"browserUrl": "http://127.0.0.1:27063",
+	"viewport": [1440, 960],
+	"boardRevision": 2,
+	"shapeCount": 44,
+	"score": 9,
+	"scoreMaximum": 10
+}

@@ -1,0 +1,657 @@
+{
+	"revision": 2,
+	"shapes": [
+		{
+			"id": "title",
+			"type": "text",
+			"x": 160,
+			"y": 48,
+			"w": 1120,
+			"h": 54,
+			"color": "#0f172a",
+			"text": "斜抛运动示意图",
+			"font": "sans",
+			"fontSize": 32,
+			"fontWeight": 700
+		},
+		{
+			"id": "parameters",
+			"type": "text",
+			"x": 160,
+			"y": 108,
+			"w": 1120,
+			"h": 44,
+			"color": "#334155",
+			"text": "v₀ = 20 m/s  ·  θ = 30°  ·  g = 10 m/s²  ·  忽略空气阻力",
+			"font": "sans",
+			"fontSize": 24,
+			"fontWeight": 500
+		},
+		{
+			"id": "ground",
+			"type": "line",
+			"x": 120,
+			"y": 740,
+			"w": 760,
+			"h": 0,
+			"color": "#334155",
+			"strokeWidth": 4
+		},
+		{
+			"id": "ground-label",
+			"type": "text",
+			"x": 120,
+			"y": 746,
+			"w": 320,
+			"h": 34,
+			"color": "#64748b",
+			"text": "地面",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 500
+		},
+		{
+			"id": "trajectory",
+			"type": "path",
+			"x": 180,
+			"y": 558,
+			"w": 624,
+			"h": 170,
+			"color": "#2563eb",
+			"brush": "brush",
+			"strokeWidth": 5,
+			"points": [
+				{
+					"x": 0,
+					"y": 170
+				},
+				{
+					"x": 15.6,
+					"y": 153.43
+				},
+				{
+					"x": 31.2,
+					"y": 137.7
+				},
+				{
+					"x": 46.8,
+					"y": 122.82
+				},
+				{
+					"x": 62.4,
+					"y": 108.8
+				},
+				{
+					"x": 78,
+					"y": 95.62
+				},
+				{
+					"x": 93.6,
+					"y": 83.3
+				},
+				{
+					"x": 109.2,
+					"y": 71.83
+				},
+				{
+					"x": 124.8,
+					"y": 61.2
+				},
+				{
+					"x": 140.4,
+					"y": 51.42
+				},
+				{
+					"x": 156,
+					"y": 42.5
+				},
+				{
+					"x": 171.6,
+					"y": 34.42
+				},
+				{
+					"x": 187.2,
+					"y": 27.2
+				},
+				{
+					"x": 202.8,
+					"y": 20.82
+				},
+				{
+					"x": 218.4,
+					"y": 15.3
+				},
+				{
+					"x": 234,
+					"y": 10.62
+				},
+				{
+					"x": 249.6,
+					"y": 6.8
+				},
+				{
+					"x": 265.2,
+					"y": 3.83
+				},
+				{
+					"x": 280.8,
+					"y": 1.7
+				},
+				{
+					"x": 296.4,
+					"y": 0.42
+				},
+				{
+					"x": 312,
+					"y": 0
+				},
+				{
+					"x": 327.6,
+					"y": 0.43
+				},
+				{
+					"x": 343.2,
+					"y": 1.7
+				},
+				{
+					"x": 358.8,
+					"y": 3.83
+				},
+				{
+					"x": 374.4,
+					"y": 6.8
+				},
+				{
+					"x": 390,
+					"y": 10.62
+				},
+				{
+					"x": 405.6,
+					"y": 15.3
+				},
+				{
+					"x": 421.2,
+					"y": 20.82
+				},
+				{
+					"x": 436.8,
+					"y": 27.2
+				},
+				{
+					"x": 452.4,
+					"y": 34.42
+				},
+				{
+					"x": 468,
+					"y": 42.5
+				},
+				{
+					"x": 483.6,
+					"y": 51.43
+				},
+				{
+					"x": 499.2,
+					"y": 61.2
+				},
+				{
+					"x": 514.8,
+					"y": 71.82
+				},
+				{
+					"x": 530.4,
+					"y": 83.3
+				},
+				{
+					"x": 546,
+					"y": 95.62
+				},
+				{
+					"x": 561.6,
+					"y": 108.8
+				},
+				{
+					"x": 577.2,
+					"y": 122.83
+				},
+				{
+					"x": 592.8,
+					"y": 137.7
+				},
+				{
+					"x": 608.4,
+					"y": 153.42
+				},
+				{
+					"x": 624,
+					"y": 170
+				}
+			]
+		},
+		{
+			"id": "launch-ball",
+			"type": "ellipse",
+			"x": 168,
+			"y": 716,
+			"w": 24,
+			"h": 24,
+			"color": "#1d4ed8",
+			"fill": "#60a5fa"
+		},
+		{
+			"id": "peak-ball",
+			"type": "ellipse",
+			"x": 480,
+			"y": 546,
+			"w": 24,
+			"h": 24,
+			"color": "#1d4ed8",
+			"fill": "#60a5fa"
+		},
+		{
+			"id": "prelanding-ball",
+			"type": "ellipse",
+			"x": 780,
+			"y": 702,
+			"w": 24,
+			"h": 24,
+			"color": "#1d4ed8",
+			"fill": "#60a5fa"
+		},
+		{
+			"id": "landing-ball",
+			"type": "ellipse",
+			"x": 792,
+			"y": 716,
+			"w": 24,
+			"h": 24,
+			"color": "#1d4ed8",
+			"fill": "#60a5fa"
+		},
+		{
+			"id": "v0-shaft",
+			"type": "line",
+			"x": 180,
+			"y": 728,
+			"w": 173,
+			"h": -100,
+			"color": "#2563eb",
+			"strokeWidth": 5
+		},
+		{
+			"id": "v0-head-a",
+			"type": "line",
+			"x": 353,
+			"y": 628,
+			"w": -34,
+			"h": 14,
+			"color": "#2563eb",
+			"strokeWidth": 5
+		},
+		{
+			"id": "v0-head-b",
+			"type": "line",
+			"x": 353,
+			"y": 628,
+			"w": -34,
+			"h": -8,
+			"color": "#2563eb",
+			"strokeWidth": 5
+		},
+		{
+			"id": "vx-shaft",
+			"type": "line",
+			"x": 180,
+			"y": 728,
+			"w": 173,
+			"h": 0,
+			"color": "#0891b2",
+			"strokeWidth": 4
+		},
+		{
+			"id": "vx-head-a",
+			"type": "line",
+			"x": 353,
+			"y": 728,
+			"w": -18,
+			"h": -10,
+			"color": "#0891b2",
+			"strokeWidth": 4
+		},
+		{
+			"id": "vx-head-b",
+			"type": "line",
+			"x": 353,
+			"y": 728,
+			"w": -18,
+			"h": 10,
+			"color": "#0891b2",
+			"strokeWidth": 4
+		},
+		{
+			"id": "vy-shaft",
+			"type": "line",
+			"x": 180,
+			"y": 728,
+			"w": 0,
+			"h": -100,
+			"color": "#16a34a",
+			"strokeWidth": 4
+		},
+		{
+			"id": "vy-head-a",
+			"type": "line",
+			"x": 180,
+			"y": 628,
+			"w": 10,
+			"h": 18,
+			"color": "#16a34a",
+			"strokeWidth": 4
+		},
+		{
+			"id": "vy-head-b",
+			"type": "line",
+			"x": 180,
+			"y": 628,
+			"w": -10,
+			"h": 18,
+			"color": "#16a34a",
+			"strokeWidth": 4
+		},
+		{
+			"id": "v0-label",
+			"type": "text",
+			"x": 326,
+			"y": 604,
+			"w": 170,
+			"h": 34,
+			"color": "#1d4ed8",
+			"text": "v₀ = 20 m/s",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 700
+		},
+		{
+			"id": "vx-label",
+			"type": "text",
+			"x": 236,
+			"y": 744,
+			"w": 178,
+			"h": 34,
+			"color": "#0891b2",
+			"text": "vₓ = 17.32 m/s",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 700
+		},
+		{
+			"id": "vy-label",
+			"type": "text",
+			"x": 92,
+			"y": 635,
+			"w": 150,
+			"h": 34,
+			"color": "#16a34a",
+			"text": "vᵧ = 10 m/s",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 700
+		},
+		{
+			"id": "angle-label",
+			"type": "text",
+			"x": 232,
+			"y": 690,
+			"w": 80,
+			"h": 34,
+			"color": "#7c3aed",
+			"text": "30°",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 700
+		},
+		{
+			"id": "peak-dashed-a",
+			"type": "line",
+			"x": 492,
+			"y": 558,
+			"w": 0,
+			"h": 182,
+			"color": "#94a3b8",
+			"strokeWidth": 2
+		},
+		{
+			"id": "peak-dashed-a1",
+			"type": "line",
+			"x": 492,
+			"y": 558,
+			"w": 0,
+			"h": 182,
+			"color": "#94a3b8",
+			"strokeWidth": 2
+		},
+		{
+			"id": "peak-label",
+			"type": "text",
+			"x": 508,
+			"y": 536,
+			"w": 220,
+			"h": 34,
+			"color": "#1d4ed8",
+			"text": "最高点",
+			"font": "sans",
+			"fontSize": 20,
+			"fontWeight": 700
+		},
+		{
+			"id": "height-bracket",
+			"type": "line",
+			"x": 528,
+			"y": 558,
+			"w": -36,
+			"h": 0,
+			"color": "#f97316",
+			"strokeWidth": 3
+		},
+		{
+			"id": "height-line",
+			"type": "line",
+			"x": 510,
+			"y": 558,
+			"w": 0,
+			"h": 182,
+			"color": "#f97316",
+			"strokeWidth": 3
+		},
+		{
+			"id": "height-bracket-low",
+			"type": "line",
+			"x": 528,
+			"y": 740,
+			"w": -36,
+			"h": 0,
+			"color": "#f97316",
+			"strokeWidth": 3
+		},
+		{
+			"id": "height-label",
+			"type": "text",
+			"x": 520,
+			"y": 628,
+			"w": 220,
+			"h": 34,
+			"color": "#c2410c",
+			"text": "最大高度 h = 5 m",
+			"font": "sans",
+			"fontSize": 20,
+			"fontWeight": 700
+		},
+		{
+			"id": "range-tick-l",
+			"type": "line",
+			"x": 180,
+			"y": 754,
+			"w": 0,
+			"h": 34,
+			"color": "#64748b",
+			"strokeWidth": 3
+		},
+		{
+			"id": "range-tick-r",
+			"type": "line",
+			"x": 804,
+			"y": 754,
+			"w": 0,
+			"h": 34,
+			"color": "#64748b",
+			"strokeWidth": 3
+		},
+		{
+			"id": "range-line",
+			"type": "line",
+			"x": 180,
+			"y": 788,
+			"w": 624,
+			"h": 0,
+			"color": "#64748b",
+			"strokeWidth": 3
+		},
+		{
+			"id": "range-label",
+			"type": "text",
+			"x": 300,
+			"y": 796,
+			"w": 280,
+			"h": 34,
+			"color": "#0f766e",
+			"text": "水平射程 R = 34.64 m",
+			"font": "sans",
+			"fontSize": 20,
+			"fontWeight": 700
+		},
+		{
+			"id": "flight-label",
+			"type": "text",
+			"x": 650,
+			"y": 796,
+			"w": 180,
+			"h": 34,
+			"color": "#7c3aed",
+			"text": "飞行时间 T = 2 s",
+			"font": "sans",
+			"fontSize": 20,
+			"fontWeight": 700
+		},
+		{
+			"id": "peak-gravity-shaft",
+			"type": "line",
+			"x": 492,
+			"y": 570,
+			"w": 0,
+			"h": 72,
+			"color": "#dc2626",
+			"strokeWidth": 5
+		},
+		{
+			"id": "peak-gravity-head-a",
+			"type": "line",
+			"x": 492,
+			"y": 642,
+			"w": -12,
+			"h": -18,
+			"color": "#dc2626",
+			"strokeWidth": 5
+		},
+		{
+			"id": "peak-gravity-head-b",
+			"type": "line",
+			"x": 492,
+			"y": 642,
+			"w": 12,
+			"h": -18,
+			"color": "#dc2626",
+			"strokeWidth": 5
+		},
+		{
+			"id": "peak-force-label",
+			"type": "text",
+			"x": 510,
+			"y": 584,
+			"w": 180,
+			"h": 34,
+			"color": "#dc2626",
+			"text": "重力 mg",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 700
+		},
+		{
+			"id": "prelanding-gravity-shaft",
+			"type": "line",
+			"x": 792,
+			"y": 726,
+			"w": 0,
+			"h": 66,
+			"color": "#dc2626",
+			"strokeWidth": 5
+		},
+		{
+			"id": "prelanding-gravity-head-a",
+			"type": "line",
+			"x": 792,
+			"y": 792,
+			"w": -12,
+			"h": -18,
+			"color": "#dc2626",
+			"strokeWidth": 5
+		},
+		{
+			"id": "prelanding-gravity-head-b",
+			"type": "line",
+			"x": 792,
+			"y": 792,
+			"w": 12,
+			"h": -18,
+			"color": "#dc2626",
+			"strokeWidth": 5
+		},
+		{
+			"id": "prelanding-force-label",
+			"type": "text",
+			"x": 810,
+			"y": 750,
+			"w": 190,
+			"h": 34,
+			"color": "#dc2626",
+			"text": "落地前：重力 mg",
+			"font": "sans",
+			"fontSize": 18,
+			"fontWeight": 700
+		},
+		{
+			"id": "launch-label",
+			"type": "text",
+			"x": 104,
+			"y": 550,
+			"w": 220,
+			"h": 34,
+			"color": "#1d4ed8",
+			"text": "抛出点",
+			"font": "sans",
+			"fontSize": 20,
+			"fontWeight": 700
+		},
+		{
+			"id": "landing-label",
+			"type": "text",
+			"x": 816,
+			"y": 684,
+			"w": 180,
+			"h": 34,
+			"color": "#1d4ed8",
+			"text": "落地点",
+			"font": "sans",
+			"fontSize": 20,
+			"fontWeight": 700
+		}
+	]
+}
