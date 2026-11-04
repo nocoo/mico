@@ -137,6 +137,7 @@ export async function streamAiChat({
 			selection: request.selection,
 			canvasId,
 			revision: board.revision,
+			layoutLimit: request.mode === 'lecture' ? 1600 : undefined,
 		}),
 		stopWhen:
 			request.mode === 'lecture'

@@ -1,0 +1,666 @@
+{
+  "round": 2,
+  "case": {
+    "id": "c08-community-center",
+    "lang": "zh",
+    "subject": "社区议事",
+    "title": "社区中心改造：预算、方案与一致意见",
+    "voice": "zh-CN-XiaoxiaoNeural",
+    "rate": "+15%",
+    "script": "c08-community-center.zh.txt",
+    "duration": 262.1
+  },
+  "canvasId": "d46875e6-1fea-421a-badd-ccc792c833da",
+  "canvasName": "R2-C08 社区中心改造：预算、方案与一致意见",
+  "startedAt": "2026-11-04T15:13:01.512Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 24.7,
+      "text": "今天这个会是社区中心改造的第三次居民议事会。 区里给了两百八十万预算，要求今年内开工，明年六月前投入使用。 我们要在三个方案里选一个，同时把居民最关心的功能排优先级。 今天必须形成一个能报上去的一致意见，不能再拖。 先回顾需求。 上个月我们发了问卷，回收三百二十份。",
+      "elapsedMs": 11711,
+      "timedOut": false,
+      "textReply": "我先把预算、工期和问卷样本量列为共同约束，并留出空间承接需求回顾。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"title\",\"x\":80,\"y\":64,\"text\":\"社区中心改造｜第三次居民议事会\",\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"x\":80,\"y\":144,\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"fontSize\":22,\"fontWeight\":600}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"title\",\"type\":\"text\"},{\"id\":\"purpose\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"constraints\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"title\":\"议事约束\",\"color\":\"#00a2e1\"},{\"id\":\"needs\",\"x\":960,\"y\":216,\"w\":820,\"h\":300,\"title\":\"需求回顾｜问卷\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"constraints\",\"type\":\"frame\"},{\"id\":\"needs\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"budget-schedule\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"color\":\"#e2f5fc\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"color\":\"#fff8d4\",\"frameId\":\"constraints\"},{\"id\":\"survey-count\",\"x\":1000,\"y\":280,\"w\":340,\"h\":144,\"text\":\"上月问卷回收\\n320份\",\"color\":\"#f1fadc\",\"frameId\":\"needs\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"budget-schedule\",\"type\":\"note\"},{\"id\":\"decision-goal\",\"type\":\"note\"},{\"id\":\"survey-count\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 24.7,
+      "end": 55.2,
+      "text": "排名前五的需求是：一，老年活动室和日间照料；二，儿童课后托管；三，多功能教室；四，社区食堂；五，无障碍电梯。 停车位排第六，宠物活动区排第七。 居民最大的担心是施工期间活动没地方去，还有后期运营费用谁来承担。 方案 A 是全面改造。 把原来的一层大厅改成食堂和多功能厅，二层做老年活动室和儿童托管，加一部无障碍电梯，屋顶做光伏。",
+      "elapsedMs": 13956,
+      "timedOut": false,
+      "textReply": "补入需求排序与两项顾虑，并开始记录方案 A 的空间安排和设施。需求优先级及施工、运营顾虑已记录；方案 A 的具体配置已放入左下方案栏。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"proposal-a\",\"x\":80,\"y\":560,\"w\":820,\"h\":400,\"title\":\"方案 A｜全面改造\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"proposal-a\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"ranked-needs\",\"x\":1000,\"y\":280,\"w\":340,\"h\":208,\"text\":\"需求优先级\\n1 老年活动室／日间照料\\n2 儿童课后托管\\n3 多功能教室\\n4 社区食堂\\n5 无障碍电梯\\n6 停车位　7 宠物活动区\",\"color\":\"#f1fadc\",\"frameId\":\"needs\"},{\"id\":\"resident-concerns\",\"x\":1380,\"y\":280,\"w\":340,\"h\":176,\"text\":\"居民顾虑\\n• 施工期间活动场地\\n• 后期运营费用由谁承担\",\"color\":\"#ffe9f0\",\"frameId\":\"needs\"},{\"id\":\"proposal-a-details\",\"x\":120,\"y\":624,\"w\":720,\"h\":248,\"text\":\"一层：食堂＋多功能厅\\n二层：老年活动室＋儿童托管\\n新增：无障碍电梯\\n屋顶：光伏\",\"color\":\"#e2f5fc\",\"frameId\":\"proposal-a\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"ranked-needs\",\"type\":\"note\"},{\"id\":\"resident-concerns\",\"type\":\"note\"},{\"id\":\"proposal-a-details\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":11,\"bounds\":{\"x\":80,\"y\":64,\"w\":1700,\"h\":896},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"constra…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 55.2,
+      "end": 84.5,
+      "text": "总预算两百七十五万，工期十个月。 优点是功能完整，缺点是施工期间整个中心要关闭，居民活动要临时搬到小学。 电梯和结构加固是硬成本，几乎没有下调空间。 方案 B 是分期改造。 先做一层食堂、多功能厅和无障碍卫生间，预算一百六十万，工期五个月；二层等明年再申请资金。 优点是今年就能用，施工期间二层还能开放一部分活动。",
+      "elapsedMs": 9030,
+      "timedOut": false,
+      "textReply": "我修正问卷卡片重叠，并并列呈现方案 A 与方案 B 的成本、工期和施工影响。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"survey-count\",\"patch\":{\"y\":472,\"h\":84}},{\"id\":\"ranked-needs\",\"patch\":{\"y\":280,\"h\":208}},{\"id\":\"resident-concerns\",\"patch\":{\"y\":472,\"h\":112}}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[],\"updated\":[\"survey-count\",\"ranked-needs\",\"resident-concerns\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":6,\"count\":11,\"bounds\":{\"x\":80,\"y\":64,\"w\":1700,\"h\":896},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"constra…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"needs\",\"patch\":{\"h\":440}}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[],\"updated\":[\"needs\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 84.5,
+      "end": 109.8,
+      "text": "缺点是电梯要等二期，老人上二楼仍然不方便，而且二期资金没有保证。 方案 C 是轻改造。 只做消防、墙面、照明和卫生间，预算九十万，工期三个月。 优点是快、便宜，不影响活动。 缺点是没有解决老年活动室和儿童托管的空间问题，居民最强烈的两个需求都落空。 这个方案只能作为兜底。",
+      "elapsedMs": 13227,
+      "timedOut": false,
+      "textReply": "补录方案 A 的报价和停场代价，并整理方案 B 的一期方案、优势与二期资金风险。方案 A/B/C 的关键差异已在板上对照；A 的停场影响需单独留意。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"proposal-b\",\"x\":960,\"y\":560,\"w\":820,\"h\":400,\"title\":\"方案 B｜分期改造\",\"color\":\"#a6d94f\"},{\"id\":\"proposal-c\",\"x\":1840,\"y\":216,\"w\":820,\"h\":400,\"title\":\"方案 C｜轻改造（兜底）\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"proposal-b\",\"type\":\"frame\"},{\"id\":\"proposal-c\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"proposal-a-tradeoffs\",\"x\":120,\"y\":880,\"w\":720,\"h\":64,\"text\":\"275万元｜10个月\\n全中心关闭；活动临时转至小学\\n电梯与结构加固为硬成本\",\"color\":\"#fff8d4\"},{\"id\":\"proposal-b-details\",\"x\":1000,\"y\":624,\"w\":720,\"h\":224,\"text\":\"一期：一层食堂、多功能厅\\n无障碍卫生间｜160万元｜5个月\\n今年可用；施工时二层部分开放\\n二期：二层明年再申请资金\\n风险：电梯延后；二期资金未保证\",\"color\":\"#f1fadc\",\"frameId\":\"proposal-b\"},{\"id\":\"proposal-c-details\",\"x\":1880,\"y\":280,\"w\":720,\"h\":240,\"text\":\"消防、墙面、照明、卫生间\\n90万元｜3个月\\n优点：快、便宜、不影响活动\\n缺点：老人活动室与儿童托管\\n空间问题未解｜仅作兜底\",\"color\":\"#fff8d4\",\"frameId\":\"proposal-c\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"proposal-a-tradeoffs\",\"type\":\"note\"},{\"id\":\"proposal-b-details\",\"type\":\"note\"},{\"id\":\"proposal-c-details\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":9,\"count\":16,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":896},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"constra…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 109.8,
+      "end": 140.1,
+      "text": "讨论的时候，老年协会的张阿姨说，电梯不能等，楼里有好几位八十岁以上的老人，二楼活动室上不去等于没有。 家长代表李先生说，课后托管最急，双职工家庭四点半接不了孩子，希望一层能留出一间稳定的教室。 食堂方面，大家担心油烟和噪音，要求排烟做到屋顶，并且晚上八点后不营业。 停车位虽然问卷排第六，但开车来的居民说，附近晚上根本停不下。",
+      "elapsedMs": 20893,
+      "timedOut": false,
+      "textReply": "加入现场代表意见，并标出它们对电梯、托管教室、食堂运营和停车的具体要求。补充了代表对电梯和一层托管空间的迫切诉求，以及食堂时段、排烟与夜间停车问题。已将现场代表意见加入右下角「讨论补充」：电梯不能延后、一层需保留稳定托管教室、食堂排烟与营业时段限制，以及夜间停车紧张的补充反馈。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"stakeholder-views\",\"x\":1840,\"y\":680,\"w\":820,\"h\":400,\"title\":\"讨论补充｜代表意见\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"stakeholder-views\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"stakeholder-priorities\",\"x\":1880,\"y\":744,\"w\":720,\"h\":272,\"text\":\"张阿姨｜老年协会\\n电梯不能等；二楼无电梯等于不可用\\n\\n李先生｜家长代表\\n课后托管最急；一层需留稳定教室\\n\\n食堂约束\\n排烟做到屋顶；20:00后不营业\\n\\n停车补充\\n问卷第六，但居民称夜间车位紧张\",\"color\":\"#ffe9f0\",\"frameId\":\"stakeholder-views\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"stakeholder-priorities\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 140.1,
+      "end": 171.3,
+      "text": "预算上，财务给了一个提醒：两百八十万是上限，不包括后期运营补贴。 食堂如果自己做，每年要补二十万；如果引入社会餐饮，租金可以抵一部分，但价格和食品安全要管。 光伏可以降低长期电费，但初投资要三十万，回收期大约六年。 我们比较三个方案后，意见逐渐集中到 A，但大家对全面关闭有顾虑。 于是提出一个折中：按 A 的完整方案做，但施工分两段。",
+      "elapsedMs": 11806,
+      "timedOut": false,
+      "textReply": "记录运营成本与光伏回收期，并标注目前倾向 A、但分段施工折中方案仍待确认。已补充：运营支出不计入280万元改造上限；食堂自营预计每年补贴20万元，社会餐饮可用租金抵部分成本但需管控价格和食品安全；光伏初投30万元、约六年回收。当前意见是倾向完整方案 A，并提出分两段施工以缓解全面关闭顾虑；最终意见仍待确认。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"operating-budget\",\"x\":1880,\"y\":1088,\"w\":720,\"h\":176,\"text\":\"财务提醒｜运营不计入280万元上限\\n食堂自营：每年补贴20万元\\n社会餐饮：租金可抵部分成本；须管控价格与食品安全\\n光伏：初投30万元；约6年回收\",\"color\":\"#fff8d4\"},{\"id\":\"emerging-consensus\",\"x\":1000,\"y\":1088,\"w\":720,\"h\":144,\"text\":\"阶段性意见：倾向方案 A 完整配置\\n顾虑：全面关闭\\n折中提议：完整方案分两段施工\\n（最终意见待讨论确认）\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"operating-budget\",\"type\":\"note\"},{\"id\":\"emerging-consensus\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":12,\"count\":20,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":1200},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"const…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 171.3,
+      "end": 200.5,
+      "text": "第一段先做一层和电梯井，工期六个月，二层保留一半活动空间；第二段做二层和屋顶，工期四个月。 这样总工期还是十个月，但居民活动不用完全停。 施工方说，分段施工会增加八万左右的管理费，但可以接受。 资金上，两百八十万怎么分：结构加固和电梯九十万，一层改造七十万，二层改造六十万，消防和机电三十万，光伏二十万，预留十万。",
+      "elapsedMs": 23837,
+      "timedOut": false,
+      "textReply": "补入分两段施工节奏与预算分配，标明总工期十个月、活动可部分持续及约八万元管理费。已加入分段施工计划：第一段 6 个月完成一层与电梯井，二层保留一半活动空间；第二段 4 个月完成二层和屋顶。另列出 280 万元预算分配及约 8 万元可接受的分段管理费。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"phased-timeline\",\"x\":1000,\"y\":1264,\"w\":720,\"h\":176,\"text\":\"折中施工节奏｜总计10个月\\n第一段｜6个月：一层＋电梯井\\n二层保留一半活动空间\\n第二段｜4个月：二层＋屋顶\\n居民活动不完全中断\\n施工管理费增加约8万元（可接受）\",\"color\":\"#e2f5fc\"},{\"id\":\"budget-allocation\",\"x\":1880,\"y\":1288,\"w\":720,\"h\":192,\"text\":\"280万元预算分配\\n结构加固与电梯：90万\\n一层改造：70万｜二层改造：60万\\n消防与机电：30万｜光伏：20万\\n预留：10万\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[{\"id\":\"phased-timeline\",\"type\":\"note\"},{\"id\":\"budget-allocation\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":13,\"count\":22,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":1416},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"const…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 200.5,
+      "end": 212.8,
+      "text": "食堂运营单独招标，优先选有资质的社区餐饮，价格要设上限。 儿童托管由街道和学校合作，不额外收场地费。 老年活动室由老年协会参与排班。",
+      "elapsedMs": 17058,
+      "timedOut": false,
+      "textReply": "新增运营安排：食堂招标设价控，托管由街道与学校合作，老年协会参与活动室排班。已补充运营建议：食堂单独招标并设价格上限；儿童托管由街道与学校合作且不另收场地费；老年活动室由老年协会参与排班。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"operations-governance\",\"x\":1880,\"y\":1504,\"w\":720,\"h\":176,\"text\":\"运营安排｜建议纳入上报意见\\n食堂：单独招标；优先有资质的社区餐饮；设价格上限\\n儿童托管：街道＋学校合作；不另收场地费\\n老年活动室：老年协会参与排班\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"operations-governance\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 212.8,
+      "end": 235.7,
+      "text": "最后形成一致意见：选方案 A，分两段施工；电梯和一层先行；施工期间二层保留一半活动，具体开放时间由运营方每周公布；食堂必须做屋顶排烟，晚上八点后不营业；儿童托管优先安排一层；光伏同步做，但预留检修通道；预算不超两百八十万，预留十万作为不可预见费。",
+      "elapsedMs": 24351,
+      "timedOut": false,
+      "textReply": "最终共识已明确，我把此前“待确认”更新为方案 A 分段施工，并列出施工与运营条件。最终条件已记录；我检查一下板面布局与框架边界。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"emerging-consensus\",\"patch\":{\"text\":\"一致意见：选方案 A，分两段施工\\n电梯和一层先行\\n二层保留一半活动；运营方每周公布开放时间\\n预算不超280万元；预留10万元不可预见费\"}}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"emerging-consensus\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"final-conditions\",\"x\":1880,\"y\":1696,\"w\":720,\"h\":176,\"text\":\"一致意见｜施工与运营条件\\n食堂：屋顶排烟；20:00后不营业\\n托管：优先安排一层\\n光伏同步实施；预留检修通道\\n二层每周公布具体开放时间\",\"color\":\"#f1fadc\"}]}",
+          "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"final-conditions\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":16,\"count\":24,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":1808},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"const…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 235.7,
+      "end": 262.1,
+      "text": "行动项：设计院两周内出分段施工图；街道一周内确认临时活动场地；运营方一个月内提交食堂和托管的运营方案；财务两周内给出年度运营补贴测算；居民代表每月参加一次施工例会。 下次议事会定在开工前一周，重点看施工期间的噪音、停车和临时活动安排。 今天的一致意见就按这个记录，大家没有异议就签字。",
+      "elapsedMs": 34518,
+      "timedOut": false,
+      "textReply": "补上责任与期限，并记录下次会前检查项；签字确认和最终决策状态按发言原意呈现。责任期限和下次会议议题已加入；会议记录保留“现场无异议后签字”的确认条件。已记录本次一致意见：选择方案 A、分两段施工，并补上预算安排、运营条件、行动责任与期限，以及下次议事会的检查重点。签字状态保留为“现场无异议后签字”；当前布局检查无警告。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"action-items\",\"x\":1000,\"y\":1456,\"w\":720,\"h\":176,\"text\":\"行动项｜责任与期限\\n设计院：2周内出分段施工图\\n街道：1周内确认临时活动场地\\n运营方：1个月内提交食堂与托管方案\\n财务：2周内测算年度运营补贴\\n居民代表：每月参加施工例会\",\"color\":\"#e2f5fc\"},{\"id\":\"next-meeting\",\"x\":1880,\"y\":1888,\"w\":720,\"h\":176,\"text\":\"下次议事会｜开工前1周\\n重点检查：施工噪音、停车\\n临时活动安排\\n本次一致意见按此记录\\n签字确认：现场无异议后签字\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":17,\"created\":[{\"id\":\"action-items\",\"type\":\"note\"},{\"id\":\"next-meeting\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":17,\"count\":26,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":2000},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"const…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 10,
+    "requests": 11,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_frames": 4,
+      "add_notes": 9,
+      "get_board": 9,
+      "update_shapes": 3,
+      "add_html_cards": 1
+    },
+    "shapes": 27,
+    "shapeTypes": {
+      "text": 2,
+      "frame": 6,
+      "note": 18,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 948,
+    "totalMs": 250840
+  },
+  "summary": {
+    "index": 11,
+    "start": 262.1,
+    "end": 262.1,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 70453,
+    "timedOut": false,
+    "textReply": "会后总结卡已放在原有内容下方，汇总了一致意见、预算与分段工期、负责人及期限、下次会议安排和待核对风险。特别标出了两项需确认的预算口径：约8万元分段管理费是否计入280万元上限，以及光伏预算20万元与初投资约30万元的差异。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":17,\"count\":26,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":2000},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"const…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"post-session-summary\",\"x\":80,\"y\":2224,\"w\":2500,\"h\":1100,\"title\":\"会后总结｜社区中心改造议事会\",\"html\":\"<div style=\\\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;background:#ffffff;padding:28px 32px;line-height:1.45;\\\"><div style=\\\"border-bottom:3px solid #00a2e1;padding-bottom:14px;margin-bottom:18px;\\\"><div style=\\\"font-size:30px;font-weight:800;\\\">社区中心改造｜第三次居民议事会</div><div style=\\\"font-size:17px;color:#2b3038;margin-top:6px;\\\">目的：在280万元上限与既定工期内选定改造方案、排序功能需求，并形成可上报的一致意见。</div></div><div style=\\\"display:grid;grid-template-columns:1.15fr 1fr;gap:18px;\\\"><section style=\\\"border:1px solid #00a2e1;border-radius:10px;padding:16px;background:#e2f5fc;\\\"><h2 style=\\\"font-size:20px;margin:0 0 8px;color:#007eaf;\\\">决定与核心安排</h2><ul style=\\\"margin:6px 0 0;padding-left:22px;\\\"><li><b>选择方案 A：完整改造，分两段实施。</b>电梯和一层先行；二层保留一半活动空间。</li><li>第一段6个月：一层＋电梯井；第二段4个月：二层＋屋顶。总工期10个月，施工期间活动不完全中断。</l…",
+        "output": "{\"ok\":true,\"revision\":18,\"created\":[{\"id\":\"post-session-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":18,\"count\":27,\"bounds\":{\"x\":80,\"y\":64,\"w\":2580,\"h\":3260},\"selection\":[],\"shapes\":[{\"id\":\"title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":1120,\"h\":72,\"color\":\"#2b3038\",\"text\":\"社区中心改造｜第三次居民议事会\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":800},{\"id\":\"purpose\",\"type\":\"text\",\"x\":80,\"y\":144,\"w\":840,\"h\":40,\"color\":\"#00a2e1\",\"text\":\"目标：选方案、排功能优先级，形成一致意见\",\"font\":\"sans\",\"fontSize\":22,\"fontWeight\":600},{\"id\":\"constraints\",\"type\":\"frame\",\"x\":80,\"y\":216,\"w\":820,\"h\":300,\"color\":\"#00a2e1\",\"title\":\"议事约束\"},{\"id\":\"needs\",\"type\":\"frame\",\"x\":960,\"y\":216,\"w\":820,\"h\":440,\"color\":\"#a6d94f\",\"title\":\"需求回顾｜问卷\"},{\"id\":\"budget-schedule\",\"type\":\"note\",\"x\":120,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#e2f5fc\",\"text\":\"预算上限：280万元\\n今年内开工\\n明年6月前投入使用\",\"frameId\":\"constraints\"},{\"id\":\"decision-goal\",\"type\":\"note\",\"x\":500,\"y\":280,\"w\":340,\"h\":176,\"color\":\"#fff8d4\",\"text\":\"三选一：确定改造方案\\n居民功能：排优先级\\n今天形成一致意见并上报\",\"frameId\":\"const…",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 18,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 1120,
+        "h": 72,
+        "text": "社区中心改造｜第三次居民议事会",
+        "font": "sans",
+        "fontSize": 42,
+        "fontWeight": 800
+      },
+      {
+        "id": "purpose",
+        "color": "#00a2e1",
+        "type": "text",
+        "x": 80,
+        "y": 144,
+        "w": 840,
+        "h": 40,
+        "text": "目标：选方案、排功能优先级，形成一致意见",
+        "font": "sans",
+        "fontSize": 22,
+        "fontWeight": 600
+      },
+      {
+        "id": "constraints",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 216,
+        "w": 820,
+        "h": 300,
+        "title": "议事约束"
+      },
+      {
+        "id": "needs",
+        "color": "#a6d94f",
+        "type": "frame",
+        "x": 960,
+        "y": 216,
+        "w": 820,
+        "h": 440,
+        "title": "需求回顾｜问卷"
+      },
+      {
+        "id": "budget-schedule",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 120,
+        "y": 280,
+        "w": 340,
+        "h": 176,
+        "text": "预算上限：280万元\n今年内开工\n明年6月前投入使用",
+        "frameId": "constraints"
+      },
+      {
+        "id": "decision-goal",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 500,
+        "y": 280,
+        "w": 340,
+        "h": 176,
+        "text": "三选一：确定改造方案\n居民功能：排优先级\n今天形成一致意见并上报",
+        "frameId": "constraints"
+      },
+      {
+        "id": "survey-count",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1000,
+        "y": 472,
+        "w": 340,
+        "h": 84,
+        "text": "上月问卷回收\n320份",
+        "frameId": "needs"
+      },
+      {
+        "id": "proposal-a",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 560,
+        "w": 820,
+        "h": 400,
+        "title": "方案 A｜全面改造"
+      },
+      {
+        "id": "ranked-needs",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1000,
+        "y": 280,
+        "w": 340,
+        "h": 208,
+        "text": "需求优先级\n1 老年活动室／日间照料\n2 儿童课后托管\n3 多功能教室\n4 社区食堂\n5 无障碍电梯\n6 停车位　7 宠物活动区",
+        "frameId": "needs"
+      },
+      {
+        "id": "resident-concerns",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1380,
+        "y": 472,
+        "w": 340,
+        "h": 112,
+        "text": "居民顾虑\n• 施工期间活动场地\n• 后期运营费用由谁承担",
+        "frameId": "needs"
+      },
+      {
+        "id": "proposal-a-details",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 120,
+        "y": 624,
+        "w": 720,
+        "h": 248,
+        "text": "一层：食堂＋多功能厅\n二层：老年活动室＋儿童托管\n新增：无障碍电梯\n屋顶：光伏",
+        "frameId": "proposal-a"
+      },
+      {
+        "id": "proposal-b",
+        "color": "#a6d94f",
+        "type": "frame",
+        "x": 960,
+        "y": 560,
+        "w": 820,
+        "h": 400,
+        "title": "方案 B｜分期改造"
+      },
+      {
+        "id": "proposal-c",
+        "color": "#f7de4b",
+        "type": "frame",
+        "x": 1840,
+        "y": 216,
+        "w": 820,
+        "h": 400,
+        "title": "方案 C｜轻改造（兜底）"
+      },
+      {
+        "id": "proposal-a-tradeoffs",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 120,
+        "y": 880,
+        "w": 720,
+        "h": 64,
+        "text": "275万元｜10个月\n全中心关闭；活动临时转至小学\n电梯与结构加固为硬成本"
+      },
+      {
+        "id": "proposal-b-details",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1000,
+        "y": 624,
+        "w": 720,
+        "h": 224,
+        "text": "一期：一层食堂、多功能厅\n无障碍卫生间｜160万元｜5个月\n今年可用；施工时二层部分开放\n二期：二层明年再申请资金\n风险：电梯延后；二期资金未保证",
+        "frameId": "proposal-b"
+      },
+      {
+        "id": "proposal-c-details",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1880,
+        "y": 280,
+        "w": 720,
+        "h": 240,
+        "text": "消防、墙面、照明、卫生间\n90万元｜3个月\n优点：快、便宜、不影响活动\n缺点：老人活动室与儿童托管\n空间问题未解｜仅作兜底",
+        "frameId": "proposal-c"
+      },
+      {
+        "id": "stakeholder-views",
+        "color": "#ff7fa3",
+        "type": "frame",
+        "x": 1840,
+        "y": 680,
+        "w": 820,
+        "h": 400,
+        "title": "讨论补充｜代表意见"
+      },
+      {
+        "id": "stakeholder-priorities",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1880,
+        "y": 744,
+        "w": 720,
+        "h": 272,
+        "text": "张阿姨｜老年协会\n电梯不能等；二楼无电梯等于不可用\n\n李先生｜家长代表\n课后托管最急；一层需留稳定教室\n\n食堂约束\n排烟做到屋顶；20:00后不营业\n\n停车补充\n问卷第六，但居民称夜间车位紧张",
+        "frameId": "stakeholder-views"
+      },
+      {
+        "id": "operating-budget",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1880,
+        "y": 1088,
+        "w": 720,
+        "h": 176,
+        "text": "财务提醒｜运营不计入280万元上限\n食堂自营：每年补贴20万元\n社会餐饮：租金可抵部分成本；须管控价格与食品安全\n光伏：初投30万元；约6年回收"
+      },
+      {
+        "id": "emerging-consensus",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1000,
+        "y": 1088,
+        "w": 720,
+        "h": 144,
+        "text": "一致意见：选方案 A，分两段施工\n电梯和一层先行\n二层保留一半活动；运营方每周公布开放时间\n预算不超280万元；预留10万元不可预见费"
+      },
+      {
+        "id": "phased-timeline",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1000,
+        "y": 1264,
+        "w": 720,
+        "h": 176,
+        "text": "折中施工节奏｜总计10个月\n第一段｜6个月：一层＋电梯井\n二层保留一半活动空间\n第二段｜4个月：二层＋屋顶\n居民活动不完全中断\n施工管理费增加约8万元（可接受）"
+      },
+      {
+        "id": "budget-allocation",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1880,
+        "y": 1288,
+        "w": 720,
+        "h": 192,
+        "text": "280万元预算分配\n结构加固与电梯：90万\n一层改造：70万｜二层改造：60万\n消防与机电：30万｜光伏：20万\n预留：10万"
+      },
+      {
+        "id": "operations-governance",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1880,
+        "y": 1504,
+        "w": 720,
+        "h": 176,
+        "text": "运营安排｜建议纳入上报意见\n食堂：单独招标；优先有资质的社区餐饮；设价格上限\n儿童托管：街道＋学校合作；不另收场地费\n老年活动室：老年协会参与排班"
+      },
+      {
+        "id": "final-conditions",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1880,
+        "y": 1696,
+        "w": 720,
+        "h": 176,
+        "text": "一致意见｜施工与运营条件\n食堂：屋顶排烟；20:00后不营业\n托管：优先安排一层\n光伏同步实施；预留检修通道\n二层每周公布具体开放时间"
+      },
+      {
+        "id": "action-items",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1000,
+        "y": 1456,
+        "w": 720,
+        "h": 176,
+        "text": "行动项｜责任与期限\n设计院：2周内出分段施工图\n街道：1周内确认临时活动场地\n运营方：1个月内提交食堂与托管方案\n财务：2周内测算年度运营补贴\n居民代表：每月参加施工例会"
+      },
+      {
+        "id": "next-meeting",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1880,
+        "y": 1888,
+        "w": 720,
+        "h": 176,
+        "text": "下次议事会｜开工前1周\n重点检查：施工噪音、停车\n临时活动安排\n本次一致意见按此记录\n签字确认：现场无异议后签字"
+      },
+      {
+        "id": "post-session-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 2224,
+        "w": 2500,
+        "h": 1100,
+        "title": "会后总结｜社区中心改造议事会",
+        "html": "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;background:#ffffff;padding:28px 32px;line-height:1.45;\"><div style=\"border-bottom:3px solid #00a2e1;padding-bottom:14px;margin-bottom:18px;\"><div style=\"font-size:30px;font-weight:800;\">社区中心改造｜第三次居民议事会</div><div style=\"font-size:17px;color:#2b3038;margin-top:6px;\">目的：在280万元上限与既定工期内选定改造方案、排序功能需求，并形成可上报的一致意见。</div></div><div style=\"display:grid;grid-template-columns:1.15fr 1fr;gap:18px;\"><section style=\"border:1px solid #00a2e1;border-radius:10px;padding:16px;background:#e2f5fc;\"><h2 style=\"font-size:20px;margin:0 0 8px;color:#007eaf;\">决定与核心安排</h2><ul style=\"margin:6px 0 0;padding-left:22px;\"><li><b>选择方案 A：完整改造，分两段实施。</b>电梯和一层先行；二层保留一半活动空间。</li><li>第一段6个月：一层＋电梯井；第二段4个月：二层＋屋顶。总工期10个月，施工期间活动不完全中断。</li><li>二层开放时间由运营方每周公布；托管优先安排一层；光伏同步实施并预留检修通道。</li><li>食堂屋顶排烟、20:00后不营业；预算上限280万元，预留10万元不可预见费。</li><li>问卷320份的需求排序：老年活动／日间照料、儿童托管、多功能教室、社区食堂、无障碍电梯；停车第六、宠物活动区第七。</li></ul></section><section style=\"border:1px solid #a6d94f;border-radius:10px;padding:16px;background:#f1fadc;\"><h2 style=\"font-size:20px;margin:0 0 8px;color:#4b7614;\">预算与运营要点</h2><p style=\"margin:6px 0;\"><b>预算分配（万元）：</b>结构加固与电梯90；一层70；二层60；消防与机电30；光伏20；预留10，合计280。</p><p style=\"margin:6px 0;\">分段施工管理费预计增加约8万元，会上表示可接受，需明确是否已纳入280万元控制口径。</p><p style=\"margin:6px 0;\">食堂单独招标，优先有资质的社区餐饮并设价格上限；托管由街道与学校合作，不另收场地费；老年协会参与活动室排班。</p><p style=\"margin:6px 0;\">运营费用不计入改造上限：食堂自营预计每年补贴20万元；社会餐饮租金可抵部分成本但要管控价格与食品安全。光伏约6年回收。</p></section></div><section style=\"margin-top:18px;border:1px solid #00a2e1;border-radius:10px;padding:16px;\"><h2 style=\"font-size:20px;margin:0 0 10px;color:#007eaf;\">行动项</h2><table style=\"width:100%;border-collapse:collapse;font-size:15px;\"><thead><tr style=\"background:#e2f5fc;text-align:left;\"><th style=\"padding:9px;border:1px solid #b8ddeb;\">负责人</th><th style=\"padding:9px;border:1px solid #b8ddeb;\">交付／行动</th><th style=\"padding:9px;border:1px solid #b8ddeb;\">期限／频次</th></tr></thead><tbody><tr><td style=\"padding:8px;border:1px solid #d5e0e4;\">设计院</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">提交分段施工图</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">2周内</td></tr><tr><td style=\"padding:8px;border:1px solid #d5e0e4;\">街道</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">确认临时活动场地</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">1周内</td></tr><tr><td style=\"padding:8px;border:1px solid #d5e0e4;\">运营方</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">提交食堂与托管运营方案</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">1个月内</td></tr><tr><td style=\"padding:8px;border:1px solid #d5e0e4;\">财务</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">测算年度运营补贴</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">2周内</td></tr><tr><td style=\"padding:8px;border:1px solid #d5e0e4;\">居民代表</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">参加施工例会</td><td style=\"padding:8px;border:1px solid #d5e0e4;\">每月1次</td></tr></tbody></table></section><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;\"><section style=\"border:1px solid #ff7fa3;border-radius:10px;padding:15px;background:#ffe9f0;\"><h2 style=\"font-size:19px;margin:0 0 7px;\">待跟进风险／核对项</h2><ul style=\"margin:4px 0;padding-left:22px;\"><li>核实额外约8万元管理费如何纳入预算，确保不突破280万元。</li><li>核对光伏预算分配20万元与会上提及初投资约30万元的口径差异。</li><li>明确食堂长期运营方式、补贴来源、价格监管与食品安全责任。</li><li>落实施工期临时活动场地，并持续关注噪音、夜间停车与二层开放安排。</li></ul></section><section style=\"border:1px solid #f7de4b;border-radius:10px;padding:15px;background:#fff8d4;\"><h2 style=\"font-size:19px;margin:0 0 7px;\">时间线与确认</h2><div style=\"font-size:15px;\"><b>开工前：</b>街道落实临时场地；设计院2周内出图。<br><b>第1段｜6个月：</b>一层＋电梯井，二层保留一半活动。<br><b>第2段｜4个月：</b>二层＋屋顶；总工期10个月，目标明年6月前投入使用。<br><b>下次议事会：</b>开工前1周，检查噪音、停车和临时活动安排。<br><b>签字：</b>记录按一致意见形成；现场无异议后签字确认。</div></section></div></div>"
+      }
+    ]
+  }
+}

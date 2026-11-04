@@ -1,0 +1,954 @@
+{
+  "round": 2,
+  "case": {
+    "id": "c07-incident-postmortem",
+    "lang": "en",
+    "subject": "Incident review",
+    "title": "Payment API outage postmortem and actions",
+    "voice": "en-GB-SoniaNeural",
+    "rate": "+40%",
+    "script": "c07-incident-postmortem.en.txt",
+    "duration": 296.9
+  },
+  "canvasId": "4505bb67-0e83-4b2c-b973-2e63c1c0c410",
+  "canvasName": "R2-C07 Payment API outage postmortem and actions",
+  "startedAt": "2026-11-04T15:07:14.822Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 19.5,
+      "text": "This is the postmortem for the payment API outage on Tuesday. The incident lasted fifty two minutes, from 14:07 to 14:59 UTC. During that window, about sixty percent of card payments failed, and some customers saw a generic error page. No money was lost, but we violated our error budget for the quarter and we need to understand both the technical cause and the process gaps. This meeting is blameless.",
+      "elapsedMs": 14775,
+      "timedOut": false,
+      "textReply": "I’m capturing the incident scope and impact first, with the blameless review principle explicit.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_texts",
+          "state": "output-available",
+          "input": "{\"texts\":[{\"id\":\"incident-title\",\"x\":80,\"y\":64,\"text\":\"Payment API outage · Tuesday postmortem\",\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"fontSize\":42,\"fontWeight\":700}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"incident-title\",\"type\":\"text\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"incident-overview\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"title\":\"Incident overview\",\"color\":\"#00a2e1\"},{\"id\":\"review-focus\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"title\":\"Review focus · blameless\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"incident-overview\",\"type\":\"frame\"},{\"id\":\"review-focus\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"incident-facts\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"color\":\"#e2f5fc\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"text\":\"Quarterly error budget violated\\n\\nUnderstand both:\\n• Technical cause\\n• Process gaps\\n\\nBlameless review\",\"color\":\"#f1fadc\",\"frameId\":\"review-focus\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"incident-facts\",\"type\":\"note\"},{\"id\":\"incident-goals\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 19.5,
+      "end": 38.1,
+      "text": "We are here to find system problems, not to assign personal fault. Let's build the timeline. At 13:55, we deployed release 4.18.2, which included a small change to the connection pool settings. At 14:03, the first alert fired for elevated latency on the payment service. At 14:07, error rate crossed five percent. The on call engineer acknowledged at 14:09 and began checking dashboards.",
+      "elapsedMs": 12251,
+      "timedOut": false,
+      "textReply": "I’ll add the timeline as a separate panel below the overview, keeping the sequence factual and non-blaming.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":3,\"count\":5,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":488},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"color\":\"#f1fadc\",\"text\":\"Quarterly error…",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"incident-timeline\",\"x\":80,\"y\":680,\"w\":1840,\"h\":400,\"title\":\"Timeline · Tuesday (UTC)\",\"color\":\"#f7de4b\"}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[{\"id\":\"incident-timeline\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"timeline-events\",\"x\":128,\"y\":744,\"w\":720,\"h\":272,\"text\":\"13:55 · Release 4.18.2 deployed\\nSmall connection-pool settings change\\n\\n14:03 · First alert\\nElevated payment-service latency\\n\\n14:07 · Error rate crossed 5%\\n\\n14:09 · On-call acknowledged\\nBegan checking dashboards\",\"color\":\"#fff8d4\",\"frameId\":\"incident-timeline\"},{\"id\":\"blameless-principle\",\"x\":904,\"y\":744,\"w\":440,\"h\":168,\"text\":\"Review the system conditions\\nand process—not personal fault.\",\"color\":\"#ffe9f0\",\"frameId\":\"incident-timeline\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"timeline-events\",\"type\":\"note\"},{\"id\":\"blameless-principle\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 38.1,
+      "end": 57.2,
+      "text": "At 14:14, the team saw database connection timeouts. At 14:21, they rolled back the release, but the error rate did not recover. At 14:32, they discovered that the DNS resolver was returning a stale address for one of the primary database replicas. At 14:41, they failed over to the secondary replica and traffic recovered. At 14:59, error rate returned to baseline and the incident was closed.",
+      "elapsedMs": 22402,
+      "timedOut": false,
+      "textReply": "I’ll append the later investigation and recovery events alongside the existing timeline without inferring the release’s role.The timeline now shows that rollback did not restore service; failover followed the stale replica DNS discovery.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":8,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1016},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"color\":\"#f1fadc\",\"text\":\"Quarterly erro…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"timeline-later\",\"x\":1400,\"y\":744,\"w\":360,\"h\":272,\"text\":\"14:14 · DB connection timeouts\\n\\n14:21 · Release rolled back\\nError rate did not recover\\n\\n14:32 · Stale DNS address found\\nFor a primary DB replica\\n\\n14:41 · Failed over to secondary\\nTraffic recovered\\n\\n14:59 · Error rate at baseline\\nIncident closed\",\"color\":\"#fff8d4\",\"frameId\":\"incident-timeline\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"timeline-later\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":6,\"count\":9,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1016},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"color\":\"#f1fadc\",\"text\":\"Quarterly erro…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 57.2,
+      "end": 76.5,
+      "text": "The direct cause was a combination of two changes. The release reduced the connection pool timeout from five seconds to two seconds, which made the service less tolerant of slow DNS. Separately, a network change on Monday had reduced the DNS cache TTL, so the resolver was more likely to return stale records during a failover. The stale record pointed to a replica that had been taken out of service.",
+      "elapsedMs": 10493,
+      "timedOut": false,
+      "textReply": "I’m adding the two contributing changes and their interaction as a causal chain, while keeping them distinct from the timeline.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"cause-panel\",\"x\":80,\"y\":1144,\"w\":1840,\"h\":400,\"title\":\"Technical cause · interacting changes\",\"color\":\"#ff7fa3\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"cause-panel\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_boxes",
+          "state": "output-available",
+          "input": "{\"boxes\":[{\"id\":\"release-change\",\"x\":136,\"y\":1288,\"w\":360,\"h\":104,\"text\":\"Release: pool timeout\\n5s → 2s\",\"color\":\"#00a2e1\",\"frameId\":\"cause-panel\"},{\"id\":\"network-change\",\"x\":608,\"y\":1288,\"w\":360,\"h\":104,\"text\":\"Monday network change\\nDNS cache TTL reduced\",\"color\":\"#a6d94f\",\"frameId\":\"cause-panel\"},{\"id\":\"combined-effect\",\"x\":1080,\"y\":1288,\"w\":360,\"h\":104,\"text\":\"Less tolerant of slow DNS\\nStale records more likely\",\"color\":\"#f7de4b\",\"frameId\":\"cause-panel\"},{\"id\":\"stale-target\",\"x\":1552,\"y\":1288,\"w\":320,\"h\":104,\"text\":\"Stale record →\\nretired replica\",\"color\":\"#ff7fa3\",\"frameId\":\"cause-panel\"}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[{\"id\":\"release-change\",\"type\":\"rectangle\"},{\"id\":\"network-change\",\"type\":\"rectangle\"},{\"id\":\"combined-effect\",\"type\":\"rectangle\"},{\"id\":\"stale-target\",\"type\":\"rectangle\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":8,\"count\":14,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1480},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"color\":\"#f1fadc\",\"text\":\"Quarterly err…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 76.5,
+      "end": 95.8,
+      "text": "The service kept retrying the stale address, and the shortened timeout turned a slowdown into a hard failure. Why did the rollback not fix it? Because the DNS record was already cached, and the rollback did not flush the resolver cache. The team assumed the release was the only change. The runbook said to roll back first, then check dependencies, but it did not say to verify DNS after a rollback.",
+      "elapsedMs": 11394,
+      "timedOut": false,
+      "textReply": "I’m adding the failure mechanism and the rollback/process gap as two linked explanations.The board now captures why rollback alone failed and the missing DNS verification step in the runbook.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"failure-panel\",\"x\":1040,\"y\":1144,\"w\":880,\"h\":400,\"title\":\"Failure mechanism & rollback gap\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"failure-panel\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"failure-mechanism\",\"x\":1088,\"y\":1208,\"w\":360,\"h\":272,\"text\":\"Cached stale DNS address\\n→ retries hit retired replica\\n\\nShorter pool timeout\\nturned slowdown into\\nhard failure\",\"color\":\"#e2f5fc\",\"frameId\":\"failure-panel\"},{\"id\":\"rollback-gap\",\"x\":1504,\"y\":1208,\"w\":360,\"h\":272,\"text\":\"Rollback did not flush\\nresolver cache\\n\\nAssumed release was the\\nonly change\\n\\nRunbook: rollback first,\\nthen check dependencies\\n\\nMissing: verify DNS after\\nrollback\",\"color\":\"#fff8d4\",\"frameId\":\"failure-panel\"}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[{\"id\":\"failure-mechanism\",\"type\":\"note\"},{\"id\":\"rollback-gap\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":10,\"count\":17,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1480},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"color\":\"#f1fadc\",\"text\":\"Quarterly er…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 95.8,
+      "end": 116,
+      "text": "That is a process gap. The on call had the authority to fail over, but they waited for the database team because the runbook described failover as a last resort. That added about nine minutes. Detection was also slower than it should have been. The latency alert fired at 14:03, but it was a warning, not a page. The error rate alert paged at 14:07. We had no synthetic check for card payments from an external region.",
+      "elapsedMs": 15553,
+      "timedOut": false,
+      "textReply": "I’ve recorded the roughly nine-minute escalation delay and the warning-only latency alert, plus the missing external synthetic check.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"process-gaps\",\"x\":80,\"y\":1600,\"w\":880,\"h\":400,\"title\":\"Process gaps · authority & detection\",\"color\":\"#f7de4b\"},{\"id\":\"process-gaps-right\",\"x\":1040,\"y\":1600,\"w\":880,\"h\":400,\"title\":\"Process gaps · monitoring\",\"color\":\"#00a2e1\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"process-gaps\",\"type\":\"frame\"},{\"id\":\"process-gaps-right\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"authority-gap\",\"x\":128,\"y\":1664,\"w\":360,\"h\":240,\"text\":\"On-call had failover authority\\n\\nRunbook framed failover\\nas a last resort\\n\\nWaited for DB team\\n≈9 minutes added\",\"color\":\"#fff8d4\",\"frameId\":\"process-gaps\"},{\"id\":\"detection-gap\",\"x\":1088,\"y\":1664,\"w\":360,\"h\":240,\"text\":\"14:03 · Latency warning\\nDid not page\\n\\n14:07 · Error-rate alert\\nPaged on-call\\n\\nNo external-region\\nsynthetic card-payment check\",\"color\":\"#e2f5fc\",\"frameId\":\"process-gaps-right\"}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[{\"id\":\"authority-gap\",\"type\":\"note\"},{\"id\":\"detection-gap\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":12,\"count\":21,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1936},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• Some customers saw a generic error page\\n\\nNo money lost\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":360,\"h\":200,\"color\":\"#f1fadc\",\"text\":\"Quarterly er…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 116,
+      "end": 136.2,
+      "text": "The dashboard showed service level error rate, but not the percentage of payment attempts that never reached the service. If we had a synthetic payment probe, we might have caught the failure at 14:05. Customer impact. About eighteen thousand payment attempts failed. Most were retried successfully within ten minutes. Four hundred customers saw a duplicate authorization hold, which we reversed automatically by 16:30.",
+      "elapsedMs": 16124,
+      "timedOut": false,
+      "textReply": "I’ve added customer-impact counts and the unmeasured pre-service failure signal to the review notes.The impact note now includes the 18,000 failed attempts and 400 reversed holds; monitoring notes the missed attempts signal.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"incident-facts\",\"patch\":{\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• Some saw generic error page\\n• No money lost\\n\\n400 duplicate holds; reversed by 16:30\\nMost retries succeeded within 10 min\"}}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[],\"updated\":[\"incident-facts\"]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"detection-gap\",\"patch\":{\"text\":\"14:03 · Latency warning\\nDid not page\\n\\nDashboard: service error rate\\nMissed attempts not reaching service\\n\\nSynthetic probe might catch at 14:05\\n\\n14:07 · Error-rate alert paged\\nNo external-region payment check\"}}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[],\"updated\":[\"detection-gap\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":14,\"count\":21,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":1936},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• Some saw generic error page\\n• No money lost\\n\\n400 duplicate holds; reversed …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 136.2,
+      "end": 153.7,
+      "text": "Support received two hundred and ten tickets. The status page was updated at 14:26, nineteen minutes after the incident started. That is too slow. We need a template and a designated communications owner. Now the contributing factors. First, the config change was not covered by a canary in the payment path. Second, the DNS dependency was not in the service map.",
+      "elapsedMs": 17220,
+      "timedOut": false,
+      "textReply": "I’ll capture the communication delay and the two newly named contributing factors as review findings.I’ve recorded the 14:26 status update and ticket volume; next I’m placing the canary and service-map gaps in their own panel.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"incident-goals\",\"patch\":{\"text\":\"Quarterly error budget violated\\n\\nReview:\\n• Technical cause\\n• Process gaps\\n• Customer communication\\n\\nBlameless review\"}},{\"id\":\"incident-facts\",\"patch\":{\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries succeeded within 10 min\\n• No money lost\"}},{\"id\":\"timeline-later\",\"patch\":{\"text\":\"14:14 · DB connection timeouts\\n\\n14:21 · Release rolled back\\nError rate did not recover\\n\\n14:32 · Stale DNS address found\\nFor a primary DB replica\\n\\n14:41 · Failed over; traffic recovered\\n14:59 · Baseline; incident closed\\n\\n14:26 · Status page updated\"}}]}",
+          "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"incident-goals\",\"incident-facts\",\"timeline-later\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"contributing-factors\",\"x\":80,\"y\":2080,\"w\":1840,\"h\":400,\"title\":\"Contributing factors · visibility & change safety\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"contributing-factors\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"factor-notes\",\"x\":128,\"y\":2144,\"w\":720,\"h\":272,\"text\":\"Change safety\\n• Config change not covered by a\\n  payment-path canary\\n\\nDependency visibility\\n• DNS dependency missing\\n  from the service map\",\"color\":\"#f1fadc\",\"frameId\":\"contributing-factors\"},{\"id\":\"communications-gap\",\"x\":904,\"y\":2144,\"w\":720,\"h\":272,\"text\":\"Customer communication\\n• 210 support tickets\\n• Status page updated 14:26\\n  (19 minutes after start)\\n\\nNeeded: message template\\n+ designated comms owner\",\"color\":\"#ffe9f0\",\"frameId\":\"contributing-factors\"}]}",
+          "output": "{\"ok\":true,\"revision\":17,\"created\":[{\"id\":\"factor-notes\",\"type\":\"note\"},{\"id\":\"communications-gap\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 9,
+      "start": 153.7,
+      "end": 171.1,
+      "text": "Third, the runbook did not include cache invalidation or DNS verification. Fourth, the failover decision required a second team, which added latency. Fifth, the status page update was manual and owned by whoever was on call. Sixth, the alert thresholds were tuned for a single region, not for the payment path as a whole. The action items need owners and dates.",
+      "elapsedMs": 19135,
+      "timedOut": false,
+      "textReply": "I’ll add the remaining runbook, failover, communications, and alerting gaps, then prepare an owner/date action list without inventing assignments.The contributing-factors panel now includes all six stated gaps; I’m adding an action register with ownership and dates left open.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":17,\"count\":24,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":2416},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"factor-notes\",\"patch\":{\"text\":\"Change safety\\n• No payment-path canary\\n• DNS dependency absent\\n  from service map\\n\\nRunbook & authority\\n• No cache invalidation or DNS check\\n• Failover required second team\"}},{\"id\":\"communications-gap\",\"patch\":{\"text\":\"Customer communication\\n• 210 tickets; page at 14:26\\n• Manual update owned by on-call\\n• Need message template + named owner\\n\\nMonitoring\\n• Thresholds tuned per region,\\n  not whole payment path\"}}]}",
+          "output": "{\"ok\":true,\"revision\":18,\"created\":[],\"updated\":[\"factor-notes\",\"communications-gap\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"action-register\",\"x\":1040,\"y\":2080,\"w\":880,\"h\":400,\"title\":\"Action items · owners & dates to assign\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\\\"><div style=\\\"font-size:22px;font-weight:700;margin-bottom:12px\\\">Proposed follow-ups · assignments not stated</div><table style=\\\"width:100%;border-collapse:collapse;font-size:15px\\\"><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:8px;text-align:left;border:1px solid #9aa\\\">Action</th><th style=\\\"padding:8px;text-align:left;border:1px solid #9aa\\\">Owner</th><th style=\\\"padding:8px;text-align:left;border:1px solid #9aa\\\">Due</th></tr><tr><td style=\\\"padding:8px;border:1px solid #9aa\\\">Add DNS verification + cache flush to rollback runbook</td><td style=\\\"padding:8px;border:1px solid #9aa\\\">TBD</td><td style=\\\"padding:8px;border:1px solid #9aa\\\">TBD</td></tr><tr><td style=\\\"padding:8px;borde…",
+          "output": "{\"ok\":true,\"revision\":19,\"created\":[{\"id\":\"action-register\",\"type\":\"html\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 10,
+      "start": 171.1,
+      "end": 190.8,
+      "text": "First, add a synthetic payment probe that runs from two regions every minute. Owner is the reliability team, due in two weeks. Second, add DNS health to the payment service dashboard and include resolver cache checks in the runbook. Owner is the platform team, due in one week. Third, change the connection pool timeout back to five seconds and add a canary that runs for thirty minutes before full rollout.",
+      "elapsedMs": 23006,
+      "timedOut": false,
+      "textReply": "I’ll turn the first two actions into assigned deadlines and record the timeout/canary action with owner and date still open.The register now reflects the two assigned actions and the 5-second timeout/canary follow-up; its owner and due date remain unstated.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_html_cards",
+          "state": "output-available",
+          "input": "{\"cards\":[{\"id\":\"action-register\",\"x\":1040,\"y\":2080,\"w\":880,\"h\":400,\"title\":\"Action items · owners & dates\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\\\"><div style=\\\"font-size:22px;font-weight:700;margin-bottom:12px\\\">Agreed follow-ups</div><table style=\\\"width:100%;border-collapse:collapse;font-size:14px\\\"><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:7px;text-align:left;border:1px solid #9aa\\\">Action</th><th style=\\\"padding:7px;text-align:left;border:1px solid #9aa\\\">Owner</th><th style=\\\"padding:7px;text-align:left;border:1px solid #9aa\\\">Due</th></tr><tr><td style=\\\"padding:7px;border:1px solid #9aa\\\">Synthetic payment probe · 2 regions, every minute</td><td style=\\\"padding:7px;border:1px solid #9aa\\\">Reliability team</td><td style=\\\"padding:7px;border:1px solid #9aa\\\">2 weeks</td></tr><tr><td style=\\\"padding:7px;border:1px solid #9aa\\\">DNS he…",
+          "output": "{\"ok\":false,\"error\":\"DUPLICATE_ID\",\"message\":\"shape id already exists: action-register\",\"hint\":\"Use update_shapes for the existing object, or choose a new id with a suffix such as -2.\"}",
+          "failed": true
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"action-register\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\\\"><div style=\\\"font-size:22px;font-weight:700;margin-bottom:12px\\\">Agreed follow-ups</div><table style=\\\"width:100%;border-collapse:collapse;font-size:14px\\\"><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:7px;text-align:left;border:1px solid #9aa\\\">Action</th><th style=\\\"padding:7px;text-align:left;border:1px solid #9aa\\\">Owner</th><th style=\\\"padding:7px;text-align:left;border:1px solid #9aa\\\">Due</th></tr><tr><td style=\\\"padding:7px;border:1px solid #9aa\\\">Synthetic payment probe · 2 regions, every minute</td><td style=\\\"padding:7px;border:1px solid #9aa\\\">Reliability team</td><td style=\\\"padding:7px;border:1px solid #9aa\\\">2 weeks</td></tr><tr><td style=\\\"padding:7px;border:1px solid #9aa\\\">DNS health on dashboard; resolver cache checks in runbook</td><td sty…",
+          "output": "{\"ok\":true,\"revision\":20,\"created\":[],\"updated\":[\"action-register\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":20,\"count\":25,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":2416},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 11,
+      "start": 190.8,
+      "end": 207.7,
+      "text": "Owner is the payments team, due in three days. Fourth, give the on call engineer explicit authority to fail over the database without waiting for the database team, and update the escalation policy. Owner is the engineering manager, due in one week. Fifth, add a status page template and a communications rotation. Owner is support, due in two weeks.",
+      "elapsedMs": 49481,
+      "timedOut": false,
+      "textReply": "The action register now assigns the timeout/canary, failover-policy, and communications actions to the named teams with deadlines.The action register is updated; I’m correcting the overlapping cause and action panels so the review remains readable.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"action-register\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\\\"><div style=\\\"font-size:22px;font-weight:700;margin-bottom:12px\\\">Agreed follow-ups</div><table style=\\\"width:100%;border-collapse:collapse;font-size:13px\\\"><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Action</th><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Owner</th><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Due</th></tr><tr><td style=\\\"padding:6px;border:1px solid #9aa\\\">Synthetic payment probe · 2 regions, every minute</td><td style=\\\"padding:6px;border:1px solid #9aa\\\">Reliability</td><td style=\\\"padding:6px;border:1px solid #9aa\\\">2 weeks</td></tr><tr><td style=\\\"padding:6px;border:1px solid #9aa\\\">DNS dashboard health + resolver cache checks in runbook</td><td style=\\\"pa…",
+          "output": "{\"ok\":true,\"revision\":21,\"created\":[],\"updated\":[\"action-register\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":21,\"count\":25,\"bounds\":{\"x\":80,\"y\":64,\"w\":1840,\"h\":2416},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"failure-panel\",\"patch\":{\"x\":2000,\"y\":1144,\"w\":880,\"h\":400}},{\"id\":\"contributing-factors\",\"patch\":{\"x\":80,\"y\":2080,\"w\":1840,\"h\":560}},{\"id\":\"action-register\",\"patch\":{\"x\":1040,\"y\":2256,\"w\":880,\"h\":344}},{\"id\":\"failure-mechanism\",\"patch\":{\"x\":2048,\"y\":1208}},{\"id\":\"rollback-gap\",\"patch\":{\"x\":2464,\"y\":1208}},{\"id\":\"communications-gap\",\"patch\":{\"x\":904,\"y\":2144,\"w\":720,\"h\":104}}]}",
+          "output": "{\"ok\":true,\"revision\":22,\"created\":[],\"updated\":[\"failure-panel\",\"contributing-factors\",\"action-register\",\"failure-mechanism\",\"rollback-gap\",\"communications-gap\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 12,
+      "start": 207.7,
+      "end": 225.5,
+      "text": "Sixth, add a post deploy DNS verification step to the release checklist. Owner is release engineering, due in two weeks. We also need a longer term item. The architecture has a single resolver path for all database replicas. We should add a resolver sidecar or use a service discovery mechanism that does not depend on DNS TTL. That is a larger project and needs an RFC.",
+      "elapsedMs": 16239,
+      "timedOut": false,
+      "textReply": "I’ve added the resolver architecture RFC as a longer-term item; I’ll add the release-checklist action and assignment to the register.The post-deploy DNS check is assigned to release engineering for two weeks; the longer-term resolver RFC remains unassigned.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"longer-term-arch\",\"x\":1040,\"y\":2648,\"w\":880,\"h\":176,\"text\":\"Longer-term · RFC needed\\nSingle resolver path serves all DB replicas\\n\\nEvaluate: resolver sidecar OR service discovery independent of DNS TTL\\nOwner / due date: not stated\",\"color\":\"#f3f5f4\"}]}",
+          "output": "{\"ok\":true,\"revision\":23,\"created\":[{\"id\":\"longer-term-arch\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"action-register\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\\\"><div style=\\\"font-size:22px;font-weight:700;margin-bottom:12px\\\">Agreed follow-ups</div><table style=\\\"width:100%;border-collapse:collapse;font-size:13px\\\"><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Action</th><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Owner</th><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Due</th></tr><tr><td style=\\\"padding:6px;border:1px solid #9aa\\\">Synthetic payment probe · 2 regions, every minute</td><td style=\\\"padding:6px;border:1px solid #9aa\\\">Reliability</td><td style=\\\"padding:6px;border:1px solid #9aa\\\">2 weeks</td></tr><tr><td style=\\\"padding:6px;border:1px solid #9aa\\\">DNS dashboard health + resolver cache checks in runbook</td><td style=\\\"pa…",
+          "output": "{\"ok\":true,\"revision\":24,\"created\":[],\"updated\":[\"action-register\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":24,\"count\":26,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":2760},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 13,
+      "start": 225.5,
+      "end": 245.1,
+      "text": "Owner is the platform team, due in six weeks for a design, not implementation. What did we do well? The team communicated in the incident channel, the rollback was executed cleanly, and the database failover worked once it was attempted. The support team reversed duplicate holds quickly. We should keep the incident channel structure and the automatic hold reversal. What will we change about the process?",
+      "elapsedMs": 20384,
+      "timedOut": false,
+      "textReply": "I’ve added what worked and the platform-owned six-week design deliverable; I’m updating the architecture item and leaving the next process change open.The architecture action is now clearly scoped to design only; the strengths are documented, and I’m waiting for the stated process change.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"what-worked\",\"x\":2000,\"y\":1600,\"w\":880,\"h\":240,\"text\":\"What went well\\n• Clear incident-channel communication\\n• Rollback executed cleanly\\n• DB failover worked when attempted\\n• Duplicate holds reversed quickly\\n\\nPreserve\\n• Incident-channel structure\\n• Automatic hold reversal\",\"color\":\"#f1fadc\"},{\"id\":\"arch-action-owner\",\"x\":1040,\"y\":2832,\"w\":880,\"h\":128,\"text\":\"Architecture RFC · design only\\nOwner: Platform team\\nDue: 6 weeks\\nImplementation not included\",\"color\":\"#e2f5fc\"}]}",
+          "output": "{\"ok\":true,\"revision\":25,\"created\":[{\"id\":\"what-worked\",\"type\":\"note\"},{\"id\":\"arch-action-owner\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"longer-term-arch\",\"patch\":{\"text\":\"Longer-term · RFC design only\\nSingle resolver path serves all DB replicas\\n\\nEvaluate: resolver sidecar OR service discovery independent of DNS TTL\\nOwner: Platform team · Due: 6 weeks\\nImplementation is separate\"}},{\"id\":\"action-register\",\"patch\":{\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\\\"><div style=\\\"font-size:22px;font-weight:700;margin-bottom:12px\\\">Agreed follow-ups</div><table style=\\\"width:100%;border-collapse:collapse;font-size:13px\\\"><tr style=\\\"background:#e2f5fc\\\"><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Action</th><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Owner</th><th style=\\\"padding:6px;text-align:left;border:1px solid #9aa\\\">Due</th></tr><tr><td style=\\\"padding:6px;border:1px solid #9aa\\\">Synthetic payment probe · 2 regions, every minute<…",
+          "output": "{\"ok\":true,\"revision\":26,\"created\":[],\"updated\":[\"longer-term-arch\",\"action-register\"]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":26,\"count\":28,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":2896},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 14,
+      "start": 245.1,
+      "end": 261.4,
+      "text": "We will run a five minute pre deploy check for DNS and database health. We will require a canary for any change to timeouts, connection pools, or retries. We will add a single incident commander role for severity one incidents, even if the on call is also debugging. We will set a fifteen minute target for the first status page update.",
+      "elapsedMs": 19367,
+      "timedOut": false,
+      "textReply": "I’ve captured the four process changes, including the 15-minute first-update target and a distinct Sev-1 incident commander role.Captured the postmortem timeline, impact, interacting technical causes, process gaps, and agreed action owners and deadlines. The board also records what worked and the new process standards, including pre-deploy health checks, required canaries, a Sev‑1 incident commander, and a 15-minute status update target.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"process-changes\",\"x\":2000,\"y\":1888,\"w\":880,\"h\":272,\"text\":\"Process changes\\n• 5-minute pre-deploy DNS + DB health check\\n• Require canary for timeout,\\n  pool, or retry changes\\n• Single incident commander for\\n  Sev-1 incidents, separate from debugging\\n• First status page update target: 15 min\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":27,\"created\":[{\"id\":\"process-changes\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":27,\"count\":29,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":2896},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 15,
+      "start": 261.4,
+      "end": 278.2,
+      "text": "We will review the action items in the weekly reliability meeting until they are closed. Let's confirm the severity. This was a severity one because it affected payments and lasted more than thirty minutes. The error budget for the quarter is now exhausted, so any new feature that touches the payment path needs a reliability review before release.",
+      "elapsedMs": 27692,
+      "timedOut": false,
+      "textReply": "Added the Sev-1 rationale, exhausted error budget, weekly action review, and reliability review gate for payment-path changes.Added the Sev-1 rationale, quarterly error-budget exhaustion, weekly action tracking, and the reliability-review release gate for payment-path changes.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"severity-and-followup\",\"x\":2000,\"y\":2240,\"w\":880,\"h\":272,\"text\":\"Severity & follow-through\\n• Sev-1: payment impact >30 min\\n• Quarterly error budget exhausted\\n• Review actions weekly until closed\\n\\nRelease gate\\n• Payment-path feature changes\\n  require reliability review\",\"color\":\"#ffe9f0\"}]}",
+          "output": "{\"ok\":true,\"revision\":28,\"created\":[{\"id\":\"severity-and-followup\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":28,\"count\":30,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":2896},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 16,
+      "start": 278.2,
+      "end": 296.9,
+      "text": "That is not a punishment; it is a consequence of the budget policy we agreed on. Finally, the follow up review is in two weeks. We will check the synthetic probe, the runbook update, the canary, and the status page template. The platform RFC is due in six weeks. If any owner cannot meet the date, they should tell me before Friday, not after the review. Thank you. This meeting is over.",
+      "elapsedMs": 15786,
+      "timedOut": false,
+      "textReply": "I’ll add the two-week follow-up checkpoints, six-week RFC milestone, Friday escalation expectation, and the budget-policy context.I’ve clarified that the release gate follows the agreed budget policy; now I’m recording the scheduled follow-up and escalation deadline.The board now includes the two-week follow-up checklist, six-week RFC deadline, and instruction to flag schedule risks before Friday.",
+      "waits": false,
+      "tools": [
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"severity-and-followup\",\"patch\":{\"text\":\"Severity & follow-through\\n• Sev-1: payment impact >30 min\\n• Budget exhausted per agreed policy\\n  (release gate is not punishment)\\n• Review actions weekly until closed\\n\\nRelease gate\\n• Payment-path feature changes\\n  require reliability review\"}},{\"id\":\"arch-action-owner\",\"patch\":{\"text\":\"Architecture RFC · design only\\nOwner: Platform team\\nDue: 6 weeks\\nImplementation not included\"}},{\"id\":\"process-changes\",\"patch\":{\"text\":\"Process changes\\n• 5-minute pre-deploy DNS + DB health check\\n• Require canary for timeout,\\n  pool, or retry changes\\n• Single Sev-1 incident commander,\\n  separate from debugging\\n• First status update target: 15 min\"}}]}",
+          "output": "{\"ok\":true,\"revision\":29,\"created\":[],\"updated\":[\"severity-and-followup\",\"arch-action-owner\",\"process-changes\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"followup-review\",\"x\":2000,\"y\":2544,\"w\":880,\"h\":272,\"text\":\"Follow-up & escalation\\n• Review in 2 weeks\\n• Check: synthetic probe, runbook,\\n  canary, status page template\\n• Platform RFC due in 6 weeks\\n• At-risk owners: tell meeting lead\\n  before Friday, not after review\\n\\nMeeting closed\",\"color\":\"#fff8d4\"}]}",
+          "output": "{\"ok\":true,\"revision\":30,\"created\":[{\"id\":\"followup-review\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{\"include_html\":false}",
+          "output": "{\"ok\":true,\"revision\":30,\"count\":31,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":2896},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 16,
+    "requests": 17,
+    "timedOutSegments": 0,
+    "failedTools": 1,
+    "waits": 0,
+    "toolNames": {
+      "add_texts": 1,
+      "add_frames": 6,
+      "add_notes": 11,
+      "get_board": 17,
+      "add_boxes": 1,
+      "update_shapes": 10,
+      "add_html_cards": 3
+    },
+    "shapes": 32,
+    "shapeTypes": {
+      "text": 1,
+      "frame": 8,
+      "note": 17,
+      "rectangle": 4,
+      "html": 2
+    },
+    "htmlCards": 2,
+    "totalReplyChars": 3786,
+    "totalMs": 346672
+  },
+  "summary": {
+    "index": 17,
+    "start": 296.9,
+    "end": 296.9,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 35370,
+    "timedOut": false,
+    "textReply": "No overlap or frame-escape warnings remain; I’ll place one consolidated session summary beneath the existing board.Added one post-session HTML summary card below the existing board with the incident mechanism, decisions, action owners and deadlines, risks, follow-up checkpoints, and timeline. No overlap or frame-escape warnings were reported.",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{\"include_html\":false}",
+        "output": "{\"ok\":true,\"revision\":30,\"count\":31,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":2896},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"post-session-summary\",\"x\":80,\"y\":3120,\"w\":1840,\"h\":1040,\"title\":\"Post-session summary · Payment API outage\",\"html\":\"<div style=\\\"font-family:Arial,sans-serif;color:#2b3038;padding:22px;line-height:1.35\\\"><div style=\\\"font-size:30px;font-weight:700;margin-bottom:6px\\\">Payment API outage · Tuesday postmortem</div><div style=\\\"font-size:17px;margin-bottom:18px;color:#444\\\">Purpose: understand the outage’s technical and process conditions, agree preventive actions, and review them to closure—blamelessly.</div><div style=\\\"display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px\\\"><div style=\\\"border-left:6px solid #ff7fa3;background:#ffe9f0;padding:12px\\\"><b>Core mechanism</b><br>Release shortened the connection-pool timeout from 5s to 2s; Monday’s reduced DNS cache TTL made stale records more likely. Cached DNS pointed to a retired replica; retries plus the sh…",
+        "output": "{\"ok\":true,\"revision\":31,\"created\":[{\"id\":\"post-session-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{\"include_html\":false}",
+        "output": "{\"ok\":true,\"revision\":31,\"count\":32,\"bounds\":{\"x\":80,\"y\":64,\"w\":2800,\"h\":4096},\"selection\":[],\"shapes\":[{\"id\":\"incident-title\",\"type\":\"text\",\"x\":80,\"y\":64,\"w\":900,\"h\":60,\"color\":\"#2b3038\",\"text\":\"Payment API outage · Tuesday postmortem\",\"font\":\"sans\",\"fontSize\":42,\"fontWeight\":700},{\"id\":\"incident-overview\",\"type\":\"frame\",\"x\":80,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#00a2e1\",\"title\":\"Incident overview\"},{\"id\":\"review-focus\",\"type\":\"frame\",\"x\":1040,\"y\":152,\"w\":880,\"h\":400,\"color\":\"#a6d94f\",\"title\":\"Review focus · blameless\"},{\"id\":\"incident-facts\",\"type\":\"note\",\"x\":128,\"y\":216,\"w\":360,\"h\":240,\"color\":\"#e2f5fc\",\"text\":\"Duration: 52 minutes\\n14:07–14:59 UTC\\n\\nImpact\\n• ~60% of card payments failed\\n• ~18,000 attempts failed\\n• 210 support tickets\\n• 400 duplicate holds reversed by 16:30\\n• Most retries …\",\"frameId\":\"incident-overview\"},{\"id\":\"incident-goals\",\"type\":\"note\",\"x\":1088,\"y\":216,\"w\":3…",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 31,
+    "shapes": [
+      {
+        "id": "incident-title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 64,
+        "w": 900,
+        "h": 60,
+        "text": "Payment API outage · Tuesday postmortem",
+        "font": "sans",
+        "fontSize": 42,
+        "fontWeight": 700
+      },
+      {
+        "id": "incident-overview",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 152,
+        "w": 880,
+        "h": 400,
+        "title": "Incident overview"
+      },
+      {
+        "id": "review-focus",
+        "color": "#a6d94f",
+        "type": "frame",
+        "x": 1040,
+        "y": 152,
+        "w": 880,
+        "h": 400,
+        "title": "Review focus · blameless"
+      },
+      {
+        "id": "incident-facts",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 128,
+        "y": 216,
+        "w": 360,
+        "h": 240,
+        "text": "Duration: 52 minutes\n14:07–14:59 UTC\n\nImpact\n• ~60% of card payments failed\n• ~18,000 attempts failed\n• 210 support tickets\n• 400 duplicate holds reversed by 16:30\n• Most retries succeeded within 10 min\n• No money lost",
+        "frameId": "incident-overview"
+      },
+      {
+        "id": "incident-goals",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1088,
+        "y": 216,
+        "w": 360,
+        "h": 200,
+        "text": "Quarterly error budget violated\n\nReview:\n• Technical cause\n• Process gaps\n• Customer communication\n\nBlameless review",
+        "frameId": "review-focus"
+      },
+      {
+        "id": "incident-timeline",
+        "color": "#f7de4b",
+        "type": "frame",
+        "x": 80,
+        "y": 680,
+        "w": 1840,
+        "h": 400,
+        "title": "Timeline · Tuesday (UTC)"
+      },
+      {
+        "id": "timeline-events",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 128,
+        "y": 744,
+        "w": 720,
+        "h": 272,
+        "text": "13:55 · Release 4.18.2 deployed\nSmall connection-pool settings change\n\n14:03 · First alert\nElevated payment-service latency\n\n14:07 · Error rate crossed 5%\n\n14:09 · On-call acknowledged\nBegan checking dashboards",
+        "frameId": "incident-timeline"
+      },
+      {
+        "id": "blameless-principle",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 904,
+        "y": 744,
+        "w": 440,
+        "h": 168,
+        "text": "Review the system conditions\nand process—not personal fault.",
+        "frameId": "incident-timeline"
+      },
+      {
+        "id": "timeline-later",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1400,
+        "y": 744,
+        "w": 360,
+        "h": 272,
+        "text": "14:14 · DB connection timeouts\n\n14:21 · Release rolled back\nError rate did not recover\n\n14:32 · Stale DNS address found\nFor a primary DB replica\n\n14:41 · Failed over; traffic recovered\n14:59 · Baseline; incident closed\n\n14:26 · Status page updated",
+        "frameId": "incident-timeline"
+      },
+      {
+        "id": "cause-panel",
+        "color": "#ff7fa3",
+        "type": "frame",
+        "x": 80,
+        "y": 1144,
+        "w": 1840,
+        "h": 400,
+        "title": "Technical cause · interacting changes"
+      },
+      {
+        "id": "release-change",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 136,
+        "y": 1288,
+        "w": 360,
+        "h": 104,
+        "text": "Release: pool timeout\n5s → 2s",
+        "frameId": "cause-panel"
+      },
+      {
+        "id": "network-change",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 608,
+        "y": 1288,
+        "w": 360,
+        "h": 104,
+        "text": "Monday network change\nDNS cache TTL reduced",
+        "frameId": "cause-panel"
+      },
+      {
+        "id": "combined-effect",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1080,
+        "y": 1288,
+        "w": 360,
+        "h": 104,
+        "text": "Less tolerant of slow DNS\nStale records more likely",
+        "frameId": "cause-panel"
+      },
+      {
+        "id": "stale-target",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1552,
+        "y": 1288,
+        "w": 320,
+        "h": 104,
+        "text": "Stale record →\nretired replica",
+        "frameId": "cause-panel"
+      },
+      {
+        "id": "failure-panel",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 2000,
+        "y": 1144,
+        "w": 880,
+        "h": 400,
+        "title": "Failure mechanism & rollback gap"
+      },
+      {
+        "id": "failure-mechanism",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 2048,
+        "y": 1208,
+        "w": 360,
+        "h": 272,
+        "text": "Cached stale DNS address\n→ retries hit retired replica\n\nShorter pool timeout\nturned slowdown into\nhard failure",
+        "frameId": "failure-panel"
+      },
+      {
+        "id": "rollback-gap",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 2464,
+        "y": 1208,
+        "w": 360,
+        "h": 272,
+        "text": "Rollback did not flush\nresolver cache\n\nAssumed release was the\nonly change\n\nRunbook: rollback first,\nthen check dependencies\n\nMissing: verify DNS after\nrollback",
+        "frameId": "failure-panel"
+      },
+      {
+        "id": "process-gaps",
+        "color": "#f7de4b",
+        "type": "frame",
+        "x": 80,
+        "y": 1600,
+        "w": 880,
+        "h": 400,
+        "title": "Process gaps · authority & detection"
+      },
+      {
+        "id": "process-gaps-right",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 1040,
+        "y": 1600,
+        "w": 880,
+        "h": 400,
+        "title": "Process gaps · monitoring"
+      },
+      {
+        "id": "authority-gap",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 128,
+        "y": 1664,
+        "w": 360,
+        "h": 240,
+        "text": "On-call had failover authority\n\nRunbook framed failover\nas a last resort\n\nWaited for DB team\n≈9 minutes added",
+        "frameId": "process-gaps"
+      },
+      {
+        "id": "detection-gap",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1088,
+        "y": 1664,
+        "w": 360,
+        "h": 240,
+        "text": "14:03 · Latency warning\nDid not page\n\nDashboard: service error rate\nMissed attempts not reaching service\n\nSynthetic probe might catch at 14:05\n\n14:07 · Error-rate alert paged\nNo external-region payment check",
+        "frameId": "process-gaps-right"
+      },
+      {
+        "id": "contributing-factors",
+        "color": "#a6d94f",
+        "type": "frame",
+        "x": 80,
+        "y": 2080,
+        "w": 1840,
+        "h": 560,
+        "title": "Contributing factors · visibility & change safety"
+      },
+      {
+        "id": "factor-notes",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 128,
+        "y": 2144,
+        "w": 720,
+        "h": 272,
+        "text": "Change safety\n• No payment-path canary\n• DNS dependency absent\n  from service map\n\nRunbook & authority\n• No cache invalidation or DNS check\n• Failover required second team",
+        "frameId": "contributing-factors"
+      },
+      {
+        "id": "communications-gap",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 904,
+        "y": 2144,
+        "w": 720,
+        "h": 104,
+        "text": "Customer communication\n• 210 tickets; page at 14:26\n• Manual update owned by on-call\n• Need message template + named owner\n\nMonitoring\n• Thresholds tuned per region,\n  not whole payment path",
+        "frameId": "contributing-factors"
+      },
+      {
+        "id": "action-register",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 1040,
+        "y": 2256,
+        "w": 880,
+        "h": 344,
+        "title": "Action items · owners & dates to assign",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:18px\"><div style=\"font-size:22px;font-weight:700;margin-bottom:12px\">Agreed follow-ups</div><table style=\"width:100%;border-collapse:collapse;font-size:13px\"><tr style=\"background:#e2f5fc\"><th style=\"padding:6px;text-align:left;border:1px solid #9aa\">Action</th><th style=\"padding:6px;text-align:left;border:1px solid #9aa\">Owner</th><th style=\"padding:6px;text-align:left;border:1px solid #9aa\">Due</th></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">Synthetic payment probe · 2 regions, every minute</td><td style=\"padding:6px;border:1px solid #9aa\">Reliability</td><td style=\"padding:6px;border:1px solid #9aa\">2 weeks</td></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">DNS dashboard health + resolver cache checks in runbook</td><td style=\"padding:6px;border:1px solid #9aa\">Platform</td><td style=\"padding:6px;border:1px solid #9aa\">1 week</td></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">Restore pool timeout to 5s; 30-minute canary</td><td style=\"padding:6px;border:1px solid #9aa\">Payments</td><td style=\"padding:6px;border:1px solid #9aa\">3 days</td></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">Explicit on-call failover authority; update escalation policy</td><td style=\"padding:6px;border:1px solid #9aa\">Engineering manager</td><td style=\"padding:6px;border:1px solid #9aa\">1 week</td></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">Status page template + communications rotation</td><td style=\"padding:6px;border:1px solid #9aa\">Support</td><td style=\"padding:6px;border:1px solid #9aa\">2 weeks</td></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">Post-deploy DNS verification in release checklist</td><td style=\"padding:6px;border:1px solid #9aa\">Release engineering</td><td style=\"padding:6px;border:1px solid #9aa\">2 weeks</td></tr><tr><td style=\"padding:6px;border:1px solid #9aa\">RFC: resolver sidecar or DNS-independent discovery (design only)</td><td style=\"padding:6px;border:1px solid #9aa\">Platform</td><td style=\"padding:6px;border:1px solid #9aa\">6 weeks</td></tr></table></div>"
+      },
+      {
+        "id": "longer-term-arch",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 1040,
+        "y": 2648,
+        "w": 880,
+        "h": 176,
+        "text": "Longer-term · RFC design only\nSingle resolver path serves all DB replicas\n\nEvaluate: resolver sidecar OR service discovery independent of DNS TTL\nOwner: Platform team · Due: 6 weeks\nImplementation is separate"
+      },
+      {
+        "id": "what-worked",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 2000,
+        "y": 1600,
+        "w": 880,
+        "h": 240,
+        "text": "What went well\n• Clear incident-channel communication\n• Rollback executed cleanly\n• DB failover worked when attempted\n• Duplicate holds reversed quickly\n\nPreserve\n• Incident-channel structure\n• Automatic hold reversal"
+      },
+      {
+        "id": "arch-action-owner",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1040,
+        "y": 2832,
+        "w": 880,
+        "h": 128,
+        "text": "Architecture RFC · design only\nOwner: Platform team\nDue: 6 weeks\nImplementation not included"
+      },
+      {
+        "id": "process-changes",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 2000,
+        "y": 1888,
+        "w": 880,
+        "h": 272,
+        "text": "Process changes\n• 5-minute pre-deploy DNS + DB health check\n• Require canary for timeout,\n  pool, or retry changes\n• Single Sev-1 incident commander,\n  separate from debugging\n• First status update target: 15 min"
+      },
+      {
+        "id": "severity-and-followup",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 2000,
+        "y": 2240,
+        "w": 880,
+        "h": 272,
+        "text": "Severity & follow-through\n• Sev-1: payment impact >30 min\n• Budget exhausted per agreed policy\n  (release gate is not punishment)\n• Review actions weekly until closed\n\nRelease gate\n• Payment-path feature changes\n  require reliability review"
+      },
+      {
+        "id": "followup-review",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 2000,
+        "y": 2544,
+        "w": 880,
+        "h": 272,
+        "text": "Follow-up & escalation\n• Review in 2 weeks\n• Check: synthetic probe, runbook,\n  canary, status page template\n• Platform RFC due in 6 weeks\n• At-risk owners: tell meeting lead\n  before Friday, not after review\n\nMeeting closed"
+      },
+      {
+        "id": "post-session-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 3120,
+        "w": 1840,
+        "h": 1040,
+        "title": "Post-session summary · Payment API outage",
+        "html": "<div style=\"font-family:Arial,sans-serif;color:#2b3038;padding:22px;line-height:1.35\"><div style=\"font-size:30px;font-weight:700;margin-bottom:6px\">Payment API outage · Tuesday postmortem</div><div style=\"font-size:17px;margin-bottom:18px;color:#444\">Purpose: understand the outage’s technical and process conditions, agree preventive actions, and review them to closure—blamelessly.</div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px\"><div style=\"border-left:6px solid #ff7fa3;background:#ffe9f0;padding:12px\"><b>Core mechanism</b><br>Release shortened the connection-pool timeout from 5s to 2s; Monday’s reduced DNS cache TTL made stale records more likely. Cached DNS pointed to a retired replica; retries plus the shorter timeout turned slowdown into hard failure. Rollback did not flush resolver cache, so failover restored traffic.</div><div style=\"border-left:6px solid #a6d94f;background:#f1fadc;padding:12px\"><b>Decision & severity</b><br>Sev-1: payment impact exceeded 30 minutes. Quarterly error budget is exhausted under agreed policy—not as punishment. Payment-path feature changes require reliability review before release. Preserve clear incident-channel structure and automatic duplicate-hold reversal.</div></div><div style=\"font-size:21px;font-weight:700;margin:8px 0\">Agreed action register</div><table style=\"width:100%;border-collapse:collapse;font-size:14px;margin-bottom:14px\"><tr style=\"background:#e2f5fc\"><th style=\"padding:8px;text-align:left;border:1px solid #9aa\">Action</th><th style=\"padding:8px;text-align:left;border:1px solid #9aa\">Owner</th><th style=\"padding:8px;text-align:left;border:1px solid #9aa\">Deadline</th></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">Synthetic payment probe from 2 regions, every minute</td><td style=\"padding:7px;border:1px solid #9aa\">Reliability team</td><td style=\"padding:7px;border:1px solid #9aa\">2 weeks</td></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">DNS health on payment dashboard; resolver-cache checks in runbook</td><td style=\"padding:7px;border:1px solid #9aa\">Platform team</td><td style=\"padding:7px;border:1px solid #9aa\">1 week</td></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">Restore pool timeout to 5s; 30-minute canary before full rollout</td><td style=\"padding:7px;border:1px solid #9aa\">Payments team</td><td style=\"padding:7px;border:1px solid #9aa\">3 days</td></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">Explicit on-call DB failover authority; update escalation policy</td><td style=\"padding:7px;border:1px solid #9aa\">Engineering manager</td><td style=\"padding:7px;border:1px solid #9aa\">1 week</td></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">Status-page template and communications rotation</td><td style=\"padding:7px;border:1px solid #9aa\">Support</td><td style=\"padding:7px;border:1px solid #9aa\">2 weeks</td></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">Post-deploy DNS verification in release checklist</td><td style=\"padding:7px;border:1px solid #9aa\">Release engineering</td><td style=\"padding:7px;border:1px solid #9aa\">2 weeks</td></tr><tr><td style=\"padding:7px;border:1px solid #9aa\">RFC: resolver sidecar or DNS-independent service discovery (design only)</td><td style=\"padding:7px;border:1px solid #9aa\">Platform team</td><td style=\"padding:7px;border:1px solid #9aa\">6 weeks</td></tr></table><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px\"><div style=\"border-left:6px solid #f7de4b;background:#fff8d4;padding:12px\"><b>Follow-up & process</b><br>Review actions weekly until closed. Two-week review checks the probe, runbook, canary and status-page template. At-risk owners notify the meeting lead before Friday. Process standards: 5-minute pre-deploy DNS/DB health check; canary timeout, pool and retry changes; distinct Sev-1 incident commander; first status-page update target 15 minutes.</div><div style=\"border-left:6px solid #00a2e1;background:#e2f5fc;padding:12px\"><b>Risks / open checks</b><br>Verify alerting reflects whole payment-path attempts, including those that never reach the service. Single resolver path remains an architectural risk; RFC is design only, implementation separate. Confirm ownership and dates for any process standards not covered by the assigned action register.</div></div><div style=\"margin-top:14px;padding:10px;background:#f3f5f4;border-radius:4px\"><b>Compact timeline · UTC:</b> 13:55 release → 14:03 latency warning → 14:07 &gt;5% errors / outage starts → 14:21 rollback (no recovery) → 14:32 stale DNS found → 14:41 failover / traffic recovers → 14:59 baseline / incident closed. Status page updated 14:26.</div></div>"
+      }
+    ]
+  }
+}

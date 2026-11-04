@@ -576,3 +576,45 @@ test('board digests warn about overlaps and frame escapes', () => {
 	assert.ok(digest.warnings.some((warning) => warning.includes('a overlaps b')))
 	assert.ok(digest.warnings.some((warning) => warning.includes('outside is outside its frame')))
 })
+
+test('re-creating an existing id updates it instead of failing', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_notes, {
+			notes: [{ id: 'risks', x: 10, y: 10, text: 'First version' }],
+		})
+		const reply = (await run(tools.add_notes, {
+			notes: [{ id: 'risks', x: 10, y: 10, text: 'Second version' }],
+		})) as { ok: boolean }
+		assert.equal(reply.ok, true)
+		const notes = store.getBoard().shapes.filter((shape) => shape.id === 'risks')
+		assert.equal(notes.length, 1)
+		assert.equal(notes[0].type === 'note' ? notes[0].text : null, 'Second version')
+	})
+})
+
+test('lecture tools reject content below the live layout limit', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+			layoutLimit: 1600,
+		})
+		const tooLow = (await run(tools.add_notes, {
+			notes: [{ id: 'low', x: 10, y: 1550, h: 120, text: 'Too low' }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(tooLow.ok, false)
+		assert.equal(tooLow.error, 'LAYOUT_LIMIT')
+		const ok = (await run(tools.add_notes, {
+			notes: [{ id: 'ok', x: 10, y: 1400, h: 120, text: 'Fits' }],
+		})) as { ok: boolean }
+		assert.equal(ok.ok, true)
+	})
+})

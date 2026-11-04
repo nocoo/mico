@@ -93,18 +93,63 @@ interface ToolContext {
 	selection: string[]
 	canvasId: string
 	revision: number
+	layoutLimit?: number
+}
+
+function normalizeOperations(current: Shape[], operations: Operation[]): Operation[] {
+	const byId = new Map<string, Shape>(current.map((shape) => [shape.id, shape]))
+	return operations.map((operation) => {
+		if (operation.type !== 'create') return operation
+		const existing = byId.get(operation.shape.id)
+		if (!existing || existing.type !== operation.shape.type) return operation
+		if (operation.shape.type === 'connector') {
+			const next = operation.shape
+			return {
+				type: 'update',
+				id: operation.shape.id,
+				patch: {
+					from: next.from,
+					to: next.to,
+					color: next.color,
+					...(next.fromAnchor !== undefined ? { fromAnchor: next.fromAnchor } : {}),
+					...(next.toAnchor !== undefined ? { toAnchor: next.toAnchor } : {}),
+				},
+			}
+		}
+		const { id: _id, type: _type, ...patch } = operation.shape
+		return {
+			type: 'update',
+			id: operation.shape.id,
+			patch: patch as Extract<Operation, { type: 'update' }>['patch'],
+		}
+	})
 }
 
 function apply(
-	{ store, broadcast, canvasId }: ToolContext,
+	{ store, broadcast, canvasId, layoutLimit }: ToolContext,
 	operations: Operation[],
 	observedRevision: number,
 ): ToolReply | { ok: true; revision: number; updated: string[] } {
 	if (operations.length === 0) {
 		return { ok: true, revision: store.getBoard(canvasId).revision, created: [] }
 	}
-	const mutatesExisting = operations.some((operation) => operation.type !== 'create')
 	const current = store.getBoard(canvasId)
+	const normalized = normalizeOperations(current.shapes, operations)
+	if (layoutLimit !== undefined) {
+		for (const operation of normalized) {
+			if (operation.type !== 'create' || operation.shape.type === 'connector') continue
+			const bottom = Math.max(operation.shape.y, operation.shape.y + operation.shape.h)
+			if (bottom > layoutLimit) {
+				return {
+					ok: false,
+					error: 'LAYOUT_LIMIT',
+					message: `Live layout limit is y=${layoutLimit}; this object reaches y=${Math.round(bottom)}. Place it in the next column at y=160 or compact the existing sections with update_shapes.`,
+					hint: 'Do not extend the current column. Use the next free column, starting near y=160.',
+				}
+			}
+		}
+	}
+	const mutatesExisting = normalized.some((operation) => operation.type !== 'create')
 	if (mutatesExisting && current.revision !== observedRevision) {
 		return {
 			ok: false,
@@ -113,7 +158,7 @@ function apply(
 		}
 	}
 	try {
-		const result = store.applyRequest({ operations, canvasId })
+		const result = store.applyRequest({ operations: normalized, canvasId })
 		broadcast({
 			type: 'board',
 			canvasId: result.canvasId,
@@ -126,7 +171,7 @@ function apply(
 					operation.type === 'create',
 			)
 			.map((operation) => ({ id: operation.shape.id, type: operation.shape.type }))
-		const updated = operations
+		const updated = normalized
 			.filter(
 				(operation): operation is Extract<Operation, { type: 'update' }> =>
 					operation.type === 'update',
@@ -155,7 +200,9 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 	color,
 })
 
-export function createCanvasTools(input: Omit<ToolContext, 'revision'> & { revision?: number }) {
+export function createCanvasTools(
+	input: Omit<ToolContext, 'revision'> & { revision?: number; layoutLimit?: number },
+) {
 	const { store, selection, canvasId } = input
 	let observedRevision = input.revision ?? store.getBoard(canvasId).revision
 	const context: ToolContext = { ...input, revision: observedRevision }

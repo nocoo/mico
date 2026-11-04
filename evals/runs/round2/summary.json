@@ -1,0 +1,304 @@
+{
+  "round": 2,
+  "startedAt": "2026-11-04T14:35:55.394Z",
+  "elapsedMinutes": 52.4,
+  "cases": [
+    {
+      "id": "c01-family-trip",
+      "title": "暑假旅行方案：预算、体力与分工",
+      "canvas": "R2-C01 暑假旅行方案：预算、体力与分工",
+      "canvasId": "e68a9e65-07e1-4d64-a758-4937f3ad7386",
+      "segments": 9,
+      "requests": 10,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_frames": 1,
+        "add_texts": 1,
+        "add_notes": 7,
+        "add_html_cards": 4,
+        "get_board": 12,
+        "update_shapes": 5
+      },
+      "shapes": 17,
+      "shapeTypes": {
+        "frame": 2,
+        "text": 2,
+        "note": 9,
+        "html": 4
+      },
+      "htmlCards": 4,
+      "totalReplyChars": 306,
+      "totalMs": 165907
+    },
+    {
+      "id": "c02-product-sprint",
+      "title": "Sprint planning: onboarding scope and owners",
+      "canvas": "R2-C02 Sprint planning: onboarding scope and owners",
+      "canvasId": "75b8a032-3293-492c-9891-24935c8bef1c",
+      "segments": 18,
+      "requests": 19,
+      "timedOutSegments": 0,
+      "failedTools": 1,
+      "waits": 0,
+      "toolNames": {
+        "add_frames": 4,
+        "add_boxes": 1,
+        "add_notes": 9,
+        "get_board": 11,
+        "add_html_cards": 3,
+        "update_shapes": 11
+      },
+      "shapes": 23,
+      "shapeTypes": {
+        "frame": 5,
+        "ellipse": 2,
+        "rectangle": 4,
+        "note": 9,
+        "html": 3
+      },
+      "htmlCards": 3,
+      "totalReplyChars": 4272,
+      "totalMs": 302579
+    },
+    {
+      "id": "c03-ai-platform",
+      "title": "AI 白板系统架构：前后端与实时链路",
+      "canvas": "R2-C03 AI 白板系统架构：前后端与实时链路",
+      "canvasId": "a3f0d0d4-ef1e-42f0-a369-b6c31931b744",
+      "segments": 10,
+      "requests": 11,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 2,
+        "add_boxes": 6,
+        "add_connectors": 2,
+        "add_notes": 7,
+        "get_board": 10,
+        "add_frames": 1,
+        "update_shapes": 7,
+        "add_html_cards": 1
+      },
+      "shapes": 43,
+      "shapeTypes": {
+        "text": 3,
+        "rectangle": 19,
+        "connector": 5,
+        "note": 13,
+        "frame": 2,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "totalReplyChars": 546,
+      "totalMs": 211804
+    },
+    {
+      "id": "c04-factory-q3",
+      "title": "工厂第三季度排产与交付计划",
+      "canvas": "R2-C04 工厂第三季度排产与交付计划",
+      "canvasId": "8e836f6e-2fca-47c5-ac77-f069c2958b24",
+      "segments": 8,
+      "requests": 9,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_frames": 1,
+        "add_notes": 8,
+        "get_board": 10,
+        "update_shapes": 6,
+        "add_html_cards": 1
+      },
+      "shapes": 19,
+      "shapeTypes": {
+        "frame": 2,
+        "note": 16,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "totalReplyChars": 430,
+      "totalMs": 216253
+    },
+    {
+      "id": "c05-er-handover",
+      "title": "救急外来の夜勤引き継ぎと優先順位",
+      "canvas": "R2-C05 救急外来の夜勤引き継ぎと優先順位",
+      "canvasId": "13dcec7d-bb61-413a-ba25-d4bc7755da48",
+      "segments": 12,
+      "requests": 13,
+      "timedOutSegments": 2,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 1,
+        "add_boxes": 2,
+        "get_board": 12,
+        "add_frames": 1,
+        "add_notes": 8,
+        "update_shapes": 9,
+        "add_html_cards": 1
+      },
+      "shapes": 33,
+      "shapeTypes": {
+        "text": 2,
+        "rectangle": 9,
+        "frame": 2,
+        "note": 19,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "totalReplyChars": 763,
+      "totalMs": 578428
+    },
+    {
+      "id": "c06-science-fair",
+      "title": "Science fair venue, budget and volunteers",
+      "canvas": "R2-C06 Science fair venue, budget and volunteers",
+      "canvasId": "78aaca68-78da-4d37-91b3-e072031a5b73",
+      "segments": 18,
+      "requests": 19,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 1,
+        "add_frames": 5,
+        "add_notes": 16,
+        "get_board": 14,
+        "update_shapes": 8,
+        "add_html_cards": 1
+      },
+      "shapes": 39,
+      "shapeTypes": {
+        "text": 2,
+        "frame": 8,
+        "note": 28,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "totalReplyChars": 4717,
+      "totalMs": 404338
+    },
+    {
+      "id": "c07-incident-postmortem",
+      "title": "Payment API outage postmortem and actions",
+      "canvas": "R2-C07 Payment API outage postmortem and actions",
+      "canvasId": "4505bb67-0e83-4b2c-b973-2e63c1c0c410",
+      "segments": 16,
+      "requests": 17,
+      "timedOutSegments": 0,
+      "failedTools": 1,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 1,
+        "add_frames": 6,
+        "add_notes": 11,
+        "get_board": 17,
+        "add_boxes": 1,
+        "update_shapes": 10,
+        "add_html_cards": 3
+      },
+      "shapes": 32,
+      "shapeTypes": {
+        "text": 1,
+        "frame": 8,
+        "note": 17,
+        "rectangle": 4,
+        "html": 2
+      },
+      "htmlCards": 2,
+      "totalReplyChars": 3786,
+      "totalMs": 346672
+    },
+    {
+      "id": "c08-community-center",
+      "title": "社区中心改造：预算、方案与一致意见",
+      "canvas": "R2-C08 社区中心改造：预算、方案与一致意见",
+      "canvasId": "d46875e6-1fea-421a-badd-ccc792c833da",
+      "segments": 10,
+      "requests": 11,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 1,
+        "add_frames": 4,
+        "add_notes": 9,
+        "get_board": 9,
+        "update_shapes": 3,
+        "add_html_cards": 1
+      },
+      "shapes": 27,
+      "shapeTypes": {
+        "text": 2,
+        "frame": 6,
+        "note": 18,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "totalReplyChars": 948,
+      "totalMs": 250840
+    },
+    {
+      "id": "c09-restaurant-launch",
+      "title": "ランチメニュー刷新と試験営業",
+      "canvas": "R2-C09 ランチメニュー刷新と試験営業",
+      "canvasId": "58cf3072-0008-4ba8-aa4d-4333496be72b",
+      "segments": 16,
+      "requests": 17,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 1,
+        "add_frames": 8,
+        "add_notes": 10,
+        "get_board": 11,
+        "update_shapes": 15,
+        "add_html_cards": 3
+      },
+      "shapes": 31,
+      "shapeTypes": {
+        "text": 1,
+        "frame": 12,
+        "note": 15,
+        "html": 3
+      },
+      "htmlCards": 3,
+      "totalReplyChars": 1420,
+      "totalMs": 453479
+    },
+    {
+      "id": "c10-disaster-drill",
+      "title": "防災訓練の役割、タイムライン、備品",
+      "canvas": "R2-C10 防災訓練の役割、タイムライン、備品",
+      "canvasId": "4b88cce7-8c1a-4e10-b0d4-581c2ef476f5",
+      "segments": 13,
+      "requests": 14,
+      "timedOutSegments": 0,
+      "failedTools": 0,
+      "waits": 0,
+      "toolNames": {
+        "add_texts": 2,
+        "add_notes": 16,
+        "add_frames": 1,
+        "get_board": 6,
+        "update_shapes": 1,
+        "add_html_cards": 1
+      },
+      "shapes": 31,
+      "shapeTypes": {
+        "text": 3,
+        "note": 25,
+        "frame": 2,
+        "html": 1
+      },
+      "htmlCards": 1,
+      "totalReplyChars": 934,
+      "totalMs": 212024
+    }
+  ]
+}

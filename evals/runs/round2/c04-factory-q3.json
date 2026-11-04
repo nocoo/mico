@@ -1,0 +1,552 @@
+{
+  "round": 2,
+  "case": {
+    "id": "c04-factory-q3",
+    "lang": "zh",
+    "subject": "生产会议",
+    "title": "工厂第三季度排产与交付计划",
+    "voice": "zh-CN-YunxiNeural",
+    "rate": "+15%",
+    "script": "c04-factory-q3.zh.txt",
+    "duration": 226.2
+  },
+  "canvasId": "8e836f6e-2fca-47c5-ac77-f069c2958b24",
+  "canvasName": "R2-C04 工厂第三季度排产与交付计划",
+  "startedAt": "2026-11-04T14:47:15.753Z",
+  "segments": [
+    {
+      "index": 1,
+      "start": 0,
+      "end": 22.8,
+      "text": "各位，今天开这个会，是把第三季度的生产计划定下来。 我们做的是电动自行车电机，工厂有两条总装线，一条绕线线，一条测试线。 第二季度实际交付九万台，第三季度销售预测十二万台，但按现有产能，满负荷只有十万台。 中间这两万台的缺口，就是今天要解决的问题。 先看订单结构。",
+      "elapsedMs": 17643,
+      "timedOut": false,
+      "textReply": "已记录会议目标、现有产线配置，以及第三季度预测与满负荷产能之间的 20,000 台缺口；右侧预留了订单结构区域。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_frames",
+          "state": "output-available",
+          "input": "{\"frames\":[{\"id\":\"q3-purpose\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"title\":\"Q3电动自行车电机排产｜目标与缺口\",\"color\":\"#00a2e1\"},{\"id\":\"q3-structure\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"title\":\"订单结构｜待补充\",\"color\":\"#a6d94f\"}]}",
+          "output": "{\"ok\":true,\"revision\":1,\"created\":[{\"id\":\"q3-purpose\",\"type\":\"frame\"},{\"id\":\"q3-structure\",\"type\":\"frame\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-facts\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"color\":\"#e2f5fc\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"color\":\"#fff8d4\",\"frameId\":\"q3-purpose\"}]}",
+          "output": "{\"ok\":true,\"revision\":2,\"created\":[{\"id\":\"q3-facts\",\"type\":\"note\"},{\"id\":\"q3-gap\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 2,
+      "start": 22.8,
+      "end": 50.9,
+      "text": "A 客户占四万台，交期集中在七月和八月，要求每周固定发货；B 客户三万台，九月一次性交付，允许分批；C 客户两万台，是新客户，要求首批发五千台做认证；剩下三万台是备件和渠道订单。 A 客户不能延，B 客户可以谈，C 客户的首批认证很关键，不能出问题。 产能这边，两条总装线每天理论产量一千二百台，按二十六天算是三万一千台每月。",
+      "elapsedMs": 21624,
+      "timedOut": false,
+      "textReply": "右侧补入订单优先级与交付约束，并记录了总装线月产能口径。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-order-mix\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"color\":\"#f1fadc\",\"frameId\":\"q3-structure\"},{\"id\":\"q3-assembly-cap\",\"x\":1080,\"y\":416,\"w\":800,\"h\":160,\"text\":\"总装线×2：合计理论产量\\n1,200台/天 × 26天\\n≈ 31,000台/月\",\"color\":\"#e2f5fc\",\"frameId\":\"q3-structure\"}]}",
+          "output": "{\"ok\":true,\"revision\":3,\"created\":[{\"id\":\"q3-order-mix\",\"type\":\"note\"},{\"id\":\"q3-assembly-cap\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":3,\"count\":6,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":760},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#a6d94f\",\"title\":\"订单结构｜待补充\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\":\"q3-as…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"q3-structure\",\"patch\":{\"title\":\"订单结构与产能｜交付优先级\"}}]}",
+          "output": "{\"ok\":true,\"revision\":4,\"created\":[],\"updated\":[\"q3-structure\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 3,
+      "start": 50.9,
+      "end": 77.2,
+      "text": "绕线线是瓶颈，每天只能供九百台，测试线更慢，每天八百五十台。 也就是说，就算总装开满，前端供不上，后端也测不完。 七月的可用产能大约九万八千台，八月有五天设备检修，产能会掉到八万五千台，九月如果新测试台到位，可以到十一万台。 设备部说，绕线机三号主轴有异响，必须在七月第二周停机检修两天，否则可能整线停。",
+      "elapsedMs": 13586,
+      "timedOut": false,
+      "textReply": "补充绕线与测试瓶颈、7–9月可用产能，以及绕线机主轴检修风险。已加入绕线（900 台/天）与测试（850 台/天）的瓶颈产能、7–9 月可用产能，以及绕线机 3 号主轴的检修风险。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-bottleneck\",\"x\":1080,\"y\":608,\"w\":800,\"h\":176,\"text\":\"瓶颈产线｜日能力\\n绕线：900台/天（前端受限）\\n测试：850台/天（更慢）\\n总装满开也受制于前后工序\",\"color\":\"#ffe9f0\",\"frameId\":\"q3-structure\"},{\"id\":\"q3-month-capacity\",\"x\":128,\"y\":416,\"w\":800,\"h\":176,\"text\":\"月度可用产能\\n7月：约98,000台\\n8月：约85,000台｜检修5天\\n9月：约110,000台｜新测试台到位\",\"color\":\"#f1fadc\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-risk\",\"x\":128,\"y\":624,\"w\":800,\"h\":160,\"text\":\"设备风险｜绕线机3号主轴异响\\n7月第2周必须停机检修2天\\n不检修可能导致整线停产\",\"color\":\"#fff8d4\",\"frameId\":\"q3-purpose\"}]}",
+          "output": "{\"ok\":true,\"revision\":5,\"created\":[{\"id\":\"q3-bottleneck\",\"type\":\"note\"},{\"id\":\"q3-month-capacity\",\"type\":\"note\"},{\"id\":\"q3-risk\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":9,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":760},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\":\"…",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 4,
+      "start": 77.2,
+      "end": 107.2,
+      "text": "测试线可以加一个夜班，但需要两名测试工程师，招聘最快三周。 临时方案是把部分测试外包给城南的合作伙伴，每台成本增加八块，质量要抽检。 采购部提醒，关键磁钢的供应商七月要检修一周，安全库存只够十天，必须提前锁量。 销售部提出，A 客户可以接受七月少交两千台，但八月必须补上；B 客户如果九月分批，可以接受每周一万台；C 客户的首批认证不能晚于八月中。",
+      "elapsedMs": 13041,
+      "timedOut": false,
+      "textReply": "补充测试扩能选项、磁钢供应风险与客户交付弹性，仍标记为待决事项而非已定方案。已记录测试夜班与外包选项、磁钢锁量风险，以及 A/B/C 客户的交付弹性与认证期限；这些仍是待评估约束，尚未作为排产决策。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":5,\"count\":9,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":760},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\":\"…",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-test-options\",\"x\":1080,\"y\":608,\"w\":800,\"h\":176,\"text\":\"测试扩能方案｜待评估\\n夜班：需2名测试工程师｜招聘约3周\\n临时外包：城南合作方\\n+¥8/台；需抽检质量\",\"color\":\"#e2f5fc\",\"frameId\":\"q3-structure\"},{\"id\":\"q3-supply-customer\",\"x\":128,\"y\":624,\"w\":800,\"h\":160,\"text\":\"供应与交付约束\\n磁钢供应商7月检修1周；库存仅10天\\n需提前锁量\\nA：7月可少交2,000台，8月补齐\\nB：9月每周1万台，可分批\\nC：认证首批最晚8月中\",\"color\":\"#fff8d4\",\"frameId\":\"q3-purpose\"}]}",
+          "output": "{\"ok\":true,\"revision\":6,\"created\":[{\"id\":\"q3-test-options\",\"type\":\"note\"},{\"id\":\"q3-supply-customer\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 5,
+      "start": 107.2,
+      "end": 131.6,
+      "text": "财务部给出底线：第三季度毛利不能低于百分之十八，外包和加班都要算进去。 现在有三个方案。 方案一，不新增设备，靠加班和外包，产能做到十万五千台，缺口一万五千台需要和客户谈延期。 方案二，七月租一台测试台，八月再买新设备，产能做到十一万五千台，但资本支出增加八十万，回收期大约十个月。",
+      "elapsedMs": 23137,
+      "timedOut": false,
+      "textReply": "记录毛利率底线，并列出已提出的前两种扩能方案及其产能、成本与交付缺口。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-finance-floor\",\"x\":128,\"y\":624,\"w\":800,\"h\":160,\"text\":\"财务底线｜方案评估\\nQ3毛利率不得低于18%\\n外包与加班成本必须计入\",\"color\":\"#fff8d4\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-options\",\"x\":1080,\"y\":608,\"w\":800,\"h\":176,\"text\":\"方案对比｜待决\\n方案1：不新增设备\\n加班＋外包｜产能105,000台\\n缺口15,000台｜需协商延期\\n方案2：7月租测试台、8月购置\\n产能115,000台｜资本支出¥800,000\\n回收期约10个月\",\"color\":\"#e2f5fc\",\"frameId\":\"q3-structure\"}]}",
+          "output": "{\"ok\":true,\"revision\":7,\"created\":[{\"id\":\"q3-finance-floor\",\"type\":\"note\"},{\"id\":\"q3-options\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":7,\"count\":13,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":760},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\":…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"q3-bottleneck\",\"patch\":{\"x\":1080,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-test-options\",\"patch\":{\"x\":1480,\"y\":416,\"w\":400,\"h\":160}},{\"id\":\"q3-options\",\"patch\":{\"x\":1480,\"y\":608,\"w\":400,\"h\":176}},{\"id\":\"q3-supply-customer\",\"patch\":{\"x\":128,\"y\":624,\"w\":360,\"h\":160}},{\"id\":\"q3-finance-floor\",\"patch\":{\"x\":536,\"y\":624,\"w\":360,\"h\":160}},{\"id\":\"q3-risk\",\"patch\":{\"x\":128,\"y\":608,\"w\":360,\"h\":176}}]}",
+          "output": "{\"ok\":true,\"revision\":8,\"created\":[],\"updated\":[\"q3-bottleneck\",\"q3-test-options\",\"q3-options\",\"q3-supply-customer\",\"q3-finance-floor\",\"q3-risk\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 6,
+      "start": 131.6,
+      "end": 160.1,
+      "text": "方案三，把部分低毛利渠道订单转到第四季度，优先保 A 和 C，产能压力降到十万台以内。 讨论后大家的意见是：A 客户和 C 客户不能丢，B 客户可以谈分批，渠道订单可以延。 设备检修不能省，否则风险太大。 外包只用在测试环节，比例不超过总产量的百分之十五，而且必须做首件和抽检。 新测试台如果七月能租到，就先租，八月再决定买不买。",
+      "elapsedMs": 16979,
+      "timedOut": false,
+      "textReply": "加入方案三与讨论共识：优先保 A/C、协商 B、渠道转 Q4，并明确检修、外包质检及租购节点。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-decision\",\"x\":1080,\"y\":608,\"w\":800,\"h\":176,\"text\":\"方案3｜待确认执行\\n低毛利渠道订单转Q4\\n优先保障A、C｜B可协商分批\\n设备检修必须执行\\n测试外包≤总产量15%\\n首件＋抽检；7月租测试台\\n8月评估是否购置\",\"color\":\"#f1fadc\",\"frameId\":\"q3-structure\"},{\"id\":\"q3-margin-and-cap\",\"x\":536,\"y\":624,\"w\":360,\"h\":160,\"text\":\"财务与产能约束\\nQ3毛利率≥18%\\n外包及加班计入成本\\n方案3：产能压力降至100,000台以内\",\"color\":\"#fff8d4\",\"frameId\":\"q3-purpose\"}]}",
+          "output": "{\"ok\":true,\"revision\":9,\"created\":[{\"id\":\"q3-decision\",\"type\":\"note\"},{\"id\":\"q3-margin-and-cap\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":9,\"count\":15,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":760},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\":…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"q3-decision\",\"patch\":{\"x\":1080,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-options\",\"patch\":{\"x\":1480,\"y\":608,\"w\":400,\"h\":176}},{\"id\":\"q3-test-options\",\"patch\":{\"x\":1480,\"y\":416,\"w\":400,\"h\":160}},{\"id\":\"q3-assembly-cap\",\"patch\":{\"x\":1080,\"y\":400,\"w\":800,\"h\":160}},{\"id\":\"q3-risk\",\"patch\":{\"x\":128,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-supply-customer\",\"patch\":{\"x\":128,\"y\":432,\"w\":360,\"h\":160}},{\"id\":\"q3-finance-floor\",\"patch\":{\"x\":536,\"y\":624,\"w\":360,\"h\":160}},{\"id\":\"q3-margin-and-cap\",\"patch\":{\"x\":536,\"y\":432,\"w\":360,\"h\":160}}]}",
+          "output": "{\"ok\":true,\"revision\":10,\"created\":[],\"updated\":[\"q3-decision\",\"q3-options\",\"q3-test-options\",\"q3-assembly-cap\",\"q3-risk\",\"q3-supply-customer\",\"q3-finance-floor\",\"q3-margin-and-cap\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 7,
+      "start": 160.1,
+      "end": 195.5,
+      "text": "最后形成一致意见：第一，七月第二周绕线机检修两天，生产部提前把半成品库存拉高到三天；第二，测试线从七月十五日起加夜班，同时启动外包，外包比例控制在百分之十二；第三，采购部本周锁磁钢六周用量，并寻找第二供应商；第四，销售部本周和 A、B、C 三个客户谈交期，A 保四万，B 争取九月分三周，C 首批五千台八月中交付；第五，财务部每周更新毛利，低于百分之十八立即预警；第六，八月十五日复盘，再决定是否购买新测试台。",
+      "elapsedMs": 16017,
+      "timedOut": false,
+      "textReply": "补入六项一致决议及负责人职能、时间节点和触发条件，并将其单独放在右栏下方。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-final-consensus\",\"x\":1080,\"y\":808,\"w\":800,\"h\":200,\"text\":\"一致意见｜执行清单\\n• 7月第2周：绕线机检修2天；半成品库存备3天\\n• 7/15起测试夜班＋外包12%\\n• 本周锁磁钢6周用量；寻第二供应商\\n• 本周谈客户：A保40,000；B争取9月分3周；C首批5,000于8月中交\\n• 财务每周更新毛利；低于18%立即预警\\n• 8/15复盘，决定是否购置测试台\",\"color\":\"#f1fadc\",\"frameId\":\"q3-structure\"}]}",
+          "output": "{\"ok\":true,\"revision\":11,\"created\":[{\"id\":\"q3-final-consensus\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        },
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":11,\"count\":16,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":928},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\"…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"q3-structure\",\"patch\":{\"h\":976}},{\"id\":\"q3-purpose\",\"patch\":{\"h\":760}},{\"id\":\"q3-final-consensus\",\"patch\":{\"y\":808}},{\"id\":\"q3-assembly-cap\",\"patch\":{\"x\":1080,\"y\":400,\"w\":360,\"h\":176}},{\"id\":\"q3-test-options\",\"patch\":{\"x\":1480,\"y\":400,\"w\":400,\"h\":176}},{\"id\":\"q3-bottleneck\",\"patch\":{\"x\":1080,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-decision\",\"patch\":{\"x\":1480,\"y\":608,\"w\":400,\"h\":176}},{\"id\":\"q3-month-capacity\",\"patch\":{\"x\":128,\"y\":416,\"w\":360,\"h\":176}},{\"id\":\"q3-supply-customer\",\"patch\":{\"x\":128,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-risk\",\"patch\":{\"x\":128,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-finance-floor\",\"patch\":{\"x\":536,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-margin-and-cap\",\"patch\":{\"x\":536,\"y\":416,\"w\":360,\"h\":176}}]}",
+          "output": "{\"ok\":true,\"revision\":12,\"created\":[],\"updated\":[\"q3-structure\",\"q3-purpose\",\"q3-final-consensus\",\"q3-assembly-cap\",\"q3-test-options\",\"q3-bottleneck\",\"q3-decision\",\"q3-month-capacity\",\"q3-supply-customer\",\"q3-risk\",\"q3-finance-floor\",\"q3-margin-and-cap\"]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    },
+    {
+      "index": 8,
+      "start": 195.5,
+      "end": 226.2,
+      "text": "分工和时间点也定一下。 生产部负责排产和检修，七月五日前给出周计划；设备部负责测试台租赁，七月十日前完成安装调试；采购部负责磁钢和第二供应商，七月八日前给出到货节点；销售部负责客户交期确认，七月七日前书面确认；质量部负责外包抽检方案，七月十二日前发布；财务部每周五更新成本。 下一次会议定在七月二十日，只看三件事：实际产出、客户交期、毛利。 今天就到这里。",
+      "elapsedMs": 17248,
+      "timedOut": false,
+      "textReply": "会议收尾新增责任分工与 7 月 20 日复盘议程；先修正两栏里仍重叠的便笺。",
+      "waits": false,
+      "tools": [
+        {
+          "name": "get_board",
+          "state": "output-available",
+          "input": "{}",
+          "output": "{\"ok\":true,\"revision\":12,\"count\":16,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":976},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":976,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id\"…",
+          "failed": false
+        },
+        {
+          "name": "update_shapes",
+          "state": "output-available",
+          "input": "{\"updates\":[{\"id\":\"q3-risk\",\"patch\":{\"x\":128,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-supply-customer\",\"patch\":{\"x\":536,\"y\":608,\"w\":360,\"h\":176}},{\"id\":\"q3-options\",\"patch\":{\"x\":1480,\"y\":400,\"w\":400,\"h\":176}},{\"id\":\"q3-decision\",\"patch\":{\"x\":1080,\"y\":608,\"w\":360,\"h\":176}}]}",
+          "output": "{\"ok\":true,\"revision\":13,\"created\":[],\"updated\":[\"q3-risk\",\"q3-supply-customer\",\"q3-options\",\"q3-decision\"]}",
+          "failed": false
+        },
+        {
+          "name": "add_notes",
+          "state": "output-available",
+          "input": "{\"notes\":[{\"id\":\"q3-owners\",\"x\":1080,\"y\":1024,\"w\":800,\"h\":200,\"text\":\"责任分工｜截止时间\\n生产：周计划7/5前；排产与检修\\n设备：测试台租赁安装调试7/10前\\n采购：磁钢及第二供应商节点7/8前\\n销售：客户交期书面确认7/7前\\n质量：外包抽检方案7/12前\\n财务：每周五更新成本\",\"color\":\"#e2f5fc\",\"frameId\":\"q3-structure\"},{\"id\":\"q3-next-review\",\"x\":1080,\"y\":1240,\"w\":800,\"h\":144,\"text\":\"下次会议｜7月20日\\n只复盘：实际产出｜客户交期｜毛利\",\"color\":\"#fff8d4\",\"frameId\":\"q3-structure\"}]}",
+          "output": "{\"ok\":true,\"revision\":14,\"created\":[{\"id\":\"q3-owners\",\"type\":\"note\"},{\"id\":\"q3-next-review\",\"type\":\"note\"}],\"updated\":[]}",
+          "failed": false
+        }
+      ],
+      "status": "ready"
+    }
+  ],
+  "stats": {
+    "segments": 8,
+    "requests": 9,
+    "timedOutSegments": 0,
+    "failedTools": 0,
+    "waits": 0,
+    "toolNames": {
+      "add_frames": 1,
+      "add_notes": 8,
+      "get_board": 10,
+      "update_shapes": 6,
+      "add_html_cards": 1
+    },
+    "shapes": 19,
+    "shapeTypes": {
+      "frame": 2,
+      "note": 16,
+      "html": 1
+    },
+    "htmlCards": 1,
+    "totalReplyChars": 430,
+    "totalMs": 216253
+  },
+  "summary": {
+    "index": 9,
+    "start": 226.2,
+    "end": 226.2,
+    "text": "[Post-meeting summary]",
+    "elapsedMs": 76978,
+    "timedOut": false,
+    "textReply": "已完成会后摘要卡，包含会议方向、关键产能与风险、责任人和截止时间，以及关键时间线。也修复了原板上的便笺重叠和框架越界。\n\n**要点：**优先保障 A、C 客户，7 月先租测试台并控制外包在 12%；8 月 15 日再决定是否购置。",
+    "waits": false,
+    "tools": [
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":14,\"count\":18,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":1304},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":760,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":976,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"id…",
+        "failed": false
+      },
+      {
+        "name": "update_shapes",
+        "state": "output-available",
+        "input": "{\"updates\":[{\"id\":\"q3-purpose\",\"patch\":{\"h\":1000}},{\"id\":\"q3-finance-floor\",\"patch\":{\"x\":536,\"y\":800}},{\"id\":\"q3-structure\",\"patch\":{\"h\":1504}},{\"id\":\"q3-decision\",\"patch\":{\"x\":1080,\"y\":808}},{\"id\":\"q3-options\",\"patch\":{\"x\":1480,\"y\":608}},{\"id\":\"q3-test-options\",\"patch\":{\"x\":1480,\"y\":400}},{\"id\":\"q3-final-consensus\",\"patch\":{\"y\":1008}},{\"id\":\"q3-owners\",\"patch\":{\"y\":1224}},{\"id\":\"q3-next-review\",\"patch\":{\"y\":1440}}]}",
+        "output": "{\"ok\":true,\"revision\":15,\"created\":[],\"updated\":[\"q3-purpose\",\"q3-finance-floor\",\"q3-structure\",\"q3-decision\",\"q3-options\",\"q3-test-options\",\"q3-final-consensus\",\"q3-owners\",\"q3-next-review\"]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":15,\"count\":18,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":1504},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":1000,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":1504,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"…",
+        "failed": false
+      },
+      {
+        "name": "add_html_cards",
+        "state": "output-available",
+        "input": "{\"cards\":[{\"id\":\"q3-post-summary\",\"x\":80,\"y\":1744,\"w\":1600,\"h\":960,\"title\":\"Q3排产会议｜会后摘要\",\"html\":\"<div style=\\\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;background:#f3f5f4;padding:24px;border-radius:12px;line-height:1.45\\\"><div style=\\\"border-bottom:4px solid #00a2e1;padding-bottom:12px;margin-bottom:16px\\\"><div style=\\\"font-size:28px;font-weight:700\\\">工厂第三季度排产与交付计划</div><div style=\\\"font-size:16px;margin-top:6px\\\">目的：在Q3预测120,000台、现有满负荷约100,000台的约束下，明确客户优先级、扩能动作与执行责任。</div></div><div style=\\\"display:grid;grid-template-columns:1fr 1fr;gap:14px\\\"><div style=\\\"background:#e2f5fc;padding:14px;border-left:5px solid #00a2e1;border-radius:6px\\\"><b>一致意见｜执行方向</b><ul style=\\\"margin:8px 0 0;padding-left:20px\\\"><li>优先保障A客户40,000台与C客户；C首批5,000台须于8月中交付认证。</li><li>B客户争取9月分3周交货；低毛利渠道订单可转Q4，目标将Q3产能压力降至100,000台以内。</li><li>绕线机检修不可省；7/15起测试夜班并启动测试外包，外包控制在总产量12%（上限15%），执行首件与抽检。</li><li>7月先…",
+        "output": "{\"ok\":true,\"revision\":16,\"created\":[{\"id\":\"q3-post-summary\",\"type\":\"html\"}],\"updated\":[]}",
+        "failed": false
+      },
+      {
+        "name": "get_board",
+        "state": "output-available",
+        "input": "{}",
+        "output": "{\"ok\":true,\"revision\":16,\"count\":19,\"bounds\":{\"x\":80,\"y\":80,\"w\":1840,\"h\":2624},\"selection\":[],\"shapes\":[{\"id\":\"q3-purpose\",\"type\":\"frame\",\"x\":80,\"y\":80,\"w\":880,\"h\":1000,\"color\":\"#00a2e1\",\"title\":\"Q3电动自行车电机排产｜目标与缺口\"},{\"id\":\"q3-structure\",\"type\":\"frame\",\"x\":1040,\"y\":80,\"w\":880,\"h\":1504,\"color\":\"#a6d94f\",\"title\":\"订单结构与产能｜交付优先级\"},{\"id\":\"q3-facts\",\"type\":\"note\",\"x\":128,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#e2f5fc\",\"text\":\"会议目标：定下第三季度生产计划\\n产品：电动自行车电机\\n产线：总装×2、绕线×1、测试×1\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-gap\",\"type\":\"note\",\"x\":536,\"y\":160,\"w\":360,\"h\":190,\"color\":\"#fff8d4\",\"text\":\"Q2实际交付：90,000台\\nQ3销售预测：120,000台\\n现有满负荷：100,000台\\n待解决缺口：20,000台\",\"frameId\":\"q3-purpose\"},{\"id\":\"q3-order-mix\",\"type\":\"note\",\"x\":1080,\"y\":160,\"w\":800,\"h\":220,\"color\":\"#f1fadc\",\"text\":\"A客户：40,000台｜7–8月集中交付\\n每周固定发货，不能延\\nB客户：30,000台｜9月一次性交付\\n允许分批，可协商\\nC客户：20,000台｜新客户\\n首批5,000台认证，质量关键\\n备件与渠道：30,000台\",\"frameId\":\"q3-structure\"},{\"…",
+        "failed": false
+      }
+    ],
+    "status": "ready"
+  },
+  "finalBoard": {
+    "revision": 16,
+    "shapes": [
+      {
+        "id": "q3-purpose",
+        "color": "#00a2e1",
+        "type": "frame",
+        "x": 80,
+        "y": 80,
+        "w": 880,
+        "h": 1000,
+        "title": "Q3电动自行车电机排产｜目标与缺口"
+      },
+      {
+        "id": "q3-structure",
+        "color": "#a6d94f",
+        "type": "frame",
+        "x": 1040,
+        "y": 80,
+        "w": 880,
+        "h": 1504,
+        "title": "订单结构与产能｜交付优先级"
+      },
+      {
+        "id": "q3-facts",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 128,
+        "y": 160,
+        "w": 360,
+        "h": 190,
+        "text": "会议目标：定下第三季度生产计划\n产品：电动自行车电机\n产线：总装×2、绕线×1、测试×1",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-gap",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 536,
+        "y": 160,
+        "w": 360,
+        "h": 190,
+        "text": "Q2实际交付：90,000台\nQ3销售预测：120,000台\n现有满负荷：100,000台\n待解决缺口：20,000台",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-order-mix",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1080,
+        "y": 160,
+        "w": 800,
+        "h": 220,
+        "text": "A客户：40,000台｜7–8月集中交付\n每周固定发货，不能延\nB客户：30,000台｜9月一次性交付\n允许分批，可协商\nC客户：20,000台｜新客户\n首批5,000台认证，质量关键\n备件与渠道：30,000台",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-assembly-cap",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1080,
+        "y": 400,
+        "w": 360,
+        "h": 176,
+        "text": "总装线×2：合计理论产量\n1,200台/天 × 26天\n≈ 31,000台/月",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-bottleneck",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1080,
+        "y": 608,
+        "w": 360,
+        "h": 176,
+        "text": "瓶颈产线｜日能力\n绕线：900台/天（前端受限）\n测试：850台/天（更慢）\n总装满开也受制于前后工序",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-month-capacity",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 128,
+        "y": 416,
+        "w": 360,
+        "h": 176,
+        "text": "月度可用产能\n7月：约98,000台\n8月：约85,000台｜检修5天\n9月：约110,000台｜新测试台到位",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-risk",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 128,
+        "y": 608,
+        "w": 360,
+        "h": 176,
+        "text": "设备风险｜绕线机3号主轴异响\n7月第2周必须停机检修2天\n不检修可能导致整线停产",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-test-options",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1480,
+        "y": 400,
+        "w": 400,
+        "h": 176,
+        "text": "测试扩能方案｜待评估\n夜班：需2名测试工程师｜招聘约3周\n临时外包：城南合作方\n+¥8/台；需抽检质量",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-supply-customer",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 536,
+        "y": 608,
+        "w": 360,
+        "h": 176,
+        "text": "供应与交付约束\n磁钢供应商7月检修1周；库存仅10天\n需提前锁量\nA：7月可少交2,000台，8月补齐\nB：9月每周1万台，可分批\nC：认证首批最晚8月中",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-finance-floor",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 536,
+        "y": 800,
+        "w": 360,
+        "h": 176,
+        "text": "财务底线｜方案评估\nQ3毛利率不得低于18%\n外包与加班成本必须计入",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-options",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1480,
+        "y": 608,
+        "w": 400,
+        "h": 176,
+        "text": "方案对比｜待决\n方案1：不新增设备\n加班＋外包｜产能105,000台\n缺口15,000台｜需协商延期\n方案2：7月租测试台、8月购置\n产能115,000台｜资本支出¥800,000\n回收期约10个月",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-decision",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1080,
+        "y": 808,
+        "w": 360,
+        "h": 176,
+        "text": "方案3｜待确认执行\n低毛利渠道订单转Q4\n优先保障A、C｜B可协商分批\n设备检修必须执行\n测试外包≤总产量15%\n首件＋抽检；7月租测试台\n8月评估是否购置",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-margin-and-cap",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 536,
+        "y": 416,
+        "w": 360,
+        "h": 176,
+        "text": "财务与产能约束\nQ3毛利率≥18%\n外包及加班计入成本\n方案3：产能压力降至100,000台以内",
+        "frameId": "q3-purpose"
+      },
+      {
+        "id": "q3-final-consensus",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 1080,
+        "y": 1008,
+        "w": 800,
+        "h": 200,
+        "text": "一致意见｜执行清单\n• 7月第2周：绕线机检修2天；半成品库存备3天\n• 7/15起测试夜班＋外包12%\n• 本周锁磁钢6周用量；寻第二供应商\n• 本周谈客户：A保40,000；B争取9月分3周；C首批5,000于8月中交\n• 财务每周更新毛利；低于18%立即预警\n• 8/15复盘，决定是否购置测试台",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-owners",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 1080,
+        "y": 1224,
+        "w": 800,
+        "h": 200,
+        "text": "责任分工｜截止时间\n生产：周计划7/5前；排产与检修\n设备：测试台租赁安装调试7/10前\n采购：磁钢及第二供应商节点7/8前\n销售：客户交期书面确认7/7前\n质量：外包抽检方案7/12前\n财务：每周五更新成本",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-next-review",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1080,
+        "y": 1440,
+        "w": 800,
+        "h": 144,
+        "text": "下次会议｜7月20日\n只复盘：实际产出｜客户交期｜毛利",
+        "frameId": "q3-structure"
+      },
+      {
+        "id": "q3-post-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 1744,
+        "w": 1600,
+        "h": 960,
+        "title": "Q3排产会议｜会后摘要",
+        "html": "<div style=\"font-family:Arial,'Microsoft YaHei',sans-serif;color:#2b3038;background:#f3f5f4;padding:24px;border-radius:12px;line-height:1.45\"><div style=\"border-bottom:4px solid #00a2e1;padding-bottom:12px;margin-bottom:16px\"><div style=\"font-size:28px;font-weight:700\">工厂第三季度排产与交付计划</div><div style=\"font-size:16px;margin-top:6px\">目的：在Q3预测120,000台、现有满负荷约100,000台的约束下，明确客户优先级、扩能动作与执行责任。</div></div><div style=\"display:grid;grid-template-columns:1fr 1fr;gap:14px\"><div style=\"background:#e2f5fc;padding:14px;border-left:5px solid #00a2e1;border-radius:6px\"><b>一致意见｜执行方向</b><ul style=\"margin:8px 0 0;padding-left:20px\"><li>优先保障A客户40,000台与C客户；C首批5,000台须于8月中交付认证。</li><li>B客户争取9月分3周交货；低毛利渠道订单可转Q4，目标将Q3产能压力降至100,000台以内。</li><li>绕线机检修不可省；7/15起测试夜班并启动测试外包，外包控制在总产量12%（上限15%），执行首件与抽检。</li><li>7月先租测试台；8/15复盘后再决定是否购置（方案2购置参考：¥800,000，回收期约10个月）。</li></ul></div><div style=\"background:#fff8d4;padding:14px;border-left:5px solid #f7de4b;border-radius:6px\"><b>核心机制与风险</b><ul style=\"margin:8px 0 0;padding-left:20px\"><li>瓶颈：绕线900台/天、测试850台/天；总装理论约31,000台/月不能消除前后工序约束。</li><li>月产能参考：7月98,000；8月85,000（检修5天）；9月110,000（新测试台到位）。</li><li>毛利率不得低于18%，外包与加班成本计入；低于底线立即预警。</li><li>关键磁钢供应商7月停修一周、库存仅10天：本周锁定6周用量并寻找第二供应商。</li><li>开放项：租赁测试台能否按期到位；夜班工程师配置与测试能力；外包质量与成本是否达标；8/15购买决策。</li></ul></div></div><div style=\"margin-top:16px\"><div style=\"font-size:19px;font-weight:700;margin-bottom:8px\">行动项</div><table style=\"width:100%;border-collapse:collapse;font-size:14px;background:#fff\"><thead><tr style=\"background:#a6d94f\"><th style=\"padding:8px;border:1px solid #c9d2c8;text-align:left\">负责人</th><th style=\"padding:8px;border:1px solid #c9d2c8;text-align:left\">交付</th><th style=\"padding:8px;border:1px solid #c9d2c8;text-align:left\">截止</th></tr></thead><tbody><tr><td style=\"padding:7px;border:1px solid #d5dad7\">生产部</td><td style=\"padding:7px;border:1px solid #d5dad7\">周计划；检修并备足3天半成品库存</td><td style=\"padding:7px;border:1px solid #d5dad7\">周计划7/5前；检修7月第2周</td></tr><tr><td style=\"padding:7px;border:1px solid #d5dad7\">设备部</td><td style=\"padding:7px;border:1px solid #d5dad7\">租测试台安装调试</td><td style=\"padding:7px;border:1px solid #d5dad7\">7/10前</td></tr><tr><td style=\"padding:7px;border:1px solid #d5dad7\">采购部</td><td style=\"padding:7px;border:1px solid #d5dad7\">锁磁钢6周用量；提交第二供应商到货节点</td><td style=\"padding:7px;border:1px solid #d5dad7\">本周；节点7/8前</td></tr><tr><td style=\"padding:7px;border:1px solid #d5dad7\">销售部</td><td style=\"padding:7px;border:1px solid #d5dad7\">书面确认A/B/C交期</td><td style=\"padding:7px;border:1px solid #d5dad7\">7/7前</td></tr><tr><td style=\"padding:7px;border:1px solid #d5dad7\">质量部</td><td style=\"padding:7px;border:1px solid #d5dad7\">发布外包首件与抽检方案</td><td style=\"padding:7px;border:1px solid #d5dad7\">7/12前</td></tr><tr><td style=\"padding:7px;border:1px solid #d5dad7\">财务部</td><td style=\"padding:7px;border:1px solid #d5dad7\">更新成本与毛利；低于18%立即预警</td><td style=\"padding:7px;border:1px solid #d5dad7\">每周五</td></tr></tbody></table></div><div style=\"margin-top:14px;background:#ffe9f0;padding:12px;border-radius:6px\"><b>时间线：</b>7/5周计划 → 7/7客户交期确认 → 7/8采购节点 → 7/10测试台调试 → 7/12抽检方案 → 7月第2周检修 → 7/15夜班＋12%外包 → 7/20复盘产出/交期/毛利 → 8月中C首批认证交付 → 8/15决定是否购置测试台。</div></div>"
+      }
+    ]
+  }
+}
