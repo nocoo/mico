@@ -1,0 +1,114 @@
+{
+	"evals": [
+		{
+			"id": "zh-physics-incline",
+			"lang": "zh",
+			"subject": "物理",
+			"title": "斜面、定滑轮与摩擦：连接体受力分析",
+			"voice": "zh-CN-YunyangNeural",
+			"script": "scripts/zh-physics-incline.txt",
+			"rate": "+20%",
+			"audio": "audio/zh-physics-incline.mp3",
+			"duration": 202.6
+		},
+		{
+			"id": "zh-physics-magnetic-field",
+			"lang": "zh",
+			"subject": "物理",
+			"title": "匀强磁场边界：带电粒子的圆弧轨迹与临界速度",
+			"voice": "zh-CN-YunxiNeural",
+			"script": "scripts/zh-physics-magnetic-field.txt",
+			"rate": "+20%",
+			"audio": "audio/zh-physics-magnetic-field.mp3",
+			"duration": 190.4
+		},
+		{
+			"id": "zh-chemistry-galvanic-cell",
+			"lang": "zh",
+			"subject": "化学",
+			"title": "铜锌原电池：盐桥、电子流向与电极反应",
+			"voice": "zh-CN-XiaoxiaoNeural",
+			"script": "scripts/zh-chemistry-galvanic-cell.txt",
+			"rate": "+20%",
+			"audio": "audio/zh-chemistry-galvanic-cell.mp3",
+			"duration": 175.2
+		},
+		{
+			"id": "zh-biology-photosynthesis",
+			"lang": "zh",
+			"subject": "生物",
+			"title": "叶绿体结构：光反应与碳反应的物质能量流向",
+			"voice": "zh-CN-XiaoyiNeural",
+			"script": "scripts/zh-biology-photosynthesis.txt",
+			"rate": "+20%",
+			"audio": "audio/zh-biology-photosynthesis.mp3",
+			"duration": 189.5
+		},
+		{
+			"id": "zh-math-circumscribed-sphere",
+			"lang": "zh",
+			"subject": "数学",
+			"title": "三棱锥的外接球：球心定位与半径求解",
+			"voice": "zh-CN-YunjianNeural",
+			"script": "scripts/zh-math-circumscribed-sphere.txt",
+			"rate": "+20%",
+			"audio": "audio/zh-math-circumscribed-sphere.mp3",
+			"duration": 205.8
+		},
+		{
+			"id": "en-physics-dc-circuit",
+			"lang": "en",
+			"subject": "Physics",
+			"title": "DC circuit with internal resistance: drawing, then computing",
+			"voice": "en-US-GuyNeural",
+			"script": "scripts/en-physics-dc-circuit.txt",
+			"rate": "+20%",
+			"audio": "audio/en-physics-dc-circuit.mp3",
+			"duration": 174.4
+		},
+		{
+			"id": "en-physics-double-slit",
+			"lang": "en",
+			"subject": "Physics",
+			"title": "Double-slit interference: light path diagram and fringe spacing",
+			"voice": "en-US-AriaNeural",
+			"script": "scripts/en-physics-double-slit.txt",
+			"rate": "+20%",
+			"audio": "audio/en-physics-double-slit.mp3",
+			"duration": 189.1
+		},
+		{
+			"id": "en-chemistry-electrolysis",
+			"lang": "en",
+			"subject": "Chemistry",
+			"title": "Membrane cell electrolysis of brine: ion flow and half equations",
+			"voice": "en-GB-RyanNeural",
+			"script": "scripts/en-chemistry-electrolysis.txt",
+			"rate": "+20%",
+			"audio": "audio/en-chemistry-electrolysis.mp3",
+			"duration": 190.2
+		},
+		{
+			"id": "en-biology-neuron-synapse",
+			"lang": "en",
+			"subject": "Biology",
+			"title": "Neuron membrane, action potential graph, and synapse",
+			"voice": "en-US-JennyNeural",
+			"script": "scripts/en-biology-neuron-synapse.txt",
+			"rate": "+20%",
+			"audio": "audio/en-biology-neuron-synapse.mp3",
+			"duration": 190.1
+		},
+		{
+			"id": "en-math-rational-curve",
+			"lang": "en",
+			"subject": "Maths",
+			"title": "Sketching a rational function with an oblique asymptote",
+			"voice": "en-AU-WilliamNeural",
+			"script": "scripts/en-math-rational-curve.txt",
+			"rate": "+20%",
+			"audio": "audio/en-math-rational-curve.mp3",
+			"duration": 176.6
+		}
+	]
+}

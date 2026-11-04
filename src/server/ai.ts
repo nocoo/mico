@@ -54,9 +54,12 @@ export function sanitizeInterruptedMessages(messages: UIMessage[]): UIMessage[] 
 	})
 }
 
+export type AiChatMode = 'chat' | 'lecture'
+
 export interface AiChatRequest {
 	messages: UIMessage[]
 	selection: string[]
+	mode: AiChatMode
 }
 
 export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> {
@@ -74,12 +77,17 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 	if (!Array.isArray(selection) || selection.some((id) => typeof id !== 'string')) {
 		throw new OperationError(400, 'INVALID_REQUEST', 'selection must be an array of ids')
 	}
+	const mode = record.mode === undefined ? 'chat' : record.mode
+	if (mode !== 'chat' && mode !== 'lecture') {
+		throw new OperationError(400, 'INVALID_REQUEST', 'mode must be chat or lecture')
+	}
 	const validated = await safeValidateUIMessages({ messages: record.messages })
 	if (!validated.success) {
 		throw new OperationError(400, 'INVALID_REQUEST', 'messages are not valid UI messages')
 	}
 	return {
 		messages: sanitizeInterruptedMessages(validated.data),
+		mode,
 		selection: selection
 			.filter((id): id is string => typeof id === 'string' && id.length > 0 && id.length <= 64)
 			.slice(0, 200),
@@ -114,7 +122,7 @@ export async function streamAiChat({
 	}
 	const result = streamText({
 		model,
-		instructions: buildInstructions(board, request.selection),
+		instructions: buildInstructions(board, request.selection, request.mode),
 		messages: await convertToModelMessages(request.messages),
 		tools: createCanvasTools({
 			store,
@@ -123,10 +131,17 @@ export async function streamAiChat({
 			canvasId,
 			revision: board.revision,
 		}),
-		stopWhen: isStepCount(40),
+		stopWhen: isStepCount(request.mode === 'lecture' ? 12 : 40),
 		maxRetries: 1,
 		abortSignal: abort.signal,
-		prepareStep: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
+		providerOptions:
+			request.mode === 'lecture'
+				? { magpie: { reasoningEffort: process.env.MAGPIE_LECTURE_REASONING || 'none' } }
+				: undefined,
+		prepareStep:
+			request.mode === 'lecture'
+				? undefined
+				: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
 		onError: ({ error }) => {
 			console.error('AI request failed:', error)
 			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and MAGPIE_BASE_URL.'

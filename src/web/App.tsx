@@ -457,6 +457,13 @@ export default function App() {
 		})
 	}
 
+	const createLessonCanvas = (name: string) => {
+		void requestCanvas('/api/canvases', {
+			method: 'POST',
+			body: JSON.stringify({ name, activate: true }),
+		})
+	}
+
 	const switchCanvas = (id: string) => {
 		void requestCanvas('/api/active-canvas', {
 			method: 'PUT',
@@ -1481,6 +1488,7 @@ export default function App() {
 				initialPrompt={aiPrompt}
 				onInitialPromptConsumed={consumeAiPrompt}
 				canvasId={activeCanvasId}
+				onCreateCanvas={createLessonCanvas}
 			/>
 
 			<CanvasPanel

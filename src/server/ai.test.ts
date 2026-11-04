@@ -4,6 +4,8 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { simulateReadableStream } from 'ai'
+import { MockLanguageModelV4 } from 'ai/test'
 import { CANDY_TINTS } from '../shared/palette.ts'
 import {
 	MAGPIE_DEFAULT_BASE_URL,
@@ -156,6 +158,15 @@ test('AI tools estimate text bounds and derive stroke bounds from absolute point
 	})
 })
 
+test('lecture instructions tell the model to wait on incomplete sentences', () => {
+	const prompt = buildInstructions({ revision: 0, shapes: [] }, [], 'lecture')
+	assert.match(prompt, /Live lecture mode/)
+	assert.match(prompt, /reply with exactly WAIT/)
+	assert.match(prompt, /at most two tool calls/)
+	assert.match(prompt, /Do not guess the rest of the sentence/)
+	assert.doesNotMatch(buildInstructions({ revision: 0, shapes: [] }, []), /Live lecture mode/)
+})
+
 test('board context marks the user selection as primary context', () => {
 	const board = {
 		revision: 3,
@@ -177,9 +188,10 @@ async function withDaemon(
 		url: string
 		model: ReturnType<typeof createMockAiModel>
 	}) => Promise<void>,
+	providedModel?: MockLanguageModelV4,
 ) {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-http-'))
-	const model = createMockAiModel()
+	const model = providedModel ?? createMockAiModel()
 	const daemon = createDaemon({
 		port: 0,
 		dbPath: join(directory, 'board.sqlite'),
@@ -190,7 +202,11 @@ async function withDaemon(
 	const address = daemon.server.address()
 	assert.ok(address && typeof address !== 'string')
 	try {
-		await runTest({ daemon, url: `http://127.0.0.1:${address.port}`, model })
+		await runTest({
+			daemon,
+			url: `http://127.0.0.1:${address.port}`,
+			model: model as ReturnType<typeof createMockAiModel>,
+		})
 	} finally {
 		for (const client of daemon.wss.clients) client.terminate()
 		daemon.close()
@@ -256,6 +272,16 @@ test('AI chat rejects invalid requests', async () => {
 		assert.equal(response.status, 400)
 		const body = (await response.json()) as { error: string }
 		assert.equal(body.error, 'INVALID_REQUEST')
+
+		const badMode = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				messages: [{ id: 'u', role: 'user', parts: [{ type: 'text', text: 'hi' }] }],
+				mode: 'podcast',
+			}),
+		})
+		assert.equal(badMode.status, 400)
 	})
 })
 
@@ -459,4 +485,43 @@ test('interrupted tool calls are dropped before the next turn', () => {
 	const cleaned = sanitizeInterruptedMessages(messages as never)
 	assert.equal(cleaned.length, 2)
 	assert.deepEqual(cleaned[1].parts, [{ type: 'text', text: 'Drawing it now.' }])
+})
+
+test('lecture mode can answer WAIT without forcing a tool call', async () => {
+	const usage = {
+		inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+		outputTokens: { total: 2, text: 2, reasoning: undefined },
+	}
+	const model = new MockLanguageModelV4({
+		doStream: async () => ({
+			stream: simulateReadableStream({
+				chunks: [
+					{ type: 'stream-start' as const, warnings: [] },
+					{ type: 'text-start' as const, id: 'text-1' },
+					{ type: 'text-delta' as const, id: 'text-1', delta: 'WAIT' },
+					{ type: 'text-end' as const, id: 'text-1' },
+					{
+						type: 'finish' as const,
+						finishReason: { unified: 'stop' as const, raw: undefined },
+						usage,
+					},
+				],
+			}),
+		}),
+	})
+	await withDaemon(async ({ daemon, url }) => {
+		const response = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'lecture',
+				messages: [{ id: 'u', role: 'user', parts: [{ type: 'text', text: 'half a sentence' }] }],
+				selection: [],
+			}),
+		})
+		assert.equal(response.status, 200)
+		const streamed = await response.text()
+		assert.match(streamed, /WAIT/)
+		assert.equal(daemon.store.getBoard().shapes.length, 0)
+	}, model)
 })

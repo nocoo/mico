@@ -3,3 +3,8 @@ dist/
 .mico/
 playwright-report/
 test-results/
+
+# local credentials
+.env
+.env.*
+!.env.example

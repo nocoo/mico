@@ -2,11 +2,12 @@ import { once } from 'node:events'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createServer } from 'vite'
+import { createServer, loadEnv } from 'vite'
 import { createMockAiModel } from '../src/server/aiMock.ts'
 import { createDaemon } from '../src/server/index.ts'
+import { maiRealtimeProxy } from '../src/server/maiProxy.ts'
 import { BROWSER_PORT } from '../src/shared/config.ts'
-import viteConfig from '../vite.config.ts'
+import { micoViteConfig } from '../vite.config.ts'
 
 const directory = mkdtempSync(join(tmpdir(), 'mico-browser-'))
 const port = BROWSER_PORT + 30000
@@ -15,12 +16,23 @@ const daemon = createDaemon({
 	dbPath: join(directory, 'board.sqlite'),
 	aiModel: process.env.MICO_AI_MOCK === '1' ? createMockAiModel() : undefined,
 })
+const base = micoViteConfig()
+const env = loadEnv('development', process.cwd(), '')
+const plugins = [
+	...base.plugins,
+	maiRealtimeProxy({
+		host: env.AZURE_MAI_HOST ?? '',
+		apiKey: env.AZURE_OPENAI_API_KEY ?? '',
+		deployment: env.AZURE_OPENAI_DEPLOYMENT ?? '',
+	}),
+]
 const vite = await createServer({
-	...viteConfig,
+	...base,
+	plugins,
 	configFile: false,
 	cacheDir: join(directory, 'vite-cache'),
 	server: {
-		...viteConfig.server,
+		...base.server,
 		port: BROWSER_PORT,
 		proxy: { '/api': { target: `http://127.0.0.1:${port}`, changeOrigin: true, ws: true } },
 	},

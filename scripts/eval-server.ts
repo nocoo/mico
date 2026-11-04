@@ -15,7 +15,7 @@ import { dirname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer as createViteServer } from 'vite'
 import { createDaemon } from '../src/server/index.ts'
-import viteConfig from '../vite.config.ts'
+import { micoViteConfig } from '../vite.config.ts'
 
 export const EVAL_DAEMON_PORT = 57063
 export const EVAL_VITE_PORT = 27063
@@ -142,13 +142,14 @@ export async function startEvalServer(dbPathValue: string | undefined, identityV
 	const cacheDirectory = mkdtempSync(join(realpathSync('/tmp'), 'mico-eval-vite-'))
 	const daemon = createDaemon({ port: EVAL_DAEMON_PORT, dbPath })
 	let vite: Awaited<ReturnType<typeof createViteServer>>
+	const base = micoViteConfig()
 	try {
 		vite = await createViteServer({
-			...viteConfig,
+			...base,
 			configFile: false,
 			cacheDir: resolve(cacheDirectory, 'vite-cache'),
 			plugins: [
-				...(viteConfig.plugins ?? []),
+				...(base.plugins ?? []),
 				{
 					name: 'eval-fixture-identity',
 					transformIndexHtml() {
@@ -173,7 +174,7 @@ export async function startEvalServer(dbPathValue: string | undefined, identityV
 				},
 			],
 			server: {
-				...viteConfig.server,
+				...base.server,
 				host: '127.0.0.1',
 				port: EVAL_VITE_PORT,
 				strictPort: true,

@@ -57,6 +57,24 @@ export const AI_SYSTEM_PROMPT = `You are Mico, a canvas tutor living inside a sh
 - If the request is ambiguous, make a reasonable assumption and start drawing; do not stall with questions.
 `
 
-export function buildInstructions(board: Board, selection: string[]): string {
-	return `${AI_SYSTEM_PROMPT}\n\n# Current canvas\n\n${formatBoardContext(board, selection)}`
+export const AI_LECTURE_PROMPT = `# Live lecture mode
+
+You are listening to a recorded lecture that is playing right now. Transcript segments arrive one at a time with their time range; the learner is watching the board and cannot answer questions.
+
+- Transcript segments may arrive one at a time or as a short batch of 1–3 lines, each with its own time range. Treat every line as one cue; draw only what the batch adds. Make at most two tool calls, usually one small increment.
+- If the segment is incomplete, filler, repeated, a transition, or adds no new visual fact, reply with exactly WAIT and call no tools. Do not explain. The next segment will arrive shortly.
+- If the sentence is cut off mid-thought, WAIT. Do not guess the rest of the sentence.
+- If it adds a fact, label, quantity, relation or step, add or adjust only that increment. Keep earlier content and ids; do not delete previous work.
+- Expand the existing diagram outward; do not restart the layout for each sentence. Use get_board only when ids or layout are unclear.
+- After a drawing increment, write one short sentence (at most 20 words) describing what changed. Never restate the whole lecture.
+- When a new stage begins, add a frame or heading. When a formula or conclusion is spoken, put it in a note.
+- Finish the lesson gradually. A later segment may add a takeaway note; do not invent one early.`
+
+export function buildInstructions(
+	board: Board,
+	selection: string[],
+	mode: 'chat' | 'lecture' = 'chat',
+): string {
+	const lecture = mode === 'lecture' ? `\n\n${AI_LECTURE_PROMPT}` : ''
+	return `${AI_SYSTEM_PROMPT}${lecture}\n\n# Current canvas\n\n${formatBoardContext(board, selection)}`
 }

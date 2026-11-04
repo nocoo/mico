@@ -52,7 +52,21 @@ The assistant uses the OpenAI-compatible Chat Completions API. Configuration is 
 | `MAGPIE_MODEL`    | `auto/gpt-6-luna`          | Model id sent to the gateway.                         |
 | `MAGPIE_API_KEY`  | `magpie`                   | Bearer token; set it to an empty string to send none. |
 
-The daemon owns the key and the browser never receives it. If the gateway is unreachable, the panel shows an actionable error and a Retry button. The assistant can only operate the canvas; it is not a general chat endpoint.
+The daemon owns the key and the browser never receives it. If the gateway is unreachable, the panel shows an actionable error and a Continue button. The assistant can only operate the canvas; it is not a general chat endpoint.
+
+## Live lecture mode
+
+The Lesson tab plays one of ten recorded school lectures through the browser and streams its audio to Azure `MAI-Transcribe-2-Streaming` over the Realtime WebSocket API. Confirmed transcript segments are queued to the AI one by one while the audio keeps playing; the board is drawn incrementally at the same time.
+
+- `src/web/stt/` contains the PCM resampler, WebSocket client and energy-based silence segmenter. Segment boundaries default to 500 ms of silence and are adjustable in the panel.
+- `src/server/maiProxy.ts` is a dev-only Vite WebSocket proxy that attaches the `api-key` header (browsers cannot set headers on WebSockets). It serves `/mai/config` and proxies `/mai/realtime`.
+- `.env` supplies `AZURE_MAI_HOST`, `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_DEPLOYMENT`. Copy `.env.example` to `.env` and fill the values; `.env` is ignored by Git.
+- `public/evals/` holds the ten generated lecture MP3s and `manifest.json`. The clips are 2:54–3:26 each, five Chinese and five English.
+- The Lesson panel includes the waveform with commit markers, live confirmed/hypothesis text, a VAD energy meter, playback speed, silence threshold, per-segment latency and a `New canvas` button.
+- `New canvas` creates and activates a named canvas so a lecture starts from an empty board. The AI keeps its queue serialized: one lecture request at a time, with up to three pending segments coalesced when it falls behind. Segments that are incomplete or carry no new visual fact can return exactly `WAIT`; those replies render as a small waiting chip and do not draw.
+- `?ai=<prompt>` still opens the chat and submits immediately for scripted tests.
+
+The MAI proxy exists only in the Vite dev server. A static production build serves the audio and UI but needs an equivalent server-side WebSocket proxy for live transcription.
 
 ## Agent CLI
 
@@ -108,7 +122,7 @@ A batch is validated and persisted atomically per canvas. An optional `expectedR
 ```sh
 pnpm check          # Biome + TypeScript
 pnpm test           # pure logic, store, HTTP API, CLI and agent examples
-pnpm test:unit      # pure logic + store
+pnpm test:unit      # pure logic, STT segmenter and store
 pnpm test:api       # HTTP, WebSocket and AI streaming contract
 pnpm test:cli       # real daemon + CLI commands
 pnpm test:examples  # agent example batches through the validated store
@@ -122,4 +136,4 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 
 ## MVP limits
 
-This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet. Audio capture is still interface-only. The AI assistant depends on the local Magpie gateway and has no authentication of its own beyond the daemon's loopback and origin restrictions.
+This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Undo/redo, resizing, remote deployment, and MCP are not implemented yet. Live microphone capture is still interface-only; Lesson mode plays recorded audio. Lecture transcription needs the Azure MAI deployment and the dev proxy. The AI assistant depends on the local Magpie gateway and has no authentication of its own beyond the daemon's loopback and origin restrictions.

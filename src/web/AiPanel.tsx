@@ -4,10 +4,12 @@ import {
 	ArrowUp,
 	AudioLines,
 	Check,
+	Hourglass,
 	LoaderCircle,
 	MessageSquare,
 	Mic,
 	MousePointer2,
+	PlayCircle,
 	Square,
 	TriangleAlert,
 	X,
@@ -16,6 +18,8 @@ import type { CSSProperties, FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { formatDuration } from './aiAudio'
 import { IconButton } from './IconButton'
+import { LessonPanel, type LessonSegment } from './LessonPanel'
+import { isWaitReply, type LessonClip, lectureSegmentText } from './stt/transcript'
 
 interface AiPanelProps {
 	open: boolean
@@ -26,9 +30,10 @@ interface AiPanelProps {
 	initialPrompt?: string
 	onInitialPromptConsumed: () => void
 	canvasId: string
+	onCreateCanvas: (name: string) => void
 }
 
-type AiTab = 'chat' | 'audio'
+type AiTab = 'chat' | 'lesson' | 'audio'
 
 const WAVE_BARS = [0, 1, 2, 3, 4, 5, 6]
 
@@ -116,6 +121,39 @@ function ChatText({ text }: { text: string }) {
 	return <p className="ai-message-text">{nodes}</p>
 }
 
+function AssistantMessage({ message }: { message: UIMessage }) {
+	const text = message.parts
+		.filter((part) => part.type === 'text')
+		.map((part) => part.text)
+		.join('\n')
+	const hasTools = message.parts.some((part) => isToolUIPart(part))
+	if (!hasTools && isWaitReply(text)) {
+		return (
+			<div className="ai-tool done">
+				<Hourglass size={14} strokeWidth={2} aria-hidden="true" />
+				<span>Waiting for the next sentence</span>
+			</div>
+		)
+	}
+	return (
+		<>
+			{message.parts.map((part, index) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: streamed parts append in order
+				<AssistantPart key={`${message.id}-${index}`} part={part} />
+			))}
+		</>
+	)
+}
+
+function UserMessage({ text }: { text: string }) {
+	const lecture = [...text.matchAll(/^\[Lecture \| .*? \| segment \d+ \| [^\]]+\] (.*)$/gm)]
+	return (
+		<p className="ai-message-text">
+			{lecture.length > 0 ? lecture.map((match) => match[1]).join(' ') : text}
+		</p>
+	)
+}
+
 function AssistantPart({ part }: { part: UIMessage['parts'][number] }) {
 	if (part.type === 'text') {
 		return part.text.trim() ? <ChatText text={part.text} /> : null
@@ -150,6 +188,7 @@ export function AiPanel({
 	initialPrompt,
 	onInitialPromptConsumed,
 	canvasId,
+	onCreateCanvas,
 }: AiPanelProps) {
 	const [tab, setTab] = useState<AiTab>('chat')
 	const [draft, setDraft] = useState('')
@@ -161,6 +200,11 @@ export function AiPanel({
 	const pointerInside = useRef(false)
 	const wasOpen = useRef(false)
 	const lastCanvasId = useRef(canvasId)
+	const lectureQueue = useRef<string[]>([])
+	const lectureInFlight = useRef(false)
+	const [lectureQueued, setLectureQueued] = useState(0)
+	const selectionRef = useRef(selectedIds)
+	selectionRef.current = selectedIds
 
 	const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chat' }), [])
 	const { messages, setMessages, sendMessage, status, error, stop, clearError } = useChat({
@@ -176,7 +220,7 @@ export function AiPanel({
 			const value = text.trim()
 			if (!value || status === 'submitted' || status === 'streaming') return
 			setDraft('')
-			void sendMessage({ text: value }, { body: { selection } })
+			void sendMessage({ text: value }, { body: { selection, mode: 'chat' } })
 		},
 		[sendMessage, selection, status],
 	)
@@ -197,6 +241,49 @@ export function AiPanel({
 		return () => window.clearTimeout(timer)
 	}, [open, initialPrompt, onInitialPromptConsumed, send])
 
+	const resetLectureQueue = useCallback(() => {
+		lectureQueue.current = []
+		lectureInFlight.current = false
+		setLectureQueued(0)
+	}, [])
+
+	const pumpLecture = useCallback(() => {
+		if (lectureInFlight.current) return
+		const text = lectureQueue.current.shift()
+		if (!text) {
+			setLectureQueued(0)
+			return
+		}
+		lectureInFlight.current = true
+		setLectureQueued(lectureQueue.current.length)
+		void sendMessage({ text }, { body: { selection: selectionRef.current, mode: 'lecture' } })
+	}, [sendMessage])
+
+	const enqueueLecture = useCallback(
+		(segment: LessonSegment, clip: LessonClip) => {
+			lectureQueue.current.push(
+				lectureSegmentText(clip, segment.id, segment.start, segment.end, segment.text),
+			)
+			setLectureQueued(lectureQueue.current.length)
+			pumpLecture()
+		},
+		[pumpLecture],
+	)
+
+	const resetLecture = useCallback(() => {
+		resetLectureQueue()
+		if (status === 'submitted' || status === 'streaming') stop()
+	}, [resetLectureQueue, status, stop])
+
+	useEffect(() => {
+		if (status === 'ready') {
+			lectureInFlight.current = false
+			pumpLecture()
+		} else if (status === 'error') {
+			lectureInFlight.current = false
+		}
+	}, [status, pumpLecture])
+
 	useEffect(() => {
 		if (lastCanvasId.current === canvasId) return
 		const previous = lastCanvasId.current
@@ -206,7 +293,8 @@ export function AiPanel({
 		setMessages([])
 		clearError()
 		setDraft('')
-	}, [canvasId, stop, setMessages, clearError])
+		resetLectureQueue()
+	}, [canvasId, stop, setMessages, clearError, resetLectureQueue])
 
 	useEffect(() => {
 		if (!open) return
@@ -290,14 +378,14 @@ export function AiPanel({
 	const focusTab = (event: KeyboardEvent<HTMLDivElement>) => {
 		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 		event.preventDefault()
+		const order: AiTab[] = ['chat', 'lesson', 'audio']
+		const index = order.indexOf(tab)
 		const next =
 			event.key === 'Home'
 				? 'chat'
 				: event.key === 'End'
 					? 'audio'
-					: tab === 'chat'
-						? 'audio'
-						: 'chat'
+					: order[(index + (event.key === 'ArrowRight' ? 1 : -1) + order.length) % order.length]
 		setTab(next)
 		document.getElementById(`ai-tab-${next}`)?.focus()
 	}
@@ -324,6 +412,19 @@ export function AiPanel({
 					>
 						<MessageSquare size={16} strokeWidth={1.75} aria-hidden="true" />
 						Chat
+					</button>
+					<button
+						id="ai-tab-lesson"
+						type="button"
+						role="tab"
+						className="ai-tab"
+						aria-selected={tab === 'lesson'}
+						aria-controls="ai-panel-lesson"
+						tabIndex={tab === 'lesson' ? 0 : -1}
+						onClick={() => setTab('lesson')}
+					>
+						<PlayCircle size={16} strokeWidth={1.75} aria-hidden="true" />
+						Lesson
 					</button>
 					<button
 						id="ai-tab-audio"
@@ -385,17 +486,14 @@ export function AiPanel({
 						<article key={message.id} className={`ai-message ${message.role}`}>
 							<span className="ai-message-role">{message.role === 'user' ? 'You' : 'Mico'}</span>
 							{message.role === 'user' ? (
-								<p className="ai-message-text">
-									{message.parts
+								<UserMessage
+									text={message.parts
 										.filter((part) => part.type === 'text')
 										.map((part) => part.text)
 										.join('\n')}
-								</p>
+								/>
 							) : (
-								message.parts.map((part, index) => (
-									// biome-ignore lint/suspicious/noArrayIndexKey: streamed parts append in order
-									<AssistantPart key={`${message.id}-${index}`} part={part} />
-								))
+								<AssistantMessage message={message} />
 							)}
 						</article>
 					))}
@@ -493,6 +591,25 @@ export function AiPanel({
 						)}
 					</form>
 				</div>
+			</div>
+
+			<div
+				id="ai-panel-lesson"
+				className="ai-lesson"
+				role="tabpanel"
+				aria-labelledby="ai-tab-lesson"
+				hidden={tab !== 'lesson'}
+			>
+				<LessonPanel
+					key={canvasId}
+					active={open && tab === 'lesson'}
+					aiBusy={busy}
+					aiQueued={lectureQueued}
+					aiError={Boolean(error)}
+					onSegment={enqueueLecture}
+					onReset={resetLecture}
+					onCreateCanvas={onCreateCanvas}
+				/>
 			</div>
 
 			<div
