@@ -146,9 +146,6 @@ export function CanvasPanel({
 									{formatTime(canvas.updatedAt)}
 								</time>
 							</span>
-							{active && (
-								<Check className="canvas-active" size={14} strokeWidth={2} aria-hidden="true" />
-							)}
 						</>
 					)
 					return (
@@ -199,6 +196,11 @@ export function CanvasPanel({
 									}}
 								/>
 							</div>
+							{active && (
+								<span className="canvas-active">
+									<Check size={16} strokeWidth={2} aria-hidden="true" />
+								</span>
+							)}
 						</li>
 					)
 				})}

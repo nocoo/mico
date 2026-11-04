@@ -885,6 +885,7 @@ svg {
 }
 .canvas-copy {
 	display: flex;
+	flex: 1;
 	flex-direction: column;
 	min-width: 0;
 	gap: var(--space-05);
@@ -915,7 +916,11 @@ svg {
 	outline: none;
 }
 .canvas-active {
-	flex: 0 0 auto;
+	display: grid;
+	place-items: center;
+	flex: 0 0 var(--control-compact);
+	width: var(--control-compact);
+	height: var(--control-compact);
 	color: var(--accent);
 }
 .canvas-actions {

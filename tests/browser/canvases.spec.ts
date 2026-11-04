@@ -71,6 +71,13 @@ test('canvas panel lists names, times and previews and closes cleanly', async ({
 		'aria-current',
 		'true',
 	)
+	const addBox = await page.getByRole('button', { name: 'New canvas', exact: true }).boundingBox()
+	const activeBox = await item.locator('.canvas-active').boundingBox()
+	if (!addBox || !activeBox) throw new Error('Expected the add and active controls')
+	expect(activeBox.width).toBe(32)
+	expect(addBox.width).toBe(32)
+	expect(activeBox.x + activeBox.width).toBeCloseTo(addBox.x + addBox.width, 5)
+	expect(activeBox.x + activeBox.width / 2).toBeCloseTo(addBox.x + addBox.width / 2, 5)
 	expect(initial.canvases[0].preview ?? '').toMatch(/^data:image\/svg\+xml;base64,/)
 
 	await page.mouse.click(900, 700)
