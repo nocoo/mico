@@ -1,3 +1,4 @@
+import { Frame } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
@@ -14,6 +15,7 @@ import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
 import { BoardFrame } from './BoardFrame'
 import { BrushStroke } from './BrushStroke'
+import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { canRebaseConnector } from './connections'
 import {
@@ -1124,26 +1126,14 @@ export default function App() {
 						strokeWidth={active ? 2 : 1}
 						vectorEffect="non-scaling-stroke"
 					/>
-					<g className="frame-label" transform={`translate(${shape.x} ${shape.y - 8})`}>
-						<svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-							<path
-								d="M4 1H1V4M10 1H13V4M4 13H1V10M10 13H13V10"
-								stroke="currentColor"
-								strokeWidth="1.5"
-							/>
-						</svg>
-						<text x="20" y="6" fill="var(--ink)" dominantBaseline="middle">
-							{shape.title}
-						</text>
-						<g className="frame-handle" transform="translate(-16 1)" fill="currentColor">
-							<circle cx="0" cy="-3" r="1" />
-							<circle cx="4" cy="-3" r="1" />
-							<circle cx="0" cy="1" r="1" />
-							<circle cx="4" cy="1" r="1" />
-							<circle cx="0" cy="5" r="1" />
-							<circle cx="4" cy="5" r="1" />
-						</g>
-					</g>
+					<CardHeaderPill
+						x={shape.x}
+						y={shape.y}
+						width={Math.min(shape.w, 360)}
+						color={shape.color}
+						title={shape.title ?? 'Frame'}
+						icon={Frame}
+					/>
 					{active && (
 						<rect
 							className="selection"

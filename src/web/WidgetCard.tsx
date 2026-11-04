@@ -1,5 +1,6 @@
-import { CalendarDays, CheckSquare, GripVertical, KanbanSquare, Table2 } from 'lucide-react'
+import { CalendarDays, CheckSquare, KanbanSquare, Table2 } from 'lucide-react'
 import type { CanvasShape, WidgetItem } from '../shared/types'
+import { CardHeaderPill } from './CardHeaderPill'
 
 const icons = { todo: CheckSquare, kanban: KanbanSquare, table: Table2, timeline: CalendarDays }
 
@@ -99,25 +100,25 @@ export function WidgetCard({ shape }: { shape: CanvasShape }) {
 	const items = shape.items ?? []
 	const Icon = icons[kind]
 	return (
-		<foreignObject x={shape.x} y={shape.y} width={shape.w} height={shape.h} pointerEvents="none">
-			<div className="widget-card" style={{ borderColor: shape.color }}>
-				<header className="widget-head">
-					<span className="widget-kind">
-						<Icon size={14} strokeWidth={1.5} aria-hidden="true" />
-						{shape.widgetTitle}
-					</span>
-					<span className="widget-meta">{items.length} items</span>
-					<span className="card-drag">
-						<GripVertical size={14} strokeWidth={1.5} aria-hidden="true" />
-					</span>
-				</header>
-				<div className="widget-body">
-					{kind === 'todo' && todoRows(items)}
-					{kind === 'kanban' && kanbanColumns(items)}
-					{kind === 'table' && tableRows(items, shape.w)}
-					{kind === 'timeline' && timelineRows(items)}
+		<>
+			<CardHeaderPill
+				x={shape.x}
+				y={shape.y}
+				width={shape.w}
+				color={shape.color}
+				title={shape.widgetTitle ?? 'Widget'}
+				icon={Icon}
+			/>
+			<foreignObject x={shape.x} y={shape.y} width={shape.w} height={shape.h} pointerEvents="none">
+				<div className="widget-card" style={{ borderColor: shape.color }}>
+					<div className="widget-body">
+						{kind === 'todo' && todoRows(items)}
+						{kind === 'kanban' && kanbanColumns(items)}
+						{kind === 'table' && tableRows(items, shape.w)}
+						{kind === 'timeline' && timelineRows(items)}
+					</div>
 				</div>
-			</div>
-		</foreignObject>
+			</foreignObject>
+		</>
 	)
 }

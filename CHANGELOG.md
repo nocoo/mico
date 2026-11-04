@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.2
+
+- Unify frame and rich-widget headers into one floating pill above the card: colored kind icon, title and grip handle with an 8px gap.
+
 ## v0.6.1
 
 - Adopt Radix Themes for all frame controls: buttons, tooltips, selects and text inputs now share the library's motion, focus and elevation.

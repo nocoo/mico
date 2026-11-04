@@ -563,15 +563,6 @@ svg {
 	font-family: Inter, ui-sans-serif, sans-serif;
 	color: var(--ink);
 }
-.widget-head {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	height: 40px;
-	padding: 0 var(--space-15);
-	border-bottom: var(--hairline) solid var(--border);
-	font-size: var(--type-caption);
-}
 .widget-kind {
 	display: flex;
 	align-items: center;
@@ -946,10 +937,37 @@ svg {
 	height: var(--control-compact);
 	font-size: 13px;
 }
-.card-drag {
+
+.card-pill {
 	display: inline-flex;
-	color: var(--ink-muted);
+	align-items: center;
+	gap: var(--space-1);
+	height: 32px;
+	max-width: 100%;
+	padding: 0 var(--space-1);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	box-shadow: var(--shadow-panel);
+	font-size: var(--type-caption);
+	line-height: var(--line-caption);
+	white-space: nowrap;
 }
-.frame-handle {
+.card-pill-icon {
+	display: inline-grid;
+	place-items: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 6px;
+	flex: 0 0 22px;
+}
+.card-pill-title {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
+	font-weight: var(--weight-semibold);
+}
+.card-pill-grip {
+	flex: 0 0 auto;
 	color: var(--ink-muted);
 }
