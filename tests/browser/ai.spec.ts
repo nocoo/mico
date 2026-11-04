@@ -137,6 +137,11 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
 	await expect(panel.getByRole('alert')).toContainText('Assistant request failed')
 	await expect(panel.getByRole('alert')).toContainText('127.0.0.1:3425')
+
+	const composer = panel.getByRole('textbox', { name: COMPOSER })
+	await composer.fill('Keep this draft')
+	await panel.getByRole('button', { name: 'Continue' }).click()
+	await expect(composer).toHaveValue('Keep this draft')
 })
 
 test('the audio tab fills the dialog with a recording microphone', async ({ page }) => {

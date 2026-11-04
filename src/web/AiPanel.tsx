@@ -425,8 +425,11 @@ export function AiPanel({
 							type="button"
 							onClick={() => {
 								clearError()
-								send(
-									'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
+								void sendMessage(
+									{
+										text: 'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
+									},
+									{ body: { selection } },
 								)
 							}}
 						>
