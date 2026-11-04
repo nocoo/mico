@@ -49,6 +49,8 @@ Mean: **7.1 → 8.6/10**; eight cases increased and two were unchanged. One inde
 
 The canvas fixes add explicit fill, honor board paint order, preserve connector and transparent-shape interaction, wrap multiline labels, preserve multiline edits, measure overflow for selection and Fit, and account for the dock. API validation and browser regressions cover these behaviors. The history intermediate run exposed the separate shape-label newline defect; it was fixed before all ten final runs.
 
+The subsequent stroke-width follow-up received three independent review passes. Its final review findings were fixed and tested after the third pass; that last revision did not receive another independent review.
+
 ## Remaining limits
 
 - Agents can still choose opaque fills, put labels on top of each other, draw unclear figures or make scientifically inconsistent diagrams. The final quadratic and energy cases demonstrate this. Mico does not automatically solve layout or verify subject facts.
