@@ -375,6 +375,7 @@ export default function App() {
 
 	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
+	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
 
 	const refreshCanvases = useCallback(async () => {
 		try {
@@ -1452,7 +1453,7 @@ export default function App() {
 				onToggleAi={() => setAiPanelOpen((open) => !open)}
 			/>
 
-			<AiPanel open={aiPanelOpen} onClose={closeAiPanel} />
+			<AiPanel open={aiPanelOpen} onClose={closeAiPanel} isGestureActive={isGestureActive} />
 
 			<CanvasPanel
 				open={canvasPanelOpen}

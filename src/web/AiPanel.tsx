@@ -7,6 +7,7 @@ import { IconButton } from './IconButton'
 interface AiPanelProps {
 	open: boolean
 	onClose: () => void
+	isGestureActive: () => boolean
 }
 
 type AiTab = 'chat' | 'audio'
@@ -21,7 +22,7 @@ function resizeComposer(field: HTMLTextAreaElement) {
 	field.style.height = `${Math.min(field.scrollHeight, 120)}px`
 }
 
-export function AiPanel({ open, onClose }: AiPanelProps) {
+export function AiPanel({ open, onClose, isGestureActive }: AiPanelProps) {
 	const [tab, setTab] = useState<AiTab>('chat')
 	const [messages, setMessages] = useState<ChatMessage[]>([greeting])
 	const [draft, setDraft] = useState('')
@@ -49,7 +50,10 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 			)
 		}
 		const onKeyDown = (event: globalThis.KeyboardEvent) => {
-			if (event.key !== 'Escape' || !pointerInside.current) return
+			if (event.key !== 'Escape' || isGestureActive()) return
+			const focusInside =
+				document.activeElement instanceof Node && panelRef.current?.contains(document.activeElement)
+			if (!pointerInside.current && !focusInside) return
 			event.stopPropagation()
 			onClose()
 		}
@@ -59,7 +63,7 @@ export function AiPanel({ open, onClose }: AiPanelProps) {
 			document.removeEventListener('pointerdown', onPointerDown, true)
 			document.removeEventListener('keydown', onKeyDown, true)
 		}
-	}, [open, onClose])
+	}, [open, onClose, isGestureActive])
 
 	useEffect(() => {
 		if (wasOpen.current && !open) {

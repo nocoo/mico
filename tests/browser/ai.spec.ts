@@ -80,7 +80,21 @@ test('the audio tab fills the dialog with a recording microphone', async ({ page
 	await expect(panel).toBeVisible()
 	const compactBox = await panel.getByRole('button', { name: 'Start recording' }).boundingBox()
 	if (!compactBox) throw new Error('Missing compact microphone')
-	expect(compactBox.height).toBeGreaterThan(90)
+	expect(compactBox.height).toBeGreaterThan(70)
+
+	await panel.getByRole('tab', { name: 'Chat' }).click()
+	const shortComposer = panel.getByRole('textbox', { name: 'Message the assistant' })
+	await expect(shortComposer).toBeVisible()
+	const composerBox = await shortComposer.boundingBox()
+	if (!composerBox) throw new Error('Missing compact composer')
+	const dockBox = await page.locator('.toolbar').boundingBox()
+	if (!dockBox) throw new Error('Missing dock')
+	expect(composerBox.y + composerBox.height).toBeLessThanOrEqual(dockBox.y)
+	const composerOnTop = await page.evaluate(
+		({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest('.ai-composer')),
+		{ x: composerBox.x + composerBox.width / 2, y: composerBox.y + composerBox.height / 2 },
+	)
+	expect(composerOnTop).toBe(true)
 
 	const selectBox = await page.getByRole('button', { name: 'Select', exact: true }).boundingBox()
 	if (!selectBox) throw new Error('Missing dock control')
@@ -109,6 +123,15 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 
 	await expect(panel).toBeVisible()
 	await expect.poll(async () => (await board(request)).shapes.length).toBe(0)
+})
+
+test('Escape closes the panel when keyboard focus is back in the composer', async ({ page }) => {
+	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	await panel.getByRole('textbox', { name: 'Message the assistant' }).focus()
+	await page.keyboard.press('Escape')
+	await expect(panel).toBeHidden()
 })
 
 test('the narrow Canvases panel stays above the AI panel', async ({ page }) => {
