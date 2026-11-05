@@ -229,6 +229,7 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 				id="ai-panel"
 				ref={model.panelRef}
 				className={`ai-panel floating-panel${state.open ? ' is-open' : ''}`}
+				data-tab={model.tab}
 				data-immersive={model.tab === 'live' ? 'true' : 'false'}
 				aria-label="AI assistant"
 				aria-hidden={!state.open}
@@ -504,7 +505,7 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 					aria-labelledby="ai-tab-settings"
 					hidden={model.tab !== 'settings'}
 				>
-					<AiSettings />
+					<AiSettings active={state.open && model.tab === 'settings'} />
 				</div>
 			</section>
 		</div>

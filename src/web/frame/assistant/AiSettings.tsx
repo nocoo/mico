@@ -1,4 +1,4 @@
-import { Button, Checkbox, TextField, Theme } from '@radix-ui/themes'
+import { Button, Checkbox, Select, TextField, Theme } from '@radix-ui/themes'
 import type { FormEvent } from 'react'
 import { useCallback, useEffect, useState } from 'react'
 
@@ -8,7 +8,7 @@ interface Settings {
 	hasApiKey: boolean
 }
 
-export function AiSettings() {
+export function AiSettings({ active }: { active: boolean }) {
 	const [settings, setSettings] = useState<Settings | null>(null)
 	const [baseURL, setBaseURL] = useState('')
 	const [model, setModel] = useState('')
@@ -18,6 +18,8 @@ export function AiSettings() {
 	const [saving, setSaving] = useState(false)
 	const [message, setMessage] = useState('')
 	const [failed, setFailed] = useState(false)
+	const [models, setModels] = useState<string[]>([])
+	const [modelList, setModelList] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle')
 
 	const load = useCallback(async (signal?: AbortSignal) => {
 		setLoading(true)
@@ -44,6 +46,33 @@ export function AiSettings() {
 		void load(controller.signal)
 		return () => controller.abort()
 	}, [load])
+
+	useEffect(() => {
+		if (!active || !settings) return
+		const controller = new AbortController()
+		setModels([])
+		setModelList('loading')
+		void fetch('/api/ai/models', { signal: controller.signal })
+			.then(async (response) => {
+				if (!response.ok) throw new Error('Model list request failed')
+				const body: unknown = await response.json()
+				if (
+					!body ||
+					typeof body !== 'object' ||
+					!('models' in body) ||
+					!Array.isArray(body.models) ||
+					!body.models.every((item: unknown) => typeof item === 'string')
+				)
+					throw new Error('Invalid model list')
+				if (controller.signal.aborted) return
+				setModels([...new Set(body.models)])
+				setModelList('ready')
+			})
+			.catch(() => {
+				if (!controller.signal.aborted) setModelList('error')
+			})
+		return () => controller.abort()
+	}, [active, settings])
 
 	const save = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
@@ -90,15 +119,50 @@ export function AiSettings() {
 							onChange={(event) => setBaseURL(event.target.value)}
 						/>
 					</label>
-					<label className="ai-settings-field" htmlFor="ai-settings-model">
-						<span>Model</span>
-						<TextField.Root
-							id="ai-settings-model"
-							required
-							value={model}
-							onChange={(event) => setModel(event.target.value)}
-						/>
-					</label>
+					<div className="ai-settings-field">
+						<label htmlFor="ai-settings-model">Model</label>
+						<Select.Root value={models.includes(model) ? model : ''} onValueChange={setModel}>
+							<TextField.Root
+								id="ai-settings-model"
+								aria-describedby="ai-settings-model-note"
+								required
+								value={model}
+								onChange={(event) => setModel(event.target.value)}
+							>
+								<TextField.Slot side="right">
+									<Select.Trigger
+										aria-label="Choose model"
+										className="ai-model-select"
+										variant="ghost"
+										disabled={models.length === 0}
+									/>
+								</TextField.Slot>
+							</TextField.Root>
+							<Select.Content
+								position="popper"
+								sideOffset={6}
+								collisionPadding={8}
+								className="select-content"
+							>
+								{models.map((name) => (
+									<Select.Item className="select-item" key={name} value={name}>
+										{name}
+									</Select.Item>
+								))}
+							</Select.Content>
+						</Select.Root>
+					</div>
+					<p id="ai-settings-model-note" className="ai-settings-note" aria-live="polite">
+						{baseURL.trim().replace(/\/+$/, '') !== settings.baseURL || apiKey || clearKey
+							? 'Save the endpoint and key to refresh the model list.'
+							: modelList === 'loading'
+								? 'Loading available models…'
+								: modelList === 'error'
+									? 'Could not load models; enter a model manually.'
+									: modelList === 'ready' && models.length === 0
+										? 'No models returned; enter a model manually.'
+										: 'Choose a model or enter one manually.'}
+					</p>
 					<label className="ai-settings-field" htmlFor="ai-settings-key">
 						<span>API key</span>
 						<TextField.Root

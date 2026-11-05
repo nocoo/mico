@@ -246,6 +246,16 @@
 }
 
 .ai-assistant .ai-panel {
+	--ai-available-height: max(
+		0px,
+		calc(
+			100dvh -
+			var(--ai-inset) -
+			var(--frame-block-end, var(--ai-inset)) -
+			var(--dock-height, 56px) -
+			var(--space-2)
+		)
+	);
 	position: fixed;
 	top: var(--ai-inset);
 	right: var(--ai-inset);
@@ -253,7 +263,8 @@
 	display: flex;
 	flex-direction: column;
 	width: min(380px, calc(100vw - var(--ai-inset) * 2));
-	height: min(700px, calc(100dvh - var(--ai-inset) - 140px));
+	height: min(700px, var(--ai-available-height));
+	max-height: var(--ai-available-height);
 	overflow: hidden;
 	border: 0;
 	opacity: 0;
@@ -264,6 +275,11 @@
 		clip-path var(--ai-motion) var(--ai-ease),
 		opacity var(--ai-motion) var(--ai-ease),
 		visibility 0s linear var(--ai-motion);
+}
+
+.ai-assistant .ai-panel[data-tab="audio"],
+.ai-assistant .ai-panel[data-tab="settings"] {
+	height: auto;
 }
 
 .ai-assistant .ai-panel.is-open {
@@ -1181,7 +1197,7 @@
 .ai-assistant .microphone-panel {
 	position: relative;
 	padding: 0;
-	overflow: hidden;
+	overflow-y: auto;
 	color: var(--ai-call-ink);
 }
 
@@ -1450,6 +1466,17 @@
 	background: transparent;
 }
 
+.ai-assistant .ai-model-select {
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	justify-content: center;
+}
+
+.ai-assistant .ai-model-select .rt-SelectTriggerInner {
+	display: none;
+}
+
 .ai-assistant .ai-settings-form .rt-Button {
 	align-self: flex-start;
 	background: var(--ai-accent-ink);
@@ -1500,7 +1527,6 @@
 	}
 	.ai-assistant .ai-panel {
 		width: calc(100vw - var(--ai-inset) * 2);
-		height: min(700px, calc(100dvh - var(--ai-inset) * 2 - 172px));
 	}
 }
 

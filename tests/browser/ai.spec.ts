@@ -122,9 +122,6 @@ test('the Audio tab loads prerecorded sessions and playback controls', async ({ 
 	await expect(prerecorded.locator('.lesson-wave')).toBeVisible()
 	await expect(prerecorded.getByText('Confirmed segments')).toBeVisible()
 	const lesson = prerecorded.locator('.lesson')
-	await expect
-		.poll(() => lesson.evaluate((el) => el.scrollHeight - el.clientHeight))
-		.toBeGreaterThan(0)
 	const summary = prerecorded.getByRole('button', { name: 'Create session summary' })
 	await summary.scrollIntoViewIfNeeded()
 	await expect(summary).toBeVisible()
@@ -132,8 +129,11 @@ test('the Audio tab loads prerecorded sessions and playback controls', async ({ 
 	await segments.scrollIntoViewIfNeeded()
 	await expect(segments).toBeVisible()
 	const panelBox = await panel.boundingBox()
-	if (!panelBox) throw new Error('Missing live panel layout')
-	expect(panelBox.height).toBe(700)
+	const lessonBox = await lesson.boundingBox()
+	const segmentsBox = await segments.boundingBox()
+	if (!panelBox || !lessonBox || !segmentsBox) throw new Error('Missing live panel layout')
+	expect(segmentsBox.y + segmentsBox.height).toBeLessThanOrEqual(lessonBox.y + lessonBox.height + 1)
+	expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(960)
 
 	const picker = panel.getByRole('combobox', { name: 'Recording', exact: true })
 	await expect(picker).toBeVisible()
@@ -141,6 +141,48 @@ test('the Audio tab loads prerecorded sessions and playback controls', async ({ 
 	await picker.click()
 	await expect(page.getByRole('option')).toHaveCount(20)
 	await page.keyboard.press('Escape')
+})
+
+test('AI panels adapt to short and narrow viewports without clipping bottom controls', async ({
+	page,
+}) => {
+	await page.route('**/api/ai/models', (route) => route.fulfill({ json: { models: ['model/a'] } }))
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const insidePanel = async (target: ReturnType<typeof page.locator>) => {
+		await target.scrollIntoViewIfNeeded()
+		const panelBox = await panel.boundingBox()
+		const targetBox = await target.boundingBox()
+		const viewport = page.viewportSize()
+		if (!panelBox || !targetBox || !viewport) throw new Error('Missing adaptive panel geometry')
+		expect(panelBox.y).toBeGreaterThanOrEqual(0)
+		expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(viewport.height)
+		expect(targetBox.y).toBeGreaterThanOrEqual(panelBox.y)
+		expect(targetBox.y + targetBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height + 1)
+	}
+	await panel.getByRole('tab', { name: 'Settings' }).click()
+	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
+	const save = settings.getByRole('button', { name: 'Save settings' })
+	await expect(save).toBeVisible()
+	const settingsHeight = (await panel.boundingBox())?.height ?? 0
+	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const audioHeight = (await panel.boundingBox())?.height ?? 0
+	expect(audioHeight).toBeGreaterThan(settingsHeight)
+	for (const viewport of [
+		{ width: 1440, height: 440 },
+		{ width: 390, height: 650 },
+	]) {
+		await page.setViewportSize(viewport)
+		await panel.getByRole('tab', { name: 'Settings' }).click()
+		await insidePanel(save)
+		await panel.getByRole('tab', { name: 'Audio' }).click()
+		await insidePanel(panel.getByRole('button', { name: 'Create session summary' }))
+		await insidePanel(panel.locator('.lesson-segments'))
+		await panel.getByRole('tab', { name: 'Live' }).click()
+		await insidePanel(panel.getByRole('button', { name: 'Start recording' }))
+		await panel.getByRole('tab', { name: 'Chat' }).click()
+		await insidePanel(panel.getByRole('textbox', { name: COMPOSER }))
+	}
 })
 
 test('AI settings save endpoint and model without exposing or accidentally clearing the key', async ({
@@ -151,6 +193,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		data: { baseURL: 'http://127.0.0.1:3425/v1', model: 'auto/gpt-6-luna', apiKey: 'initial-key' },
 	})
 	expect(initial.ok()).toBe(true)
+	await page.route('**/api/ai/models', (route) => route.fulfill({ json: { models: [] } }))
 	const writes: unknown[] = []
 	page.on('request', (req) => {
 		if (req.method() === 'PUT' && req.url().endsWith('/api/ai/settings')) {
@@ -207,6 +250,59 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		model: 'example-model',
 		hasApiKey: false,
 	})
+})
+
+test('settings select or enter a model and refresh the saved endpoint list', async ({
+	page,
+	request,
+}) => {
+	const initial = await request.put('/api/ai/settings', {
+		data: { baseURL: 'http://127.0.0.1:3425/v1', model: 'auto/gpt-6-luna', apiKey: 'local-key' },
+	})
+	expect(initial.ok()).toBe(true)
+	let requests = 0
+	let unavailable = false
+	await page.route('**/api/ai/models', (route) => {
+		requests++
+		return unavailable
+			? route.fulfill({ status: 502, json: { error: 'MODEL_LIST_FAILED' } })
+			: route.fulfill({ json: { models: ['group/coding', 'group/steering'] } })
+	})
+	await page.reload()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await panel.getByRole('tab', { name: 'Settings' }).click()
+	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
+	const model = settings.getByLabel('Model', { exact: true })
+	const modelPicker = settings.getByRole('combobox', { name: 'Choose model' })
+	await expect(modelPicker).toBeEnabled()
+	await modelPicker.click()
+	await expect(page.getByRole('option')).toHaveCount(2)
+	await page.getByRole('option', { name: 'group/coding' }).click()
+	await expect(model).toHaveValue('group/coding')
+	await model.fill('custom/model')
+	await settings.getByRole('button', { name: 'Save settings' }).click()
+	await expect(settings.getByRole('status')).toHaveText('Settings saved.')
+	await expect.poll(() => requests).toBe(2)
+	await expect(model).toHaveValue('custom/model')
+
+	await settings.getByLabel('Endpoint').fill('https://new.example/v1')
+	await expect(
+		settings.getByText('Save the endpoint and key to refresh the model list.'),
+	).toBeVisible()
+	expect(requests).toBe(2)
+
+	unavailable = true
+	await panel.getByRole('tab', { name: 'Chat' }).click()
+	await panel.getByRole('tab', { name: 'Settings' }).click()
+	await expect(
+		settings.getByText('Save the endpoint and key to refresh the model list.'),
+	).toBeVisible()
+	await settings.getByLabel('Endpoint').fill('http://127.0.0.1:3425/v1')
+	await expect(settings.getByText('Could not load models; enter a model manually.')).toBeVisible()
+	await expect(modelPicker).toBeDisabled()
+	await model.fill('manual/when-offline')
+	await expect(model).toHaveValue('manual/when-offline')
 })
 
 test('a second turn keeps the conversation and the tool history valid', async ({
