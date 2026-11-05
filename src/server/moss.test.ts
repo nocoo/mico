@@ -156,6 +156,11 @@ test('MOSS session serializes real native canvas tools and pinned instructions',
 	const getBoard = session.tools.find((tool) => tool.name === 'get_board')
 	assert.ok(getBoard)
 	assert.equal((getBoard.parameters as Record<string, unknown>).type, 'object')
+	const addFrames = session.tools.find((tool) => tool.name === 'add_frames')
+	assert.ok(addFrames)
+	assert.match(addFrames.description ?? '', /title bar occupies 40px above the top edge/)
+	assert.match(addFrames.description ?? '', /reserve at least 48px of clear space above each frame/)
+	assert.match(addFrames.description ?? '', /side-by-side frames, align top edges/)
 })
 
 test('MOSS session and tool envelopes reject unknown and extra fields', () => {

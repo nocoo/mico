@@ -10,6 +10,13 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_SYSTEM_PROMPT, /subject-specific headings/)
 	assert.match(AI_SYSTEM_PROMPT, /Revise it with update_shapes/i)
 	assert.match(AI_SYSTEM_PROMPT, /memberIds/)
+	assert.match(
+		AI_SYSTEM_PROMPT,
+		/title bar occupies 40px above the top edge, outside the frame bounds/,
+	)
+	assert.match(AI_SYSTEM_PROMPT, /reserve at least 48px of clear space above every frame/)
+	assert.match(AI_SYSTEM_PROMPT, /side-by-side frames, align their top edges/)
+	assert.match(AI_SYSTEM_PROMPT, /topmost member of each group at the same y/)
 	assert.doesNotMatch(AI_SYSTEM_PROMPT, /LAYOUT_LIMIT|exactly two columns|y=1600|Place C below/)
 	assert.match(AI_LECTURE_PROMPT, /clearly enters a final summary/i)
 	assert.match(AI_LECTURE_PROMPT, /rightmost HTML summary/)

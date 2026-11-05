@@ -607,7 +607,7 @@ export function createCanvasTools(
 
 		add_frames: tool({
 			description:
-				'Add titled frames from at least two existing unframed regular objects. Frame bounds are computed from member geometry with 40px padding; members are attached atomically and the frame may never nest or overlap unrelated content. Frames cannot cover an object that is not in memberIds.',
+				'Add titled frames from at least two existing unframed regular objects. Frame bounds are computed from member geometry with 40px padding. The title bar occupies 40px above the top edge, outside the bounds; reserve at least 48px of clear space above each frame. For side-by-side frames, align top edges by aligning the topmost members of each group before framing where practical. Members are attached atomically; frames may not nest or overlap unrelated content or cover objects outside memberIds.',
 			inputSchema: z.object({
 				frames: z
 					.array(
