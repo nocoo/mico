@@ -249,6 +249,12 @@
 	font-size: var(--type-caption);
 }
 
+.toolbar-module .text-options .select-trigger > .rt-SelectIcon {
+	flex-basis: calc(var(--icon-small) - var(--space-05));
+	width: calc(var(--icon-small) - var(--space-05));
+	height: calc(var(--icon-small) - var(--space-05));
+}
+
 .toolbar-module .text-options .select-trigger:focus-visible,
 .toolbar-module .text-options .select-trigger[aria-expanded="true"] {
 	outline: none;
@@ -265,6 +271,12 @@ body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"]) .s
 	border-radius: calc(var(--radius-control) + var(--space-05));
 	background: var(--surface);
 	box-shadow: var(--shadow-popover);
+}
+
+body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"])
+	.select-content
+	.select-item {
+	height: auto;
 }
 
 @media (max-width: 768px) {

@@ -594,6 +594,7 @@ svg {
 	width: 100%;
 	min-height: var(--control-compact);
 	padding: var(--space-05) var(--space-1);
+	padding-inline-start: var(--select-item-indicator-width);
 	border-radius: var(--radius-control);
 	color: var(--ink);
 	font-size: var(--type-caption);

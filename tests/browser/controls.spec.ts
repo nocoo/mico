@@ -188,6 +188,47 @@ test('toolbar text selectors keep plain values and preview only in the menu', as
 	}
 })
 
+test('toolbar text selectors keep chevrons small and selection checks clear of previews', async ({
+	page,
+}) => {
+	await page.getByRole('button', { name: 'Text', exact: true }).click()
+	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
+	for (const label of ['Font family', 'Font size', 'Font weight']) {
+		const trigger = toolbar.getByRole('combobox', { name: label })
+		await expect(trigger.locator('.rt-SelectIcon')).toHaveCSS('width', '12px')
+		await expect(trigger.locator('.rt-SelectIcon')).toHaveCSS('height', '12px')
+		await trigger.click()
+		const selected = page.locator('.select-item[data-state="checked"]')
+		await expect(selected).toBeVisible()
+		const check = await selected.locator('.rt-SelectItemIndicatorIcon').boundingBox()
+		const text = await selected.locator('span[style]').boundingBox()
+		if (!check || !text) throw new Error(`Missing selected option content for ${label}`)
+		expect(check.x + check.width + 2).toBeLessThanOrEqual(text.x)
+		const overflow = await page.locator('.select-item').evaluateAll((items) =>
+			items.flatMap((item) => {
+				const preview = item.querySelector('span[style]')
+				if (!preview) return []
+				const row = item.getBoundingClientRect()
+				const text = preview.getBoundingClientRect()
+				return text.top < row.top - 1 || text.bottom > row.bottom + 1 ? [item.textContent] : []
+			}),
+		)
+		expect(overflow).toEqual([])
+		await selected.click()
+		if (label === 'Font size') {
+			await trigger.click()
+			await page.getByRole('option', { name: '48', exact: true }).click()
+			await trigger.click()
+			const large = page.locator('.select-item[data-state="checked"]')
+			const largeCheck = await large.locator('.rt-SelectItemIndicatorIcon').boundingBox()
+			const largeText = await large.locator('span[style]').boundingBox()
+			if (!largeCheck || !largeText) throw new Error('Missing selected 48px option')
+			expect(largeCheck.x + largeCheck.width + 2).toBeLessThanOrEqual(largeText.x)
+			await large.click()
+		}
+	}
+})
+
 test('tool focus follows keyboard mode changes without stealing unrelated focus', async ({
 	page,
 }) => {
