@@ -12,8 +12,10 @@ import {
 test('assistant tab keyboard protocol wraps and reaches endpoints', () => {
 	assert.equal(nextAssistantTab('chat', 'ArrowLeft'), 'settings')
 	assert.equal(nextAssistantTab('settings', 'ArrowRight'), 'chat')
-	assert.equal(nextAssistantTab('lesson', 'ArrowRight'), 'audio')
-	assert.equal(nextAssistantTab('audio', 'Home'), 'chat')
+	assert.equal(nextAssistantTab('chat', 'ArrowRight'), 'audio')
+	assert.equal(nextAssistantTab('audio', 'ArrowRight'), 'live')
+	assert.equal(nextAssistantTab('live', 'ArrowRight'), 'settings')
+	assert.equal(nextAssistantTab('live', 'Home'), 'chat')
 	assert.equal(nextAssistantTab('chat', 'End'), 'settings')
 })
 

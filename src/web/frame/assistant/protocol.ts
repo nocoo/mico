@@ -1,11 +1,6 @@
-export type AssistantTab = 'chat' | 'lesson' | 'audio' | 'settings'
+export type AssistantTab = 'chat' | 'audio' | 'live' | 'settings'
 
-export const ASSISTANT_TABS: readonly AssistantTab[] = [
-	'chat',
-	'lesson',
-	'audio',
-	'settings',
-]
+export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
 
 export function nextAssistantTab(
 	current: AssistantTab,

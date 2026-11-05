@@ -1,3 +1,4 @@
+import './assistant.css'
 import type { AssistantActions, AssistantState } from '../contracts'
 import { AssistantView } from './AssistantView'
 import { useAssistantSession } from './useAssistantSession'

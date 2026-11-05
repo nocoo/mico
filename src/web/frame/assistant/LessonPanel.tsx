@@ -1,11 +1,11 @@
 import { FileText, LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { SelectField } from './SelectField'
-import { type LectureAudio, loadLecture, Player, TARGET_RATE } from './stt/audioSource'
-import { MaiClient, type MaiConfig } from './stt/maiClient'
-import { dedupeHypothesis, formatClock, type LessonClip } from './stt/transcript'
-import { SilenceSegmenter } from './stt/vad'
-import { drawWave } from './waveform.ts'
+import { SelectField } from '../../SelectField'
+import { type LectureAudio, loadLecture, Player, TARGET_RATE } from '../../stt/audioSource'
+import { MaiClient, type MaiConfig } from '../../stt/maiClient'
+import { dedupeHypothesis, formatClock, type LessonClip } from '../../stt/transcript'
+import { SilenceSegmenter } from '../../stt/vad'
+import { drawWave } from '../../waveform.ts'
 
 export interface LessonSegment {
 	id: number
@@ -595,8 +595,9 @@ export function LessonPanel({
 	return (
 		<div className="lesson">
 			<div className="lesson-clip">
+				<span className="select-label">Recording</span>
 				<SelectField
-					label="Lecture"
+					label="Recording"
 					value={selected?.id ?? ''}
 					options={clips.map((clip) => ({
 						value: clip.id,

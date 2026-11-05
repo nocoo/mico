@@ -1,12 +1,12 @@
 import { FileText, Mic, Plus, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { LessonSegment } from './LessonPanel'
-import { TARGET_RATE } from './stt/audioSource'
-import { MaiClient, type MaiConfig } from './stt/maiClient'
-import { openMicrophone } from './stt/microphone'
-import { dedupeHypothesis, formatClock } from './stt/transcript'
-import { SilenceSegmenter } from './stt/vad'
-import { drawWave } from './waveform'
+import { TARGET_RATE } from '../../stt/audioSource'
+import { MaiClient, type MaiConfig } from '../../stt/maiClient'
+import { openMicrophone } from '../../stt/microphone'
+import { dedupeHypothesis, formatClock } from '../../stt/transcript'
+import { SilenceSegmenter } from '../../stt/vad'
+import { drawWave } from '../../waveform'
 
 interface MicrophonePanelProps {
 	active: boolean
@@ -334,49 +334,87 @@ export function MicrophonePanel({
 				? `${aiQueued} segments queued`
 				: 'Mico is listening'
 	return (
-		<div className="lesson microphone-panel">
-			<div className="lesson-status" aria-live="polite">
-				<span
-					className="lesson-dot"
-					data-kind={phase === 'listening' ? 'live' : phase === 'error' ? 'error' : 'idle'}
-				/>
-				<span>
-					{phase === 'listening'
-						? 'Listening…'
-						: phase === 'connecting'
-							? 'Connecting…'
-							: phase === 'stopping'
-								? 'Finishing transcript…'
-								: phase === 'done'
-									? 'Recording complete'
-									: phase === 'error'
-										? 'Microphone error'
-										: 'Ready'}
-				</span>
-				<span className="lesson-ai">
-					<span className="lesson-ai-dot" data-busy={aiBusy ? 'true' : 'false'} />
-					{aiLabel}
-				</span>
-			</div>
-			{detail && (
-				<p className="microphone-error" role="alert">
-					{detail}
-				</p>
-			)}
-			<p className="microphone-note">Audio is sent to Azure for transcription.</p>
-			<div className="microphone-controls">
-				<button
-					type="button"
-					className="lesson-primary"
-					aria-pressed={running}
-					aria-label={running ? 'Stop recording' : 'Start recording'}
-					disabled={phase === 'stopping' || summaryRequesting}
-					onClick={running ? stop : () => void start()}
+		<div className="microphone-panel">
+			<div
+				className={`call-stage${running || live.confirmed || live.hypothesis || segments.length > 0 ? ' has-output' : ''}`}
+			>
+				{detail && (
+					<p className="call-error" role="alert">
+						{detail}
+					</p>
+				)}
+				<div className="call-presence">
+					<div className="call-control">
+						<button
+							type="button"
+							className="call-mic"
+							aria-pressed={running}
+							aria-label={running ? 'Stop recording' : 'Start recording'}
+							disabled={phase === 'stopping' || summaryRequesting}
+							onClick={running ? stop : () => void start()}
+						>
+							<Mic className="call-mic-icon" size={28} aria-hidden="true" />
+							<Square className="call-end-icon" size={28} aria-hidden="true" />
+						</button>
+					</div>
+					<div className="call-meta" aria-live="polite">
+						<div className="lesson-status">
+							<span
+								className="lesson-dot"
+								data-kind={phase === 'listening' ? 'live' : phase === 'error' ? 'error' : 'ok'}
+							/>
+							<span>
+								{phase === 'listening'
+									? 'Listening…'
+									: phase === 'connecting'
+										? 'Connecting…'
+										: phase === 'stopping'
+											? 'Finishing transcript…'
+											: phase === 'done'
+												? 'Recording complete'
+												: phase === 'error'
+													? 'Microphone error'
+													: 'Ready'}
+							</span>
+						</div>
+						<span className="call-timer">{formatClock(elapsed)}</span>
+					</div>
+					<span className="call-action-label">
+						{running ? 'Tap to end the conversation' : 'Tap the microphone to start'}
+					</span>
+					<span className="call-ai-status">{aiLabel}</span>
+				</div>
+				<div
+					className="call-output"
+					aria-hidden={!(running || live.confirmed || live.hypothesis || segments.length > 0)}
 				>
-					{running ? <Square size={16} aria-hidden="true" /> : <Mic size={16} aria-hidden="true" />}
-					{running ? 'Stop recording' : 'Start recording'}
-				</button>
-				<span className="ai-audio-timer">{formatClock(elapsed)}</span>
+					<div className="call-wave-group">
+						<canvas
+							ref={waveRef}
+							className="call-wave"
+							height={52}
+							role="img"
+							aria-label="Microphone waveform"
+						/>
+					</div>
+					<div className="call-caption" aria-live="polite">
+						<span className="lesson-live-label">Live transcript</span>
+						<p>
+							{!live.confirmed && !live.hypothesis ? (
+								<span className="lesson-live-empty">
+									{running ? 'Listening for speech…' : 'Waiting for speech…'}
+								</span>
+							) : (
+								<>
+									<span className="lesson-confirmed">{live.confirmed}</span>
+									<span className="lesson-hypothesis">{live.hypothesis}</span>
+								</>
+							)}
+						</p>
+					</div>
+				</div>
+			</div>
+			<div className="call-actions">
 				<button
 					type="button"
 					className="lesson-button"
@@ -386,65 +424,15 @@ export function MicrophonePanel({
 					<Plus size={15} aria-hidden="true" />
 					New canvas
 				</button>
-			</div>
-			<canvas
-				ref={waveRef}
-				className="lesson-wave"
-				height={52}
-				role="img"
-				aria-label="Microphone waveform"
-			/>
-			<div className="lesson-vad">
-				<span>Energy</span>
-				<div className="lesson-meter">
-					<i
-						data-speaking={vad.speaking ? 'true' : 'false'}
-						style={{ width: `${Math.max(0, Math.min(100, ((vad.db + 60) / 54) * 100))}%` }}
-					/>
-				</div>
-				<span className="lesson-vad-label">
-					{phase === 'listening'
-						? vad.speaking
-							? `speech · ${vad.db.toFixed(0)}dB`
-							: `silence · ${vad.db.toFixed(0)}dB`
-						: 'idle'}
-				</span>
-			</div>
-			<div className="lesson-live" aria-live="polite">
-				<span className="lesson-live-label">Live transcript</span>
-				<p>
-					{!live.confirmed && !live.hypothesis && (
-						<span className="lesson-live-empty">Waiting for speech…</span>
-					)}
-					<span className="lesson-confirmed">{live.confirmed}</span>
-					<span className="lesson-hypothesis">{live.hypothesis}</span>
-				</p>
-			</div>
-			<button type="button" className="lesson-summary" disabled={!canSummarize} onClick={onSummary}>
-				<FileText size={15} aria-hidden="true" />
-				Create session summary
-			</button>
-			<div className="lesson-segments">
-				<div className="lesson-segments-head">
-					<span>Confirmed segments</span>
-					<span>
-						{segments.length} / {segments.reduce((sum, segment) => sum + segment.text.length, 0)}{' '}
-						chars
-					</span>
-				</div>
-				<ol>
-					{segments.map((segment) => (
-						<li key={segment.id}>
-							<span className="lesson-seg-time">
-								{formatClock(segment.start)}–{formatClock(segment.end)}
-							</span>
-							<span>{segment.text}</span>
-						</li>
-					))}
-					{segments.length === 0 && (
-						<li className="lesson-seg-empty">Your speech will appear here after recognition.</li>
-					)}
-				</ol>
+				<button
+					type="button"
+					className="lesson-summary"
+					disabled={!canSummarize}
+					onClick={onSummary}
+				>
+					<FileText size={15} aria-hidden="true" />
+					Create session summary
+				</button>
 			</div>
 		</div>
 	)

@@ -7,7 +7,7 @@ import {
 	LoaderCircle,
 	MessageSquare,
 	MousePointer2,
-	PlayCircle,
+	Mic,
 	Settings,
 	Sparkles,
 	Square,
@@ -15,10 +15,10 @@ import {
 	X,
 } from 'lucide-react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { AiSettings } from '../../AiSettings'
+import { AiSettings } from './AiSettings'
 import { IconButton } from '../../IconButton'
-import { LessonPanel, type LessonSegment } from '../../LessonPanel'
-import { MicrophonePanel } from '../../MicrophonePanel'
+import { LessonPanel, type LessonSegment } from './LessonPanel'
+import { MicrophonePanel } from './MicrophonePanel'
 import { isWaitReply } from '../../stt/transcript'
 import type { AssistantActions, AssistantState } from '../contracts'
 import type { AssistantViewModel } from './useAssistantSession'
@@ -186,37 +186,45 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 	const submit = (event?: FormEvent) => model.submit(event)
 
 	return (
-		<>
+		<div className="ai-assistant">
 			<header className="topbar ai-topbar">
-				<div className="ai-trigger floating-panel">
-					<IconButton
-						icon={Sparkles}
-						label="AI assistant"
-						active={state.open}
+				<div
+					className="ai-trigger floating-panel"
+					data-open={String(state.open)}
+					data-immersive={String(model.tab === 'live')}
+				>
+					<button
+						type="button"
+						className="ai-trigger-button"
+						aria-label={state.open ? 'Close AI assistant' : 'Open AI assistant'}
 						aria-pressed={state.open}
 						aria-expanded={state.open}
 						aria-controls="ai-panel"
 						onClick={actions.toggle}
 						data-ai-toggle="true"
-						className="ai-trigger-button"
-					/>
+					>
+						<Sparkles className="trigger-sparkles" aria-hidden="true" />
+						<X className="trigger-close" aria-hidden="true" />
+					</button>
 				</div>
 			</header>
 
 			<section
 				id="ai-panel"
 				ref={model.panelRef}
-				className="ai-panel floating-panel"
+				className={`ai-panel floating-panel${state.open ? ' is-open' : ''}`}
+				data-immersive={model.tab === 'live' ? 'true' : 'false'}
 				aria-label="AI assistant"
-				hidden={!state.open}
+				aria-hidden={!state.open}
+				inert={!state.open}
 			>
 				<header className="ai-panel-header">
 					<div className="ai-tabs" role="tablist" aria-label="AI modes" onKeyDown={focusTab}>
 						{(
 							[
 								{ id: 'chat', label: 'Chat', icon: MessageSquare },
-								{ id: 'lesson', label: 'Live', icon: PlayCircle },
 								{ id: 'audio', label: 'Audio', icon: AudioLines },
+								{ id: 'live', label: 'Live', icon: Mic },
 								{ id: 'settings', label: 'Settings', icon: Settings },
 							] as const
 						).map(({ id, label, icon }) => (
@@ -233,16 +241,12 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 								compact
 								tooltipSide="bottom"
 								onClick={() => model.setTab(id)}
-							/>
+							>
+								<span>{label}</span>
+							</IconButton>
 						))}
 					</div>
-					<IconButton
-						icon={X}
-						label="Close AI assistant"
-						compact
-						tooltipSide="bottom"
-						onClick={actions.close}
-					/>
+					<span className="ai-close-slot" aria-hidden="true" />
 				</header>
 
 				<div
@@ -263,6 +267,7 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 							<div className="ai-empty">
 								<strong>Draw a lesson with Mico</strong>
 								<p>Describe a high-school science topic. Mico sketches it step by step.</p>
+								<span className="ai-quick-label">Try a topic</span>
 								<div className="ai-quick">
 									{QUICK_PROMPTS.map(({ label, prompt }) => (
 										<button
@@ -313,10 +318,29 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 								<span>{model.error.message}</span>
 								<span>Check your endpoint and model in Settings.</span>
 							</div>
-							<button type="button" onClick={model.continueChat}>Continue</button>
+							<button type="button" onClick={model.continueChat}>
+								Continue
+							</button>
 						</div>
 					)}
 
+					{model.sessionEnded && model.messages.length > 0 && (
+						<div className="ai-chat-actions">
+							<button
+								type="button"
+								className="ai-summary-button"
+								disabled={
+									model.busy ||
+									model.lectureQueued > 0 ||
+									model.summaryDone ||
+									model.summaryRequesting
+								}
+								onClick={model.requestSummary}
+							>
+								Create session summary
+							</button>
+						</div>
+					)}
 					<div className="ai-composer-shell">
 						{state.selectedIds.length > 0 && (
 							<div className="ai-selection">
@@ -375,16 +399,16 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 				</div>
 
 				<div
-					id="ai-panel-lesson"
-					className="ai-lesson"
+					id="ai-panel-audio"
+					className="ai-audio-recordings"
 					role="tabpanel"
-					aria-labelledby="ai-tab-lesson"
-					hidden={model.tab !== 'lesson'}
+					aria-labelledby="ai-tab-audio"
+					hidden={model.tab !== 'audio'}
 				>
 					<LessonPanel
 						key={state.canvasId}
-						active={state.open && model.tab === 'lesson'}
-						suspend={state.open && model.tab === 'audio'}
+						active={state.open && model.tab === 'audio'}
+						suspend={state.open && model.tab === 'live'}
 						initialClipId={model.lessonClipId}
 						onClipChange={model.setLessonClipId}
 						aiBusy={model.busy}
@@ -407,15 +431,15 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 				</div>
 
 				<div
-					id="ai-panel-audio"
-					className="ai-audio"
+					id="ai-panel-live"
+					className="ai-live"
 					role="tabpanel"
-					aria-labelledby="ai-tab-audio"
-					hidden={model.tab !== 'audio'}
+					aria-labelledby="ai-tab-live"
+					hidden={model.tab !== 'live'}
 				>
 					<MicrophonePanel
 						key={state.canvasId}
-						active={state.open && model.tab === 'audio'}
+						active={state.open && model.tab === 'live'}
 						aiBusy={model.busy}
 						aiQueued={model.lectureQueued}
 						aiError={Boolean(model.error)}
@@ -448,6 +472,6 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 					<AiSettings />
 				</div>
 			</section>
-		</>
+		</div>
 	)
 }

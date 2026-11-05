@@ -4,7 +4,7 @@ import type { FormEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
 import type { AssistantActions, AssistantState } from '../contracts'
-import type { LessonSegment } from '../../LessonPanel'
+import type { LessonSegment } from './LessonPanel'
 import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
 import {
 	buildAssistantRequestBody,
@@ -106,11 +106,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		void sendMessage(
 			{ text: taken.batch.join('\n\n') },
 			{
-				body: buildAssistantRequestBody(
-					selectionRef.current,
-					'lecture',
-					canvasIdRef.current,
-				),
+				body: buildAssistantRequestBody(selectionRef.current, 'lecture', canvasIdRef.current),
 			},
 		).finally(() => releaseRequestRef.current(seq))
 	}, [sendMessage])
@@ -131,11 +127,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			void sendMessage(
 				{ text: value },
 				{
-					body: buildAssistantRequestBody(
-						state.selectedIds,
-						'chat',
-						state.canvasId,
-					),
+					body: buildAssistantRequestBody(state.selectedIds, 'chat', state.canvasId),
 				},
 			).finally(() => releaseRequestRef.current(seq))
 		},
@@ -180,11 +172,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		void sendMessage(
 			{ text: POST_SESSION_SUMMARY_PROMPT },
 			{
-				body: buildAssistantRequestBody(
-					selectionRef.current,
-					'chat',
-					canvasIdRef.current,
-				),
+				body: buildAssistantRequestBody(selectionRef.current, 'chat', canvasIdRef.current),
 			},
 		).finally(() => releaseRequestRef.current(seq))
 	}, [sendMessage, summaryDone, clearError])
@@ -281,9 +269,13 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	}, [state.open, tab])
 
 	useEffect(() => {
-		if (!state.open) return
-		composerRef.current?.focus()
-	}, [state.open])
+		if (!state.open || tab !== 'chat') return
+		const field = composerRef.current
+		if (!field) return
+		const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 560
+		const timer = window.setTimeout(() => field.focus(), delay)
+		return () => window.clearTimeout(timer)
+	}, [state.open, tab])
 
 	const continueChat = useCallback(() => {
 		if (requestLock.current) return
@@ -295,11 +287,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 				text: 'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
 			},
 			{
-				body: buildAssistantRequestBody(
-					state.selectedIds,
-					'chat',
-					state.canvasId,
-				),
+				body: buildAssistantRequestBody(state.selectedIds, 'chat', state.canvasId),
 			},
 		).finally(() => releaseRequestRef.current(seq))
 	}, [sendMessage, state.selectedIds, state.canvasId, clearError])
