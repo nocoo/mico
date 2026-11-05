@@ -97,7 +97,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		const measure = () => {
 			if (!options || optionsKind === null) {
 				wrap.classList.remove('open')
-				wrap.style.width = '0px'
+				wrap.style.setProperty('--toolbar-options-width', '0px')
 				return
 			}
 			wrap.classList.add('open')
@@ -108,7 +108,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				divider?.offsetWidth ?? 0,
 				horizontalPadding,
 			)
-			wrap.style.width = `${width}px`
+			wrap.style.setProperty('--toolbar-options-width', `${width}px`)
 		}
 		measure()
 		const observer = options ? new ResizeObserver(measure) : null
@@ -117,6 +117,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		return () => {
 			observer?.disconnect()
 			window.removeEventListener('resize', measure)
+			wrap.style.removeProperty('--toolbar-options-width')
 		}
 	}, [viewModel.optionsKind])
 

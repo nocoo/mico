@@ -183,37 +183,6 @@ svg {
 .ai-topbar {
 	justify-content: flex-end;
 }
-.toolbar {
-	display: flex;
-	align-items: center;
-	padding: var(--space-1);
-	min-height: calc(var(--control-size) + var(--space-2));
-	gap: var(--space-15);
-	pointer-events: auto;
-}
-.toolbar .icon-button,
-.toolbar .text-button {
-	border-radius: calc(var(--panel-radius) - var(--space-1));
-}
-.panel-divider {
-	display: block;
-	flex: 0 0 var(--space-1);
-	width: var(--space-1);
-	height: var(--space-3);
-	background: linear-gradient(var(--border), var(--border)) center / var(--hairline) 100% no-repeat;
-}
-.drawing-tools,
-.view-controls,
-.zoom-controls {
-	display: flex;
-	align-items: center;
-	gap: var(--space-05);
-}
-.view-controls {
-	padding: 0;
-	border: 0;
-	min-width: 0;
-}
 .icon-button,
 .text-button {
 	position: relative;
@@ -261,91 +230,6 @@ svg {
 	color: var(--accent);
 	background: var(--accent-tint);
 }
-.zoom-value {
-	width: var(--space-8);
-	padding: 0;
-	font-size: 13px;
-	font-variant-numeric: tabular-nums;
-	color: var(--ink);
-	font-weight: var(--weight-medium);
-}
-.toolbar {
-	position: fixed;
-	z-index: 20;
-	left: var(--dock-left, 50%);
-	bottom: var(--frame-block-end);
-	width: max-content;
-	max-width: calc(100vw - var(--space-2));
-	flex-wrap: nowrap;
-	flex-direction: column;
-	gap: 0;
-}
-.dock-main {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	flex-wrap: wrap;
-	width: max-content;
-	max-width: 100%;
-}
-.tool-options-wrap {
-	display: flex;
-	align-items: center;
-	flex: 0 0 auto;
-	width: 0;
-	max-width: 100%;
-	overflow: hidden;
-	transition: width 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
-}
-.tool-options-wrap.open {
-	padding: 3px;
-}
-.tool-options-wrap > .brush-options {
-	flex: 0 0 auto;
-	width: max-content;
-}
-.tool-slot {
-	display: contents;
-}
-.tool-slot:is(
-	[data-tool-id="select"],
-	[data-tool-id="hand"],
-	[data-tool-id="rectangle"],
-	[data-tool-id="html"],
-	[data-tool-id="text"]
-) {
-	--tool-accent: var(--candy-blue);
-	--tool-tint: var(--candy-blue-tint);
-	--tool-active-ink: var(--candy-blue-stroke);
-}
-.tool-slot:is([data-tool-id="ellipse"], [data-tool-id="connector"]) {
-	--tool-accent: var(--candy-green);
-	--tool-tint: var(--candy-green-tint);
-	--tool-active-ink: var(--candy-green-stroke);
-}
-.tool-slot:is([data-tool-id="line"], [data-tool-id="note"]) {
-	--tool-accent: var(--candy-yellow);
-	--tool-tint: var(--candy-yellow-tint);
-	--tool-active-ink: var(--candy-yellow-stroke);
-}
-.tool-slot[data-tool-id="path"] {
-	--tool-accent: var(--candy-pink);
-	--tool-tint: var(--candy-pink-tint);
-	--tool-active-ink: var(--candy-pink-stroke);
-}
-.tool-slot .icon-button[aria-pressed="true"],
-.tool-slot .icon-button[aria-pressed="true"]:hover {
-	background: var(--tool-tint);
-	color: var(--tool-active-ink);
-	box-shadow: inset 0 0 0 var(--stroke-strong) var(--tool-accent);
-}
-.toolbar .panel-divider {
-	flex-basis: var(--space-1);
-	width: var(--space-1);
-}
-.delete-tool:hover:not(:disabled) {
-	color: var(--danger);
-}
 .panel-heading {
 	display: flex;
 	align-items: center;
@@ -360,50 +244,6 @@ svg {
 .panel-heading > span {
 	font-size: var(--type-caption);
 	color: var(--ink-muted);
-}
-.brush-options {
-	display: flex;
-	align-items: center;
-	gap: var(--space-05);
-	padding: 0;
-	border: 0;
-	min-width: 0;
-}
-.brush-options .segmented-control button {
-	height: var(--control-compact);
-	padding-inline: var(--space-1);
-	font-size: var(--type-caption);
-}
-.segmented-control {
-	display: flex;
-	align-items: center;
-	--choice-accent: var(--candy-pink);
-	--choice-tint: var(--candy-pink-tint);
-	--choice-ink: var(--candy-pink-stroke);
-}
-.segmented-control button {
-	height: var(--control-compact);
-	padding: 0 var(--space-1);
-	border: var(--hairline) solid var(--border);
-	background: var(--surface);
-	color: var(--ink-secondary);
-	font-size: var(--type-caption);
-}
-.segmented-control button + button {
-	margin-left: -1px;
-}
-.segmented-control button:first-child {
-	border-radius: var(--radius-control) 0 0 var(--radius-control);
-}
-.segmented-control button:last-child {
-	border-radius: 0 var(--radius-control) var(--radius-control) 0;
-}
-.segmented-control button[aria-pressed="true"] {
-	position: relative;
-	border-color: var(--choice-accent);
-	background: var(--choice-tint);
-	color: var(--choice-ink);
-	box-shadow: inset 0 0 0 var(--hairline) var(--choice-accent);
 }
 .property-field input:not([type]),
 .sr-only {
@@ -540,41 +380,6 @@ svg {
 	letter-spacing: -0.01em;
 	white-space: pre-wrap;
 }
-.note-colors button {
-	width: var(--control-compact);
-	border: var(--hairline) solid var(--border);
-}
-.note-colors button:nth-child(1) {
-	--choice-accent: var(--candy-yellow);
-}
-.note-colors button:nth-child(2) {
-	--choice-accent: var(--candy-pink);
-}
-.note-colors button:nth-child(3) {
-	--choice-accent: var(--candy-green);
-}
-.note-colors button:nth-child(4) {
-	--choice-accent: var(--candy-blue);
-}
-.note-colors button:nth-child(5) {
-	--choice-accent: var(--candy-blue);
-}
-.note-colors button[aria-pressed="true"] {
-	border-color: var(--choice-accent);
-	box-shadow: inset 0 0 0 var(--stroke-strong) var(--choice-accent);
-}
-.text-options .select-trigger {
-	flex: 0 0 88px;
-	width: 88px;
-}
-.text-options select {
-	height: var(--control-compact);
-	padding: 0 var(--space-1);
-	border: var(--hairline) solid var(--border-strong);
-	border-radius: var(--radius-control);
-	background: var(--surface);
-	font-size: var(--type-caption);
-}
 .connector {
 	cursor: pointer;
 }
@@ -625,34 +430,6 @@ svg {
 		--dock-rows: 2;
 		--dock-width: calc(var(--control-size) * 8 + var(--space-8));
 	}
-	.dock-main {
-		flex-direction: column;
-		gap: var(--space-1);
-	}
-	.dock-main > .dock-divider {
-		display: none;
-	}
-	.dock-main .view-controls {
-		justify-content: flex-end;
-		width: 100%;
-	}
-	.tool-options-wrap {
-		width: 100% !important;
-		height: 0;
-		padding: 0;
-		transition:
-			width 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
-			height 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
-			margin 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
-	}
-	.tool-options-wrap.open {
-		height: 40px;
-		margin-top: var(--space-1);
-		padding: 3px;
-	}
-	.tool-options-wrap > .panel-divider {
-		display: none;
-	}
 	.notice {
 		top: auto;
 		bottom: calc(var(--frame-block-end) + var(--dock-height) + var(--space-2));
@@ -661,14 +438,6 @@ svg {
 @media (max-width: 480px) {
 	.app {
 		--dock-width: calc(var(--control-size) * 8 + var(--space-2));
-	}
-	.toolbar .panel-divider {
-		display: none;
-	}
-	.drawing-tools {
-		display: grid;
-		grid-template-columns: repeat(4, var(--control-size));
-		row-gap: var(--space-1);
 	}
 	.selection-properties {
 		display: grid;
