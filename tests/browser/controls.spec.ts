@@ -57,6 +57,141 @@ test.beforeEach(async ({ page, request, baseURL }) => {
 	await resetView(page)
 })
 
+test('image keeps its rounded border and clips its corners when selected and unselected', async ({
+	page,
+	request,
+}) => {
+	const png = await page.evaluate(() => {
+		const canvas = document.createElement('canvas')
+		canvas.width = 2
+		canvas.height = 2
+		const context = canvas.getContext('2d')
+		if (!context) throw new Error('Missing canvas context')
+		context.fillStyle = '#00ff00'
+		context.fillRect(0, 0, 2, 2)
+		return canvas.toDataURL('image/png').split(',')[1]
+	})
+	const upload = await request.post('/api/images', {
+		headers: { 'Content-Type': 'image/png' },
+		data: Buffer.from(png, 'base64'),
+	})
+	expect(upload.ok()).toBe(true)
+	const { id } = (await upload.json()) as { id: string }
+	await page.evaluate(async (assetId) => {
+		const image = new Image()
+		image.src = `/api/images/${assetId}`
+		await image.decode()
+	}, id)
+	await seed(page, request, [
+		{ id: 'image', type: 'image', imageId: id, x: 200, y: 200, w: 160, h: 160, color: '#ff0000' },
+	])
+	const image = page.locator('[data-shape-id="image"]')
+	await expect(image.locator('.canvas-image')).toHaveCount(1)
+
+	for (const selected of [false, true]) {
+		if (selected) {
+			await clickWorld(page, 280, 280)
+			await expect(image.locator('.selection')).toHaveCount(1)
+		}
+		await page.mouse.move(600, 600)
+		const screenshot = await page.screenshot({ clip: { x: 198, y: 198, width: 164, height: 164 } })
+		const pixels = await page.evaluate(async (base64) => {
+			const image = new Image()
+			image.src = `data:image/png;base64,${base64}`
+			await image.decode()
+			const canvas = document.createElement('canvas')
+			canvas.width = image.width
+			canvas.height = image.height
+			const context = canvas.getContext('2d')
+			if (!context) throw new Error('Missing canvas context')
+			context.drawImage(image, 0, 0)
+			return Array.from(context.getImageData(0, 0, image.width, image.height).data)
+		}, screenshot.toString('base64'))
+		const pixel = (x: number, y: number) => pixels.slice((y * 164 + x) * 4, (y * 164 + x) * 4 + 3)
+		for (const [left, top] of [
+			[2, 2],
+			[152, 2],
+			[2, 152],
+			[152, 152],
+		]) {
+			let red = 0
+			for (let y = top; y < top + 10; y++) {
+				for (let x = left; x < left + 10; x++) {
+					const [r, g, b] = pixel(x, y)
+					if (r > 150 && r > g * 1.5 && r > b * 1.5) red++
+				}
+			}
+			expect(red, `rounded border at ${left},${top}, selected=${selected}`).toBeGreaterThan(2)
+		}
+		for (const [x, y] of [
+			[2, 2],
+			[161, 2],
+			[2, 161],
+			[161, 161],
+		]) {
+			const [r, g, b] = pixel(x, y)
+			expect(g > 200 && r < 50 && b < 50, `image clipped at ${x},${y}`).toBe(false)
+		}
+		expect(pixel(82, 82)).toEqual([0, 255, 0])
+	}
+	await dragWorld(page, { x: 280, y: 280 }, { x: 320, y: 320 })
+	await expect.poll(async () => (await shapeOf(request, 'image')).x).not.toBe(200)
+	await expect(image.locator('.selection')).toHaveCount(1)
+})
+
+test('narrow image clipping matches the border radii', async ({ page, request }) => {
+	const shapes: CanvasShape[] = []
+	for (const [width, height] of [
+		[100, 10],
+		[10, 100],
+	]) {
+		const png = await page.evaluate(
+			([width, height]) => {
+				const canvas = document.createElement('canvas')
+				canvas.width = width
+				canvas.height = height
+				const context = canvas.getContext('2d')
+				if (!context) throw new Error('Missing canvas context')
+				context.fillStyle = '#00ff00'
+				context.fillRect(0, 0, width, height)
+				return canvas.toDataURL('image/png').split(',')[1]
+			},
+			[width, height],
+		)
+		const upload = await request.post('/api/images', {
+			headers: { 'Content-Type': 'image/png' },
+			data: Buffer.from(png, 'base64'),
+		})
+		expect(upload.ok()).toBe(true)
+		const { id } = (await upload.json()) as { id: string }
+		await page.evaluate(async (assetId) => {
+			const image = new Image()
+			image.src = `/api/images/${assetId}`
+			await image.decode()
+		}, id)
+		shapes.push({
+			id: `image-${width}-${height}`,
+			type: 'image',
+			imageId: id,
+			x: width === 100 ? 200 : 400,
+			y: 200,
+			w: width,
+			h: height,
+			color: '#ff0000',
+		})
+	}
+	await seed(page, request, shapes)
+	for (const shape of shapes) {
+		const image = page.locator(`[data-shape-id="${shape.id}"] .canvas-image`)
+		await expect(image).toHaveCSS(
+			'clip-path',
+			`inset(0px round ${Math.min(10, shape.w / 2)}px / ${Math.min(10, shape.h / 2)}px)`,
+		)
+		await clickWorld(page, shape.x + shape.w / 2, shape.y + shape.h / 2)
+		await expect(page.locator(`[data-shape-id="${shape.id}"] .selection`)).toHaveCount(1)
+	}
+})
+
 test('image tool uploads a raster and frame background uses image shape identity', async ({
 	page,
 	request,

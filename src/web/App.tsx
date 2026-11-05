@@ -1291,6 +1291,19 @@ export default function App() {
 			if (!shape.imageId) return null
 			return (
 				<g key={shape.id} {...common}>
+					<image
+						className="canvas-image"
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						href={`/api/images/${encodeURIComponent(shape.imageId)}`}
+						preserveAspectRatio="xMidYMid meet"
+						style={{
+							clipPath: `inset(0 round ${Math.min(10, shape.w / 2)}px / ${Math.min(10, shape.h / 2)}px)`,
+						}}
+						pointerEvents="none"
+					/>
 					<rect
 						x={shape.x}
 						y={shape.y}
@@ -1301,16 +1314,6 @@ export default function App() {
 						stroke={shape.color ?? CANDY_COLORS.ink}
 						strokeWidth={active ? 3 : 1}
 						vectorEffect="non-scaling-stroke"
-					/>
-					<image
-						className="canvas-image"
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						href={`/api/images/${encodeURIComponent(shape.imageId)}`}
-						preserveAspectRatio="xMidYMid meet"
-						pointerEvents="none"
 					/>
 					{active && (
 						<rect
