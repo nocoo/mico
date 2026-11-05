@@ -1,3 +1,5 @@
+export const FRAME_FILL_PERCENT = 5
+
 export const CANDY_COLORS = {
 	blue: '#00a2e1',
 	green: '#a6d94f',

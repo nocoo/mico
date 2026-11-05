@@ -1,6 +1,6 @@
 import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
-import { CANDY_COLORS, CANDY_TINTS } from '../../src/web/design'
+import { CANDY_COLORS, CANDY_TINTS, SHAPE_COLORS } from '../../src/web/design'
 import { resetBoard } from './support'
 
 async function board(request: APIRequestContext): Promise<Board> {
@@ -504,6 +504,25 @@ test('frame selection wraps members and deleting the frame releases them', async
 			.sort(),
 	).toEqual(['a', 'b'])
 	await expect(page.getByLabel('Frame title')).toHaveValue('Frame')
+	const frameBody = page.locator(`[data-shape-id="${frame.id}"] > rect`).first()
+	for (const { value, label } of SHAPE_COLORS) {
+		await page.getByRole('button', { name: `Set color ${label}` }).click()
+		await expect
+			.poll(async () => (await board(request)).shapes.find((shape) => shape.id === frame.id))
+			.toMatchObject({ color: value })
+		await expect(frameBody).toHaveAttribute(
+			'style',
+			/fill: color-mix\(in srgb, .* 5%, var\(--surface\)\)/,
+		)
+	}
+	await page.getByLabel('Custom color').fill('#123456')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === frame.id))
+		.toMatchObject({ color: '#123456' })
+	await expect(frameBody).toHaveAttribute(
+		'style',
+		/fill: color-mix\(in srgb, .* 5%, var\(--surface\)\)/,
+	)
 
 	await page.getByRole('button', { name: 'Delete selected' }).click()
 	await expect

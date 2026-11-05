@@ -3,6 +3,7 @@ import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
 import { CodeXml, Frame } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { FRAME_FILL_PERCENT } from '../shared/palette'
 import type {
 	Board,
 	BrushStyle,
@@ -1217,7 +1218,7 @@ export default function App() {
 						height={shape.h}
 						rx={10}
 						style={{
-							fill: candyWash(shape.color, 7),
+							fill: candyWash(shape.color, FRAME_FILL_PERCENT),
 							stroke: active ? shape.color : candyLine(shape.color),
 						}}
 						strokeWidth={active ? 2 : 1}

@@ -56,6 +56,15 @@ test('shapes, connectors and labels render inside the preview bounds', () => {
 	}
 })
 
+test('frame previews use the lighter fill for every frame color', () => {
+	for (const color of ['#00a2e1', '#a6d94f', '#f7de4b', '#ff7fa3', '#2b3038', '#123456']) {
+		const svg = decode(
+			canvasPreview([{ id: 'frame', type: 'frame', x: 0, y: 0, w: 200, h: 120, color }]),
+		)
+		assert.ok(svg.includes(`fill="${color}" fill-opacity="0.05"`))
+	}
+})
+
 test('large boards are scaled into the preview and text is escaped', () => {
 	const huge: Shape = {
 		id: 'huge',

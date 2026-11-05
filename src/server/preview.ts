@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer'
+import { FRAME_FILL_PERCENT } from '../shared/palette.ts'
 import type { CanvasShape, Point, Shape } from '../shared/types.ts'
 import { CANDY_COLORS, CANDY_LAYOUT } from '../web/design.ts'
 
@@ -71,7 +72,7 @@ function shapeArt(shape: Shape, transform: (point: Point) => Point, scale: numbe
 	const width = Math.max(2, box.w * scale)
 	const height = Math.max(2, box.h * scale)
 	if (shape.type === 'frame') {
-		return `<rect x="${topLeft.x}" y="${topLeft.y}" width="${width}" height="${height}" rx="4" fill="${escapeXml(shape.color)}" fill-opacity="0.07" stroke="${escapeXml(shape.color)}" stroke-opacity="0.35"/>`
+		return `<rect x="${topLeft.x}" y="${topLeft.y}" width="${width}" height="${height}" rx="4" fill="${escapeXml(shape.color)}" fill-opacity="${FRAME_FILL_PERCENT / 100}" stroke="${escapeXml(shape.color)}" stroke-opacity="0.35"/>`
 	}
 	if (shape.type === 'note') {
 		const label = (shape.text ?? '').slice(0, 18)
