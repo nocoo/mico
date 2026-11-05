@@ -35,6 +35,7 @@
 
 ## Automated test architecture
 
+- After pulling UI changes, inspect the current accessible names before writing a smoke check; the assistant trigger was renamed from `AI assistant` to `Open AI assistant` and the stale selector produced a false failure.
 - A transcription mock that emits a completed segment before `input_audio_buffer.commit` can make a broken VAD pipeline look healthy. Drive synthetic speech and silence through the real worklet and only complete on commit; test the final stop flush separately.
 - Microphone stop must release tracks immediately, then await the worklet's buffered tail before committing; the main-thread PCM buffer alone does not include samples still inside the worklet. Report a failed flush rather than silently dropping the final segment.
 - A persisted API write can precede its WebSocket-driven browser render. Wait for the new note's DOM element before double-clicking; polling the database alone left the full browser suite flaky.
