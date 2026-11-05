@@ -17,6 +17,7 @@
       --ink-muted: #7a858d;
       --accent: #00a2e1;
       --accent-tint: #e2f5fc;
+      --accent-ink: #0b7ba8;
       --success: #4fae3f;
       --danger: #c13a5c;
       --space-1: 4px;
@@ -29,6 +30,9 @@
       --inset: var(--space-6);
       --motion-fast: 160ms;
       --motion-panel: 240ms;
+      --radius-panel: 20px;
+      --radius-control: 8px;
+      --radius-tool: 12px;
       --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43, 48, 56, .06), 0 2px 12px rgba(43, 48, 56, .08);
       font: 14px/24px Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
@@ -43,7 +47,7 @@
     button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     svg { display: block; }
     .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
-    .panel { background: var(--surface); border-radius: 20px; box-shadow: var(--panel-shadow); }
+    .panel { background: var(--surface); border-radius: var(--radius-panel); box-shadow: var(--panel-shadow); }
     .identity {
       position: fixed;
       top: var(--inset);
@@ -55,7 +59,8 @@
       padding: var(--space-2);
     }
     .brand { display: flex; align-items: center; gap: var(--space-1); width: 92px; white-space: nowrap; }
-    .brand-mark { width: 40px; height: 40px; padding: var(--space-2); color: var(--accent); }
+    .brand-mark { position: relative; flex: 0 0 40px; width: 40px; height: 40px; }
+    .brand-mark > svg { width: 40px; height: 40px; padding: var(--space-2); color: var(--accent); }
     .brand strong { width: 48px; font-size: 20px; font-weight: 700; line-height: 32px; letter-spacing: -.04em; }
     .icon-button {
       display: inline-flex;
@@ -66,21 +71,25 @@
       height: 40px;
       padding: 0;
       border: 0;
-      border-radius: 8px;
+      border-radius: var(--radius-tool);
       background: transparent;
       color: var(--ink-secondary);
-      transition: background var(--motion-fast), color var(--motion-fast);
+      transition: background var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast);
     }
     .icon-button svg { width: 20px; height: 20px; }
     .icon-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--ink); }
-    .icon-button[aria-expanded="true"] { background: var(--accent-tint); color: var(--accent); }
-    .icon-button.compact { width: 32px; height: 32px; }
+    .icon-button[aria-expanded="true"], .icon-button[aria-expanded="true"]:hover {
+      background: var(--accent-tint);
+      color: var(--accent-ink);
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    .icon-button.compact { width: 32px; height: 32px; border-radius: var(--radius-control); }
     .icon-button.compact svg { width: 16px; height: 16px; }
     .icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    .status { display: grid; place-items: center; width: 32px; height: 40px; }
+    .status { position: absolute; top: 7px; left: 7px; display: grid; place-items: center; width: 6px; height: 6px; }
     .status-dot {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
       border-radius: 50%;
       background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--success) 55%, var(--surface)), var(--success) 75%);
       box-shadow: 0 0 4px color-mix(in srgb, var(--success) 40%, transparent), 0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
@@ -127,9 +136,9 @@
     .panel-title { font-size: var(--type-body); font-weight: 600; line-height: 20px; }
     .panel-count { color: var(--ink-muted); font-size: var(--type-caption); line-height: 16px; }
     .canvas-list { display: flex; flex-direction: column; gap: var(--space-1); min-height: 0; margin: 0; padding: var(--space-2); overflow-y: auto; list-style: none; }
-    .canvas-item { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: 8px; }
-    .canvas-item.active { background: var(--accent-tint); }
-    .canvas-switch { display: flex; align-items: center; flex: 1; gap: var(--space-2); min-width: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; }
+    .canvas-item { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: var(--radius-control); }
+    .canvas-item.active { background: var(--accent-tint); box-shadow: inset 0 0 0 2px var(--accent); }
+    .canvas-switch { display: flex; align-items: center; flex: 1; gap: var(--space-2); min-width: 0; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--ink); text-align: left; }
     .canvas-preview { flex: 0 0 64px; width: 64px; height: 40px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); }
     .canvas-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: var(--space-1); }
     .canvas-name { overflow: hidden; color: var(--ink); font-size: var(--type-body); font-weight: 500; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
@@ -164,9 +173,8 @@
   </svg>
 
   <header class="identity panel">
-    <div class="brand"><svg class="brand-mark icon" viewBox="0 0 24 24" style="stroke-width:2.25" aria-hidden="true"><use href="#pen"/></svg><strong>mico</strong></div>
+    <div class="brand"><span class="brand-mark"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2.25" aria-hidden="true"><use href="#pen"/></svg><span class="status" role="status" aria-label="Live"><span class="status-dot" aria-hidden="true"></span></span></span><strong>mico</strong></div>
     <button class="icon-button" id="canvas-toggle" type="button" aria-label="Canvases" aria-controls="canvas-panel" aria-pressed="true" aria-expanded="true" title="Canvases"><svg class="icon" aria-hidden="true"><use href="#layers"/></svg></button>
-    <span class="status" role="status" aria-label="Live"><span class="status-dot"></span></span>
   </header>
   <section class="canvas-panel panel" id="canvas-panel" aria-label="Canvases" data-state="open">
     <header class="panel-header">
