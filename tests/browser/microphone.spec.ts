@@ -8,12 +8,14 @@ import {
 } from './support'
 
 const AI_BUTTON = 'AI assistant'
+const OPEN_AI = 'Open AI assistant'
+const CLOSE_AI = 'Close AI assistant'
 
-async function openAudio(page: Page) {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+async function openLive(page: Page) {
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
-	await expect(panel.getByRole('tabpanel', { name: 'Audio' })).toBeVisible()
+	await panel.getByRole('tab', { name: 'Live' }).click()
+	await expect(panel.getByRole('tabpanel', { name: 'Live' })).toBeVisible()
 	return panel
 }
 
@@ -32,7 +34,7 @@ test.describe('microphone mode', () => {
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 
-		const panel = await openAudio(page)
+		const panel = await openLive(page)
 		const start = panel.getByRole('button', { name: 'Start recording' })
 		await start.click()
 
@@ -60,26 +62,26 @@ test.describe('microphone mode', () => {
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 
-		const panel = await openAudio(page)
-		const audio = panel.getByRole('tabpanel', { name: 'Audio' })
-		await audio.getByRole('button', { name: 'Start recording' }).click()
-		await expect(audio.getByRole('button', { name: 'Stop recording' })).toHaveAttribute(
+		const panel = await openLive(page)
+		const live = panel.getByRole('tabpanel', { name: 'Live' })
+		await live.getByRole('button', { name: 'Start recording' }).click()
+		await expect(live.getByRole('button', { name: 'Stop recording' })).toHaveAttribute(
 			'aria-pressed',
 			'true',
 		)
-		await expect(audio.getByText('Listening…')).toBeVisible()
-		await expect(audio.getByText('Live transcript')).toBeVisible()
-		await expect(audio.getByText('Confirmed segments')).toBeVisible()
+		await expect(live.getByText('Listening…')).toBeVisible()
+		await expect(live.getByText('Live transcript')).toBeVisible()
+		await expect(live.getByText('Tap to end the conversation')).toBeVisible()
 
 		await expect.poll(() => mai.appends).toBeGreaterThan(0)
 		await expect.poll(() => mai.completed).toBeGreaterThan(0)
-		await expect(audio.getByText('Draw projectile motion', { exact: true }).first()).toBeVisible()
+		await expect(live.getByText('Draw projectile motion', { exact: true }).first()).toBeVisible()
 		await expect.poll(() => lectureRequest?.mode).toBe('lecture')
 		await expect
 			.poll(async () => (await board(request)).shapes.length, { timeout: 15_000 })
 			.toBeGreaterThanOrEqual(8)
 
-		await audio.getByRole('button', { name: 'Stop recording' }).click()
+		await live.getByRole('button', { name: 'Stop recording' }).click()
 		await expect(panel.getByRole('button', { name: 'Start recording' })).toHaveAttribute(
 			'aria-pressed',
 			'false',
@@ -99,19 +101,19 @@ test.describe('microphone mode', () => {
 		const mai = await mockMaiTranscription(page, 'Final spoken sentence')
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-		const panel = await openAudio(page)
-		const audio = panel.getByRole('tabpanel', { name: 'Audio' })
-		await audio.getByRole('button', { name: 'Start recording' }).click()
+		const panel = await openLive(page)
+		const live = panel.getByRole('tabpanel', { name: 'Live' })
+		await live.getByRole('button', { name: 'Start recording' }).click()
 		await expect.poll(() => mai.appends).toBeGreaterThanOrEqual(2)
 		expect(mai.commits).toBe(0)
-		await audio.getByRole('button', { name: 'Stop recording' }).click()
+		await live.getByRole('button', { name: 'Stop recording' }).click()
 		await expect.poll(() => mai.commits).toBeGreaterThan(0)
-		await expect(audio.getByText('Final spoken sentence', { exact: true })).toBeVisible()
+		await expect(live.getByText('Final spoken sentence', { exact: true })).toBeVisible()
 		await expect.poll(() => mai.closed).toBe(true)
 		await expect.poll(async () => (await board(request)).shapes.length).toBeGreaterThanOrEqual(8)
 	})
 
-	test('switching away from Audio releases the microphone and transcription socket', async ({
+	test('switching away from Live releases the microphone and transcription socket', async ({
 		context,
 		page,
 		request,
@@ -122,7 +124,7 @@ test.describe('microphone mode', () => {
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 
-		const panel = await openAudio(page)
+		const panel = await openLive(page)
 		await panel.getByRole('button', { name: 'Start recording' }).click()
 		await expect(panel.getByText('Listening…')).toBeVisible()
 		await expect.poll(() => mai.appends).toBeGreaterThan(0)
@@ -140,12 +142,12 @@ test.describe('microphone mode', () => {
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 
-		const panel = await openAudio(page)
+		const panel = await openLive(page)
 		await panel.getByRole('button', { name: 'Start recording' }).click()
 		await expect(panel.getByText('Listening…')).toBeVisible()
 		await expect.poll(() => mai.appends).toBeGreaterThan(0)
 
-		await panel.getByRole('button', { name: 'Close AI assistant' }).click()
+		await page.getByRole('button', { name: CLOSE_AI, exact: true }).click()
 		await expect(panel).toBeHidden()
 		await expect.poll(() => mai.closed).toBe(true)
 		await expect.poll(async () => (await microphoneState(page)).stopped).toBeGreaterThan(0)
@@ -160,7 +162,7 @@ test.describe('microphone mode', () => {
 		const previous = (
 			(await (await request.get('/api/state')).json()) as { activeCanvasId: string }
 		).activeCanvasId
-		const panel = await openAudio(page)
+		const panel = await openLive(page)
 		await panel.getByRole('button', { name: 'Start recording' }).click()
 		await expect.poll(() => mai.appends).toBeGreaterThan(0)
 		const created = await request.post('/api/canvases', {
@@ -188,7 +190,7 @@ test.describe('microphone mode', () => {
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 
-		const panel = await openAudio(page)
+		const panel = await openLive(page)
 		await panel.getByRole('button', { name: 'Start recording' }).click()
 		await expect.poll(async () => (await microphoneState(page)).requested).toBe(1)
 

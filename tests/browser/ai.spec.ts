@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { board, resetBoard } from './support'
 
 const AI_BUTTON = 'AI assistant'
+const OPEN_AI = 'Open AI assistant'
 const COMPOSER = 'Message the assistant'
 
 test.beforeEach(async ({ page, request }) => {
@@ -11,16 +12,18 @@ test.beforeEach(async ({ page, request }) => {
 })
 
 test('the AI panel streams a tool loop and draws on the board', async ({ page, request }) => {
-	const trigger = page.getByRole('button', { name: AI_BUTTON, exact: true })
+	const trigger = page.locator('[data-ai-toggle="true"]')
+	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
 	await expect(trigger).toHaveAttribute('aria-expanded', 'false')
 	await trigger.click()
+	await expect(trigger).toHaveAttribute('aria-label', 'Close AI assistant')
 	await expect(trigger).toHaveAttribute('aria-expanded', 'true')
 
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
 	await expect(panel.getByText('Draw a lesson with Mico')).toBeVisible()
-	for (const name of ['Chat', 'Live', 'Audio', 'Settings']) {
-		await expect(panel.getByRole('tab', { name })).toHaveText('')
+	for (const name of ['Chat', 'Audio', 'Live', 'Settings']) {
+		await expect(panel.getByRole('tab', { name })).toHaveText(name)
 	}
 
 	const composer = panel.getByRole('textbox', { name: COMPOSER })
@@ -44,37 +47,41 @@ test('the AI panel streams a tool loop and draws on the board', async ({ page, r
 
 	await page.keyboard.press('Escape')
 	await expect(panel).toBeHidden()
+	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
 	await expect(trigger).toBeFocused()
 
 	await trigger.click()
+	await expect(trigger).toHaveAttribute('aria-label', 'Close AI assistant')
 	await expect(panel.locator('.ai-message.user .ai-message-text')).toHaveText(
 		'Draw projectile motion',
 	)
 })
 
-test('the live tab loads the session catalogue and playback controls', async ({ page }) => {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+test('the Audio tab loads prerecorded sessions and playback controls', async ({ page }) => {
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Live' }).click()
-	await expect(panel.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true')
-	const live = panel.getByRole('tabpanel', { name: 'Live' })
-	await expect(live.getByText('Live transcript')).toBeVisible()
-	await expect(live.getByRole('button', { name: /Play lecture/ })).toBeVisible()
-	await expect(live.getByRole('button', { name: 'New canvas' })).toBeVisible()
-	await expect(live.getByRole('button', { name: 'Create session summary' })).toBeVisible()
-	await expect(live.locator('.lesson-wave')).toBeVisible()
-	await expect(live.getByText('Confirmed segments')).toBeVisible()
-	const lesson = live.locator('.lesson')
+	await panel.getByRole('tab', { name: 'Audio' }).click()
+	await expect(panel.getByRole('tab', { name: 'Audio' })).toHaveAttribute('aria-selected', 'true')
+	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
+	await expect(prerecorded.getByText('Live transcript')).toBeVisible()
+	await expect(
+		prerecorded.getByRole('button', { name: 'Play recording', exact: true }),
+	).toBeVisible()
+	await expect(prerecorded.getByRole('button', { name: 'New canvas' })).toBeVisible()
+	await expect(prerecorded.getByRole('button', { name: 'Create session summary' })).toBeVisible()
+	await expect(prerecorded.locator('.lesson-wave')).toBeVisible()
+	await expect(prerecorded.getByText('Confirmed segments')).toBeVisible()
+	const lesson = prerecorded.locator('.lesson')
 	await expect
 		.poll(() => lesson.evaluate((el) => el.scrollHeight - el.clientHeight))
 		.toBeLessThanOrEqual(1)
 	const panelBox = await panel.boundingBox()
-	const segmentsBox = await live.locator('.lesson-segments').boundingBox()
+	const segmentsBox = await prerecorded.locator('.lesson-segments').boundingBox()
 	if (!panelBox || !segmentsBox) throw new Error('Missing live panel layout')
 	expect(panelBox.height).toBe(700)
 	expect(panelBox.y + panelBox.height - segmentsBox.y - segmentsBox.height).toBeLessThan(20)
 
-	const picker = panel.getByRole('combobox', { name: 'Lecture' })
+	const picker = panel.getByRole('combobox', { name: 'Recording', exact: true })
 	await expect(picker).toBeVisible()
 	await picker.click()
 	await expect(page.getByRole('option')).toHaveCount(20)
@@ -96,7 +103,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		}
 	})
 	await page.reload()
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('tab', { name: 'Chat' }).focus()
 	await page.keyboard.press('End')
@@ -134,7 +141,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		apiKey: '',
 	})
 	await page.reload()
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	await panel.getByRole('tab', { name: 'Settings' }).click()
 	await expect(settings.getByLabel('Endpoint')).toHaveValue('https://example.test/v1')
 	await expect(settings.getByLabel('Model', { exact: true })).toHaveValue('example-model')
@@ -151,7 +158,7 @@ test('a second turn keeps the conversation and the tool history valid', async ({
 	page,
 	request,
 }) => {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	const composer = panel.getByRole('textbox', { name: COMPOSER })
 	await composer.fill('Draw projectile motion')
@@ -172,7 +179,7 @@ test('a second turn keeps the conversation and the tool history valid', async ({
 })
 
 test('quick prompts draw without typing', async ({ page, request }) => {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('button', { name: 'Projectile motion' }).click()
 	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
@@ -212,7 +219,7 @@ test('the current marquee selection is attached to the request', async ({ page, 
 		await route.continue()
 	})
 
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel.getByText('1 selected object attached')).toBeVisible()
 	await panel.getByRole('textbox', { name: COMPOSER }).fill('Extend the selected object')
@@ -229,7 +236,7 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 			body: JSON.stringify({ error: 'INTERNAL_ERROR', message: 'gateway down' }),
 		}),
 	)
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('textbox', { name: COMPOSER }).fill('Draw something')
 	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
@@ -242,12 +249,12 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 	await expect(composer).toHaveValue('Keep this draft')
 })
 
-test('the audio tab preserves the microphone layout', async ({ page }) => {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+test('the Live tab preserves the microphone layout', async ({ page }) => {
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
-	await expect(panel.getByRole('tab', { name: 'Audio' })).toHaveAttribute('aria-selected', 'true')
-	await expect(panel.getByRole('tabpanel', { name: 'Audio' })).toBeVisible()
+	await panel.getByRole('tab', { name: 'Live' }).click()
+	await expect(panel.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true')
+	await expect(panel.getByRole('tabpanel', { name: 'Live' })).toBeVisible()
 
 	const mic = panel.getByRole('button', { name: 'Start recording' })
 	await expect(mic).toBeVisible()
@@ -292,7 +299,7 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 	page,
 	request,
 }) => {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
 	await expect(panel.getByRole('textbox', { name: COMPOSER })).toBeFocused()
@@ -309,7 +316,7 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 })
 
 test('Escape closes the panel when keyboard focus is back in the composer', async ({ page }) => {
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
 	await panel.getByRole('textbox', { name: COMPOSER }).focus()
@@ -321,7 +328,7 @@ test('the narrow Canvases panel stays above the AI panel', async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 })
 	await page.reload()
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 
 	const canvases = page.getByRole('region', { name: 'Canvases' })
@@ -357,7 +364,7 @@ test('the AI panel replaces the narrow properties sheet instead of hiding its co
 
 	const properties = page.getByRole('region', { name: 'Selected object properties' })
 	await expect(properties).toBeVisible()
-	await page.getByRole('button', { name: AI_BUTTON, exact: true }).click()
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	await expect(properties).toBeHidden()
 
 	const composer = page
