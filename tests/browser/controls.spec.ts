@@ -142,6 +142,52 @@ test('sticky palette, brush style and brush width apply to new objects', async (
 	})
 })
 
+test('toolbar text selectors keep plain values and preview only in the menu', async ({ page }) => {
+	await page.getByRole('button', { name: 'Text', exact: true }).click()
+	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
+	const family = toolbar.getByRole('combobox', { name: 'Font family' })
+	const size = toolbar.getByRole('combobox', { name: 'Font size' })
+	const weight = toolbar.getByRole('combobox', { name: 'Font weight' })
+
+	await family.click()
+	const hand = page.getByRole('option', { name: 'Hand', exact: true })
+	await expect(hand.locator('span[style]')).toHaveCSS('font-family', /Bradley Hand/)
+	await expect(hand.locator('span[style]')).toHaveCSS('font-size', '16px')
+	await hand.click()
+
+	await size.click()
+	const large = page.getByRole('option', { name: '48', exact: true })
+	await expect(large.locator('span[style]')).toHaveCSS('font-size', '48px')
+	await large.click()
+
+	await weight.click()
+	const bold = page.getByRole('option', { name: '700', exact: true })
+	await expect(bold.locator('span[style]')).toHaveCSS('font-weight', '700')
+	await bold.click()
+
+	for (const [trigger, value] of [
+		[family, 'Hand'],
+		[size, '48'],
+		[weight, '700'],
+	] as const) {
+		await expect(trigger).toContainText(value)
+		await expect(trigger).toHaveCSS('font-size', '12px')
+		const styles = await trigger.evaluate((element) => {
+			const inner = element.querySelector('.rt-SelectTriggerInner')
+			if (!inner) throw new Error('Missing select value')
+			const leaf =
+				[...inner.querySelectorAll('*')].find((item) => item.children.length === 0) ?? inner
+			const control = getComputedStyle(element)
+			const selected = getComputedStyle(leaf)
+			return {
+				control: [control.fontFamily, control.fontSize, control.fontWeight],
+				selected: [selected.fontFamily, selected.fontSize, selected.fontWeight],
+			}
+		})
+		expect(styles.selected).toEqual(styles.control)
+	}
+})
+
 test('keyboard shortcuts switch tools and control delete, zoom and fit', async ({
 	page,
 	request,

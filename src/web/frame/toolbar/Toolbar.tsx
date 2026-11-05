@@ -221,17 +221,6 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
 					onChange={actions.setTextFont}
 					side="top"
-					renderValue={(option) => (
-						<span
-							style={{
-								fontFamily: FONT_STACKS[option.value as keyof typeof FONT_STACKS],
-								fontSize: 16,
-								fontWeight: state.textWeight,
-							}}
-						>
-							{option.label}
-						</span>
-					)}
 					renderItem={(option) => (
 						<span
 							style={{
@@ -250,17 +239,6 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					options={FONT_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
 					onChange={(size) => actions.setTextSize(Number(size))}
 					side="top"
-					renderValue={(option) => (
-						<span
-							style={{
-								fontFamily: FONT_STACKS[state.textFont as keyof typeof FONT_STACKS],
-								fontSize: Number(option.value),
-								fontWeight: state.textWeight,
-							}}
-						>
-							{option.label}
-						</span>
-					)}
 					renderItem={(option) => (
 						<span
 							style={{
@@ -279,17 +257,6 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					options={FONT_WEIGHTS.map((weight) => ({ value: String(weight), label: String(weight) }))}
 					onChange={(weight) => actions.setTextWeight(Number(weight))}
 					side="top"
-					renderValue={(option) => (
-						<span
-							style={{
-								fontFamily: FONT_STACKS[state.textFont as keyof typeof FONT_STACKS],
-								fontSize: 16,
-								fontWeight: Number(option.value),
-							}}
-						>
-							{option.label}
-						</span>
-					)}
 					renderItem={(option) => (
 						<span
 							style={{
