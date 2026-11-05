@@ -6,7 +6,7 @@
 - Non-linear animation means easing, not necessarily a bounce. Keep the requested motion and timing curve separate; do not add extra movement without asking.
 - An explicit null child in the Radix select trigger hid the selected value; assert the visible value in browser tests and render the selected label explicitly.
 - Measure animated panels only after their entrance settles, and size the bounded browser-suite timeout for the full sequential suite.
-- Replacing a linked `node_modules` with a partial directory caused `pnpm exec` to auto-install; it reused cached packages with no downloads. Preserve package-manager metadata or invoke the existing local binary when preparing an isolated worktree.
+- Mixing a partial worktree install with symlinks into another `node_modules` caused `pnpm exec` to auto-install and loaded two React instances. Install the complete lockfile into the worktree instead of mixing dependency trees, and verify that the renderer and UI packages resolve the same React instance.
 
 ## Emergency handover evaluation
 
