@@ -3,6 +3,7 @@ import { IconButton } from '../../IconButton'
 import type { IdentityActions, IdentityState } from '../contracts'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
+import './identity.css'
 
 export interface IdentityFrameProps {
 	state: IdentityState
@@ -14,7 +15,7 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 
 	return (
 		<>
-			<header className="topbar">
+			<header className="topbar frame-identity">
 				<div className="identity-panel floating-panel">
 					<div className="brand">
 						<span className="brand-mark">
@@ -44,7 +45,7 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 			{identity.mounted && (
 				<section
 					ref={identity.panelRef}
-					className="canvas-panel floating-panel"
+					className="canvas-panel floating-panel frame-identity"
 					aria-label="Canvases"
 					aria-hidden={!identity.canvasesOpen || undefined}
 					data-state={identity.canvasesOpen ? 'open' : 'closed'}

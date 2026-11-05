@@ -1,0 +1,397 @@
+.frame-identity {
+	--identity-space-1: 4px;
+	--identity-space-2: 8px;
+	--identity-space-3: 12px;
+	--identity-space-4: 16px;
+	--identity-space-6: 24px;
+	--identity-control: 40px;
+	--identity-compact: 32px;
+	--identity-radius-tool: 12px;
+	--identity-motion-fast: 160ms;
+	--identity-motion-panel: 240ms;
+}
+
+.frame-identity.topbar {
+	gap: var(--identity-space-2);
+}
+
+.frame-identity .identity-panel {
+	display: flex;
+	align-items: center;
+	min-height: 56px;
+	padding: var(--identity-space-2);
+	gap: var(--identity-space-3);
+	pointer-events: auto;
+}
+
+.frame-identity .brand {
+	display: flex;
+	align-items: center;
+	gap: var(--identity-space-1);
+	width: 92px;
+	white-space: nowrap;
+}
+
+.frame-identity .brand-mark {
+	position: relative;
+	flex: 0 0 var(--identity-control);
+	width: var(--identity-control);
+	height: var(--identity-control);
+}
+
+.frame-identity .brand-mark-icon {
+	width: var(--identity-control);
+	height: var(--identity-control);
+	padding: var(--identity-space-2);
+	color: var(--accent);
+}
+
+.frame-identity .brand strong {
+	width: 48px;
+	font-size: 20px;
+	font-weight: var(--weight-bold);
+	line-height: var(--line-heading);
+	letter-spacing: -0.04em;
+}
+
+.frame-identity .icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: var(--identity-control);
+	height: var(--identity-control);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--identity-radius-tool);
+	background: transparent;
+	color: var(--ink-secondary);
+	font-size: var(--type-body);
+	line-height: var(--line-body);
+	transition:
+		background var(--identity-motion-fast),
+		color var(--identity-motion-fast),
+		box-shadow var(--identity-motion-fast);
+}
+
+.frame-identity .icon-button > svg {
+	width: var(--icon-standard);
+	height: var(--icon-standard);
+	flex-shrink: 0;
+	stroke-width: 1.5;
+}
+
+.frame-identity .icon-button:hover:not(:disabled) {
+	background: var(--surface-hover);
+	color: var(--ink);
+}
+
+.frame-identity .icon-button[aria-expanded="true"],
+.frame-identity .icon-button[aria-expanded="true"]:hover {
+	background: var(--accent-tint);
+	color: var(--accent-ink, var(--accent));
+	box-shadow: inset 0 0 0 var(--stroke-strong) var(--accent);
+}
+
+.frame-identity .icon-button[data-compact="true"],
+.frame-identity .canvas-actions .icon-button {
+	width: var(--identity-compact);
+	height: var(--identity-compact);
+	border-radius: var(--radius-control);
+}
+
+.frame-identity .icon-button[data-compact="true"] > svg,
+.frame-identity .canvas-actions .icon-button > svg {
+	width: var(--icon-small);
+	height: var(--icon-small);
+}
+
+.frame-identity .status {
+	position: absolute;
+	top: 7px;
+	left: 7px;
+	display: grid;
+	place-items: center;
+	width: 6px;
+	height: 6px;
+}
+
+.frame-identity .status-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--ink-muted);
+}
+
+.frame-identity .status.live .status-dot {
+	background: radial-gradient(
+		circle at 35% 30%,
+		color-mix(in srgb, var(--success) 55%, var(--surface)),
+		var(--success) 75%
+	);
+	box-shadow:
+		0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
+		0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+	animation: frame-identity-status-breathe 2800ms infinite;
+}
+
+@keyframes frame-identity-status-breathe {
+	0%,
+	100% {
+		opacity: 0.7;
+		transform: scale(0.94);
+		box-shadow:
+			0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
+			0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.04);
+		box-shadow:
+			0 0 6px color-mix(in srgb, var(--success) 65%, transparent),
+			0 0 12px color-mix(in srgb, var(--success) 38%, transparent);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+	}
+}
+
+.frame-identity .status.reconnecting .status-dot {
+	background: var(--warning);
+}
+
+.frame-identity .status.offline .status-dot {
+	background: var(--danger);
+}
+
+.frame-identity.canvas-panel {
+	position: fixed;
+	top: calc(var(--frame-inset) + 68px);
+	left: var(--frame-inset);
+	z-index: 40;
+	display: flex;
+	flex-direction: column;
+	width: min(340px, calc(100vw - var(--frame-inset) * 2));
+	max-height: calc(100dvh - var(--frame-inset) * 2 - 68px);
+	padding: 0;
+	overflow: hidden;
+	transform-origin: top left;
+}
+
+.frame-identity.canvas-panel[hidden] {
+	display: none;
+}
+
+.frame-identity.canvas-panel[data-state="open"] {
+	animation: frame-identity-panel-open var(--identity-motion-panel) cubic-bezier(0.2, 0.7, 0.2, 1)
+		both;
+}
+
+.frame-identity.canvas-panel[data-state="closed"] {
+	animation: frame-identity-panel-close 160ms ease-in both;
+	pointer-events: none;
+}
+
+@keyframes frame-identity-panel-open {
+	from {
+		opacity: 0;
+		transform: translateY(-4px) scale(0.99);
+	}
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}
+
+@keyframes frame-identity-panel-close {
+	from {
+		opacity: 1;
+		transform: none;
+	}
+	to {
+		opacity: 0;
+		transform: translateY(-4px) scale(0.99);
+	}
+}
+
+.frame-identity .canvas-panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	flex: 0 0 auto;
+	gap: var(--identity-space-2);
+	padding: var(--identity-space-3) var(--identity-space-3) var(--identity-space-2);
+	border-bottom: var(--hairline) solid var(--border);
+}
+
+.frame-identity .canvas-panel-heading {
+	display: flex;
+	align-items: baseline;
+	gap: var(--identity-space-2);
+	min-width: 0;
+}
+
+.frame-identity .canvas-panel-title {
+	font-size: var(--type-body);
+	font-weight: var(--weight-semibold);
+	line-height: 20px;
+}
+
+.frame-identity .canvas-panel-count {
+	color: var(--ink-muted);
+	font-size: var(--type-caption);
+	line-height: var(--line-caption);
+}
+
+.frame-identity .canvas-list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--identity-space-1);
+	min-height: 0;
+	margin: 0;
+	padding: var(--identity-space-2);
+	overflow-y: auto;
+	list-style: none;
+}
+
+.frame-identity .canvas-item {
+	display: flex;
+	align-items: center;
+	gap: var(--identity-space-1);
+	padding: var(--identity-space-1);
+	border-radius: var(--radius-control);
+}
+
+.frame-identity .canvas-item.active {
+	background: var(--accent-tint);
+	box-shadow: inset 0 0 0 var(--stroke-strong) var(--accent);
+}
+
+.frame-identity .canvas-switch {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	gap: var(--identity-space-2);
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-control);
+	background: transparent;
+	color: var(--ink);
+	text-align: left;
+}
+
+.frame-identity .canvas-switch-editing {
+	cursor: default;
+}
+
+.frame-identity .canvas-preview {
+	flex: 0 0 64px;
+	width: 64px;
+	height: 40px;
+	border: var(--hairline) solid var(--border);
+	border-radius: 6px;
+	object-fit: cover;
+	background: var(--surface-muted);
+}
+
+.frame-identity .canvas-preview-empty {
+	display: block;
+}
+
+.frame-identity .canvas-copy {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-width: 0;
+	gap: var(--identity-space-1);
+}
+
+.frame-identity .canvas-name {
+	overflow: hidden;
+	color: var(--ink);
+	font-size: var(--type-body);
+	font-weight: var(--weight-medium);
+	line-height: 20px;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.frame-identity .canvas-time {
+	color: var(--ink-muted);
+	font-size: var(--type-caption);
+	line-height: var(--line-caption);
+}
+
+.frame-identity .canvas-name-input {
+	width: 100%;
+	height: 24px;
+	margin: 0;
+	padding: 0 var(--identity-space-2);
+	border: var(--hairline) solid var(--accent);
+	border-radius: 6px;
+	background: var(--surface);
+	color: var(--ink);
+	font-size: var(--type-body);
+	outline: none;
+}
+
+.frame-identity .canvas-active {
+	display: grid;
+	place-items: center;
+	flex: 0 0 var(--identity-compact);
+	width: var(--identity-compact);
+	height: var(--identity-compact);
+	color: var(--accent);
+}
+
+.frame-identity .canvas-actions {
+	display: flex;
+	flex: 0 0 auto;
+	gap: var(--identity-space-1);
+	opacity: 0;
+	transition: opacity var(--identity-motion-fast);
+}
+
+.frame-identity .canvas-item:hover .canvas-actions,
+.frame-identity .canvas-item:focus-within .canvas-actions {
+	opacity: 1;
+}
+
+.frame-identity .canvas-actions .danger {
+	color: var(--danger);
+}
+
+.frame-identity .canvas-switch:focus-visible,
+.frame-identity .canvas-name-input:focus-visible,
+.frame-identity .icon-button:focus-visible {
+	outline: var(--stroke-strong) solid var(--accent);
+	outline-offset: var(--hairline);
+}
+
+@media (max-width: 768px) {
+	.frame-identity.canvas-panel {
+		width: min(340px, calc(100vw - var(--frame-inset) * 2));
+	}
+}
+
+@media (hover: none) {
+	.frame-identity .canvas-actions {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.frame-identity .status.live .status-dot {
+		animation: none;
+	}
+
+	.frame-identity .icon-button,
+	.frame-identity .canvas-actions {
+		transition: none;
+	}
+
+	.frame-identity.canvas-panel[data-state] {
+		animation-duration: 1ms;
+	}
+}
