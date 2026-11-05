@@ -1,53 +1,45 @@
 .frame-identity {
-	--identity-space-1: 4px;
-	--identity-space-2: 8px;
-	--identity-space-3: 12px;
-	--identity-space-4: 16px;
-	--identity-space-6: 24px;
-	--identity-control: 40px;
-	--identity-compact: 32px;
-	--identity-radius-tool: 12px;
 	--identity-motion-fast: 160ms;
 	--identity-motion-panel: 240ms;
 }
 
 .frame-identity.topbar {
-	gap: var(--identity-space-2);
+	gap: var(--space-1);
 }
 
 .frame-identity .identity-panel {
 	display: flex;
 	align-items: center;
-	min-height: 56px;
-	padding: var(--identity-space-2);
-	gap: var(--identity-space-3);
+	min-height: calc(var(--control-standard) + var(--space-2));
+	padding: var(--space-1);
+	gap: var(--space-15);
 	pointer-events: auto;
 }
 
 .frame-identity .brand {
 	display: flex;
 	align-items: center;
-	gap: var(--identity-space-1);
-	width: 92px;
+	gap: var(--space-05);
+	width: calc(var(--control-standard) + var(--space-05) + var(--space-6));
 	white-space: nowrap;
 }
 
 .frame-identity .brand-mark {
 	position: relative;
-	flex: 0 0 var(--identity-control);
-	width: var(--identity-control);
-	height: var(--identity-control);
+	flex: 0 0 var(--control-standard);
+	width: var(--control-standard);
+	height: var(--control-standard);
 }
 
 .frame-identity .brand-mark-icon {
-	width: var(--identity-control);
-	height: var(--identity-control);
-	padding: var(--identity-space-2);
+	width: var(--control-standard);
+	height: var(--control-standard);
+	padding: var(--space-1);
 	color: var(--accent);
 }
 
 .frame-identity .brand strong {
-	width: 48px;
+	width: var(--space-6);
 	font-size: 20px;
 	font-weight: var(--weight-bold);
 	line-height: var(--line-heading);
@@ -59,12 +51,12 @@
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
-	width: var(--identity-control);
-	height: var(--identity-control);
+	width: var(--control-standard);
+	height: var(--control-standard);
 	margin: 0;
 	padding: 0;
 	border: 0;
-	border-radius: var(--identity-radius-tool);
+	border-radius: calc(var(--panel-radius) - var(--space-1));
 	background: transparent;
 	color: var(--ink-secondary);
 	font-size: var(--type-body);
@@ -90,14 +82,14 @@
 .frame-identity .icon-button[aria-expanded="true"],
 .frame-identity .icon-button[aria-expanded="true"]:hover {
 	background: var(--accent-tint);
-	color: var(--accent-ink, var(--accent));
+	color: var(--candy-blue-stroke);
 	box-shadow: inset 0 0 0 var(--stroke-strong) var(--accent);
 }
 
 .frame-identity .icon-button[data-compact="true"],
 .frame-identity .canvas-actions .icon-button {
-	width: var(--identity-compact);
-	height: var(--identity-compact);
+	width: var(--control-compact);
+	height: var(--control-compact);
 	border-radius: var(--radius-control);
 }
 
@@ -166,13 +158,20 @@
 
 .frame-identity.canvas-panel {
 	position: fixed;
-	top: calc(var(--frame-inset) + 68px);
+	top: calc(var(--frame-inset) + var(--control-standard) + var(--space-2) + var(--space-15));
 	left: var(--frame-inset);
 	z-index: 40;
 	display: flex;
 	flex-direction: column;
 	width: min(340px, calc(100vw - var(--frame-inset) * 2));
-	max-height: calc(100dvh - var(--frame-inset) * 2 - 68px);
+	max-height: calc(
+		100dvh -
+		var(--frame-inset) *
+		2 -
+		var(--control-standard) -
+		var(--space-2) -
+		var(--space-15)
+	);
 	padding: 0;
 	overflow: hidden;
 	transform-origin: top left;
@@ -219,15 +218,15 @@
 	align-items: center;
 	justify-content: space-between;
 	flex: 0 0 auto;
-	gap: var(--identity-space-2);
-	padding: var(--identity-space-3) var(--identity-space-3) var(--identity-space-2);
+	gap: var(--space-1);
+	padding: var(--space-15) var(--space-15) var(--space-1);
 	border-bottom: var(--hairline) solid var(--border);
 }
 
 .frame-identity .canvas-panel-heading {
 	display: flex;
 	align-items: baseline;
-	gap: var(--identity-space-2);
+	gap: var(--space-1);
 	min-width: 0;
 }
 
@@ -246,10 +245,10 @@
 .frame-identity .canvas-list {
 	display: flex;
 	flex-direction: column;
-	gap: var(--identity-space-1);
+	gap: var(--space-05);
 	min-height: 0;
 	margin: 0;
-	padding: var(--identity-space-2);
+	padding: var(--space-1);
 	overflow-y: auto;
 	list-style: none;
 }
@@ -257,8 +256,8 @@
 .frame-identity .canvas-item {
 	display: flex;
 	align-items: center;
-	gap: var(--identity-space-1);
-	padding: var(--identity-space-1);
+	gap: var(--space-05);
+	padding: var(--space-05);
 	border-radius: var(--radius-control);
 }
 
@@ -271,7 +270,7 @@
 	display: flex;
 	align-items: center;
 	flex: 1;
-	gap: var(--identity-space-2);
+	gap: var(--space-1);
 	min-width: 0;
 	padding: 0;
 	border: 0;
@@ -286,11 +285,11 @@
 }
 
 .frame-identity .canvas-preview {
-	flex: 0 0 64px;
-	width: 64px;
-	height: 40px;
+	flex: 0 0 var(--space-8);
+	width: var(--space-8);
+	height: var(--control-standard);
 	border: var(--hairline) solid var(--border);
-	border-radius: 6px;
+	border-radius: calc(var(--radius-control) - 2px);
 	object-fit: cover;
 	background: var(--surface-muted);
 }
@@ -304,7 +303,7 @@
 	flex: 1;
 	flex-direction: column;
 	min-width: 0;
-	gap: var(--identity-space-1);
+	gap: var(--space-05);
 }
 
 .frame-identity .canvas-name {
@@ -325,11 +324,11 @@
 
 .frame-identity .canvas-name-input {
 	width: 100%;
-	height: 24px;
+	height: var(--space-3);
 	margin: 0;
-	padding: 0 var(--identity-space-2);
+	padding: 0 var(--space-1);
 	border: var(--hairline) solid var(--accent);
-	border-radius: 6px;
+	border-radius: calc(var(--radius-control) - 2px);
 	background: var(--surface);
 	color: var(--ink);
 	font-size: var(--type-body);
@@ -339,16 +338,16 @@
 .frame-identity .canvas-active {
 	display: grid;
 	place-items: center;
-	flex: 0 0 var(--identity-compact);
-	width: var(--identity-compact);
-	height: var(--identity-compact);
+	flex: 0 0 var(--control-compact);
+	width: var(--control-compact);
+	height: var(--control-compact);
 	color: var(--accent);
 }
 
 .frame-identity .canvas-actions {
 	display: flex;
 	flex: 0 0 auto;
-	gap: var(--identity-space-1);
+	gap: var(--space-05);
 	opacity: 0;
 	transition: opacity var(--identity-motion-fast);
 }
