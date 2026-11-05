@@ -7,6 +7,7 @@ import {
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
 	takeLectureBatch,
+	appendCompletedTranscript,
 } from './frame/assistant/protocol.ts'
 
 test('assistant tab keyboard protocol wraps and reaches endpoints', () => {
@@ -17,6 +18,18 @@ test('assistant tab keyboard protocol wraps and reaches endpoints', () => {
 	assert.equal(nextAssistantTab('live', 'ArrowRight'), 'settings')
 	assert.equal(nextAssistantTab('live', 'Home'), 'chat')
 	assert.equal(nextAssistantTab('chat', 'End'), 'settings')
+})
+
+test('final live transcript remains readable across completed segments', () => {
+	assert.equal(
+		appendCompletedTranscript('', 'The source has internal resistance.'),
+		'The source has internal resistance.',
+	)
+	assert.equal(
+		appendCompletedTranscript('The source has internal resistance.', 'The terminal voltage falls.'),
+		'The source has internal resistance. The terminal voltage falls.',
+	)
+	assert.equal(appendCompletedTranscript('Existing transcript', '  '), 'Existing transcript')
 })
 
 test('lecture batches preserve count and character limits', () => {

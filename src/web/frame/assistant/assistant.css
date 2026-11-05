@@ -485,6 +485,8 @@
 }
 
 .ai-assistant .ai-chat-actions {
+	display: flex;
+	gap: 8px;
 	padding: 0 12px 8px;
 }
 

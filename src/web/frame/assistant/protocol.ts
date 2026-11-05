@@ -56,3 +56,9 @@ export function shouldRestoreAssistantTriggerFocus(wasOpen: boolean, open: boole
 export function shouldConsumeInitialPrompt(open: boolean, initialPrompt: string) {
 	return open && initialPrompt.trim().length > 0
 }
+
+export function appendCompletedTranscript(current: string, completed: string): string {
+	const transcript = completed.trim()
+	if (!transcript) return current
+	return current.trim() ? `${current.trim()} ${transcript}` : transcript
+}

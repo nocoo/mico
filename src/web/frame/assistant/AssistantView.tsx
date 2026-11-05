@@ -8,6 +8,7 @@ import {
 	MessageSquare,
 	MousePointer2,
 	Mic,
+	Plus,
 	Settings,
 	Sparkles,
 	Square,
@@ -324,8 +325,16 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 						</div>
 					)}
 
-					{model.sessionEnded && model.messages.length > 0 && (
-						<div className="ai-chat-actions">
+					<div className="ai-chat-actions">
+						<button
+							type="button"
+							className="ai-summary-button"
+							onClick={() => actions.createCanvas('New canvas')}
+						>
+							<Plus size={15} aria-hidden="true" />
+							New canvas
+						</button>
+						{model.sessionEnded && model.messages.length > 0 && (
 							<button
 								type="button"
 								className="ai-summary-button"
@@ -339,8 +348,8 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 							>
 								Create session summary
 							</button>
-						</div>
-					)}
+						)}
+					</div>
 					<div className="ai-composer-shell">
 						{state.selectedIds.length > 0 && (
 							<div className="ai-selection">
@@ -448,17 +457,7 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 							model.enqueueLecture(segment, { subject: 'Live speech', title: 'Microphone' })
 						}
 						onSessionEnd={model.endSession}
-						onCreateCanvas={actions.createCanvas}
-						onSummary={model.requestSummary}
 						summaryRequesting={model.summaryRequesting}
-						canSummarize={
-							model.sessionEnded &&
-							!model.busy &&
-							model.lectureQueued === 0 &&
-							model.messages.length > 0 &&
-							!model.summaryDone &&
-							!model.summaryRequesting
-						}
 					/>
 				</div>
 

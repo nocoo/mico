@@ -1,4 +1,4 @@
-import { FileText, Mic, Plus, Square } from 'lucide-react'
+import { Mic, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { LessonSegment } from './LessonPanel'
 import { TARGET_RATE } from '../../stt/audioSource'
@@ -7,6 +7,7 @@ import { openMicrophone } from '../../stt/microphone'
 import { dedupeHypothesis, formatClock } from '../../stt/transcript'
 import { SilenceSegmenter } from '../../stt/vad'
 import { drawWave } from '../../waveform'
+import { appendCompletedTranscript } from './protocol'
 
 interface MicrophonePanelProps {
 	active: boolean
@@ -16,9 +17,6 @@ interface MicrophonePanelProps {
 	onStart: () => void
 	onSegment: (segment: LessonSegment) => void
 	onSessionEnd: () => void
-	onCreateCanvas: (name: string) => void
-	onSummary: () => void
-	canSummarize: boolean
 	summaryRequesting: boolean
 }
 
@@ -91,9 +89,6 @@ export function MicrophonePanel({
 	onStart,
 	onSegment,
 	onSessionEnd,
-	onCreateCanvas,
-	onSummary,
-	canSummarize,
 	summaryRequesting,
 }: MicrophonePanelProps) {
 	const runtime = useRef(recording())
@@ -299,6 +294,10 @@ export function MicrophonePanel({
 				rt.intermediate = ''
 				refresh()
 				if (text.trim()) {
+					setLive((current) => ({
+						confirmed: appendCompletedTranscript(current.confirmed, text),
+						hypothesis: '',
+					}))
 					const segment = {
 						id: ++rt.segments,
 						text,
@@ -413,26 +412,6 @@ export function MicrophonePanel({
 						</p>
 					</div>
 				</div>
-			</div>
-			<div className="call-actions">
-				<button
-					type="button"
-					className="lesson-button"
-					disabled={running || phase === 'stopping'}
-					onClick={() => onCreateCanvas('Live speech')}
-				>
-					<Plus size={15} aria-hidden="true" />
-					New canvas
-				</button>
-				<button
-					type="button"
-					className="lesson-summary"
-					disabled={!canSummarize}
-					onClick={onSummary}
-				>
-					<FileText size={15} aria-hidden="true" />
-					Create session summary
-				</button>
 			</div>
 		</div>
 	)

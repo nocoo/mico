@@ -68,13 +68,13 @@ interface Runtime {
 
 const PHASE_LABEL: Record<Phase, string> = {
 	idle: 'Ready',
-	loading: 'Loading audio…',
+	loading: 'Loading recording…',
 	connecting: 'Connecting…',
 	ready: 'Session ready',
 	streaming: 'Live transcription',
 	paused: 'Paused',
 	stopping: 'Finishing transcript…',
-	done: 'Lecture complete',
+	done: 'Recording complete',
 	closed: 'Disconnected',
 	error: 'Error',
 }
@@ -579,7 +579,7 @@ export function LessonPanel({
 		if (rt.timer !== null) window.clearTimeout(rt.timer)
 		rt.timer = null
 		resetSession()
-		onCreateCanvas(selected?.title ?? 'Lecture')
+		onCreateCanvas(selected?.title ?? 'Recording')
 	}
 
 	const playing = runtime.current.player?.playing === true
@@ -607,7 +607,9 @@ export function LessonPanel({
 					disabled={clips.length === 0}
 				/>
 				<div className="lesson-meta">
-					<span>{selected ? `${selected.subject} · ${selected.voice}` : 'Loading lectures…'}</span>
+					<span>
+						{selected ? `${selected.subject} · ${selected.voice}` : 'Loading recordings…'}
+					</span>
 					<span>{formatClock(duration)}</span>
 				</div>
 			</div>
@@ -650,7 +652,7 @@ export function LessonPanel({
 					) : (
 						<Play size={16} strokeWidth={2} aria-hidden="true" />
 					)}
-					{playing ? 'Pause' : phase === 'streaming' ? 'Resume' : 'Play lecture'}
+					{playing ? 'Pause' : phase === 'streaming' ? 'Resume' : 'Play recording'}
 				</button>
 				<button type="button" className="lesson-button" onClick={() => void resetAndStart()}>
 					<RotateCcw size={15} strokeWidth={2} aria-hidden="true" />
@@ -759,7 +761,7 @@ export function LessonPanel({
 					{segments.length === 0 && (
 						<li className="lesson-seg-empty">
 							<LoaderCircle size={14} strokeWidth={2} aria-hidden="true" />
-							Play a lecture to transcribe it sentence by sentence.
+							Play a recording to transcribe it sentence by sentence.
 						</li>
 					)}
 				</ol>
