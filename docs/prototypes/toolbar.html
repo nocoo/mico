@@ -128,24 +128,28 @@
     }
     .tool-options { display: flex; align-items: center; flex: 0 0 auto; width: max-content; gap: 4px; }
     .tool-options[hidden] { display: none; }
-    .select-wrap { position: relative; display: block; flex: 0 0 88px; width: 88px; height: 32px; }
-    .select-wrap select {
-      display: block;
-      appearance: none;
-      width: 100%;
+    .select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      flex: 0 0 88px;
+      width: 88px;
       height: 32px;
-      padding: 0 28px 0 8px;
+      padding: 0 8px;
       border: 1px solid var(--border-strong);
       border-radius: 8px;
       background: var(--surface);
       color: var(--ink);
       font-size: 12px;
-      cursor: pointer;
     }
-    .select-wrap svg {
-      position: absolute;
-      right: 8px;
-      top: 8px;
+    .select-trigger:focus-visible, .select-trigger[aria-expanded="true"] {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+    .select-trigger svg {
+      flex: 0 0 16px;
       width: 16px;
       height: 16px;
       fill: none;
@@ -155,6 +159,34 @@
       stroke-linejoin: round;
       pointer-events: none;
     }
+    .select-menu {
+      position: fixed;
+      z-index: 30;
+      min-width: 200px;
+      max-width: calc(100vw - 16px);
+      max-height: min(65vh, 480px);
+      overflow-y: auto;
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 8px 32px rgba(43, 48, 56, .12);
+    }
+    .select-menu[hidden] { display: none; }
+    .select-menu button {
+      display: block;
+      width: 100%;
+      min-height: 32px;
+      padding: 4px 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.25;
+      text-align: left;
+    }
+    .select-menu button:hover, .select-menu button:focus-visible { outline: none; background: var(--surface-hover); }
+    .select-menu button[aria-selected="true"] { background: var(--blue-tint); color: var(--blue-ink); }
     .segmented-control { display: flex; align-items: center; --choice-color: var(--pink); --choice-tint: var(--pink-tint); --choice-ink: var(--pink-ink); }
     .segmented-control button {
       height: 32px;
@@ -248,9 +280,9 @@
       <div class="options-wrap">
       <span class="divider option-divider"></span>
       <div class="tool-options text-options" data-options="text" role="group" aria-label="Text options" hidden>
-        <label class="select-wrap"><select aria-label="Font family"><option>Hand</option><option>Serif</option><option selected>Sans</option><option>Mono</option></select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></label>
-        <label class="select-wrap"><select aria-label="Font size"><option>16</option><option>24</option><option selected>32</option><option>48</option></select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></label>
-        <label class="select-wrap"><select aria-label="Font weight"><option>300</option><option>400</option><option selected>500</option><option>700</option></select><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></label>
+        <button class="select-trigger" type="button" data-font-select="family" data-value="sans" aria-label="Font family" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>Sans</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="select-trigger" type="button" data-font-select="size" data-value="32" aria-label="Font size" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>32</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="select-trigger" type="button" data-font-select="weight" data-value="500" aria-label="Font weight" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>500</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
       </div>
       <div class="tool-options" data-options="path" role="group" aria-label="Brush options" hidden>
         <div class="segmented-control" role="group" aria-label="Brush style">
@@ -278,6 +310,7 @@
       </div>
     </div>
   </div>
+  <div id="font-menu" class="select-menu" role="listbox" hidden></div>
   <script>
     const toolbar = document.querySelector('.toolbar');
     const tools = [...toolbar.querySelectorAll('[data-tool]')];
@@ -285,7 +318,46 @@
     const optionsWrap = toolbar.querySelector('.options-wrap');
     const optionDivider = toolbar.querySelector('.option-divider');
     const zoomValue = toolbar.querySelector('.zoom-value');
+    const fontMenu = document.querySelector('#font-menu');
+    const fontSelects = Object.fromEntries([...toolbar.querySelectorAll('[data-font-select]')].map((button) => [button.dataset.fontSelect, button]));
+    const fontFamilies = { hand: '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive', serif: 'Georgia, "Times New Roman", serif', sans: 'Inter, ui-sans-serif, system-ui, sans-serif', mono: 'ui-monospace, SFMono-Regular, monospace' };
+    const fontChoices = { family: ['hand', 'serif', 'sans', 'mono'], size: ['16', '24', '32', '48'], weight: ['300', '400', '500', '700'] };
+    let openFontSelect = null;
     let zoom = 1;
+
+    function closeFontMenu(restoreFocus = false) {
+      if (!openFontSelect) return;
+      const trigger = openFontSelect;
+      trigger.setAttribute('aria-expanded', 'false');
+      fontMenu.hidden = true;
+      openFontSelect = null;
+      if (restoreFocus) trigger.focus();
+    }
+
+    function openFontMenu(trigger) {
+      if (openFontSelect === trigger) { closeFontMenu(); return; }
+      closeFontMenu();
+      openFontSelect = trigger;
+      trigger.setAttribute('aria-expanded', 'true');
+      fontMenu.setAttribute('aria-label', trigger.getAttribute('aria-label'));
+      fontMenu.replaceChildren(...fontChoices[trigger.dataset.fontSelect].map((value) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', String(value === trigger.dataset.value));
+        option.dataset.value = value;
+        option.textContent = trigger.dataset.fontSelect === 'family' ? value[0].toUpperCase() + value.slice(1) : value;
+        option.style.fontFamily = fontFamilies[trigger.dataset.fontSelect === 'family' ? value : fontSelects.family.dataset.value];
+        option.style.fontSize = `${trigger.dataset.fontSelect === 'size' ? value : fontSelects.size.dataset.value}px`;
+        option.style.fontWeight = trigger.dataset.fontSelect === 'weight' ? value : fontSelects.weight.dataset.value;
+        return option;
+      }));
+      fontMenu.hidden = false;
+      const rect = trigger.getBoundingClientRect();
+      fontMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - fontMenu.offsetWidth - 8))}px`;
+      fontMenu.style.top = `${Math.max(8, rect.top - fontMenu.offsetHeight - 6)}px`;
+      fontMenu.querySelector('[aria-selected="true"]').focus();
+    }
 
     function updateOptionsWidth() {
       const activeOptions = options.find((group) => !group.hidden);
@@ -309,6 +381,8 @@
     toolbar.addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
+      if (button.dataset.fontSelect) { openFontMenu(button); return; }
+      closeFontMenu();
       if (button.dataset.tool) selectTool(button.dataset.tool);
       const group = button.closest('.segmented-control');
       if (group) group.querySelectorAll('button').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
@@ -317,8 +391,40 @@
       if (button === zoomValue || button.getAttribute('aria-label') === 'Fit board') setZoom(1);
     });
 
+    fontMenu.addEventListener('click', (event) => {
+      const option = event.target.closest('[role="option"]');
+      if (!option || !openFontSelect) return;
+      openFontSelect.dataset.value = option.dataset.value;
+      openFontSelect.querySelector('span').textContent = option.textContent;
+      closeFontMenu(true);
+    });
+
+    fontMenu.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+      if (event.key === 'Escape') { event.preventDefault(); closeFontMenu(true); return; }
+      if (event.key === 'Tab') { closeFontMenu(); return; }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const items = [...fontMenu.querySelectorAll('[role="option"]')];
+      const index = items.indexOf(document.activeElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items[next].focus();
+    });
+
+    toolbar.addEventListener('keydown', (event) => {
+      const trigger = event.target.closest('[data-font-select]');
+      if (trigger && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        event.preventDefault();
+        openFontMenu(trigger);
+      }
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!fontMenu.contains(event.target) && !event.target.closest('[data-font-select]')) closeFontMenu();
+    });
+
     document.addEventListener('keydown', (event) => {
-      if (event.target.closest('select') || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (!fontMenu.hidden || event.target.closest('[data-font-select]') || event.metaKey || event.ctrlKey || event.altKey) return;
       const shortcuts = { v: 'select', h: 'hand', r: 'rectangle', o: 'ellipse', t: 'text', l: 'line', p: 'path', n: 'note', w: 'html', c: 'connector' };
       const tool = shortcuts[event.key.toLowerCase()];
       if (tool) selectTool(tool);
