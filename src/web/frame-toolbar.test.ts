@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { ToolbarActions, ToolbarState } from './frame/contracts.ts'
+import type { DockLayout, ToolbarActions, ToolbarState } from './frame/contracts.ts'
 import { dockLeft } from './frame/layout.ts'
 import {
 	deriveToolbarViewModel,
 	executeToolbarCommand,
+	isToolbarArrowNavigationAllowed,
 	toolbarCommandForKey,
 	TOOL_SHORTCUTS,
 } from './frame/toolbar/viewmodel.ts'
@@ -26,6 +27,8 @@ const actions = (): ToolbarActions & { calls: string[] } => {
 	const calls: string[] = []
 	return {
 		calls,
+		reportLayout: (layout: DockLayout | null) =>
+			calls.push(layout ? `layout:${layout.left}:${layout.height}` : 'layout:null'),
 		selectTool: (tool) => calls.push(`tool:${tool}`),
 		zoom: (factor) => calls.push(`zoom:${factor}`),
 		resetView: () => calls.push('reset'),
@@ -82,6 +85,14 @@ test('tool shortcuts cover every toolbar tool and keyboard protocol', () => {
 	)
 })
 
+test('arrow navigation is restricted to drawing and view controls', () => {
+	assert.equal(isToolbarArrowNavigationAllowed('drawing'), true)
+	assert.equal(isToolbarArrowNavigationAllowed('view'), true)
+	assert.equal(isToolbarArrowNavigationAllowed('options'), false)
+	assert.equal(isToolbarArrowNavigationAllowed('selection'), false)
+	assert.equal(isToolbarArrowNavigationAllowed('outside'), false)
+})
+
 test('toolbar commands preserve action guards and zoom factors', () => {
 	const calls = actions()
 	executeToolbarCommand({ type: 'select-tool', tool: 'text' }, state, calls)
@@ -110,4 +121,9 @@ test('measured dock placement uses the shared frame layout contract', () => {
 	assert.equal(dockLeft(1000, 520), 240)
 	assert.equal(dockLeft(375, 320), 28)
 	assert.equal(dockLeft(384, 300), 44)
+
+	const calls = actions()
+	calls.reportLayout({ left: dockLeft(1000, 520), height: 56 })
+	calls.reportLayout(null)
+	assert.deepEqual(calls.calls, ['layout:240:56', 'layout:null'])
 })

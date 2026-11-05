@@ -33,6 +33,7 @@ import {
 import {
 	deriveToolbarViewModel,
 	executeToolbarCommand,
+	isToolbarArrowNavigationAllowed,
 	TOOL_SHORTCUTS,
 	toolbarCommandForKey,
 } from './viewmodel'
@@ -59,15 +60,20 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
 	const toolOptionsWrapRef = useRef<HTMLDivElement>(null)
 	const viewModel = deriveToolbarViewModel(state)
+	const { reportLayout } = actions
 
 	useLayoutEffect(() => {
 		const dock = dockRef.current
-		const root = dock?.closest<HTMLElement>('.app')
-		if (!dock || !root) return
+		if (!dock) {
+			reportLayout(null)
+			return
+		}
 		const measure = () => {
 			const rect = dock.getBoundingClientRect()
-			root.style.setProperty('--measured-dock-height', `${rect.height}px`)
-			root.style.setProperty('--dock-left', `${dockLeft(window.innerWidth, rect.width)}px`)
+			reportLayout({
+				left: dockLeft(window.innerWidth, rect.width),
+				height: rect.height,
+			})
 		}
 		measure()
 		const observer = new ResizeObserver(measure)
@@ -76,10 +82,9 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		return () => {
 			observer.disconnect()
 			window.removeEventListener('resize', measure)
-			root.style.removeProperty('--measured-dock-height')
-			root.style.removeProperty('--dock-left')
+			reportLayout(null)
 		}
-	}, [])
+	}, [reportLayout])
 
 	useLayoutEffect(() => {
 		const wrap = toolOptionsWrapRef.current
@@ -131,8 +136,18 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	}, [state, actions])
 
 	const onToolbarKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-		if ((event.target as Element).closest('.selection-panel')) return
 		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+		const target = event.target as Element
+		const region = target.closest('.selection-panel')
+			? 'selection'
+			: target.closest('.drawing-tools')
+				? 'drawing'
+				: target.closest('.view-controls')
+					? 'view'
+					: target.closest('.tool-options-wrap')
+						? 'options'
+						: 'outside'
+		if (!isToolbarArrowNavigationAllowed(region)) return
 		event.preventDefault()
 		const buttons = [
 			...event.currentTarget.querySelectorAll<HTMLButtonElement>(

@@ -42,7 +42,13 @@ export interface ToolbarState {
 	textWeight: number
 }
 
+export interface DockLayout {
+	left: number
+	height: number
+}
+
 export interface ToolbarActions {
+	reportLayout: (layout: DockLayout | null) => void
 	selectTool: (tool: Tool) => void
 	zoom: (factor: number) => void
 	resetView: () => void

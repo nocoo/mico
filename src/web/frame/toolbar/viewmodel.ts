@@ -2,6 +2,7 @@ import type { ToolbarActions, ToolbarState } from '../contracts'
 import type { Tool } from '../../design'
 
 export type ToolbarOptionsKind = 'brush' | 'note' | 'text' | null
+export type ToolbarNavigationRegion = 'drawing' | 'view' | 'options' | 'selection' | 'outside'
 
 export interface ToolbarViewModel {
 	activeTool: Tool
@@ -41,6 +42,10 @@ export function deriveToolbarViewModel(state: ToolbarState): ToolbarViewModel {
 	}
 }
 
+export function isToolbarArrowNavigationAllowed(region: ToolbarNavigationRegion): boolean {
+	return region === 'drawing' || region === 'view'
+}
+
 export type ToolbarCommand =
 	| { type: 'select-tool'; tool: Tool }
 	| { type: 'delete-selection' }
@@ -77,7 +82,7 @@ export function toolbarCommandForKey(
 		w: 'html',
 		c: 'connector',
 	}
-	const tool = tools[key.toLowerCase()] 
+	const tool = tools[key.toLowerCase()]
 	return tool ? { type: 'select-tool', tool } : null
 }
 
