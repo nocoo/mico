@@ -41,6 +41,61 @@ export function createMagpieModel(settings = magpieSettings()): LanguageModel {
 	return provider.chatModel(settings.model)
 }
 
+export async function fetchAiModels(settings: MagpieSettings, timeoutMs = 5000): Promise<string[]> {
+	const unavailable = () =>
+		new OperationError(502, 'AI_MODELS_UNAVAILABLE', 'Could not fetch AI models')
+
+	let modelsURL: string
+	try {
+		const url = new URL(settings.baseURL)
+		url.pathname = `${url.pathname.replace(/\/+$/, '')}/models`
+		url.search = ''
+		url.hash = ''
+		modelsURL = url.toString()
+	} catch {
+		throw unavailable()
+	}
+
+	let response: Response
+	try {
+		response = await fetch(modelsURL, {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json',
+				...(settings.apiKey ? { Authorization: `Bearer ${settings.apiKey}` } : {}),
+			},
+			redirect: 'manual',
+			signal: AbortSignal.timeout(timeoutMs),
+		})
+	} catch {
+		throw unavailable()
+	}
+
+	if (!response.ok) throw unavailable()
+
+	let payload: unknown
+	try {
+		payload = await response.json()
+	} catch {
+		throw unavailable()
+	}
+
+	if (typeof payload !== 'object' || payload === null || !('data' in payload)) {
+		throw unavailable()
+	}
+	const data = (payload as { data?: unknown }).data
+	if (!Array.isArray(data)) throw unavailable()
+
+	const models: string[] = []
+	for (const item of data) {
+		if (typeof item !== 'object' || item === null || !('id' in item)) throw unavailable()
+		const id = (item as { id?: unknown }).id
+		if (typeof id !== 'string' || id.trim().length === 0) throw unavailable()
+		models.push(id)
+	}
+	return models
+}
+
 const COMPLETE_TOOL_STATES = new Set(['output-available', 'output-error', 'output-denied'])
 
 export function sanitizeInterruptedMessages(messages: UIMessage[]): UIMessage[] {

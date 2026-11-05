@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
-import { request } from 'node:http'
+import { createServer, request } from 'node:http'
 import { connect } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -11,6 +11,7 @@ import WebSocket from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { DEV_ORIGIN } from '../shared/config.ts'
 import type { Board, ServerEvent } from '../shared/types.ts'
+import { fetchAiModels } from './ai.ts'
 import { createDaemon, type Daemon } from './index.ts'
 
 const WAIT_MS = 5000
@@ -225,6 +226,201 @@ test('AI settings expose only public fields and preserve the existing key contra
 		})
 		assert.equal(blockedHost, 403)
 	})
+})
+
+test('AI models use the saved effective gateway, preserve prefixes, and hide credentials', async () => {
+	const observed: Array<{ path: string | undefined; authorization: string | undefined }> = []
+	const mock = createServer((req, res) => {
+		observed.push({ path: req.url, authorization: req.headers.authorization })
+		if (req.url === '/redirect/models') {
+			res.writeHead(302, { Location: '/leak/models' })
+			res.end()
+			return
+		}
+		if (req.url === '/slow/models') {
+			setTimeout(() => {
+				res.writeHead(200, { 'Content-Type': 'application/json' })
+				res.end(JSON.stringify({ data: [{ id: 'too-late' }] }))
+			}, 100)
+			return
+		}
+		if (req.url === '/error/models') {
+			res.writeHead(503, { 'Content-Type': 'application/json' })
+			res.end(JSON.stringify({ error: 'upstream-secret-and-details' }))
+			return
+		}
+		if (req.url === '/bad/models') {
+			res.writeHead(200, { 'Content-Type': 'application/json' })
+			res.end(JSON.stringify({ data: 'not-an-array' }))
+			return
+		}
+		if (req.url === '/empty/models') {
+			res.writeHead(200, { 'Content-Type': 'application/json' })
+			res.end(JSON.stringify({ data: [] }))
+			return
+		}
+		if (req.url === '/leak/models') {
+			res.writeHead(200, { 'Content-Type': 'application/json' })
+			res.end(JSON.stringify({ data: [{ id: 'credential-leaked' }] }))
+			return
+		}
+		res.writeHead(200, { 'Content-Type': 'application/json' })
+		res.end(JSON.stringify({ data: [{ id: 'model-one' }, { id: 'model-two' }] }))
+	})
+
+	mock.listen(0, '127.0.0.1')
+	await once(mock, 'listening', { signal: AbortSignal.timeout(WAIT_MS) })
+	const mockAddress = mock.address()
+	assert.ok(mockAddress && typeof mockAddress !== 'string')
+	const mockBaseURL = `http://127.0.0.1:${mockAddress.port}`
+
+	try {
+		await withLiveDaemon(async ({ url, port }) => {
+			const headers = { origin: DEV_ORIGIN }
+
+			const firstPut = await fetch(`${url}/api/ai/settings`, {
+				method: 'PUT',
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					baseURL: `${mockBaseURL}/v1/`,
+					model: 'model-one',
+					apiKey: 'server-secret-one',
+				}),
+			})
+			assert.equal(firstPut.status, 200)
+
+			const firstGet = await fetch(`${url}/api/ai/models`, { headers })
+			assert.equal(firstGet.status, 200)
+			assert.deepEqual(await firstGet.json(), { models: ['model-one', 'model-two'] })
+			assert.deepEqual(observed.at(-1), {
+				path: '/v1/models',
+				authorization: 'Bearer server-secret-one',
+			})
+
+			const secondPut = await fetch(`${url}/api/ai/settings`, {
+				method: 'PUT',
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					baseURL: `${mockBaseURL}/v2`,
+					model: 'model-two',
+					apiKey: 'server-secret-two',
+				}),
+			})
+			assert.equal(secondPut.status, 200)
+			const secondGet = await fetch(`${url}/api/ai/models`, { headers })
+			assert.equal(secondGet.status, 200)
+			assert.deepEqual(observed.at(-1), {
+				path: '/v2/models',
+				authorization: 'Bearer server-secret-two',
+			})
+
+			await fetch(`${url}/api/ai/settings`, {
+				method: 'PUT',
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					baseURL: `${mockBaseURL}/v2`,
+					model: 'model-two',
+					apiKey: '',
+				}),
+			})
+			await fetch(`${url}/api/ai/models`, { headers })
+			assert.equal(observed.at(-1)?.authorization, undefined)
+
+			const emptyPut = await fetch(`${url}/api/ai/settings`, {
+				method: 'PUT',
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					baseURL: `${mockBaseURL}/empty`,
+					model: 'empty',
+					apiKey: '',
+				}),
+			})
+			assert.equal(emptyPut.status, 200)
+			const emptyGet = await fetch(`${url}/api/ai/models`, { headers })
+			assert.equal(emptyGet.status, 200)
+			assert.deepEqual(await emptyGet.json(), { models: [] })
+
+			for (const suffix of ['bad', 'error']) {
+				await fetch(`${url}/api/ai/settings`, {
+					method: 'PUT',
+					headers: { ...headers, 'Content-Type': 'application/json' },
+					body: JSON.stringify({
+						baseURL: `${mockBaseURL}/${suffix}`,
+						model: 'error',
+						apiKey: 'browser-must-not-see',
+					}),
+				})
+				const failed = await fetch(`${url}/api/ai/models`, { headers })
+				assert.equal(failed.status, 502)
+				const failedBody = await failed.json()
+				assert.deepEqual(failedBody, {
+					error: 'AI_MODELS_UNAVAILABLE',
+					message: 'Could not fetch AI models',
+				})
+				assert.equal(JSON.stringify(failedBody).includes('browser-must-not-see'), false)
+				assert.equal(JSON.stringify(failedBody).includes('upstream-secret'), false)
+			}
+
+			await fetch(`${url}/api/ai/settings`, {
+				method: 'PUT',
+				headers: { ...headers, 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					baseURL: `${mockBaseURL}/redirect`,
+					model: 'redirect',
+					apiKey: 'redirect-secret',
+				}),
+			})
+			const redirect = await fetch(`${url}/api/ai/models`, { headers })
+			assert.equal(redirect.status, 502)
+			assert.equal(
+				observed.some((entry) => entry.path === '/leak/models'),
+				false,
+			)
+
+			const preflight = await fetch(`${url}/api/ai/models`, { method: 'OPTIONS', headers })
+			assert.equal(preflight.status, 204)
+			assert.equal(preflight.headers.get('access-control-allow-origin'), DEV_ORIGIN)
+			const wrongMethod = await fetch(`${url}/api/ai/models`, { method: 'POST', headers })
+			assert.equal(wrongMethod.status, 405)
+			assert.equal(wrongMethod.headers.get('allow'), 'GET, OPTIONS')
+			const wrongOrigin = await fetch(`${url}/api/ai/models`, {
+				headers: { origin: 'http://malicious.example' },
+			})
+			assert.equal(wrongOrigin.status, 403)
+
+			const blockedHost = await new Promise<number>((resolve, reject) => {
+				const req = request(
+					{
+						host: '127.0.0.1',
+						port,
+						path: '/api/ai/models',
+						headers: { host: 'evil.example', origin: DEV_ORIGIN },
+					},
+					(res) => {
+						res.resume()
+						res.on('end', () => resolve(res.statusCode ?? 0))
+					},
+				)
+				req.on('error', reject)
+				req.end()
+			})
+			assert.equal(blockedHost, 403)
+		})
+
+		await assert.rejects(
+			fetchAiModels(
+				{ baseURL: `${mockBaseURL}/slow`, apiKey: 'timeout-secret', model: 'slow' },
+				20,
+			),
+			(error: unknown) =>
+				typeof error === 'object' &&
+				error !== null &&
+				'code' in error &&
+				(error as { code: string }).code === 'AI_MODELS_UNAVAILABLE',
+		)
+	} finally {
+		await new Promise<void>((resolve) => mock.close(() => resolve()))
+	}
 })
 
 test('invalid browser origins and malformed WebSocket frames are isolated', async () => {

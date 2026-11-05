@@ -5,7 +5,13 @@ import type { LanguageModel } from 'ai'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
-import { createMagpieModel, type MagpieSettings, parseAiChatRequest, streamAiChat } from './ai.ts'
+import {
+	createMagpieModel,
+	fetchAiModels,
+	type MagpieSettings,
+	parseAiChatRequest,
+	streamAiChat,
+} from './ai.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
 import { BoardStore, OperationError } from './store.ts'
@@ -90,12 +96,10 @@ function knownPath(pathname: string): boolean {
 		)
 	}
 	if (segments.length === 3) {
-		return segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])
-	}
-	if (segments.length === 3) {
 		return (
 			segments[1] === 'canvases' ||
-			(segments[1] === 'ai' && ['chat', 'settings'].includes(segments[2]))
+			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
+			(segments[1] === 'ai' && ['chat', 'models', 'settings'].includes(segments[2]))
 		)
 	}
 	return false
@@ -332,6 +336,17 @@ export function createDaemon(
 				}
 				const settings = await aiSettings.update(await readJson(req))
 				sendJson(res, 200, settings, origin)
+				return
+			}
+
+			if (isPath('api', 'ai', 'models')) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const models = await fetchAiModels(aiSettings.getEffective())
+				sendJson(res, 200, { models }, origin)
 				return
 			}
 
