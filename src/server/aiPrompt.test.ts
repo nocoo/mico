@@ -22,6 +22,19 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_LECTURE_PROMPT, /rightmost HTML summary/)
 })
 
+test('image generation is optional, asynchronous and respects board layout', () => {
+	assert.match(AI_SYSTEM_PROMPT, /Generate an image only when/)
+	assert.match(AI_SYSTEM_PROMPT, /GPT Image 2\.5 Flare/)
+	assert.match(AI_SYSTEM_PROMPT, /never cover existing objects/i)
+	assert.match(AI_SYSTEM_PROMPT, /restrained, subtle, low-contrast/)
+	assert.match(AI_SYSTEM_PROMPT, /at most five images/)
+	assert.match(
+		AI_SYSTEM_PROMPT,
+		/do not start a second image until the previous generation has finished/,
+	)
+	assert.match(AI_SYSTEM_PROMPT, /never claim an image exists before completion/)
+})
+
 test('live and post-session summaries share the same instructions', () => {
 	assert.ok(AI_LECTURE_PROMPT.includes(SUMMARY_CARD_INSTRUCTIONS))
 	assert.ok(POST_SESSION_SUMMARY_PROMPT.includes(SUMMARY_CARD_INSTRUCTIONS))

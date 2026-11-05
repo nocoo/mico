@@ -7,6 +7,7 @@
 
 ## Tool usage
 
+- A delegated worker used recursive `find` despite the local tool rules. Use `fd` for filename discovery and keep delegated searches scoped to the repository.
 - A delegated UI worker started the Vite browser fixture in the background. Use the managed Playwright webServer or a visible herdr pane, and verify fixture ports are released afterward.
 - Parallel client and browser-test work disagreed on a translated error message. Freeze the user-visible error contract before writing cross-agent assertions, then run the integration test against the final implementation.
 - Used `sed` unnecessarily during inspection. Read files with the designated read tool and use `rg` for searches instead.
@@ -52,6 +53,8 @@
 
 ## Automated test architecture
 
+- A subprocess test waited for `close` after manually disconnecting IPC; the process had exited but pipe teardown did not complete. Assert `exit` when verifying process termination and close test-owned sockets separately.
+- Image-generation tests did not return or await their async fixture, so the runner could report success before asynchronous assertions completed. Always await the fixture and put cleanup in `finally`.
 - A synthetic Audio test placed the next speech exactly at the silence threshold, so a single 200ms chunk could include both sides and yield one commit instead of two. Leave more than one maximum chunk of silence when a test requires two distinct commits.
 - Browser fixture ports are shared across worktrees. Check their owner before starting a suite and wait for another checkout's fixture to finish; never reuse or stop it, and recheck availability immediately before starting.
 - Radix Select hides the rest of the accessibility tree while its modal listbox is open. Assert canvas tool state through its stable DOM attribute before closing the menu, then assert the properties region after choosing an option.

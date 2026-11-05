@@ -103,7 +103,11 @@ export function MossPanel({ active, canvasId, selectedIds }: MossPanelProps) {
 							? `Tool failed: ${name}`
 							: pendingTools.current
 								? 'Drawing…'
-								: 'Canvas updated',
+								: event.name === 'generate_image'
+									? 'Image generation started'
+									: event.name === 'image_generation_status'
+										? 'Image generation checked'
+										: 'Canvas updated',
 					)
 				}
 			} else if (event.type === 'audio') {
