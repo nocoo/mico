@@ -71,10 +71,12 @@ test('tool shortcuts cover every toolbar tool and keyboard protocol', () => {
 			['path', 'P'],
 			['note', 'N'],
 			['html', 'W'],
+			['image', 'I'],
 			['connector', 'C'],
 		],
 	)
 	assert.deepEqual(toolbarCommandForKey('p'), { type: 'select-tool', tool: 'path' })
+	assert.deepEqual(toolbarCommandForKey('i'), { type: 'select-tool', tool: 'image' })
 	assert.deepEqual(toolbarCommandForKey('Delete'), { type: 'delete-selection' })
 	assert.deepEqual(toolbarCommandForKey('+'), { type: 'zoom-in' })
 	assert.deepEqual(toolbarCommandForKey('-'), { type: 'zoom-out' })

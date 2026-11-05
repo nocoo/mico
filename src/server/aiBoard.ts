@@ -33,6 +33,9 @@ export interface ShapeDigest {
 	end?: { x: number; y: number }
 	html?: string
 	htmlLength?: number
+	imageId?: string
+	backgroundImageId?: string
+	backgroundFit?: 'cover' | 'contain' | 'stretch'
 }
 
 const MAX_TEXT = 180
@@ -94,6 +97,11 @@ export function digestShape(shape: Shape, includeHtml = false, detailed = false)
 		if (value !== undefined) digest[key] = clip(value, detailed ? 6000 : MAX_TEXT)
 	}
 	if (shape.frameId !== undefined) digest.frameId = shape.frameId
+	if (shape.type === 'image' && shape.imageId) digest.imageId = shape.imageId
+	if (shape.type === 'frame') {
+		if (shape.backgroundImageId) digest.backgroundImageId = shape.backgroundImageId
+		if (shape.backgroundFit) digest.backgroundFit = shape.backgroundFit
+	}
 	if (shape.type === 'text') {
 		if (shape.font !== undefined) digest.font = shape.font
 		if (shape.fontSize !== undefined) digest.fontSize = shape.fontSize

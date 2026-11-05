@@ -22,6 +22,7 @@ const CANVAS_SHAPE_TYPES = new Set<string>([
 	'path',
 	'note',
 	'html',
+	'image',
 ])
 
 function isFiniteNumber(value: unknown): value is number {

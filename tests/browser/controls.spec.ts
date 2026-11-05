@@ -57,6 +57,127 @@ test.beforeEach(async ({ page, request, baseURL }) => {
 	await resetView(page)
 })
 
+test('image tool uploads a raster and frame background uses image shape identity', async ({
+	page,
+	request,
+}) => {
+	const chooserPromise = page.waitForEvent('filechooser')
+	await page.getByRole('button', { name: 'Image', exact: true }).click()
+	const chooser = await chooserPromise
+	await chooser.setFiles({
+		name: 'pixel.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+			'base64',
+		),
+	})
+
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.type === 'image'))
+		.toBeTruthy()
+	const image = (await board(request)).shapes.find((shape) => shape.type === 'image')
+	if (!image || image.type !== 'image' || !image.imageId)
+		throw new Error('Missing uploaded image shape')
+	await expect(page.locator(`[data-shape-id="${image.id}"] .canvas-image`)).toHaveCount(1)
+
+	const current = await board(request)
+	const frameResponse = await request.post('/api/operations', {
+		data: {
+			expectedRevision: current.revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'second-image',
+						type: 'image',
+						imageId: image.imageId,
+						x: 1400,
+						y: 320,
+						w: 200,
+						h: 200,
+						color: CANDY_COLORS.blue,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'image-frame',
+						type: 'frame',
+						x: 420,
+						y: 320,
+						w: 360,
+						h: 280,
+						color: CANDY_COLORS.blue,
+						title: 'Image frame',
+						backgroundImageId: image.id,
+						backgroundFit: 'cover',
+					},
+				},
+			],
+		},
+	})
+	expect(frameResponse.ok()).toBe(true)
+
+	await expect(page.locator('.frame-background-image')).toHaveCount(1)
+	await resetView(page)
+	const framePill = await pillBox(page, 'image-frame')
+	await page.mouse.click(framePill.x + framePill.width / 2, framePill.y + framePill.height / 2)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toContainText(
+		'Image frame',
+	)
+	let releaseFit!: () => void
+	let markFitSent!: () => void
+	const fitGate = new Promise<void>((resolve) => {
+		releaseFit = resolve
+	})
+	const fitSent = new Promise<void>((resolve) => {
+		markFitSent = resolve
+	})
+	await page.route('**/api/operations', async (route) => {
+		const request = route.request()
+		const body = request.method() === 'POST' ? request.postDataJSON() : null
+		if (
+			body?.operations?.some(
+				(operation: { patch?: { backgroundFit?: string } }) =>
+					operation.patch?.backgroundFit === 'contain',
+			)
+		) {
+			markFitSent()
+			await fitGate
+		}
+		await route.continue()
+	})
+	try {
+		await page.getByRole('combobox', { name: 'Background fit' }).click()
+		await page.keyboard.press('c')
+		await expect(page.locator('[data-tool-id="select"] button')).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		)
+		await page.getByRole('option', { name: 'Contain', exact: true }).click()
+		await expect(page.getByRole('region', { name: 'Selected object properties' })).toContainText(
+			'Image frame',
+		)
+		await fitSent
+		await choose(page, 'Background image', 'Image 2')
+	} finally {
+		releaseFit()
+	}
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'image-frame'))
+		.toMatchObject({
+			backgroundImageId: 'second-image',
+			backgroundFit: 'contain',
+		})
+	await expect(page.locator('.frame-background-image')).toHaveAttribute(
+		'preserveAspectRatio',
+		'xMidYMid meet',
+	)
+	await page.getByRole('button', { name: 'Remove background', exact: true }).click()
+	await expect(page.locator('.frame-background-image')).toHaveCount(0)
+})
+
 test('rectangle, ellipse and line tools draw by dragging', async ({ page, request }) => {
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
 	await dragWorld(page, { x: 160, y: 160 }, { x: 340, y: 260 })
@@ -123,8 +244,25 @@ test('sticky palette, brush style and brush width apply to new objects', async (
 	page,
 	request,
 }) => {
+	const waitForOptions = async () => {
+		await expect
+			.poll(() =>
+				page.locator('.tool-options-wrap').evaluate((element) => {
+					const target = Number.parseFloat(
+						(element as HTMLElement).style.getPropertyValue('--toolbar-options-width'),
+					)
+					return Math.abs(element.getBoundingClientRect().width - target)
+				}),
+			)
+			.toBeLessThan(0.5)
+	}
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
+	await waitForOptions()
 	await page.getByRole('button', { name: 'Neutral sticky' }).click()
+	await expect(page.getByRole('button', { name: 'Neutral sticky' })).toHaveAttribute(
+		'aria-pressed',
+		'true',
+	)
 	await clickWorld(page, 500, 220)
 	await expect.poll(async () => countOf(request, 'note')).toBe(1)
 	expect((await board(request)).shapes.find((shape) => shape.type === 'note')).toMatchObject({
@@ -132,6 +270,7 @@ test('sticky palette, brush style and brush width apply to new objects', async (
 	})
 
 	await page.getByRole('button', { name: 'Brush', exact: true }).click()
+	await waitForOptions()
 	await page.getByRole('button', { name: 'Brush style Pencil' }).click()
 	await page.getByRole('button', { name: 'Brush width 2px' }).click()
 	await dragWorld(page, { x: 200, y: 420 }, { x: 320, y: 480 })

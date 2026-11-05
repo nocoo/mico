@@ -88,6 +88,149 @@ test('AI tools create a labelled lesson and connect existing ids', async () => {
 	})
 })
 
+test('AI tools add uploaded images and update frame backgrounds', async () => {
+	await withStore(async (store) => {
+		const imageId = store.saveImage(
+			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+			'image/png',
+		)
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		const added = (await run(tools.add_images, {
+			images: [{ id: 'photo', imageId, x: 100, y: 100, w: 320, h: 240 }],
+		})) as { ok: boolean }
+		assert.equal(added.ok, true)
+		await run(tools.add_boxes, {
+			boxes: [{ id: 'label', x: 430, y: 100, w: 100, h: 80, text: 'Photo' }],
+		})
+		const framed = await run(tools.add_frames, {
+			frames: [
+				{
+					id: 'hero',
+					title: 'Hero',
+					memberIds: ['photo', 'label'],
+					backgroundImageId: 'photo',
+					backgroundFit: 'contain',
+				},
+			],
+		})
+		assert.equal((framed as { ok: boolean }).ok, true)
+		const board = store.getBoard()
+		const frame = board.shapes.find((shape) => shape.id === 'hero')
+		assert.ok(frame?.type === 'frame')
+		assert.equal(frame.backgroundImageId, 'photo')
+		assert.equal(frame.backgroundFit, 'contain')
+		const digest = boardDigest(board, [])
+		const imageDigest = digest.shapes.find((shape) => shape.id === 'photo')
+		assert.equal(imageDigest?.imageId, imageId)
+		assert.equal(digest.shapes.find((shape) => shape.id === 'hero')?.backgroundImageId, 'photo')
+
+		const unlinked = (await run(tools.update_shapes, {
+			updates: [{ id: 'hero', patch: { backgroundImageId: null } }],
+		})) as { ok: boolean }
+		assert.equal(unlinked.ok, true)
+		const unlinkedFrame = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.ok(unlinkedFrame?.type === 'frame')
+		assert.equal(unlinkedFrame.backgroundImageId, undefined)
+	})
+})
+
+test('AI image mutations reject missing assets and invalid backgrounds without side effects', async () => {
+	await withStore(async (store) => {
+		const imageId = store.saveImage(
+			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+			'image/png',
+		)
+		const events: unknown[] = []
+		const tools = createCanvasTools({
+			store,
+			broadcast: (event) => events.push(event),
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+
+		await run(tools.add_images, {
+			images: [{ id: 'photo', imageId, x: 100, y: 100, w: 320, h: 240 }],
+		})
+		await run(tools.add_boxes, {
+			boxes: [{ id: 'label', x: 500, y: 100, w: 100, h: 80, text: 'Photo' }],
+		})
+		await run(tools.add_frames, {
+			frames: [
+				{
+					id: 'hero',
+					title: 'Hero',
+					memberIds: ['photo', 'label'],
+					backgroundImageId: 'photo',
+					backgroundFit: 'contain',
+				},
+			],
+		})
+
+		const beforeMissing = JSON.stringify(store.getBoard())
+		const revisionBeforeMissing = store.getBoard().revision
+		const broadcastsBeforeMissing = events.length
+		const missing = (await run(tools.add_images, {
+			images: [{ id: 'missing-photo', imageId: 'missing-asset', x: 100, y: 500, w: 100, h: 100 }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(missing.ok, false)
+		assert.equal(missing.error, 'MISSING_IMAGE_ASSET')
+		assert.equal(JSON.stringify(store.getBoard()), beforeMissing)
+		assert.equal(store.getBoard().revision, revisionBeforeMissing)
+		assert.equal(events.length, broadcastsBeforeMissing)
+
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'left', x: 900, y: 100, w: 100, h: 100 },
+				{ id: 'right', x: 1100, y: 100, w: 100, h: 100 },
+			],
+		})
+		const beforeInvalid = JSON.stringify(store.getBoard())
+		const revisionBeforeInvalid = store.getBoard().revision
+		const broadcastsBeforeInvalid = events.length
+		const invalid = (await run(tools.add_frames, {
+			frames: [
+				{
+					id: 'invalid-bg',
+					title: 'Invalid background',
+					memberIds: ['left', 'right'],
+					backgroundImageId: 'not-an-image-shape',
+				},
+			],
+		})) as { ok: boolean; error?: string }
+		assert.equal(invalid.ok, false)
+		assert.equal(JSON.stringify(store.getBoard()), beforeInvalid)
+		assert.equal(store.getBoard().revision, revisionBeforeInvalid)
+		assert.equal(events.length, broadcastsBeforeInvalid)
+
+		const beforeUpdateInvalid = JSON.stringify(store.getBoard())
+		const revisionBeforeUpdateInvalid = store.getBoard().revision
+		const broadcastsBeforeUpdateInvalid = events.length
+		const invalidUpdate = (await run(tools.update_shapes, {
+			updates: [{ id: 'hero', patch: { backgroundImageId: 'not-an-image-shape' } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(invalidUpdate.ok, false)
+		assert.equal(JSON.stringify(store.getBoard()), beforeUpdateInvalid)
+		assert.equal(store.getBoard().revision, revisionBeforeUpdateInvalid)
+		assert.equal(events.length, broadcastsBeforeUpdateInvalid)
+
+		const revisionBeforeDelete = store.getBoard().revision
+		const deleteReply = (await run(tools.delete_shapes, { ids: ['photo'] })) as {
+			ok: boolean
+		}
+		assert.equal(deleteReply.ok, true)
+		assert.equal(store.getBoard().revision, revisionBeforeDelete + 1)
+		const hero = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.ok(hero?.type === 'frame')
+		assert.equal(hero.backgroundImageId, undefined)
+		assert.ok(events.length > broadcastsBeforeInvalid)
+	})
+})
+
 test('AI tools report validation errors without writing', async () => {
 	await withStore(async (store) => {
 		const tools = createCanvasTools({

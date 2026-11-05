@@ -45,9 +45,8 @@
 
     .toolbar {
       position: fixed;
-      left: 50%;
+      left: var(--dock-left, 50%);
       bottom: 24px;
-      transform: translateX(-50%);
       display: flex;
       align-items: center;
       padding: 8px;
@@ -72,6 +71,12 @@
       display: flex;
       align-items: center;
       gap: 4px;
+    }
+    .drawing-tools {
+      flex-wrap: wrap;
+      justify-content: center;
+      min-width: 0;
+      max-width: 100%;
     }
     .tool-options, .segmented-control, .view-controls {
       min-width: 0;
@@ -269,6 +274,7 @@
     <symbol id="brush" viewBox="0 0 24 24"><path d="m11 10 3 3"/><path d="M6.5 21A3.5 3.5 0 1 0 3 17.5a2.62 2.62 0 0 1-.708 1.792A1 1 0 0 0 3 21z"/><path d="M9.969 17.031 21.378 5.624a1 1 0 0 0-3.002-3.002L6.967 14.031"/></symbol>
     <symbol id="note" viewBox="0 0 24 24"><path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/></symbol>
     <symbol id="html" viewBox="0 0 24 24"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></symbol>
+    <symbol id="image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4-4L5 21"/></symbol>
     <symbol id="connector" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol>
     <symbol id="delete" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
     <symbol id="frame" viewBox="0 0 24 24"><path d="M22 6H2 M22 18H2 M6 2v20 M18 2v20"/></symbol>
@@ -291,6 +297,7 @@
         <button class="icon-button" data-tool="path" type="button" aria-label="Brush" aria-pressed="false" title="Brush (P)"><svg aria-hidden="true"><use href="#brush"/></svg></button>
         <button class="icon-button" data-tool="note" type="button" aria-label="Sticky note" aria-pressed="false" title="Sticky note (N)"><svg aria-hidden="true"><use href="#note"/></svg></button>
         <button class="icon-button" data-tool="html" type="button" aria-label="HTML card" aria-pressed="false" title="HTML card (W)"><svg aria-hidden="true"><use href="#html"/></svg></button>
+        <button class="icon-button" data-tool="image" type="button" aria-label="Image" aria-pressed="false" title="Image (I)"><svg aria-hidden="true"><use href="#image"/></svg></button>
         <button class="icon-button" data-tool="connector" type="button" aria-label="Connector" aria-pressed="false" title="Connector (C)"><svg aria-hidden="true"><use href="#connector"/></svg></button>
         <span class="divider"></span>
         <button class="icon-button" type="button" aria-label="Delete selected" title="Delete selected" disabled><svg aria-hidden="true"><use href="#delete"/></svg></button>
@@ -393,7 +400,13 @@
       updateOptionsWidth();
     }
 
+    function positionToolbar() {
+      toolbar.style.setProperty('--dock-left', `${Math.round((window.innerWidth - toolbar.offsetWidth) / 8) * 4}px`);
+    }
+    new ResizeObserver(positionToolbar).observe(toolbar);
+    window.addEventListener('resize', positionToolbar);
     window.addEventListener('resize', updateOptionsWidth);
+    positionToolbar();
 
     function setZoom(value) {
       zoom = Math.min(3, Math.max(.05, value));
@@ -451,7 +464,7 @@
 
     document.addEventListener('keydown', (event) => {
       if (openFontSelect || event.target.closest('[data-font-select]') || event.metaKey || event.ctrlKey || event.altKey) return;
-      const shortcuts = { v: 'select', h: 'hand', r: 'rectangle', o: 'ellipse', t: 'text', l: 'line', p: 'path', n: 'note', w: 'html', c: 'connector' };
+      const shortcuts = { v: 'select', h: 'hand', r: 'rectangle', o: 'ellipse', t: 'text', l: 'line', p: 'path', n: 'note', w: 'html', i: 'image', c: 'connector' };
       const tool = shortcuts[event.key.toLowerCase()];
       if (tool) selectTool(tool);
       if (event.key === 'Escape') selectTool('select');
