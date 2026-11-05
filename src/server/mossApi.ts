@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { Board } from '../shared/types.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
+import type { ImageGenerationService } from './imageGeneration.ts'
 import type { BoardStore } from './store.ts'
 import { OperationError } from './store.ts'
 
@@ -61,6 +62,7 @@ export function serializeCanvasTools(
 	canvasId: string,
 	selection: string[],
 	revision: number,
+	imageGeneration?: ImageGenerationService,
 ): MossToolDefinition[] {
 	const tools = createCanvasTools({
 		store: store as unknown as BoardStore,
@@ -68,6 +70,7 @@ export function serializeCanvasTools(
 		selection,
 		canvasId,
 		revision,
+		imageGeneration,
 	})
 	return Object.entries(tools).map(([name, tool]) => {
 		const record = tool as unknown as { description?: string; inputSchema: z.ZodType }
@@ -100,6 +103,7 @@ export async function createMossSession(
 	store: MossStore,
 	broadcast: (event: unknown) => void,
 	body: unknown,
+	imageGeneration?: ImageGenerationService,
 ): Promise<MossSessionResponse> {
 	const request = parseSchema(mossSessionSchema, body, 'MOSS session request')
 	const canvasId = request.canvasId ?? store.getActiveCanvasId()
@@ -109,7 +113,14 @@ export async function createMossSession(
 		canvasId,
 		revision: board.revision,
 		instructions: `${buildInstructions(board, selection)}\n\n${MOSS_LIVE_INSTRUCTIONS()}`,
-		tools: serializeCanvasTools(store, broadcast, canvasId, selection, board.revision),
+		tools: serializeCanvasTools(
+			store,
+			broadcast,
+			canvasId,
+			selection,
+			board.revision,
+			imageGeneration,
+		),
 	}
 }
 
@@ -117,6 +128,7 @@ export async function executeMossTool(
 	store: MossStore,
 	broadcast: (event: unknown) => void,
 	body: unknown,
+	imageGeneration?: ImageGenerationService,
 ): Promise<{ result: unknown }> {
 	const request = parseSchema(mossToolSchema, body, 'MOSS tool request')
 	const board = store.getBoard(request.canvasId)
@@ -127,6 +139,7 @@ export async function executeMossTool(
 		selection: request.selection,
 		canvasId: request.canvasId,
 		revision: request.revision,
+		imageGeneration,
 	})
 	const tool = (
 		tools as unknown as Record<
@@ -141,7 +154,12 @@ export async function executeMossTool(
 	if (!tool) {
 		throw new OperationError(404, 'UNKNOWN_TOOL', `Unknown MOSS tool: ${request.name}`)
 	}
-	if (board.revision !== request.revision && request.name !== 'get_board') {
+	if (
+		board.revision !== request.revision &&
+		request.name !== 'get_board' &&
+		request.name !== 'generate_image' &&
+		request.name !== 'image_generation_status'
+	) {
 		throw new OperationError(
 			409,
 			'REVISION_CONFLICT',

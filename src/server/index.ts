@@ -13,6 +13,7 @@ import {
 	streamAiChat,
 } from './ai.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
+import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
 import { BoardStore, OperationError } from './store.ts'
 
@@ -184,6 +185,7 @@ export interface Daemon {
 	server: ReturnType<typeof createServer>
 	store: BoardStore
 	aiSettings: AiSettingsStore
+	imageGeneration: ImageGenerationService
 	wss: WebSocketServer
 	close(): void
 }
@@ -196,6 +198,7 @@ export function createDaemon(
 		settingsPath?: string
 		env?: NodeJS.ProcessEnv
 		createAiModel?: (settings: MagpieSettings) => LanguageModel
+		imageGenerator?: ImageGenerator
 	} = {},
 ): Daemon {
 	const port = options.port ?? parsePort()
@@ -211,17 +214,21 @@ export function createDaemon(
 	const modelFactory = options.createAiModel ?? createMagpieModel
 	const wss = new WebSocketServer({ noServer: true })
 
-	function isAllowedHost(host: string | undefined): boolean {
-		const address = server.address()
-		const listeningPort = address && typeof address !== 'string' ? address.port : port
-		return host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`
-	}
-
 	const broadcast = (event: unknown): void => {
 		const payload = JSON.stringify(event)
 		for (const client of wss.clients) {
 			if (client.readyState === WebSocket.OPEN) client.send(payload)
 		}
+	}
+	const imageGeneration = new ImageGenerationService(store, broadcast, {
+		generator: options.imageGenerator,
+		env: options.env ?? process.env,
+	})
+
+	function isAllowedHost(host: string | undefined): boolean {
+		const address = server.address()
+		const listeningPort = address && typeof address !== 'string' ? address.port : port
+		return host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`
 	}
 
 	const broadcastState = (state = store.getState()): void => {
@@ -450,7 +457,12 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await createMossSession(store, broadcast, await readJson(req))
+				const response = await createMossSession(
+					store,
+					broadcast,
+					await readJson(req),
+					imageGeneration,
+				)
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -461,7 +473,12 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await executeMossTool(store, broadcast, await readJson(req))
+				const response = await executeMossTool(
+					store,
+					broadcast,
+					await readJson(req),
+					imageGeneration,
+				)
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -500,7 +517,7 @@ export function createDaemon(
 				}
 				const request = await parseAiChatRequest(await readJson(req))
 				const model = aiModel ?? modelFactory(aiSettings.getEffective())
-				await streamAiChat({ res, store, broadcast, model, request, origin })
+				await streamAiChat({ res, store, broadcast, model, request, origin, imageGeneration })
 				return
 			}
 
@@ -585,8 +602,10 @@ export function createDaemon(
 		server,
 		store,
 		aiSettings,
+		imageGeneration,
 		wss,
 		close(): void {
+			imageGeneration.close()
 			wss.close()
 			store.close()
 			server.close()

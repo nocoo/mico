@@ -5,6 +5,7 @@ import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
 import type { CanvasShape, Operation, Point, Shape } from '../shared/types.ts'
 import { isMemberType } from '../shared/types.ts'
 import { boardDigest } from './aiBoard.ts'
+import { ImageGenerationService } from './imageGeneration.ts'
 import { type BoardStore, OperationError } from './store.ts'
 import { expandLucideIcons } from './summaryIcons.ts'
 
@@ -44,6 +45,11 @@ const frameIdSchema = idSchema
 	.optional()
 	.describe(
 		'Optional existing frame id; the AI must grow it to include the member with 40px padding.',
+	)
+const generationFrameIdSchema = idSchema
+	.optional()
+	.describe(
+		'Optional existing frame id to receive the generated image as its background. The independent source image shape is placed separately in a clear area outside the frame; an existing frame background is never overwritten.',
 	)
 const pointSchema = z.object({ x: z.number(), y: z.number() })
 const coord = (label: string) => z.number().describe(label)
@@ -97,6 +103,7 @@ interface ToolContext {
 	selection: string[]
 	canvasId: string
 	revision: number
+	imageGeneration: ImageGenerationService
 }
 
 interface Bounds {
@@ -378,14 +385,25 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 	color,
 })
 
+const imageServices = new WeakMap<BoardStore, ImageGenerationService>()
+
 export function createCanvasTools(
-	input: Omit<ToolContext, 'revision'> & {
+	input: Omit<ToolContext, 'revision' | 'imageGeneration'> & {
 		revision?: number
+		imageGeneration?: ImageGenerationService
 	},
 ) {
 	const { store, selection, canvasId } = input
 	let observedRevision = input.revision ?? store.getBoard(canvasId).revision
-	const context: ToolContext = { ...input, revision: observedRevision }
+	let imageGeneration = input.imageGeneration
+	if (!imageGeneration) {
+		imageGeneration = imageServices.get(store)
+		if (!imageGeneration) {
+			imageGeneration = new ImageGenerationService(store, input.broadcast)
+			imageServices.set(store, imageGeneration)
+		}
+	}
+	const context: ToolContext = { ...input, revision: observedRevision, imageGeneration }
 	const applyOperations = (operations: Operation[]) => {
 		context.revision = observedRevision
 		const reply = apply(context, operations, observedRevision)
@@ -576,6 +594,54 @@ export function createCanvasTools(
 				}))
 				return applyOperations(operations)
 			},
+		}),
+
+		generate_image: tool({
+			description:
+				'Start one asynchronous GPT Image 2.5 Flare generation on this canvas. The proposed position must be clear of objects and connectors; the tool returns immediately with a jobId and shapeId. If frameId identifies a frame, set the generated image as that frame background only if it has none; always keep the independent source image shape at a separate clear location outside the frame. Do not start another while it is busy. The result arrives only on image_generation_status or the board broadcast.',
+			inputSchema: z.object({
+				prompt: z
+					.string()
+					.min(1)
+					.max(16384)
+					.describe('Focused visual description for the generated PNG.'),
+				aspect: z.enum(['1:1', '3:2', '2:3']).describe('Output aspect ratio.'),
+				x: coord('Left edge of the proposed foreground image position.'),
+				y: coord('Top edge of the proposed foreground image position.'),
+				width: size('Image width in pixels.').max(4096),
+				shapeId: idSchema
+					.optional()
+					.describe('Optional stable image shape id for the completed result.'),
+				frameId: generationFrameIdSchema,
+			}),
+			execute: async ({ prompt, aspect, x, y, width, shapeId, frameId }) => {
+				try {
+					return context.imageGeneration.start({
+						prompt,
+						aspect,
+						canvasId,
+						x,
+						y,
+						width,
+						shapeId,
+						frameId,
+					})
+				} catch (error) {
+					if (error instanceof OperationError) {
+						return { ok: false, error: error.code, message: error.message }
+					}
+					throw error
+				}
+			},
+		}),
+
+		image_generation_status: tool({
+			description:
+				'Read one image generation job, or the latest job when jobId is omitted. Status is pending, completed or failed; never infer success without completed status.',
+			inputSchema: z.object({
+				jobId: z.string().min(1).max(64).optional(),
+			}),
+			execute: async ({ jobId }) => context.imageGeneration.status(jobId),
 		}),
 
 		add_lines: tool({

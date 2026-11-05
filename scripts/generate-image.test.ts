@@ -155,6 +155,34 @@ test('script posts the flare contract and prints only raw PNG bytes', async () =
 	}
 })
 
+test('script stops if its owning daemon disconnects', async () => {
+	const server = createServer((request) => request.resume())
+	const requestSeen = once(server, 'request', { signal: AbortSignal.timeout(5000) })
+	const endpoint = await listen(server)
+	const child = spawn(process.execPath, ['scripts/generate-image.ts'], {
+		cwd: root,
+		env: { AZURE_OPENAI_ENDPOINT: endpoint, AZURE_OPENAI_API_KEY: 'fake-key' },
+		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+	})
+	assert.ok(child.stdin)
+	child.stdin.end(JSON.stringify({ prompt: 'A quiet horizon', aspect: '1:1' }))
+	try {
+		await requestSeen.catch(() => {
+			throw new Error('The local provider was not contacted')
+		})
+		const exited = once(child, 'exit', { signal: AbortSignal.timeout(5000) })
+		child.disconnect()
+		const [code] = await exited.catch(() => {
+			throw new Error('The script did not exit on disconnect')
+		})
+		assert.equal(code, 1)
+	} finally {
+		if (child.exitCode === null) child.kill('SIGKILL')
+		server.closeAllConnections()
+		await closeServer(server)
+	}
+})
+
 test('script rejects redirects and emits no provider bytes', async () => {
 	const server = createServer((_request, response) => {
 		response.writeHead(302, { location: '/redirected', 'content-type': 'text/html' })

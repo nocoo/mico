@@ -242,5 +242,13 @@ const isDirectRun =
 	process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href
 
 if (isDirectRun) {
-	void main()
+	let finished = false
+	if (process.send)
+		process.once('disconnect', () => {
+			if (!finished) process.exit(1)
+		})
+	void main().finally(() => {
+		finished = true
+		if (process.connected) process.disconnect?.()
+	})
 }

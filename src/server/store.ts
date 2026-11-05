@@ -14,6 +14,7 @@ import type {
 	ShapeType,
 } from '../shared/types.ts'
 import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
+import { getConnectorAnchors } from '../web/anchors.ts'
 import { canvasPreview } from './preview.ts'
 
 export class OperationError extends Error {
@@ -71,6 +72,7 @@ const SHAPE_TYPES = new Set<string>([
 	'image',
 	'connector',
 ])
+export const MAX_CANVAS_IMAGES = 5
 const MAX_HTML_LENGTH = 200_000
 
 function validTitle(value: unknown, label: string): void {
@@ -459,6 +461,103 @@ function validCanvasId(value: unknown): string {
 	return value
 }
 
+export interface GeneratedImagePlacement {
+	canvasId: string
+	shapeId: string
+	frameId?: string
+	x: number
+	y: number
+	w: number
+	h: number
+	bytes: Uint8Array
+}
+
+interface PlacementBounds {
+	left: number
+	top: number
+	right: number
+	bottom: number
+}
+
+function shapePlacementBounds(shape: Shape): PlacementBounds | undefined {
+	if (shape.type === 'connector') return undefined
+	const left = shape.type === 'line' ? Math.min(shape.x, shape.x + shape.w) : shape.x
+	const top = shape.type === 'line' ? Math.min(shape.y, shape.y + shape.h) : shape.y
+	const right = shape.type === 'line' ? Math.max(shape.x, shape.x + shape.w) : shape.x + shape.w
+	const bottom = shape.type === 'line' ? Math.max(shape.y, shape.y + shape.h) : shape.y + shape.h
+	return {
+		left,
+		top: shape.type === 'frame' ? top - 40 : top,
+		right,
+		bottom,
+	}
+}
+
+function connectorPlacementBounds(
+	shapes: Shape[],
+	connector: Connector,
+): PlacementBounds | undefined {
+	const from = shapes.find((shape) => shape.id === connector.from)
+	const to = shapes.find((shape) => shape.id === connector.to)
+	if (!from || !to || from.type === 'connector' || to.type === 'connector') return undefined
+	try {
+		const anchors = getConnectorAnchors(from, to, {
+			fromAnchor: connector.fromAnchor,
+			toAnchor: connector.toAnchor,
+		})
+		const padding = 8
+		return {
+			left: Math.min(anchors.start.x, anchors.end.x) - padding,
+			top: Math.min(anchors.start.y, anchors.end.y) - padding,
+			right: Math.max(anchors.start.x, anchors.end.x) + padding,
+			bottom: Math.max(anchors.start.y, anchors.end.y) + padding,
+		}
+	} catch {
+		return undefined
+	}
+}
+
+function occupiedPlacement(shapes: Shape[], x: number, y: number, w: number, h: number): boolean {
+	const left = x
+	const top = y
+	const right = x + w
+	const bottom = y + h
+	for (const shape of shapes) {
+		const bounds =
+			shape.type === 'connector'
+				? connectorPlacementBounds(shapes, shape)
+				: shapePlacementBounds(shape)
+		if (
+			bounds &&
+			left < bounds.right &&
+			right > bounds.left &&
+			top < bounds.bottom &&
+			bottom > bounds.top
+		) {
+			return true
+		}
+	}
+	return false
+}
+
+function rightmostClearPosition(
+	shapes: Shape[],
+	preferred: { x: number; y: number; w: number; h: number },
+): { x: number; y: number; w: number; h: number } {
+	let rightmost = preferred.x + preferred.w
+	let top = preferred.y
+	for (const shape of shapes) {
+		const bounds =
+			shape.type === 'connector'
+				? connectorPlacementBounds(shapes, shape)
+				: shapePlacementBounds(shape)
+		if (!bounds) continue
+		if (bounds.right > rightmost) rightmost = bounds.right
+		if (bounds.top < top) top = bounds.top
+	}
+	return { x: rightmost + 64, y: top, w: preferred.w, h: preferred.h }
+}
+
 export class BoardStore {
 	readonly db: DatabaseSync
 
@@ -671,6 +770,131 @@ export class BoardStore {
 		return cloneBoard(this.parseRow(this.requireRow(id), true))
 	}
 
+	countImageShapes(canvasId: string): number {
+		const board = this.getBoard(validCanvasId(canvasId))
+		return board.shapes.filter((shape) => shape.type === 'image').length
+	}
+
+	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): boolean {
+		const board = this.getBoard(validCanvasId(canvasId))
+		return !occupiedPlacement(board.shapes, x, y, w, h)
+	}
+
+	placeGeneratedImage(request: GeneratedImagePlacement): {
+		canvasId: string
+		canvas: CanvasSummary
+		board: Board
+		imageId: string
+		position: { x: number; y: number; w: number; h: number }
+		backgroundApplied: boolean
+	} {
+		const canvasId = validCanvasId(request.canvasId)
+		const w = request.w
+		const h = request.h
+		if (!validFiniteNumber(request.x) || !validFiniteNumber(request.y)) {
+			throw new OperationError(400, 'INVALID_REQUEST', 'x and y must be finite numbers')
+		}
+		if (!validFiniteNumber(w) || w < 1 || !validFiniteNumber(h) || h < 1) {
+			throw new OperationError(
+				400,
+				'INVALID_REQUEST',
+				'Generated image dimensions must be positive finite numbers',
+			)
+		}
+		if (
+			typeof request.bytes !== 'object' ||
+			!(request.bytes instanceof Uint8Array) ||
+			request.bytes.byteLength === 0
+		) {
+			throw new OperationError(400, 'INVALID_REQUEST', 'Generated image bytes must be non-empty')
+		}
+
+		this.db.exec('BEGIN IMMEDIATE')
+		try {
+			const row = this.requireRow(canvasId)
+			const board = this.parseRow(row)
+			if (board.shapes.filter((shape) => shape.type === 'image').length >= MAX_CANVAS_IMAGES) {
+				throw new OperationError(
+					409,
+					'IMAGE_CAP_REACHED',
+					`This canvas already has ${MAX_CANVAS_IMAGES} image shapes. Reuse or remove an existing image shape instead of generating another.`,
+				)
+			}
+
+			if (findShape(board, request.shapeId)) {
+				throw new OperationError(400, 'DUPLICATE_ID', `shape id already exists: ${request.shapeId}`)
+			}
+			let position = { x: request.x, y: request.y, w, h }
+			if (occupiedPlacement(board.shapes, position.x, position.y, position.w, position.h)) {
+				position = rightmostClearPosition(board.shapes, position)
+			}
+
+			const imageId = this.saveImage(request.bytes, 'image/png')
+			const next = cloneBoard(board)
+			const shape: Shape = {
+				id: request.shapeId,
+				type: 'image',
+				x: position.x,
+				y: position.y,
+				w: position.w,
+				h: position.h,
+				color: '#2b3038',
+				imageId,
+			}
+			if (findShape(next, shape.id)) {
+				throw new OperationError(400, 'DUPLICATE_ID', `shape id already exists: ${shape.id}`)
+			}
+			next.shapes.push(shape)
+
+			let backgroundApplied = false
+			if (request.frameId) {
+				const frame = findShape(next, request.frameId)
+				if (frame?.type === 'frame' && !frame.backgroundImageId) {
+					frame.backgroundImageId = shape.id
+					frame.backgroundFit = 'cover'
+					backgroundApplied = true
+				}
+			}
+
+			const assetIds = this.listImageAssetIds()
+			validateBoardState(next, assetIds)
+			if (next.shapes.filter((item) => item.type === 'image').length > MAX_CANVAS_IMAGES) {
+				throw new OperationError(
+					409,
+					'IMAGE_CAP_REACHED',
+					`A canvas cannot contain more than ${MAX_CANVAS_IMAGES} image shapes`,
+				)
+			}
+			next.revision += 1
+			const updatedAt = new Date().toISOString()
+			const result = this.db
+				.prepare(
+					'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ?',
+				)
+				.run(next.revision, JSON.stringify(next.shapes), updatedAt, canvasId, board.revision)
+			if (Number(result.changes) !== 1) {
+				throw new OperationError(
+					409,
+					'REVISION_CONFLICT',
+					'Canvas revision changed during image insertion',
+				)
+			}
+			this.db.exec('COMMIT')
+			const updatedRow = this.requireRow(canvasId)
+			return {
+				canvasId,
+				canvas: this.summaryOf(updatedRow),
+				board: cloneBoard(next),
+				imageId,
+				position,
+				backgroundApplied,
+			}
+		} catch (error) {
+			this.db.exec('ROLLBACK')
+			throw error
+		}
+	}
+
 	getCanvas(canvasId: string): CanvasDetail {
 		const id = validCanvasId(canvasId)
 		const row = this.requireRow(id)
@@ -749,12 +973,14 @@ export class BoardStore {
 		const next = cloneBoard(board)
 		const cascaded = new Set<string>()
 		const assetIds = this.listImageAssetIds()
+		let createsImage = false
 		for (const operation of request.operations as Operation[]) {
 			if (!isObject(operation)) invalid('operation must be an object')
 
 			if (operation.type === 'create') {
 				if (!hasExactKeys(operation, ['type', 'shape'])) invalid('invalid create operation')
 				validateShapeShape(operation.shape)
+				if (operation.shape.type === 'image') createsImage = true
 				if (operation.shape.type === 'image' && !assetIds.has(operation.shape.imageId ?? '')) {
 					throw new OperationError(
 						400,
@@ -857,6 +1083,16 @@ export class BoardStore {
 		}
 
 		validateBoardState(next, assetIds)
+		if (
+			createsImage &&
+			next.shapes.filter((shape) => shape.type === 'image').length > MAX_CANVAS_IMAGES
+		) {
+			throw new OperationError(
+				409,
+				'IMAGE_CAP_REACHED',
+				`A canvas cannot contain more than ${MAX_CANVAS_IMAGES} image shapes`,
+			)
+		}
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
 		const result = this.db

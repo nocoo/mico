@@ -12,6 +12,7 @@ import {
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
+import type { ImageGenerationService } from './imageGeneration.ts'
 import { type BoardStore, OperationError } from './store.ts'
 
 export const MAGPIE_DEFAULT_BASE_URL = 'http://127.0.0.1:3425/v1'
@@ -163,6 +164,7 @@ interface AiResponseOptions {
 	model: LanguageModel
 	request: AiChatRequest
 	origin?: string
+	imageGeneration?: ImageGenerationService
 }
 
 export async function streamAiChat({
@@ -172,6 +174,7 @@ export async function streamAiChat({
 	model,
 	request,
 	origin,
+	imageGeneration,
 }: AiResponseOptions): Promise<void> {
 	const canvasId = request.canvasId ?? store.getActiveCanvasId()
 	const board = store.getBoard(canvasId)
@@ -192,6 +195,7 @@ export async function streamAiChat({
 			selection: request.selection,
 			canvasId,
 			revision: board.revision,
+			imageGeneration,
 		}),
 		stopWhen:
 			request.mode === 'lecture'
