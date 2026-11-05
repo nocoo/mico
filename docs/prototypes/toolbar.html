@@ -73,6 +73,12 @@
       align-items: center;
       gap: 4px;
     }
+    .tool-options, .segmented-control, .view-controls {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
 
     .divider {
       flex: 0 0 8px;
@@ -274,53 +280,53 @@
   <div class="toolbar" role="toolbar" aria-label="Canvas tools">
     <div class="dock-main">
       <div class="drawing-tools">
-        <button class="icon-button" data-tool="select" type="button" aria-label="Select" aria-pressed="true" title="Select (V)"><svg><use href="#select"/></svg></button>
-        <button class="icon-button" data-tool="hand" type="button" aria-label="Pan" aria-pressed="false" title="Pan (H)"><svg><use href="#hand"/></svg></button>
+        <button class="icon-button" data-tool="select" type="button" aria-label="Select" aria-pressed="true" title="Select (V)"><svg aria-hidden="true"><use href="#select"/></svg></button>
+        <button class="icon-button" data-tool="hand" type="button" aria-label="Pan" aria-pressed="false" title="Pan (H)"><svg aria-hidden="true"><use href="#hand"/></svg></button>
         <span class="divider"></span>
-        <button class="icon-button" data-tool="rectangle" type="button" aria-label="Rectangle" aria-pressed="false" title="Rectangle (R)"><svg><use href="#rectangle"/></svg></button>
-        <button class="icon-button" data-tool="ellipse" type="button" aria-label="Ellipse" aria-pressed="false" title="Ellipse (O)"><svg><use href="#ellipse"/></svg></button>
-        <button class="icon-button" data-tool="text" type="button" aria-label="Text" aria-pressed="false" title="Text (T)"><svg><use href="#text"/></svg></button>
+        <button class="icon-button" data-tool="rectangle" type="button" aria-label="Rectangle" aria-pressed="false" title="Rectangle (R)"><svg aria-hidden="true"><use href="#rectangle"/></svg></button>
+        <button class="icon-button" data-tool="ellipse" type="button" aria-label="Ellipse" aria-pressed="false" title="Ellipse (O)"><svg aria-hidden="true"><use href="#ellipse"/></svg></button>
+        <button class="icon-button" data-tool="text" type="button" aria-label="Text" aria-pressed="false" title="Text (T)"><svg aria-hidden="true"><use href="#text"/></svg></button>
         <span class="divider"></span>
-        <button class="icon-button" data-tool="line" type="button" aria-label="Line" aria-pressed="false" title="Line (L)"><svg><use href="#line"/></svg></button>
-        <button class="icon-button" data-tool="path" type="button" aria-label="Brush" aria-pressed="false" title="Brush (P)"><svg><use href="#brush"/></svg></button>
-        <button class="icon-button" data-tool="note" type="button" aria-label="Sticky note" aria-pressed="false" title="Sticky note (N)"><svg><use href="#note"/></svg></button>
-        <button class="icon-button" data-tool="html" type="button" aria-label="HTML card" aria-pressed="false" title="HTML card (W)"><svg><use href="#html"/></svg></button>
-        <button class="icon-button" data-tool="connector" type="button" aria-label="Connector" aria-pressed="false" title="Connector (C)"><svg><use href="#connector"/></svg></button>
+        <button class="icon-button" data-tool="line" type="button" aria-label="Line" aria-pressed="false" title="Line (L)"><svg aria-hidden="true"><use href="#line"/></svg></button>
+        <button class="icon-button" data-tool="path" type="button" aria-label="Brush" aria-pressed="false" title="Brush (P)"><svg aria-hidden="true"><use href="#brush"/></svg></button>
+        <button class="icon-button" data-tool="note" type="button" aria-label="Sticky note" aria-pressed="false" title="Sticky note (N)"><svg aria-hidden="true"><use href="#note"/></svg></button>
+        <button class="icon-button" data-tool="html" type="button" aria-label="HTML card" aria-pressed="false" title="HTML card (W)"><svg aria-hidden="true"><use href="#html"/></svg></button>
+        <button class="icon-button" data-tool="connector" type="button" aria-label="Connector" aria-pressed="false" title="Connector (C)"><svg aria-hidden="true"><use href="#connector"/></svg></button>
         <span class="divider"></span>
-        <button class="icon-button" type="button" aria-label="Delete selected" title="Delete selected" disabled><svg><use href="#delete"/></svg></button>
-        <button class="icon-button" type="button" aria-label="Frame selection" title="Frame selection" disabled><svg><use href="#frame"/></svg></button>
+        <button class="icon-button" type="button" aria-label="Delete selected" title="Delete selected" disabled><svg aria-hidden="true"><use href="#delete"/></svg></button>
+        <button class="icon-button" type="button" aria-label="Frame selection" title="Frame selection" disabled><svg aria-hidden="true"><use href="#frame"/></svg></button>
       </div>
       <div class="options-wrap">
       <span class="divider option-divider"></span>
-      <div class="tool-options text-options" data-options="text" role="group" aria-label="Text options" hidden>
+      <fieldset class="tool-options text-options" data-options="text" aria-label="Text options" hidden>
         <button class="select-trigger" type="button" data-font-select="family" data-value="sans" aria-label="Font family" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>Sans</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <button class="select-trigger" type="button" data-font-select="size" data-value="32" aria-label="Font size" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>32</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
         <button class="select-trigger" type="button" data-font-select="weight" data-value="500" aria-label="Font weight" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>500</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
-      </div>
-      <div class="tool-options" data-options="path" role="group" aria-label="Brush options" hidden>
-        <div class="segmented-control" role="group" aria-label="Brush style">
+      </fieldset>
+      <fieldset class="tool-options" data-options="path" aria-label="Brush options" hidden>
+        <fieldset class="segmented-control" aria-label="Brush style">
           <button type="button" aria-pressed="false">Pencil</button><button type="button" aria-pressed="false">Marker</button><button type="button" aria-pressed="true">Brush</button>
-        </div>
-        <div class="segmented-control" role="group" aria-label="Brush width">
+        </fieldset>
+        <fieldset class="segmented-control" aria-label="Brush width">
           <button type="button" aria-pressed="false">2</button><button type="button" aria-pressed="true">4</button><button type="button" aria-pressed="false">8</button>
-        </div>
-      </div>
-      <div class="tool-options" data-options="note" role="group" aria-label="Sticky colors" hidden>
-        <div class="segmented-control note-colors" role="group" aria-label="Sticky color">
+        </fieldset>
+      </fieldset>
+      <fieldset class="tool-options" data-options="note" aria-label="Sticky colors" hidden>
+        <fieldset class="segmented-control note-colors" aria-label="Sticky color">
           <button type="button" aria-label="Yellow sticky" aria-pressed="true" style="background:#fff8d4"></button><button type="button" aria-label="Pink sticky" aria-pressed="false" style="background:#ffe9f0"></button><button type="button" aria-label="Green sticky" aria-pressed="false" style="background:#f1fadc"></button><button type="button" aria-label="Blue sticky" aria-pressed="false" style="background:#e2f5fc"></button><button type="button" aria-label="Neutral sticky" aria-pressed="false" style="background:#f3f5f4"></button>
-        </div>
-      </div>
+        </fieldset>
+      </fieldset>
       </div>
       <span class="divider dock-divider"></span>
-      <div class="view-controls" role="group" aria-label="View controls">
+      <fieldset class="view-controls" aria-label="View controls">
         <div class="zoom-controls">
-          <button class="icon-button" type="button" aria-label="Zoom out" title="Zoom out (−)"><svg><use href="#minus"/></svg></button>
+          <button class="icon-button" type="button" aria-label="Zoom out" title="Zoom out (−)"><svg aria-hidden="true"><use href="#minus"/></svg></button>
           <button class="zoom-value" type="button" aria-label="Reset view" title="Reset view (0)">100%</button>
-          <button class="icon-button" type="button" aria-label="Zoom in" title="Zoom in (+)"><svg><use href="#plus"/></svg></button>
+          <button class="icon-button" type="button" aria-label="Zoom in" title="Zoom in (+)"><svg aria-hidden="true"><use href="#plus"/></svg></button>
         </div>
         <span class="divider"></span>
-        <button class="icon-button" type="button" aria-label="Fit board" title="Fit board (F)"><svg><use href="#fit"/></svg></button>
-      </div>
+        <button class="icon-button" type="button" aria-label="Fit board" title="Fit board (F)"><svg aria-hidden="true"><use href="#fit"/></svg></button>
+      </fieldset>
     </div>
   </div>
   <div id="font-menu" class="select-menu" role="listbox" hidden></div>
@@ -382,7 +388,7 @@
     }
 
     function selectTool(id) {
-      tools.forEach((button) => button.setAttribute('aria-pressed', String(button.dataset.tool === id)));
+      tools.forEach((button) => { button.setAttribute('aria-pressed', String(button.dataset.tool === id)); });
       options.forEach((group) => { group.hidden = group.dataset.options !== id; });
       updateOptionsWidth();
     }
@@ -401,7 +407,7 @@
       closeFontMenu();
       if (button.dataset.tool) selectTool(button.dataset.tool);
       const group = button.closest('.segmented-control');
-      if (group) group.querySelectorAll('button').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+      if (group) group.querySelectorAll('button').forEach((item) => { item.setAttribute('aria-pressed', String(item === button)); });
       if (button.getAttribute('aria-label') === 'Zoom out') setZoom(zoom / 1.2);
       if (button.getAttribute('aria-label') === 'Zoom in') setZoom(zoom * 1.2);
       if (button === zoomValue || button.getAttribute('aria-label') === 'Fit board') setZoom(1);

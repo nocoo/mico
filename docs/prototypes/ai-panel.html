@@ -408,7 +408,9 @@
         <ol id="live-segments"><li class="lesson-seg-empty">Segments appear as the recording progresses.</li></ol>
       </div>
 
-      <audio id="live-audio" preload="metadata"></audio>
+      <audio id="live-audio" preload="metadata" aria-describedby="live-transcript">
+        <track kind="captions" src="data:text/vtt;charset=utf-8,WEBVTT%0A%0A" srclang="en" label="English transcript" default>
+      </audio>
     </div>
 
     <div id="ai-panel-audio" role="tabpanel" aria-labelledby="ai-tab-audio" hidden>
@@ -598,7 +600,7 @@
         }, 700);
       }
       document.getElementById('ai-composer').addEventListener('submit', (event) => { event.preventDefault(); sendChat(input.value); });
-      document.querySelectorAll('.ai-quick-prompt').forEach((button) => button.addEventListener('click', () => sendChat(button.textContent)));
+      document.querySelectorAll('.ai-quick-prompt').forEach((button) => { button.addEventListener('click', () => sendChat(button.textContent)); });
 
       const recordingTrigger = document.getElementById('recording-trigger');
       const recordingMenu = document.getElementById('recording-menu');
@@ -692,7 +694,7 @@
         const changed = recordingTrigger.dataset.value !== option.dataset.value;
         recordingTrigger.dataset.value = option.dataset.value;
         recordingTrigger.querySelector('span').textContent = option.textContent;
-        recordingMenu.querySelectorAll('[role="option"]').forEach((item) => item.setAttribute('aria-selected', String(item === option)));
+        recordingMenu.querySelectorAll('[role="option"]').forEach((item) => { item.setAttribute('aria-selected', String(item === option)); });
         closeRecordingMenu(true);
         if (changed) loadRecording(option.dataset.value);
       });
