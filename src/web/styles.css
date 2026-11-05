@@ -840,6 +840,46 @@ svg {
 	border-radius: calc(var(--radius-control) + var(--space-05));
 	background: var(--surface);
 	box-shadow: var(--shadow-popover);
+	transform-origin: var(--radix-select-content-transform-origin);
+}
+.select-content[data-state="open"] {
+	animation: select-content-open 180ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.select-content[data-state="closed"] {
+	animation: select-content-close 140ms ease-in both;
+	pointer-events: none;
+}
+.select-content[data-side="top"] {
+	transform-origin: center bottom;
+}
+.select-content[data-side="bottom"] {
+	transform-origin: center top;
+}
+.select-content[data-side="left"] {
+	transform-origin: right center;
+}
+.select-content[data-side="right"] {
+	transform-origin: left center;
+}
+@keyframes select-content-open {
+	from {
+		opacity: 0;
+		transform: translateY(var(--space-05)) scale(0.98);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+}
+@keyframes select-content-close {
+	from {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
+	to {
+		opacity: 0;
+		transform: translateY(var(--space-05)) scale(0.98);
+	}
 }
 .select-item {
 	display: flex;
@@ -853,6 +893,9 @@ svg {
 	line-height: 1.25;
 	outline: none;
 	cursor: default;
+}
+.select-item + .select-item {
+	margin-top: var(--space-05);
 }
 .select-item[data-highlighted] {
 	background: var(--surface-hover);
@@ -2101,6 +2144,9 @@ svg {
 	}
 }
 @media (prefers-reduced-motion: reduce) {
+	.select-content[data-state] {
+		animation-duration: 1ms;
+	}
 	.lesson-caret,
 	.lesson-ai-dot[data-busy="true"],
 	.lesson-dot[data-kind="live"] {

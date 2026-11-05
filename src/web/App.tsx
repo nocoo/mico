@@ -1434,7 +1434,7 @@ export default function App() {
 						<span
 							style={{
 								fontFamily: FONT_STACKS[option.value as keyof typeof FONT_STACKS],
-								fontSize: textSize,
+								fontSize: 16,
 								fontWeight: textWeight,
 							}}
 						>
@@ -1470,7 +1470,7 @@ export default function App() {
 						<span
 							style={{
 								fontFamily: FONT_STACKS[textFont as keyof typeof FONT_STACKS],
-								fontSize: textSize,
+								fontSize: 16,
 								fontWeight: Number(option.value),
 							}}
 						>
