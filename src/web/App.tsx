@@ -43,6 +43,7 @@ import {
 	TEXT_SIZE,
 	type Tool,
 } from './design'
+import { FRAME_LAYOUT } from './frame/layout'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from './htmlCard'
 import { canRebaseMoveGroup } from './move'
 import { SelectField } from './SelectField'
@@ -1489,6 +1490,8 @@ export default function App() {
 					'--control-size': `${CONTROL_SIZE}px`,
 					'--icon-size': `${ICON_SIZE}px`,
 					'--text-ui': `${TEXT_SIZE}px`,
+					'--frame-desktop-inset': `${FRAME_LAYOUT.desktopInset}px`,
+					'--frame-mobile-inset': `${FRAME_LAYOUT.mobileInset}px`,
 				} as React.CSSProperties
 			}
 		>

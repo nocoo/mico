@@ -126,7 +126,7 @@ svg {
 	--control-size: var(--control-standard);
 	--icon-size: var(--icon-standard);
 	--text-ui: var(--type-body);
-	--frame-inset: var(--space-3);
+	--frame-inset: var(--frame-desktop-inset, var(--space-3));
 	--dock-rows: 1;
 	--dock-width: max-content;
 	--dock-base-height: calc(var(--control-size) + var(--space-2));
@@ -701,7 +701,7 @@ svg {
 
 @media (max-width: 768px) {
 	.app {
-		--frame-inset: var(--space-2);
+		--frame-inset: var(--frame-mobile-inset, var(--space-2));
 		--dock-rows: 2;
 		--dock-width: calc(var(--control-size) * 8 + var(--space-8));
 	}
