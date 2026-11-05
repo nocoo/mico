@@ -6,8 +6,8 @@ import {
 	Hourglass,
 	LoaderCircle,
 	MessageSquare,
-	MousePointer2,
 	Mic,
+	MousePointer2,
 	Plus,
 	Settings,
 	Sparkles,
@@ -16,14 +16,14 @@ import {
 	X,
 } from 'lucide-react'
 import type { FormEvent, KeyboardEvent } from 'react'
-import { AiSettings } from './AiSettings'
 import { IconButton } from '../../IconButton'
-import { LessonPanel, type LessonSegment } from './LessonPanel'
-import { MicrophonePanel } from './MicrophonePanel'
 import { isWaitReply } from '../../stt/transcript'
 import type { AssistantActions, AssistantState } from '../contracts'
-import type { AssistantViewModel } from './useAssistantSession'
+import { AiSettings } from './AiSettings'
+import { LessonPanel, type LessonSegment } from './LessonPanel'
+import { MicrophonePanel } from './MicrophonePanel'
 import { nextAssistantTab } from './protocol'
+import type { AssistantViewModel } from './useAssistantSession'
 
 interface AssistantViewProps {
 	state: AssistantState
@@ -157,6 +157,7 @@ function AssistantMessage({ message }: { message: UIMessage }) {
 	return (
 		<>
 			{message.parts.map((part, index) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: streamed parts append in order
 				<AssistantPart key={`${message.id}-${index}`} part={part} />
 			))}
 		</>

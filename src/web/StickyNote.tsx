@@ -2,8 +2,7 @@ import { useId } from 'react'
 import type { CanvasShape } from '../shared/types'
 import './sticky-note.css'
 
-const OUTLINE =
-	'M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z'
+const OUTLINE = 'M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z'
 
 export function StickyNote({ shape, animate }: { shape: CanvasShape; animate: boolean }) {
 	const lightId = `sticky-light-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`
@@ -18,6 +17,7 @@ export function StickyNote({ shape, animate }: { shape: CanvasShape; animate: bo
 				viewBox="0 0 160 160"
 				preserveAspectRatio="none"
 				overflow="visible"
+				aria-hidden="true"
 			>
 				<defs>
 					<radialGradient

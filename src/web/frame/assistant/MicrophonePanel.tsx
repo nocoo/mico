@@ -1,12 +1,12 @@
 import { Mic, Square } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import type { LessonSegment } from './LessonPanel'
 import { TARGET_RATE } from '../../stt/audioSource'
 import { MaiClient, type MaiConfig } from '../../stt/maiClient'
 import { openMicrophone } from '../../stt/microphone'
 import { dedupeHypothesis, formatClock } from '../../stt/transcript'
 import { SilenceSegmenter } from '../../stt/vad'
 import { drawWave } from '../../waveform'
+import type { LessonSegment } from './LessonPanel'
 import { appendCompletedTranscript } from './protocol'
 
 interface MicrophonePanelProps {
@@ -101,21 +101,18 @@ export function MicrophonePanel({
 	const [elapsed, setElapsed] = useState(0)
 	const [live, setLive] = useState({ confirmed: '', hypothesis: '' })
 	const [segments, setSegments] = useState<LessonSegment[]>([])
-	const [vad, setVad] = useState({ db: -90, speaking: false })
 
 	const fail = (rt: Recording, message: string) => {
 		rt.generation++
 		cleanup(rt)
 		setPhase('error')
 		setDetail(message)
-		setVad({ db: -90, speaking: false })
 	}
 
 	const finish = (rt: Recording) => {
 		rt.generation++
 		cleanup(rt)
 		setPhase('done')
-		setVad({ db: -90, speaking: false })
 		if (rt.segments > 0) callbacks.current.onSessionEnd()
 	}
 
@@ -143,7 +140,6 @@ export function MicrophonePanel({
 		rt.sent += pcm.length
 		if (rt.segmenter.push(pcm)) commit(rt, rt.segmenter.lastTrailingMsValue)
 		setElapsed(rt.sent / TARGET_RATE)
-		setVad({ db: rt.segmenter.peakDb, speaking: rt.segmenter.speaking })
 	}
 
 	const drain = (rt: Recording) => {

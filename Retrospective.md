@@ -4,6 +4,8 @@
 
 - The commit rules allow a limited set of types; check that list before using a familiar Conventional Commits type such as `style`.
 - Non-linear animation means easing, not necessarily a bounce. Keep the requested motion and timing curve separate; do not add extra movement without asking.
+- An explicit null child in the Radix select trigger hid the selected value; assert the visible value in browser tests and render the selected label explicitly.
+- Measure animated panels only after their entrance settles, and size the bounded browser-suite timeout for the full sequential suite.
 
 ## Emergency handover evaluation
 

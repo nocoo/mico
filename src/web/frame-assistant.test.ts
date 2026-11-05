@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
+	appendCompletedTranscript,
 	buildAssistantRequestBody,
 	nextAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
 	takeLectureBatch,
-	appendCompletedTranscript,
 } from './frame/assistant/protocol.ts'
 
 test('assistant tab keyboard protocol wraps and reaches endpoints', () => {

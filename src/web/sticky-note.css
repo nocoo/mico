@@ -26,7 +26,9 @@
 }
 
 .sticky-entry .sticky-corner-light {
-	animation: sticky-curl 2.4s both, sticky-light 2.4s both;
+	animation:
+		sticky-curl 2.4s both,
+		sticky-light 2.4s both;
 }
 
 .sticky-entry .sticky-corner-shadow {
@@ -36,8 +38,8 @@
 @keyframes sticky-attach {
 	0% {
 		opacity: 0;
-		transform: perspective(700px) translate3d(0, -7px, 14px) rotateX(4deg) rotateZ(-.4deg);
-		animation-timing-function: cubic-bezier(.25, .65, .35, 1);
+		transform: perspective(700px) translate3d(0, -7px, 14px) rotateX(4deg) rotateZ(-0.4deg);
+		animation-timing-function: cubic-bezier(0.25, 0.65, 0.35, 1);
 	}
 	32%,
 	100% {
@@ -50,11 +52,11 @@
 	0%,
 	28% {
 		d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
-		animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 	}
 	53% {
 		d: path("M0 0 H160 V98.88 C160 120 160 141 156 152 C148 154 121 160 98.88 160 H0 Z");
-		animation-timing-function: cubic-bezier(.45, 0, .3, 1);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
 	}
 	100% {
 		d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
@@ -63,16 +65,35 @@
 
 @keyframes sticky-light {
 	0%,
-	28% { opacity: 0; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-	53% { opacity: .55; animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
-	100% { opacity: 0; }
+	28% {
+		opacity: 0;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	53% {
+		opacity: 0.55;
+		animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+	}
+	100% {
+		opacity: 0;
+	}
 }
 
 @keyframes sticky-shadow {
 	0%,
-	28% { opacity: 0; transform: none; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
-	53% { opacity: .2; transform: translateY(3px) scale(1.15, 1.5); animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
-	100% { opacity: 0; transform: none; }
+	28% {
+		opacity: 0;
+		transform: none;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	53% {
+		opacity: 0.2;
+		transform: translateY(3px) scale(1.15, 1.5);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+	}
+	100% {
+		opacity: 0;
+		transform: none;
+	}
 }
 
 @media (prefers-reduced-motion: reduce) {

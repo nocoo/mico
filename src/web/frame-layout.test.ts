@@ -11,7 +11,12 @@ test('frame metrics follow the four-pixel spacing contract', () => {
 		controlSize: 40,
 		iconSize: 20,
 	})
-	for (const value of [FRAME_LAYOUT.desktopInset, FRAME_LAYOUT.mobileInset, FRAME_LAYOUT.controlSize, FRAME_LAYOUT.iconSize]) {
+	for (const value of [
+		FRAME_LAYOUT.desktopInset,
+		FRAME_LAYOUT.mobileInset,
+		FRAME_LAYOUT.controlSize,
+		FRAME_LAYOUT.iconSize,
+	]) {
 		assert.equal(value % FRAME_LAYOUT.grid, 0)
 	}
 })

@@ -3,16 +3,16 @@ import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
 import type { FormEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
+import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
 import type { AssistantActions, AssistantState } from '../contracts'
 import type { LessonSegment } from './LessonPanel'
-import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
 import {
+	type AssistantTab,
 	buildAssistantRequestBody,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
 	takeLectureBatch,
-	type AssistantTab,
 } from './protocol'
 
 export interface AssistantSessionProps {
@@ -254,6 +254,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		wasOpen.current = state.open
 	}, [state.open])
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: new messages and a re-shown log must scroll to the end
 	useEffect(() => {
 		const list = messagesRef.current
 		if (!list) return
