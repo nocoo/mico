@@ -1429,18 +1429,54 @@ export default function App() {
 					value={textFont}
 					options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
 					onChange={setTextFont}
+					side="top"
+					renderItem={(option) => (
+						<span
+							style={{
+								fontFamily: FONT_STACKS[option.value as keyof typeof FONT_STACKS],
+								fontSize: textSize,
+								fontWeight: textWeight,
+							}}
+						>
+							{option.label}
+						</span>
+					)}
 				/>
 				<SelectField
 					label="Font size"
 					value={String(textSize)}
 					options={FONT_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
 					onChange={(size) => setTextSize(Number(size))}
+					side="top"
+					renderItem={(option) => (
+						<span
+							style={{
+								fontFamily: FONT_STACKS[textFont as keyof typeof FONT_STACKS],
+								fontSize: Number(option.value),
+								fontWeight: textWeight,
+							}}
+						>
+							{option.label}
+						</span>
+					)}
 				/>
 				<SelectField
 					label="Font weight"
 					value={String(textWeight)}
 					options={FONT_WEIGHTS.map((weight) => ({ value: String(weight), label: String(weight) }))}
 					onChange={(weight) => setTextWeight(Number(weight))}
+					side="top"
+					renderItem={(option) => (
+						<span
+							style={{
+								fontFamily: FONT_STACKS[textFont as keyof typeof FONT_STACKS],
+								fontSize: textSize,
+								fontWeight: Number(option.value),
+							}}
+						>
+							{option.label}
+						</span>
+					)}
 				/>
 			</fieldset>
 		) : null

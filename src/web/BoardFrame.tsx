@@ -79,6 +79,7 @@ export function BoardFrame({
 	onToggleAi,
 }: BoardFrameProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
+	const toolOptionsWrapRef = useRef<HTMLDivElement>(null)
 	useLayoutEffect(() => {
 		const dock = dockRef.current
 		const root = dock?.closest<HTMLElement>('.app')
@@ -102,6 +103,37 @@ export function BoardFrame({
 			root.style.removeProperty('--dock-left')
 		}
 	}, [])
+
+	useLayoutEffect(() => {
+		const wrap = toolOptionsWrapRef.current
+		if (!wrap) return
+		const options = wrap.querySelector<HTMLElement>('.brush-options')
+		const divider = wrap.querySelector<HTMLElement>('.tool-options-divider')
+		const measure = () => {
+			if (!options) {
+				wrap.classList.remove('open')
+				wrap.style.width = '0px'
+				return
+			}
+			wrap.classList.add('open')
+			const styles = getComputedStyle(wrap)
+			const horizontalPadding =
+				parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight)
+			const width =
+				(options.offsetWidth ?? 0) +
+				(divider?.offsetWidth ?? 0) +
+				horizontalPadding
+			wrap.style.width = `${width}px`
+		}
+		measure()
+		const observer = options ? new ResizeObserver(measure) : null
+		if (options) observer?.observe(options)
+		window.addEventListener('resize', measure)
+		return () => {
+			observer?.disconnect()
+			window.removeEventListener('resize', measure)
+		}
+	}, [toolOptions])
 
 	const status = !apiConnected ? 'offline' : wsConnected ? 'live' : 'api'
 	const statusLabel = !apiConnected ? 'Offline' : wsConnected ? 'Live' : 'Reconnecting'
@@ -204,12 +236,10 @@ export function BoardFrame({
 							onClick={onFrame}
 						/>
 					</div>
-					{toolOptions && (
-						<>
-							<span className="panel-divider" />
-							{toolOptions}
-						</>
-					)}
+					<div className="tool-options-wrap" ref={toolOptionsWrapRef}>
+						<span className="panel-divider tool-options-divider" />
+						{toolOptions}
+					</div>
 					<span className="panel-divider dock-divider" />
 					<fieldset className="view-controls" aria-label="View controls">
 						<div className="zoom-controls">

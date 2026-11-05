@@ -1,4 +1,5 @@
 import { Select } from '@radix-ui/themes'
+import type { ReactNode } from 'react'
 
 interface SelectFieldProps<T extends string> {
 	label: string
@@ -7,6 +8,9 @@ interface SelectFieldProps<T extends string> {
 	onChange: (value: T) => void
 	disabled?: boolean
 	id?: string
+	side?: 'top' | 'bottom' | 'left' | 'right'
+	renderValue?: (option: { value: T; label: string }) => ReactNode
+	renderItem?: (option: { value: T; label: string }) => ReactNode
 }
 
 export function SelectField<T extends string>({
@@ -16,14 +20,27 @@ export function SelectField<T extends string>({
 	onChange,
 	disabled,
 	id,
+	side = 'bottom',
+	renderValue,
+	renderItem,
 }: SelectFieldProps<T>) {
+	const selectedOption = options.find((option) => option.value === value)
 	return (
 		<Select.Root value={value} onValueChange={(next) => onChange(next as T)} disabled={disabled}>
-			<Select.Trigger id={id} aria-label={label} className="select-trigger" />
-			<Select.Content position="popper" sideOffset={6}>
+			<Select.Trigger id={id} aria-label={label} className="select-trigger">
+				{selectedOption && renderValue ? renderValue(selectedOption) : null}
+			</Select.Trigger>
+			<Select.Content
+				position="popper"
+				side={side}
+				align="start"
+				sideOffset={6}
+				collisionPadding={8}
+				className="select-content"
+			>
 				{options.map((option) => (
-					<Select.Item key={option.value} value={option.value}>
-						{option.label}
+					<Select.Item className="select-item" key={option.value} value={option.value}>
+						{renderItem ? renderItem(option) : renderValue ? renderValue(option) : option.label}
 					</Select.Item>
 				))}
 			</Select.Content>
