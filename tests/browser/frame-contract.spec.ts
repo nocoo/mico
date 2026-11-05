@@ -22,6 +22,14 @@ async function getBox(locator: Locator, label: string): Promise<Box> {
 	return box
 }
 
+async function waitForAnimation(locator: Locator): Promise<void> {
+	await locator.evaluate(async (element) => {
+		await Promise.all(
+			element.getAnimations().map((animation) => animation.finished.catch(() => {})),
+		)
+	})
+}
+
 function expectBox(actual: Box, expected: Box, label: string) {
 	for (const key of ['x', 'y', 'width', 'height'] as const) {
 		expect(
@@ -84,6 +92,7 @@ test.beforeEach(async ({ request, baseURL }) => {
 
 test('identity and canvas manager match the approved canvas-manager geometry', async ({ page }) => {
 	await openPrototype(page, 'canvas-manager.html')
+	await waitForAnimation(page.locator('.canvas-panel'))
 	const prototype = {
 		identity: await getBox(page.locator('.identity'), 'prototype identity'),
 		brandMark: await getBox(page.locator('.brand-mark'), 'prototype brand mark'),
@@ -117,6 +126,7 @@ test('identity and canvas manager match the approved canvas-manager geometry', a
 	const panel = page.locator('section.frame-identity.canvas-panel')
 	await expect(panel).toBeVisible()
 	await expect(panel).toHaveAttribute('data-state', 'open')
+	await waitForAnimation(panel)
 
 	const real = {
 		identity: await getBox(page.locator('.topbar.frame-identity .identity-panel'), 'real identity'),
@@ -277,7 +287,11 @@ test('AI trigger and panel match approved open-close and Live theme geometry', a
 	}
 
 	await page.locator('#ai-tab-audio').click()
-	await page.waitForTimeout(450)
+	await expect
+		.poll(
+			async () => (await pseudoStyles(page.locator('#ai-panel'), '::before', ['opacity'])).opacity,
+		)
+		.toBe('1')
 	await expect(page.locator('#ai-panel')).toHaveAttribute('data-immersive', 'true')
 	await expect(page.locator('.ai-trigger')).toHaveAttribute('data-open', 'true')
 	await expect(page.locator('.ai-trigger')).toHaveAttribute('data-immersive', 'true')
@@ -331,7 +345,9 @@ test('AI trigger and panel match approved open-close and Live theme geometry', a
 	await realPanel.getByRole('tab', { name: 'Live', exact: true }).click()
 	await expect(realPanel).toHaveAttribute('data-immersive', 'true')
 	await expect(page.locator('.ai-assistant .ai-trigger')).toHaveAttribute('data-immersive', 'true')
-	await page.waitForTimeout(450)
+	await expect
+		.poll(async () => (await pseudoStyles(realPanel, '::before', ['opacity'])).opacity)
+		.toBe('1')
 
 	const realLive = {
 		panelBackgroundOpacity: (await pseudoStyles(realPanel, '::before', ['opacity'])).opacity,

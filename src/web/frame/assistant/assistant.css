@@ -258,7 +258,7 @@
 	gap: 4px;
 }
 
-.ai-assistant .ai-tab {
+.ai-assistant .ai-tab[data-compact="true"] {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
