@@ -1,4 +1,4 @@
-import { Check, Layers, Pencil, PenTool, Plus, Trash2 } from 'lucide-react'
+import { Check, Layers, Pencil, Plus, Trash2 } from 'lucide-react'
 import { IconButton } from '../../IconButton'
 import type { IdentityActions, IdentityState } from '../contracts'
 import { formatCanvasTime } from './identityViewModel'
@@ -19,15 +19,7 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 				<div className="identity-panel floating-panel">
 					<div className="brand">
 						<span className="brand-mark">
-							<PenTool className="brand-mark-icon" strokeWidth={2.25} aria-hidden="true" />
-							<span
-								className={`status ${identity.status}`}
-								role="status"
-								aria-label={identity.statusLabel}
-								title={identity.statusTitle}
-							>
-								<span className="status-dot" aria-hidden="true" />
-							</span>
+							<img className="brand-mark-icon" src="/logo.png" alt="" aria-hidden="true" />
 						</span>
 						<strong>mico</strong>
 					</div>

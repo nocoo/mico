@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { deriveConnectionStatus } from './frame/connection.ts'
 import type { CanvasListItem, IdentityActions, IdentityState } from './frame/contracts.ts'
 import {
 	createIdentityViewModel,
-	deriveIdentityStatus,
 	formatCanvasTime,
 	getRenameCommitName,
 	identityInteractionReducer,
@@ -28,11 +28,9 @@ const baseState: IdentityState = {
 	canvases,
 	activeCanvasId: 'alpha',
 	canvasesOpen: false,
-	apiConnected: true,
-	wsConnected: true,
-	revision: 7,
-	objectCount: 12,
 }
+
+const connection = { apiConnected: true, wsConnected: true, revision: 7, objectCount: 12 }
 
 function actionsSpy(): IdentityActions & { calls: string[] } {
 	const calls: string[] = []
@@ -47,19 +45,16 @@ function actionsSpy(): IdentityActions & { calls: string[] } {
 	}
 }
 
-test('identity status preserves offline, live, and reconnecting precedence', () => {
-	assert.deepEqual(deriveIdentityStatus(baseState), {
+test('connection status preserves offline, live, and reconnecting precedence', () => {
+	assert.deepEqual(deriveConnectionStatus(connection), {
 		status: 'live',
-		statusLabel: 'Live',
-		statusTitle: 'Revision 7 · 12 objects · Live',
+		label: 'Live',
+		title: 'Revision 7 · 12 objects · Live',
 	})
+	assert.equal(deriveConnectionStatus({ ...connection, apiConnected: false }).status, 'offline')
+	assert.equal(deriveConnectionStatus({ ...connection, wsConnected: false }).status, 'reconnecting')
 	assert.equal(
-		deriveIdentityStatus({ ...baseState, apiConnected: false, wsConnected: true }).status,
-		'offline',
-	)
-	assert.equal(deriveIdentityStatus({ ...baseState, wsConnected: false }).status, 'reconnecting')
-	assert.equal(
-		deriveIdentityStatus({ ...baseState, apiConnected: false, wsConnected: false }).statusLabel,
+		deriveConnectionStatus({ ...connection, apiConnected: false, wsConnected: false }).label,
 		'Offline',
 	)
 })

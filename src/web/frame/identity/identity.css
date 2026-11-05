@@ -34,8 +34,8 @@
 .frame-identity .brand-mark-icon {
 	width: var(--control-standard);
 	height: var(--control-standard);
-	padding: var(--space-1);
-	color: var(--accent);
+	padding: var(--space-05);
+	object-fit: contain;
 }
 
 .frame-identity .brand strong {
@@ -97,63 +97,6 @@
 .frame-identity .canvas-actions .icon-button > svg {
 	width: var(--icon-small);
 	height: var(--icon-small);
-}
-
-.frame-identity .status {
-	position: absolute;
-	top: 7px;
-	left: 7px;
-	display: grid;
-	place-items: center;
-	width: 6px;
-	height: 6px;
-}
-
-.frame-identity .status-dot {
-	width: 6px;
-	height: 6px;
-	border-radius: 50%;
-	background: var(--ink-muted);
-}
-
-.frame-identity .status.live .status-dot {
-	background: radial-gradient(
-		circle at 35% 30%,
-		color-mix(in srgb, var(--success) 55%, var(--surface)),
-		var(--success) 75%
-	);
-	box-shadow:
-		0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
-		0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
-	animation: frame-identity-status-breathe 2800ms infinite;
-}
-
-@keyframes frame-identity-status-breathe {
-	0%,
-	100% {
-		opacity: 0.7;
-		transform: scale(0.94);
-		box-shadow:
-			0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
-			0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
-		animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
-	}
-	50% {
-		opacity: 1;
-		transform: scale(1.04);
-		box-shadow:
-			0 0 6px color-mix(in srgb, var(--success) 65%, transparent),
-			0 0 12px color-mix(in srgb, var(--success) 38%, transparent);
-		animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
-	}
-}
-
-.frame-identity .status.reconnecting .status-dot {
-	background: var(--warning);
-}
-
-.frame-identity .status.offline .status-dot {
-	background: var(--danger);
 }
 
 .frame-identity.canvas-panel {
@@ -381,10 +324,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-	.frame-identity .status.live .status-dot {
-		animation: none;
-	}
-
 	.frame-identity .icon-button,
 	.frame-identity .canvas-actions {
 		transition: none;

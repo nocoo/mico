@@ -1,5 +1,9 @@
 # Retrospective
 
+## Logo placement
+
+- I interpreted “swap” as moving the header containers and changing a trigger, but the owner meant swapping only the artwork. Confirm the scope of ambiguous placement changes before moving controls or changing their actions.
+
 ## UI prototypes
 
 - The commit rules allow a limited set of types; check that list before using a familiar Conventional Commits type such as `style`.
@@ -35,6 +39,7 @@
 
 ## Automated test architecture
 
+- A locator scoped through the assistant trigger's changing accessible name stops matching when the panel opens. Use its stable toggle attribute across the transition, and assert the name separately.
 - Escape closes a select but also returns the canvas to the Select tool; tests that inspect several Text dropdowns should close each by choosing its current option instead.
 - After pulling UI changes, inspect the current accessible names before writing a smoke check; the assistant trigger was renamed from `AI assistant` to `Open AI assistant` and the stale selector produced a false failure.
 - A transcription mock that emits a completed segment before `input_audio_buffer.commit` can make a broken VAD pipeline look healthy. Drive synthetic speech and silence through the real worklet and only complete on commit; test the final stop flush separately.

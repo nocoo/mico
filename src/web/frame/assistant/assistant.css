@@ -81,6 +81,64 @@
 		box-shadow var(--ai-motion) var(--ai-ease);
 }
 
+.ai-assistant .status {
+	position: absolute;
+	top: var(--space-2);
+	left: var(--space-2);
+	display: grid;
+	place-items: center;
+	width: 6px;
+	height: 6px;
+	pointer-events: none;
+}
+
+.ai-assistant .status-dot {
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--ink-muted);
+}
+
+.ai-assistant .status.live .status-dot {
+	background: radial-gradient(
+		circle at 35% 30%,
+		color-mix(in srgb, var(--success) 55%, var(--surface)),
+		var(--success) 75%
+	);
+	box-shadow:
+		0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
+		0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+	animation: connection-status-breathe 2800ms infinite;
+}
+
+@keyframes connection-status-breathe {
+	0%,
+	100% {
+		opacity: 0.7;
+		transform: scale(0.94);
+		box-shadow:
+			0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
+			0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.04);
+		box-shadow:
+			0 0 6px color-mix(in srgb, var(--success) 65%, transparent),
+			0 0 12px color-mix(in srgb, var(--success) 38%, transparent);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.2, 1);
+	}
+}
+
+.ai-assistant .status.reconnecting .status-dot {
+	background: var(--warning);
+}
+
+.ai-assistant .status.offline .status-dot {
+	background: var(--danger);
+}
+
 .ai-assistant .ai-trigger[data-open="true"] {
 	background: transparent;
 	box-shadow: none;
@@ -95,9 +153,9 @@
 	padding: 0;
 	border: 0;
 	border-radius: 12px;
-	background: var(--ai-accent-tint);
+	background: transparent;
 	color: var(--ai-accent-ink);
-	box-shadow: inset 0 0 0 2px var(--ai-accent);
+	box-shadow: none;
 	transition:
 		width var(--ai-motion) var(--ai-ease),
 		height var(--ai-motion) var(--ai-ease),
@@ -108,7 +166,7 @@
 }
 
 .ai-assistant .ai-trigger-button:hover {
-	background: var(--ai-accent-tint);
+	background: var(--ai-hover);
 	color: var(--ai-accent-ink);
 }
 
@@ -130,7 +188,11 @@
 		height var(--ai-motion) var(--ai-ease);
 }
 
-.ai-assistant .trigger-sparkles {
+.ai-assistant .ai-trigger-button .trigger-logo {
+	width: 24px;
+	height: 24px;
+	color: var(--ai-accent);
+	stroke-width: 2.25;
 	opacity: 1;
 	transform: translate(-50%, -50%) scale(1) rotate(0);
 }
@@ -168,7 +230,7 @@
 	height: 16px;
 }
 
-.ai-assistant .ai-trigger[data-open="true"] .trigger-sparkles {
+.ai-assistant .ai-trigger[data-open="true"] .trigger-logo {
 	opacity: 0;
 	transform: translate(-50%, -50%) scale(0.6) rotate(45deg);
 }
@@ -1425,6 +1487,7 @@
 	.ai-assistant .call-caption {
 		transition: none !important;
 	}
+	.ai-assistant .status.live .status-dot,
 	.ai-assistant .call-presence,
 	.ai-assistant .call-control::after,
 	.ai-assistant .call-mic,

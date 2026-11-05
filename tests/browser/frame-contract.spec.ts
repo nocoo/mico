@@ -141,7 +141,7 @@ test('identity and canvas manager match the approved canvas-manager geometry', a
 		activeItem: await getBox(panel.locator('.canvas-item.active'), 'real active item'),
 		preview: await getBox(panel.locator('.canvas-item.active .canvas-preview'), 'real preview'),
 		activeMarker: await getBox(panel.locator('.canvas-active'), 'real active marker'),
-		statusDot: await getBox(page.locator('.topbar.frame-identity .status-dot'), 'real status dot'),
+		statusDot: await getBox(page.locator('.ai-assistant .status-dot'), 'real status dot'),
 	}
 
 	expectBox(real.identity, prototype.identity, 'identity panel')
@@ -161,9 +161,10 @@ test('identity and canvas manager match the approved canvas-manager geometry', a
 	expectBox(real.activeItem, prototype.activeItem, 'active canvas item')
 	expectBox(real.preview, prototype.preview, 'canvas preview')
 	expectBox(real.activeMarker, prototype.activeMarker, 'active canvas marker')
-	expectBox(real.statusDot, prototype.statusDot, 'status dot')
+	expect(real.statusDot.width).toBeCloseTo(prototype.statusDot.width, 0)
+	expect(real.statusDot.height).toBeCloseTo(prototype.statusDot.height, 0)
 
-	const realStatus = await computedStyles(page.locator('.topbar.frame-identity .status-dot'), [
+	const realStatus = await computedStyles(page.locator('.ai-assistant .status-dot'), [
 		'width',
 		'height',
 		'backgroundImage',

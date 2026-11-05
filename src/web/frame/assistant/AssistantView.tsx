@@ -8,9 +8,9 @@ import {
 	MessageSquare,
 	Mic,
 	MousePointer2,
+	PenTool,
 	Plus,
 	Settings,
-	Sparkles,
 	Square,
 	TriangleAlert,
 	X,
@@ -18,6 +18,7 @@ import {
 import type { FormEvent, KeyboardEvent } from 'react'
 import { IconButton } from '../../IconButton'
 import { isWaitReply } from '../../stt/transcript'
+import { deriveConnectionStatus } from '../connection'
 import type { AssistantActions, AssistantState } from '../contracts'
 import { AiSettings } from './AiSettings'
 import { LessonPanel, type LessonSegment } from './LessonPanel'
@@ -174,6 +175,7 @@ function UserMessage({ text }: { text: string }) {
 }
 
 export function AssistantView({ state, actions, model }: AssistantViewProps) {
+	const connection = deriveConnectionStatus(state.connection)
 	const focusTab = (event: KeyboardEvent<HTMLDivElement>) => {
 		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 		event.preventDefault()
@@ -205,9 +207,17 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 						onClick={actions.toggle}
 						data-ai-toggle="true"
 					>
-						<Sparkles className="trigger-sparkles" aria-hidden="true" />
+						<PenTool className="trigger-logo" aria-hidden="true" />
 						<X className="trigger-close" aria-hidden="true" />
 					</button>
+					<span
+						className={`status ${connection.status}`}
+						role="status"
+						aria-label={connection.label}
+						title={connection.title}
+					>
+						<span className="status-dot" aria-hidden="true" />
+					</span>
 				</div>
 			</header>
 

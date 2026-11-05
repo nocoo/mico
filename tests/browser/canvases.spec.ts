@@ -101,6 +101,7 @@ test('creating and switching canvases keeps each board and survives reload', asy
 	page,
 	request,
 }) => {
+	await expect(page).toHaveTitle('mico · My canvas')
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
 	await clickWorld(page, 500, 400)
 	await expect.poll(async () => (await state(request)).board.shapes.length).toBe(1)
@@ -117,6 +118,7 @@ test('creating and switching canvases keeps each board and survives reload', asy
 	const second = afterCreate.canvases.find((canvas) => canvas.id === afterCreate.activeCanvasId)
 	if (!second) throw new Error('Missing created canvas')
 	expect(second.name).toBe('Canvas 2')
+	await expect(page).toHaveTitle('mico · Canvas 2')
 
 	await page.keyboard.press('Escape')
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
@@ -129,6 +131,7 @@ test('creating and switching canvases keeps each board and survives reload', asy
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 	await page.getByRole('button', { name: 'Open canvas My canvas', exact: true }).click()
 	await expect.poll(async () => (await state(request)).activeCanvasId).toBe(mainCanvas.id)
+	await expect(page).toHaveTitle('mico · My canvas')
 	await expect(page.locator(`[data-shape-id="${noteId}"]`)).toHaveCount(1)
 
 	await page.reload()
@@ -140,6 +143,7 @@ test('creating and switching canvases keeps each board and survives reload', asy
 	)
 	await page.getByRole('button', { name: 'Open canvas Canvas 2', exact: true }).click()
 	await expect.poll(async () => (await state(request)).activeCanvasId).toBe(second.id)
+	await expect(page).toHaveTitle('mico · Canvas 2')
 	await expect(page.locator('.canvas-shape')).toHaveCount(1)
 })
 
@@ -166,6 +170,7 @@ test('renaming and deleting canvases uses the panel and keeps one canvas', async
 			(await state(request)).canvases.some((canvas) => canvas.name === 'Renamed canvas'),
 		)
 		.toBe(true)
+	await expect(page).toHaveTitle('mico · Renamed canvas')
 
 	const secondItem = panel.locator('.canvas-item').filter({ hasText: 'Second canvas' })
 	await secondItem.hover()

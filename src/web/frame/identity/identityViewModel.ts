@@ -1,13 +1,5 @@
 import type { CanvasListItem, IdentityActions, IdentityState } from '../contracts'
 
-export type IdentityConnectionStatus = 'offline' | 'live' | 'reconnecting'
-
-export interface IdentityStatusView {
-	status: IdentityConnectionStatus
-	statusLabel: 'Offline' | 'Live' | 'Reconnecting'
-	statusTitle: string
-}
-
 export interface IdentityInteractionState {
 	mounted: boolean
 	renamingId: string | null
@@ -31,9 +23,6 @@ export interface IdentityViewModel {
 	canvases: readonly CanvasListItem[]
 	activeCanvasId: string
 	canvasesOpen: boolean
-	status: IdentityConnectionStatus
-	statusLabel: 'Offline' | 'Live' | 'Reconnecting'
-	statusTitle: string
 	canDeleteCanvas: boolean
 	toggleCanvases: () => void
 	closeCanvases: () => void
@@ -85,20 +74,6 @@ export function identityInteractionReducer(
 	}
 }
 
-export function deriveIdentityStatus(state: IdentityState): IdentityStatusView {
-	const status: IdentityConnectionStatus = !state.apiConnected
-		? 'offline'
-		: state.wsConnected
-			? 'live'
-			: 'reconnecting'
-	const statusLabel = !state.apiConnected ? 'Offline' : state.wsConnected ? 'Live' : 'Reconnecting'
-	return {
-		status,
-		statusLabel,
-		statusTitle: `Revision ${state.revision} · ${state.objectCount} objects · ${statusLabel}`,
-	}
-}
-
 const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
 	['day', 86_400_000],
 	['hour', 3_600_000],
@@ -137,14 +112,10 @@ export function createIdentityViewModel(
 	state: IdentityState,
 	actions: IdentityActions,
 ): IdentityViewModel {
-	const identityStatus = deriveIdentityStatus(state)
 	return {
 		canvases: state.canvases,
 		activeCanvasId: state.activeCanvasId,
 		canvasesOpen: state.canvasesOpen,
-		status: identityStatus.status,
-		statusLabel: identityStatus.statusLabel,
-		statusTitle: identityStatus.statusTitle,
 		canDeleteCanvas: state.canvases.length > 1,
 		toggleCanvases: actions.toggleCanvases,
 		closeCanvases: actions.closeCanvases,

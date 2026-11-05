@@ -144,6 +144,11 @@ export default function App() {
 	const [spacePressed, setSpacePressed] = useState(false)
 	const [isPanning, setIsPanning] = useState(false)
 
+	const activeCanvasName = canvases.find((canvas) => canvas.id === activeCanvasId)?.name
+	useEffect(() => {
+		document.title = activeCanvasName ? `mico · ${activeCanvasName}` : 'mico'
+	}, [activeCanvasName])
+
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
 	const reportDockLayout = useCallback((layout: DockLayout | null) => {
 		setDockLayout((current) =>
@@ -1383,10 +1388,6 @@ export default function App() {
 					canvases,
 					activeCanvasId,
 					canvasesOpen: canvasPanelOpen,
-					apiConnected,
-					wsConnected,
-					revision: board.revision,
-					objectCount: board.shapes.length,
 				}}
 				actions={{
 					toggleCanvases: toggleCanvasPanel,
@@ -1431,6 +1432,12 @@ export default function App() {
 			/>
 			<AssistantFrame
 				state={{
+					connection: {
+						apiConnected,
+						wsConnected,
+						revision: board.revision,
+						objectCount: board.shapes.length,
+					},
 					open: aiPanelOpen,
 					canvasId: activeCanvasId,
 					selectedIds,

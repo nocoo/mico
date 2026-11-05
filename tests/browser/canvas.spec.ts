@@ -152,11 +152,8 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
-	await expect(page.locator('.identity-panel .brand-mark-icon.lucide')).toHaveCount(1)
-	await expect(page.locator('.status-dot')).toHaveCSS(
-		'animation-name',
-		'frame-identity-status-breathe',
-	)
+	await expect(page.locator('.identity-panel img.brand-mark-icon')).toHaveCount(1)
+	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'connection-status-breathe')
 	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(15)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	for (const topbar of await page.locator('.topbar').all()) {

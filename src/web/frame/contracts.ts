@@ -1,5 +1,6 @@
 import type { BrushStyle, FontFamily } from '../../shared/types'
 import type { Tool } from '../design'
+import type { ConnectionState } from './connection'
 
 export interface CanvasListItem {
 	id: string
@@ -12,10 +13,6 @@ export interface IdentityState {
 	canvases: readonly CanvasListItem[]
 	activeCanvasId: string
 	canvasesOpen: boolean
-	apiConnected: boolean
-	wsConnected: boolean
-	revision: number
-	objectCount: number
 }
 
 export interface IdentityActions {
@@ -64,6 +61,7 @@ export interface ToolbarActions {
 }
 
 export interface AssistantState {
+	connection: ConnectionState
 	open: boolean
 	canvasId: string
 	selectedIds: string[]

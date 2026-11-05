@@ -11,6 +11,46 @@ test.beforeEach(async ({ page, request }) => {
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 })
 
+test('the project logo and pen use their original containers and actions', async ({
+	page,
+	request,
+}) => {
+	await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', '/logo.png')
+	const image = await request.get('/logo.png')
+	expect(image.ok()).toBe(true)
+	expect(image.headers()['content-type']).toContain('image/png')
+
+	const logo = page.locator('.identity-panel img.brand-mark-icon')
+	await expect(logo).toHaveAttribute('src', '/logo.png')
+	await expect
+		.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth))
+		.toBe(256)
+	await expect(page.locator('.identity-panel').getByRole('status')).toHaveCount(0)
+	await expect(page.getByRole('button', { name: 'Canvases', exact: true })).toBeVisible()
+
+	const trigger = page.locator('[data-ai-toggle="true"]')
+	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
+	await expect(trigger).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+	await expect(trigger).toHaveCSS('box-shadow', 'none')
+	const pen = trigger.locator('svg.trigger-logo.lucide-pen-tool')
+	await expect(pen).toHaveCSS('opacity', '1')
+	const status = page.locator('.ai-trigger').getByRole('status', { name: 'Live' })
+	await expect(status).toBeVisible()
+	const logoBox = await logo.boundingBox()
+	const triggerBox = await trigger.boundingBox()
+	const penBox = await pen.boundingBox()
+	const statusBox = await status.boundingBox()
+	if (!logoBox || !triggerBox || !penBox || !statusBox) throw new Error('Missing header icons')
+	expect(logoBox.x).toBeLessThan(triggerBox.x)
+	expect(statusBox.x + statusBox.width / 2).toBeCloseTo(penBox.x + 3, 0)
+	expect(statusBox.y + statusBox.height / 2).toBeCloseTo(penBox.y + 3, 0)
+	await trigger.click()
+	await expect(trigger).toHaveAttribute('aria-label', 'Close AI assistant')
+	await expect(pen).toHaveCSS('opacity', '0')
+	await trigger.click()
+	await expect(pen).toHaveCSS('opacity', '1')
+})
+
 test('the AI panel streams a tool loop and draws on the board', async ({ page, request }) => {
 	const trigger = page.locator('[data-ai-toggle="true"]')
 	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
