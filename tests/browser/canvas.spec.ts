@@ -844,7 +844,7 @@ test('html cards render generated markup and expose only their title', async ({
 						h: 300,
 						color: '#22c55e',
 						title: 'Stats',
-						html: '<!doctype html><html><head><style>#value { color: rgb(255, 0, 0) }</style></head><body style="margin:0"><h1 id="value">42</h1><button id="bootstrap-button" class="btn btn-primary" onclick="document.getElementById(&quot;value&quot;).textContent = &quot;bootstrap-clicked&quot;">Bootstrap</button><img id="blocked-image" src="https://example.invalid/pixel.png"><script src="https://example.invalid/script.js"></script><script>document.getElementById("value").textContent = "hacked"; window.bootstrapProbe = !!window.bootstrap; window.externalProbe = "blocked"; window.parentProbe = (() => { try { return window.parent.document.title } catch (error) { return error.name } })(); </script></body></html>',
+						html: '<!doctype html><html><head><style>#value { color: rgb(255, 0, 0) }</style></head><body style="margin:0"><h1 id="value">42</h1><button id="bootstrap-button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#bootstrap-panel" aria-expanded="false">Bootstrap</button><div id="bootstrap-panel" class="collapse"><div class="card card-body" id="bootstrap-panel-body">Bootstrap state</div></div><img id="blocked-image" src="https://example.invalid/pixel.png"><script src="https://example.invalid/script.js"></script><script>document.getElementById("value").textContent = "hacked"; window.bootstrapProbe = !!window.bootstrap; window.externalProbe = "blocked"; window.parentProbe = (() => { try { return window.parent.document.title } catch (error) { return error.name } })(); </script></body></html>',
 						frameId: 'html-frame',
 					},
 				},
@@ -898,10 +898,23 @@ test('html cards render generated markup and expose only their title', async ({
 		'auto',
 	)
 	await expect(frame.locator('#bootstrap-button')).toBeVisible()
-	await frame
-		.locator('#bootstrap-button')
-		.evaluate((button) => (button as HTMLButtonElement).click())
-	await expect(frame.locator('#value')).toHaveText('bootstrap-clicked')
+	await expect
+		.poll(() => frame.locator('html').evaluate(() => document.readyState))
+		.toBe('complete')
+	await expect
+		.poll(() =>
+			frame.locator('#bootstrap-button').evaluate((button) => {
+				const view = button.ownerDocument.defaultView as unknown as {
+					bootstrap?: { Collapse?: unknown }
+				}
+				return typeof view.bootstrap?.Collapse === 'function'
+			}),
+		)
+		.toBe(true)
+	await expect(frame.locator('#bootstrap-panel')).not.toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await frame.locator('#bootstrap-button').click()
+	await expect(frame.locator('#bootstrap-panel')).toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await expect(frame.locator('#bootstrap-button')).toHaveAttribute('aria-expanded', 'true')
 
 	const dragStart = await pillBox(page, 'html-card')
 	await page.mouse.move(dragStart.x + dragStart.width / 2, dragStart.y + dragStart.height / 2)
