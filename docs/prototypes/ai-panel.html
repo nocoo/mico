@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mico — AI panel prototype</title>
+  <style>
+    :root {
+      --canvas: #f5fafc;
+      --grid: #dceaf1;
+      --surface: #fff;
+      --surface-muted: #f3f5f4;
+      --surface-hover: #ecf1f4;
+      --border: #dce4e9;
+      --ink: #2b3038;
+      --ink-secondary: #5e6a73;
+      --ink-muted: #7a858d;
+      --accent: #00a2e1;
+      --accent-tint: #e2f5fc;
+      --accent-ink: #0b7ba8;
+      --inset: 24px;
+      --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43, 48, 56, .06), 0 2px 12px rgba(43, 48, 56, .08);
+      font: 14px/24px Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; overflow: hidden; }
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    svg { display: block; }
+    .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
+    .floating-panel { background: var(--surface); border-radius: 20px; box-shadow: var(--panel-shadow); }
+    .ai-trigger { position: fixed; top: var(--inset); right: var(--inset); display: flex; padding: 8px; }
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink-secondary);
+    }
+    .icon-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--ink); }
+    .ai-trigger .icon-button { background: var(--accent); color: var(--surface); }
+    .ai-panel {
+      position: fixed;
+      top: calc(var(--inset) + 68px);
+      right: var(--inset);
+      display: flex;
+      flex-direction: column;
+      width: min(380px, calc(100vw - var(--inset) * 2));
+      height: min(700px, calc(100dvh - var(--inset) - 140px));
+      overflow: hidden;
+    }
+    .ai-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
+    .ai-tabs { display: flex; align-items: center; gap: 4px; }
+    .ai-tab, .ai-close { width: 32px; height: 32px; }
+    .ai-tab svg, .ai-close svg { width: 16px; height: 16px; }
+    .ai-tab svg { color: var(--ink-muted); }
+    .ai-tab[aria-selected="true"] { background: var(--accent-tint); color: var(--ink); }
+    .ai-tab[aria-selected="true"] svg { color: var(--accent-ink); }
+    .ai-chat { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+    .ai-messages { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 12px; overflow-y: auto; }
+    .ai-empty { display: flex; flex-direction: column; gap: 8px; padding: 12px 4px; }
+    .ai-empty strong { font-size: 16px; font-weight: 600; }
+    .ai-empty p { margin: 0; color: var(--ink-secondary); line-height: 24px; }
+    .ai-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .ai-quick-prompt { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink-secondary); font-size: 12px; line-height: 16px; }
+    .ai-quick-prompt:hover { border-color: var(--accent); background: var(--accent-tint); color: var(--ink); }
+    .ai-composer { display: flex; align-items: flex-end; gap: 8px; padding: 8px; border-top: 1px solid var(--border); }
+    .ai-composer-input { flex: 1; min-width: 0; min-height: 40px; margin: 0; padding: 10px 8px; border: 0; background: transparent; color: var(--ink); font: inherit; line-height: 24px; resize: none; }
+    .ai-composer-input::placeholder { color: var(--ink-muted); }
+    .ai-composer-input:focus-visible { outline-offset: -1px; border-radius: 8px; }
+    .ai-send { border-radius: 999px; background: var(--surface-hover); color: var(--ink-muted); cursor: default; }
+    @media (max-width: 768px) {
+      :root { --inset: 16px; }
+      .ai-panel { width: calc(100vw - var(--inset) * 2); height: min(700px, calc(100dvh - var(--inset) * 2 - 172px)); }
+    }
+    @media (max-height: 440px) { .ai-messages { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <svg class="canvas-grid" aria-hidden="true">
+    <defs><pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M0 0V64 M64 0V64 M0 0H64 M0 64H64" fill="none" stroke="#dceaf1"/><path d="M16 0V64 M0 16H64 M32 0V64 M0 32H64 M48 0V64 M0 48H64" fill="none" stroke="#dceaf1" stroke-dasharray="4 4"/></pattern></defs>
+    <rect width="100%" height="100%" fill="url(#grid)"/>
+  </svg>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <symbol id="sparkles" viewBox="0 0 24 24"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"/><path d="M20 2v4 M22 4h-4"/><circle cx="4" cy="20" r="2"/></symbol>
+    <symbol id="chat" viewBox="0 0 24 24"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z"/></symbol>
+    <symbol id="live" viewBox="0 0 24 24"><path d="M9 9.003a1 1 0 0 1 1.517-.859l4.997 2.997a1 1 0 0 1 0 1.718l-4.997 2.997A1 1 0 0 1 9 14.996z"/><circle cx="12" cy="12" r="10"/></symbol>
+    <symbol id="audio" viewBox="0 0 24 24"><path d="M2 10v3 M6 6v11 M10 3v18 M14 8v7 M18 5v13 M22 10v3"/></symbol>
+    <symbol id="settings" viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="close" viewBox="0 0 24 24"><path d="M18 6 6 18 M6 6l12 12"/></symbol>
+    <symbol id="send" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7 M12 19V5"/></symbol>
+  </svg>
+
+  <div class="ai-trigger floating-panel">
+    <button class="icon-button" type="button" aria-label="AI assistant" aria-expanded="true" title="AI assistant"><svg aria-hidden="true"><use href="#sparkles"/></svg></button>
+  </div>
+  <section class="ai-panel floating-panel" aria-label="AI assistant">
+    <header class="ai-panel-header">
+      <div class="ai-tabs" role="tablist" aria-label="AI modes">
+        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Chat" aria-selected="true" title="Chat"><svg aria-hidden="true"><use href="#chat"/></svg></button>
+        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Live" aria-selected="false" title="Live"><svg aria-hidden="true"><use href="#live"/></svg></button>
+        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Audio" aria-selected="false" title="Audio"><svg aria-hidden="true"><use href="#audio"/></svg></button>
+        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" title="Settings"><svg aria-hidden="true"><use href="#settings"/></svg></button>
+      </div>
+      <button class="icon-button ai-close" type="button" aria-label="Close AI assistant" title="Close AI assistant"><svg aria-hidden="true"><use href="#close"/></svg></button>
+    </header>
+    <div class="ai-chat" role="tabpanel" aria-label="Chat">
+      <div class="ai-messages">
+        <div class="ai-empty">
+          <strong>Draw a lesson with Mico</strong>
+          <p>Describe a high-school science topic. Mico sketches it step by step.</p>
+          <div class="ai-quick">
+            <button class="ai-quick-prompt" type="button">Projectile motion</button>
+            <button class="ai-quick-prompt" type="button">Acid–base titration</button>
+            <button class="ai-quick-prompt" type="button">Quadratic functions</button>
+            <button class="ai-quick-prompt" type="button">Electrolysis of water</button>
+          </div>
+        </div>
+      </div>
+      <div class="ai-composer">
+        <textarea class="ai-composer-input" aria-label="Message the assistant" placeholder="Describe what to draw…" rows="1"></textarea>
+        <button class="icon-button ai-send" type="button" aria-label="Send message" disabled><svg aria-hidden="true"><use href="#send"/></svg></button>
+      </div>
+    </div>
+  </section>
+</body>
+</html>
