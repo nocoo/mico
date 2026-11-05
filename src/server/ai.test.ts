@@ -396,6 +396,9 @@ test('AI chat streams a tool loop and draws on the active board', async () => {
 		const streamed = await response.text()
 		assert.match(streamed, /add_texts/)
 		assert.match(streamed, /Projectile motion/)
+		assert.deepEqual(model.doStreamCalls[0]?.providerOptions, {
+			magpie: { reasoningEffort: 'low' },
+		})
 		const firstPrompt = JSON.stringify(model.doStreamCalls[0]?.prompt)
 		assert.match(firstPrompt, /selected-seed/)
 		assert.match(firstPrompt, /primary context/)
@@ -716,6 +719,9 @@ test('lecture mode can answer WAIT without forcing a tool call', async () => {
 		assert.equal(response.status, 200)
 		const streamed = await response.text()
 		assert.match(streamed, /WAIT/)
+		assert.deepEqual(model.doStreamCalls[0]?.providerOptions, {
+			magpie: { reasoningEffort: process.env.MAGPIE_LECTURE_REASONING || 'none' },
+		})
 		assert.equal(daemon.store.getBoard().shapes.length, 0)
 	}, model)
 })

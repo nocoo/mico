@@ -207,10 +207,12 @@ export async function streamAiChat({
 				: isStepCount(40),
 		maxRetries: 1,
 		abortSignal: abort.signal,
-		providerOptions:
-			request.mode === 'lecture'
-				? { magpie: { reasoningEffort: process.env.MAGPIE_LECTURE_REASONING || 'none' } }
-				: undefined,
+		providerOptions: {
+			magpie: {
+				reasoningEffort:
+					request.mode === 'lecture' ? process.env.MAGPIE_LECTURE_REASONING || 'none' : 'low',
+			},
+		},
 		prepareStep:
 			request.mode === 'lecture'
 				? undefined
