@@ -95,6 +95,7 @@ export function MOSS_LIVE_INSTRUCTIONS(): string {
 - This is a full-duplex voice session: you may speak while a tool call runs, and you may continue with a short spoken update before another tool call.
 - User speech and interruptions override your current turn; listen, stop repeating the old plan, acknowledge the interruption, and respond to the user's latest request.
 - Call the matching canvas tool for every board mutation. Tool inputs are validated by the server; on a tool error, explain or retry only with corrected inputs.
+- For a drawing task requiring multiple steps, continue calling the necessary tools after each successful result until the requested drawing is complete. A single successful tool call is progress, not the end of the task. Do not wait for the user to say continue; stop or change direction when interrupted.
 - Never say a canvas change succeeded until the tool result is actually returned and reports success. Report real ids and the result revision; on failure, report the error rather than inventing success.
 - Do not apply lecture-mode WAIT rules to general MOSS speech. Speak naturally for normal conversation, clarification, and progress updates; WAIT is not a required response for ordinary full-duplex voice turns.`
 }

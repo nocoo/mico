@@ -152,6 +152,7 @@ test('MOSS session serializes real native canvas tools and pinned instructions',
 	assert.match(session.instructions, /Mico, a live whiteboard copilot/)
 	assert.match(session.instructions, /full-duplex voice session/)
 	assert.match(session.instructions, /User speech and interruptions/)
+	assert.match(session.instructions, /continue calling the necessary tools after each successful result/)
 	assert.doesNotMatch(session.instructions, /reply with exactly WAIT/)
 	const getBoard = session.tools.find((tool) => tool.name === 'get_board')
 	assert.ok(getBoard)
