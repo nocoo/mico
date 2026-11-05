@@ -106,7 +106,6 @@ export class SilenceSegmenter {
 			if (db < this.floorDb) this.floorDb = db
 			else if (!voiced) this.floorDb = Math.min(db, this.floorDb + DB_RAISE_PER_FRAME)
 
-			this.segmentMs += FRAME_MS
 			if (voiced) {
 				this.speechRunMs += FRAME_MS
 				this.silenceRunMs = 0
@@ -114,6 +113,7 @@ export class SilenceSegmenter {
 			} else {
 				this.silenceRunMs += FRAME_MS
 			}
+			if (this.speakingNow) this.segmentMs += FRAME_MS
 
 			const paused = this.speakingNow && this.silenceRunMs >= this.silenceMs
 			const hardCapReached = this.maxSegmentMs !== null && this.segmentMs >= this.maxSegmentMs

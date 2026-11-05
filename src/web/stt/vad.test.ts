@@ -42,13 +42,14 @@ test('the Live default hard cap still commits continuous speech at 15 seconds', 
 	assert.equal(segmenter.speaking, false)
 })
 
-test('Audio mode without a hard cap waits for a pause after continuous speech', () => {
-	const segmenter = new SilenceSegmenter({ maxSegmentMs: null })
+test('Audio commits continuous speech at 15 seconds without committing silence', () => {
+	const segmenter = new SilenceSegmenter()
 	segmenter.setSilenceMs(1000)
-	assert.equal(segmenter.push(tone(16_000)), false)
-	assert.equal(segmenter.speaking, true)
-	assert.equal(segmenter.push(silence(1000)), true)
+	assert.equal(segmenter.push(silence(30_000)), false)
+	assert.equal(segmenter.push(tone(14_980)), false)
+	assert.equal(segmenter.push(tone(20)), true)
 	assert.equal(segmenter.speaking, false)
+	assert.equal(segmenter.push(silence(30_000)), false)
 })
 
 test('the silence threshold is configurable', () => {

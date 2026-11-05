@@ -99,7 +99,7 @@ const PHASE_KIND: Record<Phase, string> = {
 }
 
 function newRuntime(): Runtime {
-	const segmenter = new SilenceSegmenter({ rate: TARGET_RATE, maxSegmentMs: null })
+	const segmenter = new SilenceSegmenter({ rate: TARGET_RATE })
 	segmenter.setSilenceMs(1000)
 	return {
 		ctx: null,
