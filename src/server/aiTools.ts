@@ -804,7 +804,7 @@ export function createCanvasTools(
 
 		add_html_cards: tool({
 			description:
-				'Add a rich HTML card for precise tables, charts, annotated SVG diagrams, chemistry equations or formatted math. Use inline styles only; no scripts or external resources; keep markup under 20,000 characters. Use exact Lucide placeholders such as <i data-lucide="heart-pulse"></i>; only the provided icon names may be used.',
+				'Add a rich HTML card for tables, charts, diagrams or summaries. Bootstrap CSS and JavaScript are already embedded in the card; use their components and optional inline CSS or scripts. Do not load remote resources. Use exact Lucide placeholders such as <i data-lucide="heart-pulse"></i>; only the provided icon names may be used.',
 			inputSchema: z.object({
 				cards: z
 					.array(

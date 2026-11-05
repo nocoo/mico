@@ -21,18 +21,18 @@ export interface HandoverChat {
 	stop(): void
 }
 
-export function parseRound(value: string | undefined): 1 | 2 {
-	if (value !== '1' && value !== '2') {
-		throw new Error('Usage: node scripts/run-handover.ts <1|2>')
+export function parseRound(value: string | undefined): number {
+	if (!value || !/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) {
+		throw new Error('Usage: node scripts/run-handover.ts <round-number> --confirm-live-canvas')
 	}
-	return Number(value) as 1 | 2
+	return Number(value)
 }
 
 export function compactTimestamp(date: Date): string {
 	return date.toISOString().replace(/[-:.]/g, '')
 }
 
-export function canvasName(round: 1 | 2, date: Date): string {
+export function canvasName(round: number, date: Date): string {
 	const name = `急诊交接 · 第${round}轮 · ${compactTimestamp(date)}`
 	if (name.length > 80) throw new Error('Canvas name exceeds 80 characters')
 	return name
@@ -60,7 +60,7 @@ export function buildTurnRequest(
 	return { text, body: { selection: [], mode, canvasId } }
 }
 
-export function createUniqueRunDirectory(round: 1 | 2, date: Date): string {
+export function createUniqueRunDirectory(round: number, date: Date): string {
 	mkdirSync(RUN_ROOT, { recursive: true })
 	return mkdtempSync(join(RUN_ROOT, `handover-r${round}-${compactTimestamp(date)}-`))
 }
@@ -188,7 +188,7 @@ function appendJsonl(directory: string, record: unknown): void {
 }
 
 interface RunState {
-	round: 1 | 2
+	round: number
 	startedAt: string
 	canvasId?: string
 	canvasName: string
