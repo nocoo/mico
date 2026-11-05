@@ -143,7 +143,12 @@ export async function openMicrophone(
 
 	const stream = await mediaDevices.getUserMedia({
 		video: false,
-		audio: { channelCount: { ideal: 1 } },
+		audio: {
+			channelCount: { ideal: 1 },
+			echoCancellation: true,
+			noiseSuppression: true,
+			autoGainControl: true,
+		},
 	})
 
 	const tracks =

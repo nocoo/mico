@@ -7,6 +7,7 @@ import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
 import { createMagpieModel, type MagpieSettings, parseAiChatRequest, streamAiChat } from './ai.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
+import { createMossSession, executeMossTool } from './mossApi.ts'
 import { BoardStore, OperationError } from './store.ts'
 
 function parsePort(): number {
@@ -87,6 +88,9 @@ function knownPath(pathname: string): boolean {
 		return ['live', 'state', 'board', 'operations', 'events', 'canvases', 'active-canvas'].includes(
 			segments[1],
 		)
+	}
+	if (segments.length === 3) {
+		return segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])
 	}
 	if (segments.length === 3) {
 		return (
@@ -291,6 +295,28 @@ export function createDaemon(
 				const state = store.activateCanvas(body.id)
 				broadcastState(state)
 				sendJson(res, 200, state, origin)
+				return
+			}
+
+			if (isPath('api', 'moss', 'session')) {
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const response = await createMossSession(store, broadcast, await readJson(req))
+				sendJson(res, 200, response, origin)
+				return
+			}
+
+			if (isPath('api', 'moss', 'tool')) {
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const response = await executeMossTool(store, broadcast, await readJson(req))
+				sendJson(res, 200, response, origin)
 				return
 			}
 

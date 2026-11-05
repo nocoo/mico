@@ -1,3 +1,4 @@
+import { SegmentedControl } from '@radix-ui/themes'
 import { getToolName, isToolUIPart, type UIMessage } from 'ai'
 import {
 	ArrowUp,
@@ -16,6 +17,7 @@ import {
 	X,
 } from 'lucide-react'
 import type { FormEvent, KeyboardEvent } from 'react'
+import { useState } from 'react'
 import { IconButton } from '../../IconButton'
 import { isWaitReply } from '../../stt/transcript'
 import { deriveConnectionStatus } from '../connection'
@@ -23,6 +25,7 @@ import type { AssistantActions, AssistantState } from '../contracts'
 import { AiSettings } from './AiSettings'
 import { LessonPanel, type LessonSegment } from './LessonPanel'
 import { MicrophonePanel } from './MicrophonePanel'
+import { MossPanel } from './MossPanel'
 import { nextAssistantTab } from './protocol'
 import type { AssistantViewModel } from './useAssistantSession'
 
@@ -175,6 +178,7 @@ function UserMessage({ text }: { text: string }) {
 }
 
 export function AssistantView({ state, actions, model }: AssistantViewProps) {
+	const [liveMode, setLiveMode] = useState<'moss' | 'mai'>('moss')
 	const connection = deriveConnectionStatus(state.connection)
 	const focusTab = (event: KeyboardEvent<HTMLDivElement>) => {
 		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
@@ -457,19 +461,40 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 					aria-labelledby="ai-tab-live"
 					hidden={model.tab !== 'live'}
 				>
-					<MicrophonePanel
-						key={state.canvasId}
-						active={state.open && model.tab === 'live'}
-						aiBusy={model.busy}
-						aiQueued={model.lectureQueued}
-						aiError={Boolean(model.error)}
-						onStart={model.startMicrophone}
-						onSegment={(segment: LessonSegment) =>
-							model.enqueueLecture(segment, { subject: 'Live speech', title: 'Microphone' })
-						}
-						onSessionEnd={model.endSession}
-						summaryRequesting={model.summaryRequesting}
-					/>
+					<SegmentedControl.Root
+						className="live-provider"
+						aria-label="Live provider"
+						size="1"
+						value={liveMode}
+						onValueChange={(value) => {
+							if (value === 'moss' || value === 'mai') setLiveMode(value)
+						}}
+					>
+						<SegmentedControl.Item value="moss">MOSS Live</SegmentedControl.Item>
+						<SegmentedControl.Item value="mai">MAI Transcribe</SegmentedControl.Item>
+					</SegmentedControl.Root>
+					{liveMode === 'moss' ? (
+						<MossPanel
+							key={state.canvasId}
+							active={state.open && model.tab === 'live'}
+							canvasId={state.canvasId}
+							selectedIds={state.selectedIds}
+						/>
+					) : (
+						<MicrophonePanel
+							key={state.canvasId}
+							active={state.open && model.tab === 'live'}
+							aiBusy={model.busy}
+							aiQueued={model.lectureQueued}
+							aiError={Boolean(model.error)}
+							onStart={model.startMicrophone}
+							onSegment={(segment: LessonSegment) =>
+								model.enqueueLecture(segment, { subject: 'Live speech', title: 'Microphone' })
+							}
+							onSessionEnd={model.endSession}
+							summaryRequesting={model.summaryRequesting}
+						/>
+					)}
 				</div>
 
 				<div

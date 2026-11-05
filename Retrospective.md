@@ -1,5 +1,11 @@
 # Retrospective
 
+## Tool usage
+
+- Parallel client and browser-test work disagreed on a translated error message. Freeze the user-visible error contract before writing cross-agent assertions, then run the integration test against the final implementation.
+- Used `sed` unnecessarily during inspection. Read files with the designated read tool and use `rg` for searches instead.
+- `herdr pane resize --current` acted on another focused workspace despite the inherited pane context. The prior layout was restored; use an explicit pane ID for resize and verify the returned workspace.
+
 ## Logo placement
 
 - I interpreted “swap” as moving the header containers and changing a trigger, but the owner meant swapping only the artwork. Confirm the scope of ambiguous placement changes before moving controls or changing their actions.

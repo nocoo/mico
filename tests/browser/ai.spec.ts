@@ -294,6 +294,26 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 	await expect(composer).toHaveValue('Keep this draft')
 })
 
+test('Live defaults to MOSS and can switch to MAI without starting a session', async ({ page }) => {
+	let sessions = 0
+	page.on('request', (request) => {
+		if (request.url().includes('/api/moss/session')) sessions++
+	})
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await panel.getByRole('tab', { name: 'Live' }).click()
+	const moss = panel.getByRole('radio', { name: 'MOSS Live' })
+	const mai = panel.getByRole('radio', { name: 'MAI Transcribe' })
+	await expect(moss).toHaveAttribute('data-state', 'on')
+	await expect(mai).toHaveAttribute('data-state', 'off')
+	await mai.click()
+	await expect(mai).toHaveAttribute('data-state', 'on')
+	await expect(panel.getByRole('button', { name: 'Start recording' })).toBeVisible()
+	await moss.click()
+	await expect(moss).toHaveAttribute('data-state', 'on')
+	expect(sessions).toBe(0)
+})
+
 test('the Live tab preserves the microphone layout', async ({ page }) => {
 	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	const panel = page.getByRole('region', { name: AI_BUTTON })

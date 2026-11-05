@@ -16,6 +16,7 @@ async function openLive(page: Page) {
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await panel.getByRole('tab', { name: 'Live' }).click()
 	await expect(panel.getByRole('tabpanel', { name: 'Live' })).toBeVisible()
+	await panel.getByRole('radio', { name: 'MAI Transcribe' }).click()
 	return panel
 }
 

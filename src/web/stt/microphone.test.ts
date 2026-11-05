@@ -166,8 +166,11 @@ class MockContext {
 	}
 }
 
+let captureConstraints: MediaStreamConstraints | undefined
+
 function installCaptureMocks(track: MockTrack, context: MockContext): void {
 	MockWorkletNode.instances = []
+	captureConstraints = undefined
 	const stream = {
 		getAudioTracks: () => [track as unknown as MediaStreamTrack],
 		getTracks: () => [track as unknown as MediaStreamTrack],
@@ -177,7 +180,10 @@ function installCaptureMocks(track: MockTrack, context: MockContext): void {
 		configurable: true,
 		value: {
 			mediaDevices: {
-				getUserMedia: async () => stream,
+				getUserMedia: async (constraints: MediaStreamConstraints) => {
+					captureConstraints = constraints
+					return stream
+				},
 			},
 		},
 	})
@@ -211,6 +217,15 @@ test('async stop flushes Worklet tail before resource cleanup', async () => {
 			(pcm) => delivered.push(pcm),
 			() => ended++,
 		)
+		assert.deepEqual(captureConstraints, {
+			video: false,
+			audio: {
+				channelCount: { ideal: 1 },
+				echoCancellation: true,
+				noiseSuppression: true,
+				autoGainControl: true,
+			},
+		})
 		const mockWorklet = MockWorkletNode.instances[0]
 		mockWorklet.port.tailLength = 1023
 		const stopped = capture.stop()
