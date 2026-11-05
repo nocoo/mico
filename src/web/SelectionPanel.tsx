@@ -12,6 +12,7 @@ import {
 	Circle,
 	CodeXml,
 	Frame,
+	Image as ImageIcon,
 	MousePointer2,
 	Palette,
 	Pipette,
@@ -27,11 +28,13 @@ import { connectionCompatible } from '../shared/types'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
+	CANDY_COLORS,
 	FONT_OPTIONS,
 	FONT_SIZES,
 	FONT_WEIGHTS,
 	SHAPE_COLORS,
 } from './design'
+import type { ImageBackgroundFit } from './image'
 import { SelectField } from './SelectField'
 
 type Patch = Extract<Operation, { type: 'update' }>['patch']
@@ -55,6 +58,7 @@ const icons: Partial<Record<Shape['type'], typeof Square>> = {
 	note: StickyNote,
 	frame: Frame,
 	html: CodeXml,
+	image: ImageIcon,
 	connector: ArrowUpRight,
 }
 
@@ -67,10 +71,14 @@ const labels: Partial<Record<Shape['type'], string>> = {
 	note: 'Sticky note',
 	frame: 'Frame',
 	html: 'HTML card',
+	image: 'Image',
 	connector: 'Connector',
 }
 
 function shapeLabel(shape: CanvasShape) {
+	if (shape.type === 'image') {
+		return shape.imageId || shape.id
+	}
 	if (shape.type === 'frame' || shape.type === 'html') return shape.title || shape.id
 	return shape.text || shape.id
 }
@@ -112,13 +120,20 @@ export function SelectionPanel({
 			? (shape.title ?? 'Frame')
 			: shape.type === 'html'
 				? (shape.title ?? 'HTML card')
-				: (labels[shape.type] ?? shape.type)
+				: shape.type === 'image'
+					? 'Image'
+					: (labels[shape.type] ?? shape.type)
 		: `${count} objects selected`
 	const peerClass = shape ? connectorClass(shape, shapes) : 'rectangle'
 	const connectorPeers = shapes.filter(
 		(candidate): candidate is CanvasShape =>
 			candidate.type !== 'connector' && connectionCompatible(candidate.type, peerClass),
 	)
+	const imageShapes = shapes.filter(
+		(candidate): candidate is CanvasShape =>
+			candidate.type !== 'connector' && candidate.type === 'image',
+	)
+	const shapeColor = shape?.color ?? CANDY_COLORS.ink
 
 	return (
 		<Card
@@ -238,17 +253,62 @@ export function SelectionPanel({
 				)}
 
 				{shape?.type === 'frame' && (
-					<Field id="frame-title" label="Frame title">
-						<TextField.Root
-							id="frame-title"
-							key={`${shape.id}:${shape.title}`}
-							defaultValue={shape.title ?? ''}
-							onBlur={(event) => onPatch({ title: event.target.value })}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter') event.currentTarget.blur()
-							}}
-						/>
-					</Field>
+					<>
+						<Field id="frame-title" label="Frame title">
+							<TextField.Root
+								id="frame-title"
+								key={`${shape.id}:${shape.title}`}
+								defaultValue={shape.title ?? ''}
+								onBlur={(event) => onPatch({ title: event.target.value })}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter') event.currentTarget.blur()
+								}}
+							/>
+						</Field>
+						<Field id="frame-background" label="Background image">
+							<SelectField
+								id="frame-background"
+								label="Background image"
+								value={shape.backgroundImageId ?? '__none__'}
+								options={[
+									{ value: '__none__', label: 'None' },
+									...imageShapes.map((image, index) => ({
+										value: image.id,
+										label: `Image ${index + 1}`,
+									})),
+								]}
+								onChange={(imageShapeId) =>
+									imageShapeId === '__none__'
+										? onPatch({ backgroundImageId: null })
+										: onPatch({ backgroundImageId: imageShapeId })
+								}
+							/>
+						</Field>
+						<Field id="frame-background-fit" label="Background fit">
+							<SelectField
+								id="frame-background-fit"
+								label="Background fit"
+								value={shape.backgroundFit ?? 'cover'}
+								options={[
+									{ value: 'cover', label: 'Cover' },
+									{ value: 'contain', label: 'Contain' },
+									{ value: 'stretch', label: 'Stretch' },
+								]}
+								onChange={(backgroundFit) =>
+									onPatch({ backgroundFit: backgroundFit as ImageBackgroundFit })
+								}
+							/>
+						</Field>
+						{shape.backgroundImageId && (
+							<button
+								type="button"
+								className="remove-background-button"
+								onClick={() => onPatch({ backgroundImageId: null })}
+							>
+								Remove background
+							</button>
+						)}
+					</>
 				)}
 
 				{shape?.type === 'html' && (
@@ -346,16 +406,16 @@ export function SelectionPanel({
 								<button
 									type="button"
 									key={value}
-									className={`color-swatch ${shape.color === value ? 'chosen' : ''}`}
+									className={`color-swatch ${shapeColor === value ? 'chosen' : ''}`}
 									style={{ background: value }}
 									aria-label={`Set color ${label}`}
-									aria-pressed={shape.color === value}
+									aria-pressed={shapeColor === value}
 									onClick={() => onColor(value)}
 								/>
 							))}
 							<label
 								className={`color-custom ${
-									SHAPE_COLORS.some(({ value }) => value === shape.color) ? '' : 'chosen'
+									SHAPE_COLORS.some(({ value }) => value === shapeColor) ? '' : 'chosen'
 								}`}
 								title="Custom color"
 							>
@@ -367,7 +427,7 @@ export function SelectionPanel({
 								/>
 								<input
 									type="color"
-									value={shape.color}
+									value={shapeColor}
 									aria-label="Custom color"
 									onChange={(event) => onColor(event.target.value)}
 								/>

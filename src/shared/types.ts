@@ -7,6 +7,7 @@ export type ShapeType =
 	| 'frame'
 	| 'note'
 	| 'html'
+	| 'image'
 export type FontFamily = 'sans' | 'serif' | 'hand' | 'mono'
 export type BrushStyle = 'pencil' | 'marker' | 'brush'
 
@@ -24,6 +25,7 @@ export const ANCHOR_COUNTS: Record<ShapeType, number> = {
 	frame: 12,
 	note: 12,
 	html: 12,
+	image: 12,
 }
 
 export const MEMBER_TYPES = [
@@ -34,6 +36,7 @@ export const MEMBER_TYPES = [
 	'path',
 	'note',
 	'html',
+	'image',
 ] as const satisfies readonly ShapeType[]
 
 export function isMemberType(type: ShapeType): boolean {
@@ -62,6 +65,9 @@ export interface CanvasShape {
 	font?: FontFamily
 	fontSize?: number
 	fontWeight?: number
+	imageId?: string
+	backgroundImageId?: string
+	backgroundFit?: 'cover' | 'contain' | 'stretch'
 }
 
 export interface Connector {
@@ -127,6 +133,9 @@ export type Operation =
 				font?: FontFamily
 				fontSize?: number
 				fontWeight?: number
+				imageId?: string
+				backgroundImageId?: string | null
+				backgroundFit?: 'cover' | 'contain' | 'stretch'
 				from?: string
 				to?: string
 				fromAnchor?: number

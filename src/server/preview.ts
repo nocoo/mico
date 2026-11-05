@@ -84,6 +84,10 @@ function shapeArt(shape: Shape, transform: (point: Point) => Point, scale: numbe
 	if (shape.type === 'html') {
 		return `<rect x="${topLeft.x}" y="${topLeft.y}" width="${width}" height="${height}" rx="4" fill="${escapeXml(shape.color)}" fill-opacity="0.1" stroke="${escapeXml(shape.color)}" stroke-opacity="0.45"/>`
 	}
+	if (shape.type === 'image') {
+		const color = escapeXml(shape.color)
+		return `<rect x="${topLeft.x}" y="${topLeft.y}" width="${width}" height="${height}" rx="2" fill="${color}" fill-opacity="0.1" stroke="${color}" stroke-opacity="0.45"/><path d="M${topLeft.x} ${topLeft.y + height} L${topLeft.x + width * 0.4} ${topLeft.y + height * 0.4} L${topLeft.x + width} ${topLeft.y + height}" fill="${color}" fill-opacity="0.2"/>`
+	}
 	if (shape.type === 'rectangle' || shape.type === 'ellipse') {
 		const label = (shape.text ?? '').slice(0, 24)
 		const size = Math.min(9, Math.max(4, 14 * scale))

@@ -57,6 +57,47 @@ async function api(
 	}
 }
 
+async function rawImagePost(url: string, bytes: Buffer, contentType: string): Promise<ApiResult> {
+	const response = await fetch(`${url}/api/images`, {
+		method: 'POST',
+		headers: { Origin: DEV_ORIGIN, 'Content-Type': contentType },
+		body: new Blob([Uint8Array.from(bytes).buffer], { type: contentType }),
+	})
+	const text = await response.text()
+	return {
+		status: response.status,
+		body: text.length > 0 ? JSON.parse(text) : null,
+		headers: response.headers,
+	}
+}
+
+async function rawImageRequest(url: string, bytes: Buffer, chunked: boolean): Promise<ApiResult> {
+	const target = new URL(`${url}/api/images`)
+	return await new Promise((resolve, reject) => {
+		const headers: Record<string, string | number> = {
+			Origin: DEV_ORIGIN,
+			'Content-Type': 'image/png',
+		}
+		if (chunked) headers['Transfer-Encoding'] = 'chunked'
+		else headers['Content-Length'] = bytes.length
+		const req = request(target, { method: 'POST', headers }, (res) => {
+			const chunks: Buffer[] = []
+			res.on('data', (chunk: Buffer) => chunks.push(chunk))
+			res.on('end', () => {
+				const text = Buffer.concat(chunks).toString('utf8')
+				resolve({
+					status: res.statusCode ?? 0,
+					body: text.length > 0 ? JSON.parse(text) : null,
+					headers: new Headers(res.headers as HeadersInit),
+				})
+			})
+		})
+		req.on('error', reject)
+		req.write(bytes)
+		req.end()
+	})
+}
+
 async function apply(
 	url: string,
 	operations: unknown[],
@@ -422,6 +463,46 @@ test('canvas lifecycle, active switching and per-canvas operations', async () =>
 		const last = await api(url, '/api/canvases/main', { method: 'DELETE' })
 		assert.equal(last.status, 400)
 		assert.equal((last.body as { error: string }).error, 'LAST_CANVAS')
+	})
+})
+
+test('image HTTP accepts actual PNG JPEG WebP and GIF rasters', async () => {
+	await withDaemon(async (url) => {
+		const fixtures: Array<[string, string, string]> = [
+			[
+				'image/png',
+				'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4z8AAAAMBAQDJ/pLvAAAAAElFTkSuQmCC',
+				'PNG',
+			],
+			[
+				'image/jpeg',
+				'/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDi6KKK+ZP3E//Z',
+				'JPEG',
+			],
+			[
+				'image/webp',
+				'UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoBAAEAAUAmJaACdLoB+AADsAD+8ut//NgVzXPv9//S4P0uD9Lg/9KQAAA=',
+				'WebP',
+			],
+			['image/gif', 'R0lGODdhAQABAIEAAP8AAAAAAAAAAAAAACwAAAAAAQABAAAIBAABBAQAOw==', 'GIF'],
+		]
+		for (const [contentType, base64, label] of fixtures) {
+			const bytes = Buffer.from(base64, 'base64')
+			const uploaded = await rawImagePost(url, bytes, contentType)
+			assert.equal(uploaded.status, 200, label)
+			const id = (uploaded.body as { id: string }).id
+			assert.ok(id)
+			const downloaded = await fetch(`${url}/api/images/${encodeURIComponent(id)}`)
+			assert.equal(downloaded.status, 200, label)
+			assert.equal(downloaded.headers.get('Content-Type'), contentType)
+			assert.deepEqual(Buffer.from(await downloaded.arrayBuffer()), bytes)
+		}
+
+		const oversized = Buffer.alloc(10 * 1024 * 1024 + 1)
+		const declared = await rawImageRequest(url, oversized, false)
+		assertError(declared, 413, 'PAYLOAD_TOO_LARGE')
+		const chunked = await rawImageRequest(url, oversized, true)
+		assertError(chunked, 413, 'PAYLOAD_TOO_LARGE')
 	})
 })
 

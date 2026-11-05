@@ -31,6 +31,13 @@
 	gap: var(--space-05);
 }
 
+.toolbar-module .drawing-tools {
+	flex-wrap: wrap;
+	justify-content: center;
+	min-width: 0;
+	max-width: 100%;
+}
+
 .toolbar-module .view-controls {
 	padding: 0;
 	border: 0;

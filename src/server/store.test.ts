@@ -1153,6 +1153,314 @@ test('a legacy single-board database migrates to a canvas', () => {
 	}
 })
 
+test('image assets and frame references persist and delete atomically', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+	let store = new BoardStore(dbPath)
+	try {
+		const imageId = store.saveImage(png, 'image/png')
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'photo',
+						type: 'image',
+						x: 10,
+						y: 20,
+						w: 300,
+						h: 200,
+						color: '#123456',
+						imageId,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'hero',
+						type: 'frame',
+						x: 0,
+						y: 0,
+						w: 400,
+						h: 300,
+						color: '#123456',
+						title: 'Hero',
+						backgroundImageId: 'photo',
+					},
+				},
+			],
+		})
+		const frame = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.ok(frame?.type === 'frame')
+		assert.equal(frame.backgroundFit, 'cover')
+
+		store.apply({
+			operations: [{ type: 'update', id: 'hero', patch: { backgroundFit: 'contain' } }],
+		})
+		store.close()
+		store = new BoardStore(dbPath)
+		const reopenedFrame = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.ok(reopenedFrame?.type === 'frame')
+		assert.equal(reopenedFrame.backgroundImageId, 'photo')
+		assert.equal(reopenedFrame.backgroundFit, 'contain')
+		assert.ok(
+			store.getBoard().shapes.some((shape) => shape.type === 'image' && shape.id === 'photo'),
+		)
+		store.apply({
+			operations: [{ type: 'update', id: 'hero', patch: { backgroundImageId: null } }],
+		})
+		assert.equal(
+			store.getBoard().shapes.find((shape) => shape.id === 'hero')?.type === 'frame' ? 'ok' : 'bad',
+			'ok',
+		)
+
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'missing',
+								type: 'image',
+								x: 0,
+								y: 0,
+								w: 10,
+								h: 10,
+								color: '#123456',
+								imageId: 'missing-asset',
+							},
+						},
+					],
+				}),
+			(error: unknown) => error instanceof OperationError && error.code === 'MISSING_IMAGE_ASSET',
+		)
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'bad-frame',
+								type: 'frame',
+								x: 0,
+								y: 0,
+								w: 10,
+								h: 10,
+								color: '#123456',
+								title: 'Bad',
+								backgroundImageId: 'missing-photo',
+							},
+						},
+					],
+				}),
+			(error: unknown) => error instanceof OperationError && error.status === 400,
+		)
+
+		store.apply({
+			operations: [{ type: 'update', id: 'hero', patch: { backgroundImageId: 'photo' } }],
+		})
+		store.apply({
+			operations: [
+				{ type: 'delete', id: 'photo' },
+				{ type: 'delete', id: 'hero' },
+			],
+		})
+		assert.deepEqual(store.getBoard().shapes, [])
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'photo-2',
+						type: 'image',
+						x: 0,
+						y: 0,
+						w: 10,
+						h: 10,
+						color: '#123456',
+						imageId,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'hero-2',
+						type: 'frame',
+						x: 0,
+						y: 0,
+						w: 20,
+						h: 20,
+						color: '#123456',
+						title: 'Hero',
+						backgroundImageId: 'photo-2',
+					},
+				},
+			],
+		})
+		store.apply({ operations: [{ type: 'delete', id: 'photo-2' }] })
+		const heroWithoutImage = store.getBoard().shapes.find((shape) => shape.id === 'hero-2')
+		assert.ok(heroWithoutImage?.type === 'frame')
+		assert.equal(heroWithoutImage.backgroundImageId, undefined)
+		store.close()
+		store = new BoardStore(dbPath)
+		const asset = store.getImage(imageId)
+		assert.ok(asset)
+		assert.equal(asset.contentType, 'image/png')
+		assert.deepEqual(Buffer.from(asset.bytes), Buffer.from(png))
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('delete and recreate image shape id does not preserve stale frame background', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-recreate-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	try {
+		const imageId = store.saveImage(
+			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+			'image/png',
+		)
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'photo',
+						type: 'image',
+						x: 0,
+						y: 0,
+						w: 100,
+						h: 100,
+						color: '#123456',
+						imageId,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'hero',
+						type: 'frame',
+						x: 0,
+						y: 0,
+						w: 200,
+						h: 200,
+						color: '#123456',
+						title: 'Hero',
+						backgroundImageId: 'photo',
+						backgroundFit: 'stretch',
+					},
+				},
+			],
+		})
+
+		store.apply({
+			operations: [
+				{ type: 'delete', id: 'photo' },
+				{
+					type: 'create',
+					shape: {
+						id: 'photo',
+						type: 'image',
+						x: 10,
+						y: 10,
+						w: 120,
+						h: 80,
+						color: '#123456',
+						imageId,
+					},
+				},
+			],
+		})
+		const frame = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.ok(frame?.type === 'frame')
+		assert.equal(frame.backgroundImageId, undefined)
+		assert.equal(frame.backgroundFit, 'stretch')
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('delete then explicitly reassign recreated image shape id restores frame background', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-reassign-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const store = new BoardStore(dbPath)
+	try {
+		const imageId = store.saveImage(
+			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+			'image/png',
+		)
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'photo',
+						type: 'image',
+						x: 0,
+						y: 0,
+						w: 100,
+						h: 100,
+						color: '#123456',
+						imageId,
+					},
+				},
+				{
+					type: 'create',
+					shape: {
+						id: 'hero',
+						type: 'frame',
+						x: 0,
+						y: 0,
+						w: 200,
+						h: 200,
+						color: '#123456',
+						title: 'Hero',
+						backgroundImageId: 'photo',
+						backgroundFit: 'cover',
+					},
+				},
+			],
+		})
+
+		store.apply({
+			operations: [
+				{ type: 'delete', id: 'photo' },
+				{
+					type: 'create',
+					shape: {
+						id: 'photo',
+						type: 'image',
+						x: 10,
+						y: 10,
+						w: 120,
+						h: 80,
+						color: '#123456',
+						imageId,
+					},
+				},
+				{
+					type: 'update',
+					id: 'hero',
+					patch: { backgroundImageId: 'photo', backgroundFit: 'contain' },
+				},
+			],
+		})
+		const frame = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.ok(frame?.type === 'frame')
+		assert.equal(frame.backgroundImageId, 'photo')
+		assert.equal(frame.backgroundFit, 'contain')
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('active canvas and its content persist across reopen', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')

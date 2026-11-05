@@ -698,6 +698,21 @@ svg {
 	overflow: hidden;
 	border: 0;
 }
+.image-file-input {
+	display: none;
+}
+.remove-background-button {
+	height: var(--control-size);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	color: var(--ink-secondary);
+	cursor: pointer;
+}
+.remove-background-button:hover {
+	background: var(--surface-hover);
+	color: var(--ink);
+}
 .selection-panel::before,
 .selection-panel::after {
 	content: none;

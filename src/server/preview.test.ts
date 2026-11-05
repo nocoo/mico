@@ -91,6 +91,22 @@ test('large boards are scaled into the preview and text is escaped', () => {
 	}
 })
 
+test('image elements remain visible as bounded placeholders without embedding asset data', () => {
+	const image: Shape = {
+		id: 'image',
+		type: 'image',
+		x: 0,
+		y: 0,
+		w: 200,
+		h: 100,
+		color: '#00a2e1',
+		imageId: 'asset-id',
+	}
+	const svg = decode(canvasPreview([image]))
+	assert.match(svg, /<path d="M/)
+	assert.doesNotMatch(svg, /asset-id|<image/)
+})
+
 test('signed lines keep their true direction in the preview', () => {
 	const line: Shape = {
 		id: 'signed-line',

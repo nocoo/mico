@@ -43,6 +43,12 @@ import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
 import { Toolbar } from './frame/toolbar'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from './htmlCard'
+import {
+	imagePreserveAspectRatio,
+	isSupportedImageFile,
+	readImageDimensions,
+	scaleImageDimensions,
+} from './image'
 import { canRebaseMoveGroup } from './move'
 import { SelectionPanel } from './SelectionPanel'
 import { StickyNote } from './StickyNote'
@@ -107,6 +113,8 @@ export default function App() {
 	const [canvases, setCanvases] = useState<CanvasSummary[]>([])
 	const [activeCanvasId, setActiveCanvasId] = useState('')
 	const activeCanvasIdRef = useRef('')
+	const requestedCanvasIdRef = useRef('')
+	const imageInputRef = useRef<HTMLInputElement>(null)
 	const stateVersionRef = useRef(-1)
 	const boardCacheRef = useRef<Map<string, Board>>(new Map())
 	const connectionResetRef = useRef<() => void>(() => {})
@@ -206,6 +214,7 @@ export default function App() {
 			stateVersionRef.current = snapshot.stateVersion
 			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
 			activeCanvasIdRef.current = snapshot.activeCanvasId
+			requestedCanvasIdRef.current = snapshot.activeCanvasId
 			setActiveCanvasId(snapshot.activeCanvasId)
 			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
 			const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
@@ -387,9 +396,78 @@ export default function App() {
 
 	const createShape = (shape: CanvasShape) => {
 		const frameId =
-			shape.type === 'frame' ? null : membershipFor(board.shapes, shapeBounds(shape), shape.id)
+			shape.type === 'frame'
+				? null
+				: membershipFor(boardRef.current.shapes, shapeBounds(shape), shape.id)
 		selectOnly(shape.id)
 		void postOperations([{ type: 'create', shape: frameId ? { ...shape, frameId } : shape }])
+	}
+
+	const uploadImage = async (file: File) => {
+		setTool('select')
+		if (!isSupportedImageFile(file)) {
+			announce('Choose a PNG, JPEG, WebP, or GIF image')
+			return
+		}
+
+		const targetCanvasId = activeCanvasIdRef.current
+		if (!targetCanvasId) {
+			announce('Canvas is not ready')
+			return
+		}
+		const rect = svgRef.current?.getBoundingClientRect()
+		const center = rect
+			? clientToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2)
+			: { x: 0, y: 0 }
+
+		try {
+			const natural = await readImageDimensions(file)
+			if (
+				activeCanvasIdRef.current !== targetCanvasId ||
+				requestedCanvasIdRef.current !== targetCanvasId
+			) {
+				announce('Image upload canceled because the canvas changed')
+				return
+			}
+			const size = scaleImageDimensions(natural.w, natural.h)
+			const response = await fetch('/api/images', {
+				method: 'POST',
+				headers: { 'Content-Type': file.type },
+				body: file,
+				signal: AbortSignal.timeout(10000),
+			})
+			if (!response.ok) {
+				let message = `Image upload failed: HTTP ${response.status}`
+				try {
+					const body = (await response.json()) as { message?: string }
+					if (body.message) message = body.message
+				} catch {
+					// Keep the status fallback.
+				}
+				throw new Error(message)
+			}
+			const body = (await response.json()) as { id?: string }
+			if (!body.id) throw new Error('Image upload returned no asset ID')
+			if (
+				activeCanvasIdRef.current !== targetCanvasId ||
+				requestedCanvasIdRef.current !== targetCanvasId
+			) {
+				announce('Image uploaded, but the canvas changed')
+				return
+			}
+			createShape({
+				id: randomId(),
+				type: 'image',
+				x: center.x - size.w / 2,
+				y: center.y - size.h / 2,
+				w: size.w,
+				h: size.h,
+				color: CANDY_COLORS.ink,
+				imageId: body.id,
+			})
+		} catch (error) {
+			announce(error instanceof Error ? error.message : 'Image upload failed')
+		}
 	}
 
 	const deleteSelected = useCallback(() => {
@@ -501,6 +579,7 @@ export default function App() {
 	}
 
 	const switchCanvas = (id: string) => {
+		requestedCanvasIdRef.current = id
 		void requestCanvas('/api/active-canvas', {
 			method: 'PUT',
 			body: JSON.stringify({ id }),
@@ -1208,9 +1287,73 @@ export default function App() {
 				</g>
 			)
 		}
+		if (shape.type === 'image') {
+			if (!shape.imageId) return null
+			return (
+				<g key={shape.id} {...common}>
+					<rect
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						rx={10}
+						fill="transparent"
+						stroke={shape.color ?? CANDY_COLORS.ink}
+						strokeWidth={active ? 3 : 1}
+						vectorEffect="non-scaling-stroke"
+					/>
+					<image
+						className="canvas-image"
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						href={`/api/images/${encodeURIComponent(shape.imageId)}`}
+						preserveAspectRatio="xMidYMid meet"
+						pointerEvents="none"
+					/>
+					{active && (
+						<rect
+							className="selection"
+							x={shape.x - 4}
+							y={shape.y - 4}
+							width={shape.w + 8}
+							height={shape.h + 8}
+							rx={12}
+						/>
+					)}
+				</g>
+			)
+		}
 		if (shape.type === 'frame') {
+			const backgroundShape = shape.backgroundImageId
+				? visibleShapes.find(
+						(candidate) => candidate.type === 'image' && candidate.id === shape.backgroundImageId,
+					)
+				: undefined
+			const backgroundImageId =
+				backgroundShape?.type === 'image' ? backgroundShape.imageId : undefined
+			const clipId = `frame-bg-${shape.id}`
 			return (
 				<g key={shape.id} className="canvas-shape frame" data-shape-id={shape.id}>
+					<defs>
+						<clipPath id={clipId}>
+							<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} rx={10} />
+						</clipPath>
+					</defs>
+					{backgroundImageId && (
+						<image
+							className="frame-background-image"
+							x={shape.x}
+							y={shape.y}
+							width={shape.w}
+							height={shape.h}
+							href={`/api/images/${encodeURIComponent(backgroundImageId)}`}
+							preserveAspectRatio={imagePreserveAspectRatio(shape.backgroundFit)}
+							clipPath={`url(#${clipId})`}
+							pointerEvents="none"
+						/>
+					)}
 					<rect
 						x={shape.x}
 						y={shape.y}
@@ -1218,7 +1361,7 @@ export default function App() {
 						height={shape.h}
 						rx={10}
 						style={{
-							fill: candyWash(shape.color, FRAME_FILL_PERCENT),
+							fill: backgroundImageId ? 'none' : candyWash(shape.color, FRAME_FILL_PERCENT),
 							stroke: active ? shape.color : candyLine(shape.color),
 						}}
 						strokeWidth={active ? 2 : 1}
@@ -1384,6 +1527,18 @@ export default function App() {
 				} as React.CSSProperties
 			}
 		>
+			<input
+				ref={imageInputRef}
+				className="image-file-input"
+				type="file"
+				accept="image/png,image/jpeg,image/webp,image/gif"
+				aria-label="Choose image"
+				onChange={(event) => {
+					const file = event.currentTarget.files?.[0]
+					event.currentTarget.value = ''
+					if (file) void uploadImage(file)
+				}}
+			/>
 			<IdentityFrame
 				state={{
 					canvases,
@@ -1416,6 +1571,11 @@ export default function App() {
 					reportLayout: reportDockLayout,
 					selectTool: (next) => {
 						cancelInteraction()
+						if (next === 'image') {
+							setTool('select')
+							imageInputRef.current?.click()
+							return
+						}
 						setTool(next)
 					},
 					zoom: (factor) => zoomAt(viewport.zoom * factor),
@@ -1530,8 +1690,8 @@ export default function App() {
 					data-world-layer="true"
 					transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
 				>
-					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
+					{visibleShapes.filter(isConnector).map(renderShape)}
 					{visibleShapes
 						.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
 						.map(renderShape)}

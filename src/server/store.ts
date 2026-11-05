@@ -68,6 +68,7 @@ const SHAPE_TYPES = new Set<string>([
 	'frame',
 	'note',
 	'html',
+	'image',
 	'connector',
 ])
 const MAX_HTML_LENGTH = 200_000
@@ -119,8 +120,26 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 
 	const base = ['id', 'type', 'x', 'y', 'w', 'h', 'color']
 	if (value.type === 'frame') {
-		if (!hasExactKeys(value, base, ['title'])) invalid('invalid frame shape')
+		if (!hasExactKeys(value, base, ['title', 'backgroundImageId', 'backgroundFit'])) {
+			invalid('invalid frame shape')
+		}
 		validTitle(value.title, 'frame title')
+		if (Object.hasOwn(value, 'backgroundImageId') && !validId(value.backgroundImageId)) {
+			invalid('frame backgroundImageId must be a non-empty shape id')
+		}
+		if (
+			Object.hasOwn(value, 'backgroundFit') &&
+			value.backgroundFit !== 'cover' &&
+			value.backgroundFit !== 'contain' &&
+			value.backgroundFit !== 'stretch'
+		) {
+			invalid('frame backgroundFit must be cover, contain or stretch')
+		}
+	} else if (value.type === 'image') {
+		if (!hasExactKeys(value, [...base, 'imageId'], ['frameId'])) {
+			invalid('invalid image shape')
+		}
+		if (!validId(value.imageId)) invalid('imageId must be a non-empty asset id')
 	} else if (value.type === 'html') {
 		if (!hasExactKeys(value, [...base, 'title', 'html'], ['frameId'])) {
 			invalid('invalid html shape')
@@ -204,7 +223,7 @@ function validatePath(value: Record<string, unknown>): void {
 	validatePoints(value.points, value.w as number, value.h as number)
 }
 
-function validateBoardState(board: Board): void {
+function validateBoardState(board: Board, assetIds?: Set<string>): void {
 	if (!isObject(board) || !Number.isInteger(board.revision) || board.revision < 0) {
 		invalid('invalid board revision')
 	}
@@ -222,8 +241,25 @@ function validateBoardState(board: Board): void {
 	for (const shape of board.shapes) {
 		if (shape.type === 'connector') {
 			validateConnectorReferences(shape, board.shapes)
-		} else if (shape.frameId && !frameIds.has(shape.frameId)) {
-			invalid(`shape ${shape.id} references a missing frame ${shape.frameId}`)
+		} else {
+			if (shape.frameId && !frameIds.has(shape.frameId)) {
+				invalid(`shape ${shape.id} references a missing frame ${shape.frameId}`)
+			}
+			if (shape.type === 'image') {
+				if (!shape.imageId) invalid(`image ${shape.id} must reference an asset`)
+				if (assetIds && !assetIds.has(shape.imageId)) {
+					invalid(`image ${shape.id} references missing asset ${shape.imageId}`)
+				}
+			}
+			if (shape.type === 'frame' && shape.backgroundImageId) {
+				const image = board.shapes.find((candidate) => candidate.id === shape.backgroundImageId)
+				if (!image || image.type !== 'image') {
+					invalid(
+						`frame ${shape.id} references an invalid background image ${shape.backgroundImageId}`,
+					)
+				}
+				if (!shape.backgroundFit) shape.backgroundFit = 'cover'
+			}
 		}
 	}
 }
@@ -291,7 +327,8 @@ const PATCH_KEYS: Record<ShapeType | 'connector', readonly string[]> = {
 	line: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
 	text: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId', 'font', 'fontSize', 'fontWeight'],
 	path: ['x', 'y', 'w', 'h', 'color', 'frameId', 'points', 'brush', 'strokeWidth'],
-	frame: ['x', 'y', 'w', 'h', 'color', 'title'],
+	frame: ['x', 'y', 'w', 'h', 'color', 'title', 'backgroundImageId', 'backgroundFit'],
+	image: ['x', 'y', 'w', 'h', 'color', 'imageId', 'frameId'],
 	html: ['x', 'y', 'w', 'h', 'color', 'title', 'html', 'frameId'],
 	connector: ['from', 'to', 'color', 'fromAnchor', 'toAnchor'],
 }
@@ -338,6 +375,22 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		}
 	}
 	if (Object.hasOwn(patch, 'title')) validTitle(patch.title, 'title')
+	if (Object.hasOwn(patch, 'backgroundImageId')) {
+		if (patch.backgroundImageId !== null && !validId(patch.backgroundImageId)) {
+			invalid('backgroundImageId must be a non-empty shape id or null')
+		}
+	}
+	if (
+		Object.hasOwn(patch, 'backgroundFit') &&
+		patch.backgroundFit !== 'cover' &&
+		patch.backgroundFit !== 'contain' &&
+		patch.backgroundFit !== 'stretch'
+	) {
+		invalid('backgroundFit must be cover, contain or stretch')
+	}
+	if (Object.hasOwn(patch, 'imageId') && !validId(patch.imageId)) {
+		invalid('imageId must be a non-empty asset id')
+	}
 	if (Object.hasOwn(patch, 'html')) validHtml(patch.html)
 	if (Object.hasOwn(patch, 'font')) {
 		const font = patch.font
@@ -425,6 +478,13 @@ export class BoardStore {
 			CREATE TABLE IF NOT EXISTS settings (
 				key TEXT PRIMARY KEY,
 				value TEXT NOT NULL
+			);
+			CREATE TABLE IF NOT EXISTS image_assets (
+				id TEXT PRIMARY KEY,
+				content_type TEXT NOT NULL,
+				bytes BLOB NOT NULL,
+				size INTEGER NOT NULL,
+				created_at TEXT NOT NULL
 			);
 		`)
 		this.migrateLegacyBoard()
@@ -533,8 +593,12 @@ export class BoardStore {
 		}
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
-		validateBoardState(board)
-		if (migrated.changed && persistMigration) {
+		const beforeValidation = JSON.stringify(migrated.shapes)
+		validateBoardState(board, this.listImageAssetIds())
+		if (
+			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes)) &&
+			persistMigration
+		) {
 			this.db
 				.prepare('UPDATE canvases SET shapes = ? WHERE id = ?')
 				.run(JSON.stringify(migrated.shapes), row.id)
@@ -613,6 +677,43 @@ export class BoardStore {
 		return { canvas: this.summaryOf(row), board: this.parseRow(row) }
 	}
 
+	private validImageId(value: unknown): string {
+		if (
+			typeof value !== 'string' ||
+			!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+		) {
+			throw new OperationError(400, 'INVALID_IMAGE_ID', 'Invalid image id')
+		}
+		return value
+	}
+
+	private listImageAssetIds(): Set<string> {
+		const rows = this.db.prepare('SELECT id FROM image_assets').all() as unknown as { id: string }[]
+		return new Set(rows.map((row) => row.id))
+	}
+
+	saveImage(
+		bytes: Uint8Array,
+		contentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
+	): string {
+		const id = randomUUID()
+		this.db
+			.prepare(
+				'INSERT INTO image_assets (id, content_type, bytes, size, created_at) VALUES (?, ?, ?, ?, ?)',
+			)
+			.run(id, contentType, Buffer.from(bytes), bytes.byteLength, new Date().toISOString())
+		return id
+	}
+
+	getImage(id: unknown): { bytes: Uint8Array; contentType: string } | undefined {
+		const assetId = this.validImageId(id)
+		const row = this.db
+			.prepare('SELECT content_type, bytes FROM image_assets WHERE id = ?')
+			.get(assetId) as { content_type: string; bytes: Uint8Array } | undefined
+		if (!row) return undefined
+		return { bytes: Buffer.from(row.bytes), contentType: row.content_type }
+	}
+
 	apply(request: unknown): Board {
 		return this.applyRequest(request).board
 	}
@@ -647,12 +748,27 @@ export class BoardStore {
 
 		const next = cloneBoard(board)
 		const cascaded = new Set<string>()
+		const assetIds = this.listImageAssetIds()
 		for (const operation of request.operations as Operation[]) {
 			if (!isObject(operation)) invalid('operation must be an object')
 
 			if (operation.type === 'create') {
 				if (!hasExactKeys(operation, ['type', 'shape'])) invalid('invalid create operation')
 				validateShapeShape(operation.shape)
+				if (operation.shape.type === 'image' && !assetIds.has(operation.shape.imageId ?? '')) {
+					throw new OperationError(
+						400,
+						'MISSING_IMAGE_ASSET',
+						`image references missing asset ${operation.shape.imageId}`,
+					)
+				}
+				if (
+					operation.shape.type === 'frame' &&
+					operation.shape.backgroundImageId &&
+					!operation.shape.backgroundFit
+				) {
+					operation.shape.backgroundFit = 'cover'
+				}
 				if (findShape(next, operation.shape.id)) {
 					throw new OperationError(
 						400,
@@ -679,6 +795,18 @@ export class BoardStore {
 				const updated = { ...target, ...operation.patch } as Shape
 				if (updated.type !== 'connector' && updated.frameId === null) {
 					delete updated.frameId
+				}
+				if (updated.type === 'frame' && updated.backgroundImageId === null) {
+					delete updated.backgroundImageId
+				}
+				if (updated.type === 'image' && Object.hasOwn(operation.patch, 'imageId')) {
+					if (!assetIds.has(updated.imageId ?? '')) {
+						throw new OperationError(
+							400,
+							'MISSING_IMAGE_ASSET',
+							`image references missing asset ${updated.imageId}`,
+						)
+					}
 				}
 				validateShapeShape(updated)
 				if (updated.type === 'connector') {
@@ -708,6 +836,13 @@ export class BoardStore {
 					}
 					return true
 				})
+				if (removed?.type === 'image') {
+					next.shapes = next.shapes.map((shape) => {
+						if (shape.type !== 'frame' || shape.backgroundImageId !== operation.id) return shape
+						const { backgroundImageId: _backgroundImageId, ...rest } = shape
+						return rest as Shape
+					})
+				}
 				if (removed?.type === 'frame') {
 					next.shapes = next.shapes.map((shape) => {
 						if (shape.type === 'connector' || shape.frameId !== operation.id) return shape
@@ -721,7 +856,7 @@ export class BoardStore {
 			invalid('invalid operation type')
 		}
 
-		validateBoardState(next)
+		validateBoardState(next, assetIds)
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
 		const result = this.db

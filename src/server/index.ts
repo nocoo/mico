@@ -55,6 +55,73 @@ function readJson(req: IncomingMessage): Promise<unknown> {
 	})
 }
 
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+
+function readRaw(req: IncomingMessage): Promise<Buffer> {
+	return new Promise((resolveBody, reject) => {
+		const chunks: Buffer[] = []
+		let size = 0
+		let tooLarge = false
+		req.on('data', (chunk: Buffer) => {
+			if (tooLarge) return
+			size += chunk.length
+			if (size > MAX_IMAGE_BYTES) {
+				tooLarge = true
+				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 10 MB'))
+				return
+			}
+			chunks.push(chunk)
+		})
+		req.on('end', () => {
+			if (!tooLarge) resolveBody(Buffer.concat(chunks))
+		})
+		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
+		req.on('error', (error) => reject(error))
+	})
+}
+
+function detectImageType(
+	bytes: Buffer,
+): 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif' | undefined {
+	if (
+		bytes.length >= 8 &&
+		bytes[0] === 0x89 &&
+		bytes[1] === 0x50 &&
+		bytes[2] === 0x4e &&
+		bytes[3] === 0x47 &&
+		bytes[4] === 0x0d &&
+		bytes[5] === 0x0a &&
+		bytes[6] === 0x1a &&
+		bytes[7] === 0x0a
+	)
+		return 'image/png'
+	if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff)
+		return 'image/jpeg'
+	if (
+		bytes.length >= 6 &&
+		((bytes[0] === 0x47 &&
+			bytes[1] === 0x49 &&
+			bytes[2] === 0x46 &&
+			bytes[3] === 0x38 &&
+			bytes[4] === 0x37 &&
+			bytes[5] === 0x61) ||
+			(bytes[0] === 0x47 &&
+				bytes[1] === 0x49 &&
+				bytes[2] === 0x46 &&
+				bytes[3] === 0x38 &&
+				bytes[4] === 0x39 &&
+				bytes[5] === 0x61))
+	)
+		return 'image/gif'
+	if (
+		bytes.length >= 12 &&
+		bytes.toString('ascii', 0, 4) === 'RIFF' &&
+		bytes.toString('ascii', 8, 12) === 'WEBP'
+	)
+		return 'image/webp'
+	return undefined
+}
+
 function sendJson(res: ServerResponse, status: number, body: unknown, origin?: string): void {
 	if (origin && ALLOWED_ORIGINS.has(origin)) {
 		res.setHeader('Access-Control-Allow-Origin', origin)
@@ -91,13 +158,21 @@ function knownPath(pathname: string): boolean {
 	const segments = pathname.split('/').filter(Boolean)
 	if (segments[0] !== 'api') return false
 	if (segments.length === 2) {
-		return ['live', 'state', 'board', 'operations', 'events', 'canvases', 'active-canvas'].includes(
-			segments[1],
-		)
+		return [
+			'live',
+			'state',
+			'board',
+			'operations',
+			'events',
+			'canvases',
+			'images',
+			'active-canvas',
+		].includes(segments[1])
 	}
 	if (segments.length === 3) {
 		return (
 			segments[1] === 'canvases' ||
+			segments[1] === 'images' ||
 			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
 			(segments[1] === 'ai' && ['chat', 'models', 'settings'].includes(segments[2]))
 		)
@@ -237,6 +312,73 @@ export function createDaemon(
 					return
 				}
 				sendJson(res, 200, store.getBoard(), origin)
+				return
+			}
+
+			if (isPath('api', 'images')) {
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const contentLength = req.headers['content-length']
+				if (contentLength !== undefined && Number(contentLength) > MAX_IMAGE_BYTES) {
+					throw new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 10 MB')
+				}
+				const declared =
+					typeof req.headers['content-type'] === 'string'
+						? req.headers['content-type'].split(';', 1)[0].trim().toLowerCase()
+						: ''
+				if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(declared)) {
+					throw new OperationError(
+						415,
+						'UNSUPPORTED_MEDIA_TYPE',
+						'Content-Type must be a supported image type',
+					)
+				}
+				const bytes = await readRaw(req)
+				const detected = detectImageType(bytes)
+				if (!detected) {
+					throw new OperationError(
+						415,
+						'UNSUPPORTED_MEDIA_TYPE',
+						'Image bytes do not contain a supported signature',
+					)
+				}
+				if (detected !== declared) {
+					throw new OperationError(
+						415,
+						'UNSUPPORTED_MEDIA_TYPE',
+						'Content-Type does not match image bytes',
+					)
+				}
+				const id = store.saveImage(bytes, detected)
+				sendJson(res, 200, { id }, origin)
+				return
+			}
+
+			if (segments.length === 3 && segments[0] === 'api' && segments[1] === 'images') {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const asset = store.getImage(segments[2])
+				if (!asset) {
+					throw new OperationError(404, 'NOT_FOUND', 'Image not found')
+				}
+				if (origin && ALLOWED_ORIGINS.has(origin)) {
+					res.setHeader('Access-Control-Allow-Origin', origin)
+					res.setHeader('Vary', 'Origin')
+				}
+				res.writeHead(200, {
+					'Content-Type': asset.contentType,
+					'Content-Length': asset.bytes.byteLength,
+					'Cache-Control': 'private, no-store',
+					'X-Content-Type-Options': 'nosniff',
+					'Cross-Origin-Resource-Policy': 'same-origin',
+				})
+				res.end(asset.bytes)
 				return
 			}
 
