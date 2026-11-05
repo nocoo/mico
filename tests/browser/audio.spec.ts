@@ -149,12 +149,15 @@ function state(): AudioMockState {
 	}
 }
 
-test('Audio defaults to a 1000 ms silence cut and accepts 1000 in the range', async ({ page }) => {
+test('Audio defaults to a 500 ms silence cut and accepts 1000 in the range', async ({ page }) => {
 	const mock = state()
 	const { prerecorded } = await openAudio(page, mock)
 	const silence = prerecorded.getByRole('slider').first()
-	await expect(silence).toHaveValue('1000')
+	await expect(silence).toHaveValue('500')
 	await expect(silence).toHaveAttribute('max', '1000')
+	await silence.focus()
+	await page.keyboard.press('End')
+	await expect(silence).toHaveValue('1000')
 })
 
 test('Audio natural end preserves the final transcript and closes complete', async ({ page }) => {

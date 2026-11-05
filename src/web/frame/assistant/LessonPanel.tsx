@@ -99,15 +99,13 @@ const PHASE_KIND: Record<Phase, string> = {
 }
 
 function newRuntime(): Runtime {
-	const segmenter = new SilenceSegmenter({ rate: TARGET_RATE })
-	segmenter.setSilenceMs(1000)
 	return {
 		ctx: null,
 		lecture: null,
 		loadedId: null,
 		player: null,
 		client: null,
-		segmenter,
+		segmenter: new SilenceSegmenter({ rate: TARGET_RATE }),
 		sentSamples: 0,
 		sentAtLastCommit: 0,
 		pendingCommits: [],
@@ -160,7 +158,7 @@ export function LessonPanel({
 	const [vad, setVad] = useState({ db: -90, speaking: false })
 	const [progress, setProgress] = useState(0)
 	const [peaks, setPeaks] = useState<Float32Array | null>(null)
-	const [silenceMs, setSilenceMs] = useState(1000)
+	const [silenceMs, setSilenceMs] = useState(500)
 	const [rate, setRate] = useState(1)
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const endedNotified = useRef(false)

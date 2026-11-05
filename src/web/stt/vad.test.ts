@@ -44,7 +44,6 @@ test('the Live default hard cap still commits continuous speech at 15 seconds', 
 
 test('Audio commits continuous speech at 15 seconds without committing silence', () => {
 	const segmenter = new SilenceSegmenter()
-	segmenter.setSilenceMs(1000)
 	assert.equal(segmenter.push(silence(30_000)), false)
 	assert.equal(segmenter.push(tone(14_980)), false)
 	assert.equal(segmenter.push(tone(20)), true)
@@ -67,7 +66,7 @@ test('a sub-frame voiced tail remains detectable when the VAD is flushed', () =>
 	assert.equal(segmenter.hasSpeech, true)
 })
 
-test('1000 ms is a valid default Audio pause threshold', () => {
+test('1000 ms is a valid configurable Audio pause threshold', () => {
 	const segmenter = new SilenceSegmenter({ maxSegmentMs: null })
 	segmenter.setSilenceMs(1000)
 	assert.equal(segmenter.push(concat(silence(600), tone(600), silence(999))), false)
