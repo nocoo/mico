@@ -122,7 +122,7 @@ export function SelectionPanel({
 
 	return (
 		<Card
-			className="selection-panel"
+			className="selection-panel floating-panel"
 			role="region"
 			aria-label="Selected object properties"
 			size="1"

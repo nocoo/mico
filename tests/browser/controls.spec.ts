@@ -669,7 +669,9 @@ test('zoom buttons, reset and fit keep objects reachable', async ({ page, reques
 test('identity, dock and properties panels share one surface style', async ({ page, request }) => {
 	await seed(page, request, [rect('surface-rect', 200, 200, 200, 100)])
 	await clickWorld(page, 300, 250)
-	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	const properties = page.getByRole('region', { name: 'Selected object properties' })
+	await expect(properties).toBeVisible()
+	await expect(properties).toHaveClass(/floating-panel/)
 
 	const panelStyles = await page.evaluate(() => {
 		const read = (selector: string) => {
@@ -687,6 +689,7 @@ test('identity, dock and properties panels share one surface style', async ({ pa
 			identity: read('.identity-panel'),
 			dock: read('.toolbar'),
 			properties: read('.selection-panel'),
+			assistant: read('.ai-panel'),
 		}
 	})
 
@@ -697,10 +700,104 @@ test('identity, dock and properties panels share one surface style', async ({ pa
 	}
 	expect(panelStyles.identity).toEqual(panelStyles.dock)
 	expect(panelStyles.dock).toEqual(panelStyles.properties)
+	expect(panelStyles.properties).toEqual(panelStyles.assistant)
 
 	const idleToolBackgrounds = await page
 		.locator('.drawing-tools .icon-button:not([aria-pressed="true"])')
 		.evaluateAll((buttons) => buttons.map((button) => getComputedStyle(button).backgroundColor))
 	expect(idleToolBackgrounds.length).toBeGreaterThan(0)
 	for (const background of idleToolBackgrounds) expect(background).toBe('rgba(0, 0, 0, 0)')
+})
+
+test('properties icon is centered and the panel clears top surfaces at every width', async ({
+	page,
+	request,
+}) => {
+	await seed(page, request, [frame('geometry-frame', 200, 200, 400, 200)])
+	const label = await pillBox(page, 'geometry-frame')
+	await page.mouse.click(label.x + label.width / 2, label.y + label.height / 2)
+
+	const properties = page.getByRole('region', { name: 'Selected object properties' })
+	await expect(properties).toBeVisible()
+	await expect(properties.getByLabel('Frame title')).toHaveValue('geometry-frame')
+	const icon = await properties.locator('.selection-icon').boundingBox()
+	const iconGlyph = await properties.locator('.selection-icon svg').boundingBox()
+	if (!icon || !iconGlyph) throw new Error('Expected centered properties icon geometry')
+	expect(iconGlyph.x + iconGlyph.width / 2).toBeCloseTo(icon.x + icon.width / 2, 5)
+	expect(iconGlyph.y + iconGlyph.height / 2).toBeCloseTo(icon.y + icon.height / 2, 5)
+
+	await page.setViewportSize({ width: 1440, height: 960 })
+	const aiPanel = page.locator('#ai-panel')
+	const aiTrigger = page.locator('.ai-assistant .ai-trigger')
+	const identity = page.locator('.identity-panel')
+	const closedTrigger = await aiTrigger.boundingBox()
+	const closedIdentity = await identity.boundingBox()
+	const closedProperties = await properties.boundingBox()
+	const closedAi = await aiPanel.boundingBox()
+	if (!closedTrigger || !closedIdentity || !closedProperties || !closedAi)
+		throw new Error('Expected desktop surface geometry')
+	expect(closedProperties.y).toBeCloseTo(closedAi.y, 5)
+	expect(closedProperties.x + closedProperties.width).toBeLessThan(closedTrigger.x)
+	expect(closedProperties.x).toBeGreaterThan(closedIdentity.x + closedIdentity.width)
+
+	await page.getByRole('button', { name: 'Open AI assistant', exact: true }).click()
+	await expect(page.locator('#ai-panel')).toHaveClass(/is-open/)
+	const openProperties = await properties.boundingBox()
+	const openAi = await aiPanel.boundingBox()
+	const openTrigger = await aiTrigger.boundingBox()
+	if (!openProperties || !openAi || !openTrigger)
+		throw new Error('Expected open desktop surface geometry')
+	expect(openProperties.y).toBeCloseTo(openAi.y, 5)
+	expect(openAi.x - (openProperties.x + openProperties.width)).toBeGreaterThanOrEqual(16)
+	expect(openTrigger.x).toBeGreaterThan(openProperties.x + openProperties.width)
+	expect(openProperties.x).toBeGreaterThan(closedIdentity.x + closedIdentity.width)
+
+	await page.getByRole('button', { name: 'Close AI assistant', exact: true }).click()
+	for (const width of [360, 390, 768, 769]) {
+		await page.setViewportSize({ width, height: 844 })
+		await page.mouse.move(0, 0)
+		const dock = await page.getByRole('toolbar').boundingBox()
+		const panel = await properties.boundingBox()
+		const trigger = await aiTrigger.boundingBox()
+		const brand = await identity.boundingBox()
+		if (!dock || !panel || !trigger || !brand)
+			throw new Error(`Expected responsive geometry at ${width}px`)
+		expect(panel.x).toBeGreaterThanOrEqual(0)
+		expect(panel.x + panel.width).toBeLessThanOrEqual(width)
+		if (width <= 768) {
+			expect(panel.y).toBeGreaterThanOrEqual(0)
+			expect(panel.y + panel.height).toBeLessThanOrEqual(dock.y)
+			expect(panel.y >= trigger.y + trigger.height || trigger.y >= panel.y + panel.height).toBe(
+				true,
+			)
+			expect(panel.y >= brand.y + brand.height || brand.y >= panel.y + panel.height).toBe(true)
+		} else {
+			expect(panel.x + panel.width).toBeLessThan(trigger.x)
+		}
+	}
+
+	await page.setViewportSize({ width: 769, height: 844 })
+	await page.getByRole('button', { name: 'Open AI assistant', exact: true }).click()
+	await expect(properties).toBeVisible()
+	const narrowProperties = await properties.boundingBox()
+	const narrowIdentity = await identity.boundingBox()
+	const narrowAi = await aiPanel.boundingBox()
+	const narrowDock = await page.getByRole('toolbar').boundingBox()
+	if (!narrowProperties || !narrowIdentity || !narrowAi || !narrowDock)
+		throw new Error('Expected narrow desktop surface geometry')
+	expect(narrowProperties.y).toBeGreaterThanOrEqual(narrowIdentity.y + narrowIdentity.height)
+	expect(narrowProperties.x + narrowProperties.width).toBeLessThanOrEqual(narrowAi.x)
+	expect(narrowProperties.y + narrowProperties.height).toBeLessThanOrEqual(narrowDock.y)
+
+	await page.setViewportSize({ width: 390, height: 844 })
+	await expect(properties).not.toBeVisible()
+	await expect(aiPanel).toBeVisible()
+	const mobileAi = await aiPanel.boundingBox()
+	const mobileTrigger = await aiTrigger.boundingBox()
+	const mobileIdentity = await identity.boundingBox()
+	if (!mobileAi || !mobileTrigger || !mobileIdentity)
+		throw new Error('Expected mobile open geometry')
+	expect(mobileTrigger.x).toBeGreaterThan(mobileAi.x)
+	expect(mobileTrigger.y).toBeLessThan(mobileAi.y + mobileAi.height)
+	expect(mobileIdentity.x + mobileIdentity.width).toBeLessThan(mobileTrigger.x)
 })

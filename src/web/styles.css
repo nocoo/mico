@@ -674,25 +674,29 @@ svg {
 }
 
 .selection-panel {
+	--selection-panel-top: var(--frame-inset);
 	position: fixed;
-	top: calc(var(--frame-inset) + var(--space-8) + var(--space-2));
-	right: var(--frame-inset);
+	top: var(--selection-panel-top);
+	right: calc(var(--frame-inset) + var(--control-standard) + var(--space-2) * 2);
 	left: auto;
 	transform: none;
 	z-index: 30;
 	display: flex;
 	flex-direction: column;
 	width: 320px;
-	max-height: calc(100dvh - var(--frame-inset) * 2 - var(--dock-height, 64px) - var(--space-8));
+	max-height: calc(
+		100dvh -
+		var(--selection-panel-top) -
+		var(--dock-height, 64px) -
+		var(--frame-block-end) -
+		var(--space-2)
+	);
 	--card-border-radius: var(--panel-radius);
 	--card-border-width: 0;
 	--card-padding: 0;
 	padding: 0;
 	overflow: hidden;
-	background: var(--surface);
 	border: 0;
-	border-radius: var(--panel-radius);
-	box-shadow: var(--panel-shadow);
 }
 .selection-panel::before,
 .selection-panel::after {
@@ -787,6 +791,9 @@ svg {
 	}
 }
 .selection-icon {
+	display: grid;
+	place-items: center;
+	flex: 0 0 24px;
 	width: 24px;
 	height: 24px;
 	border-radius: 6px;
@@ -847,6 +854,11 @@ svg {
 @media (min-width: 769px) {
 	.app.ai-open .selection-panel {
 		right: calc(var(--frame-inset) + var(--ai-panel-width) + var(--space-2));
+	}
+}
+@media (min-width: 769px) and (max-width: 940px) {
+	.app.ai-open .selection-panel {
+		--selection-panel-top: calc(var(--frame-inset) + var(--control-standard) + var(--space-3));
 	}
 }
 @media (max-width: 768px) {
