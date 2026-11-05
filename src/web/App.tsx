@@ -56,6 +56,7 @@ import {
 	shapeBounds,
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
+import { StickyNote } from './StickyNote'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
 
@@ -89,6 +90,7 @@ export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
+	const animatedNotesRef = useRef(new Set<string>())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
 		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush' | 'marquee'
@@ -153,8 +155,24 @@ export default function App() {
 
 	const cancelInteractionRef = useRef<() => void>(() => {})
 
+	const trackNewNotes = useCallback((next: Board, switching: boolean) => {
+		if (switching) {
+			animatedNotesRef.current.clear()
+			return
+		}
+		const previousIds = new Set(boardRef.current.shapes.map((shape) => shape.id))
+		const noteIds = new Set(next.shapes.filter((shape) => shape.type === 'note').map((shape) => shape.id))
+		for (const id of animatedNotesRef.current) {
+			if (!noteIds.has(id)) animatedNotesRef.current.delete(id)
+		}
+		for (const id of noteIds) {
+			if (!previousIds.has(id)) animatedNotesRef.current.add(id)
+		}
+	}, [])
+
 	const applyBoard = useCallback((next: Board) => {
 		if (next.revision < revisionRef.current) return
+		trackNewNotes(next, false)
 		revisionRef.current = next.revision
 		boardRef.current = next
 		rememberBoard(boardCacheRef.current, activeCanvasIdRef.current, next)
@@ -162,7 +180,7 @@ export default function App() {
 		setSelectedIds((current) =>
 			current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 		)
-	}, [])
+	}, [trackNewNotes])
 
 	const mergeCanvas = useCallback((summary: CanvasSummary) => {
 		setCanvases((current) => upsertCanvasSummary(current, summary))
@@ -181,6 +199,7 @@ export default function App() {
 		}
 		rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
 		if (!switching && snapshot.board.revision < revisionRef.current) return
+		trackNewNotes(snapshot.board, switching)
 		revisionRef.current = snapshot.board.revision
 		boardRef.current = snapshot.board
 		setBoard(snapshot.board)
@@ -201,7 +220,7 @@ export default function App() {
 		setSelectedIds((current) =>
 			current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
 		)
-	}, [])
+	}, [trackNewNotes])
 
 	const postOperations = useCallback(
 		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
@@ -1231,15 +1250,7 @@ export default function App() {
 		if (shape.type === 'note') {
 			return (
 				<g key={shape.id} {...common}>
-					<rect
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						rx={4}
-						fill={shape.color}
-						className="sticky-note"
-					/>
+					<StickyNote shape={shape} animate={animatedNotesRef.current.has(shape.id)} />
 					{active && (
 						<rect
 							className="selection"
@@ -1250,15 +1261,6 @@ export default function App() {
 							rx={6}
 						/>
 					)}
-					<foreignObject
-						x={shape.x + 12}
-						y={shape.y + 12}
-						width={shape.w - 24}
-						height={shape.h - 24}
-						pointerEvents="none"
-					>
-						<div className="sticky-text">{shape.text || ''}</div>
-					</foreignObject>
 				</g>
 			)
 		}
