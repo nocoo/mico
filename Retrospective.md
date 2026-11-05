@@ -7,6 +7,8 @@
 
 ## Tool usage
 
+- Passed exclusions to `fd` as positional paths; use `-E` for exclusions when discovering files.
+- CSS `inset(... round 10px)` scales both corner radii together on narrow shapes, unlike SVG rectangles. Clamp the horizontal and vertical radii separately and test both narrow orientations.
 - A delegated worker used recursive `find` despite the local tool rules. Use `fd` for filename discovery and keep delegated searches scoped to the repository.
 - A delegated UI worker started the Vite browser fixture in the background. Use the managed Playwright webServer or a visible herdr pane, and verify fixture ports are released afterward.
 - Parallel client and browser-test work disagreed on a translated error message. Freeze the user-visible error contract before writing cross-agent assertions, then run the integration test against the final implementation.
