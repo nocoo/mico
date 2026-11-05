@@ -13,20 +13,15 @@ import type {
 	ServerEvent,
 	Shape,
 } from '../shared/types'
-import { AiPanel } from './AiPanel'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BlueprintGrid } from './BlueprintGrid'
-import { BoardFrame } from './BoardFrame'
 import { BrushStroke } from './BrushStroke'
-import { CanvasPanel } from './CanvasPanel'
 import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
 import {
-	BRUSH_STYLES,
-	BRUSH_WIDTHS,
 	CANDY_COLORS,
 	CANDY_LAYOUT,
 	CANDY_TINTS,
@@ -34,20 +29,20 @@ import {
 	candyInk,
 	candyLine,
 	candyWash,
-	FONT_OPTIONS,
-	FONT_SIZES,
 	FONT_STACKS,
-	FONT_WEIGHTS,
 	ICON_SIZE,
-	NOTE_COLORS,
 	TEXT_SIZE,
 	type Tool,
 } from './design'
+import { AssistantFrame } from './frame/assistant'
+import type { BrushWidth, DockLayout } from './frame/contracts'
+import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
+import { Toolbar } from './frame/toolbar'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from './htmlCard'
 import { canRebaseMoveGroup } from './move'
-import { SelectField } from './SelectField'
 import { SelectionPanel } from './SelectionPanel'
+import { StickyNote } from './StickyNote'
 import {
 	boundsOf,
 	expandRect,
@@ -57,7 +52,6 @@ import {
 	shapeBounds,
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
-import { StickyNote } from './StickyNote'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport } from './viewport'
 
@@ -119,6 +113,7 @@ export default function App() {
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(() => aiPrompt.length > 0)
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
+	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
 	const [marquee, setMarquee] = useState<Rect | null>(null)
@@ -142,12 +137,17 @@ export default function App() {
 	const [guides, setGuides] = useState<AlignmentGuide[]>([])
 	const [brushPoints, setBrushPoints] = useState<Point[] | null>(null)
 	const [brushStyle, setBrushStyle] = useState<BrushStyle>('brush')
-	const [brushWidth, setBrushWidth] = useState<(typeof BRUSH_WIDTHS)[number]>(4)
+	const [brushWidth, setBrushWidth] = useState<BrushWidth>(4)
 	const [notice, setNotice] = useState('')
 	const [spacePressed, setSpacePressed] = useState(false)
 	const [isPanning, setIsPanning] = useState(false)
 
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
+	const reportDockLayout = useCallback((layout: DockLayout | null) => {
+		setDockLayout((current) =>
+			current?.height === layout?.height && current?.left === layout?.left ? current : layout,
+		)
+	}, [])
 
 	const announce = useCallback((message: string) => {
 		setNotice(message)
@@ -162,7 +162,9 @@ export default function App() {
 			return
 		}
 		const previousIds = new Set(boardRef.current.shapes.map((shape) => shape.id))
-		const noteIds = new Set(next.shapes.filter((shape) => shape.type === 'note').map((shape) => shape.id))
+		const noteIds = new Set(
+			next.shapes.filter((shape) => shape.type === 'note').map((shape) => shape.id),
+		)
 		for (const id of animatedNotesRef.current) {
 			if (!noteIds.has(id)) animatedNotesRef.current.delete(id)
 		}
@@ -171,57 +173,63 @@ export default function App() {
 		}
 	}, [])
 
-	const applyBoard = useCallback((next: Board) => {
-		if (next.revision < revisionRef.current) return
-		trackNewNotes(next, false)
-		revisionRef.current = next.revision
-		boardRef.current = next
-		rememberBoard(boardCacheRef.current, activeCanvasIdRef.current, next)
-		setBoard(next)
-		setSelectedIds((current) =>
-			current.filter((id) => next.shapes.some((shape) => shape.id === id)),
-		)
-	}, [trackNewNotes])
+	const applyBoard = useCallback(
+		(next: Board) => {
+			if (next.revision < revisionRef.current) return
+			trackNewNotes(next, false)
+			revisionRef.current = next.revision
+			boardRef.current = next
+			rememberBoard(boardCacheRef.current, activeCanvasIdRef.current, next)
+			setBoard(next)
+			setSelectedIds((current) =>
+				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
+			)
+		},
+		[trackNewNotes],
+	)
 
 	const mergeCanvas = useCallback((summary: CanvasSummary) => {
 		setCanvases((current) => upsertCanvasSummary(current, summary))
 	}, [])
 
-	const applySnapshot = useCallback((snapshot: CanvasSnapshot) => {
-		if (snapshot.stateVersion < stateVersionRef.current) return
-		stateVersionRef.current = snapshot.stateVersion
-		const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
-		activeCanvasIdRef.current = snapshot.activeCanvasId
-		setActiveCanvasId(snapshot.activeCanvasId)
-		setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
-		const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
-		for (const id of boardCacheRef.current.keys()) {
-			if (!liveIds.has(id)) boardCacheRef.current.delete(id)
-		}
-		rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
-		if (!switching && snapshot.board.revision < revisionRef.current) return
-		trackNewNotes(snapshot.board, switching)
-		revisionRef.current = snapshot.board.revision
-		boardRef.current = snapshot.board
-		setBoard(snapshot.board)
-		if (switching) {
-			cancelInteractionRef.current()
-			connectionResetRef.current()
-			setSelectedIds([])
-			setEditing(null)
-			setMarquee(null)
-			setGuides([])
-			setDragPreviews(new Map())
-			setCreation(null)
-			setBrushPoints(null)
-			const rect = svgRef.current?.getBoundingClientRect()
-			if (rect) setViewport(fitViewport(snapshot.board.shapes, rect.width, rect.height))
-			return
-		}
-		setSelectedIds((current) =>
-			current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
-		)
-	}, [trackNewNotes])
+	const applySnapshot = useCallback(
+		(snapshot: CanvasSnapshot) => {
+			if (snapshot.stateVersion < stateVersionRef.current) return
+			stateVersionRef.current = snapshot.stateVersion
+			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
+			activeCanvasIdRef.current = snapshot.activeCanvasId
+			setActiveCanvasId(snapshot.activeCanvasId)
+			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
+			const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
+			for (const id of boardCacheRef.current.keys()) {
+				if (!liveIds.has(id)) boardCacheRef.current.delete(id)
+			}
+			rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
+			if (!switching && snapshot.board.revision < revisionRef.current) return
+			trackNewNotes(snapshot.board, switching)
+			revisionRef.current = snapshot.board.revision
+			boardRef.current = snapshot.board
+			setBoard(snapshot.board)
+			if (switching) {
+				cancelInteractionRef.current()
+				connectionResetRef.current()
+				setSelectedIds([])
+				setEditing(null)
+				setMarquee(null)
+				setGuides([])
+				setDragPreviews(new Map())
+				setCreation(null)
+				setBrushPoints(null)
+				const rect = svgRef.current?.getBoundingClientRect()
+				if (rect) setViewport(fitViewport(snapshot.board.shapes, rect.width, rect.height))
+				return
+			}
+			setSelectedIds((current) =>
+				current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
+			)
+		},
+		[trackNewNotes],
+	)
 
 	const postOperations = useCallback(
 		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
@@ -520,31 +528,6 @@ export default function App() {
 				event.preventDefault()
 				setSpacePressed(true)
 			}
-			if (event.key === 'Delete' || event.key === 'Backspace') {
-				event.preventDefault()
-				deleteSelected()
-			}
-			const keys: Record<string, typeof tool> = {
-				v: 'select',
-				h: 'hand',
-				r: 'rectangle',
-				o: 'ellipse',
-				t: 'text',
-				l: 'line',
-				p: 'path',
-				n: 'note',
-				w: 'html',
-				c: 'connector',
-			}
-			const nextTool = keys[event.key.toLowerCase()]
-			if (nextTool) {
-				cancelInteraction()
-				setTool(nextTool)
-			}
-			if (event.key === '+' || event.key === '=') zoomAt(viewport.zoom * 1.2)
-			if (event.key === '-') zoomAt(viewport.zoom / 1.2)
-			if (event.key === '0') setViewport({ x: 0, y: 0, zoom: 1 })
-			if (event.key.toLowerCase() === 'f') fitBoard()
 		}
 		const onKeyUp = (event: KeyboardEvent) => {
 			if (event.code === 'Space') setSpacePressed(false)
@@ -561,7 +544,7 @@ export default function App() {
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction, deleteSelected, fitBoard, viewport.zoom, zoomAt])
+	}, [cancelInteraction])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
@@ -1378,110 +1361,6 @@ export default function App() {
 		/>
 	)
 
-	const toolOptions =
-		tool === 'path' ? (
-			<fieldset className="brush-options" aria-label="Brush options">
-				<div className="segmented-control brush-styles">
-					{BRUSH_STYLES.map(({ id, label }) => (
-						<button
-							type="button"
-							key={id}
-							aria-pressed={brushStyle === id}
-							aria-label={`Brush style ${label}`}
-							onClick={() => setBrushStyle(id)}
-						>
-							{label}
-						</button>
-					))}
-				</div>
-				<div className="segmented-control brush-widths">
-					{BRUSH_WIDTHS.map((width) => (
-						<button
-							type="button"
-							key={width}
-							aria-pressed={brushWidth === width}
-							aria-label={`Brush width ${width}px`}
-							onClick={() => setBrushWidth(width)}
-						>
-							{width}
-						</button>
-					))}
-				</div>
-			</fieldset>
-		) : tool === 'note' ? (
-			<fieldset className="brush-options" aria-label="Sticky colors">
-				<div className="segmented-control note-colors">
-					{NOTE_COLORS.map(({ value, label }) => (
-						<button
-							type="button"
-							key={value}
-							aria-pressed={noteColor === value}
-							aria-label={`${label} sticky`}
-							style={{ background: value }}
-							onClick={() => setNoteColor(value)}
-						/>
-					))}
-				</div>
-			</fieldset>
-		) : tool === 'text' ? (
-			<fieldset className="brush-options text-options" aria-label="Text options">
-				<SelectField
-					label="Font family"
-					value={textFont}
-					options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
-					onChange={setTextFont}
-					side="top"
-					renderItem={(option) => (
-						<span
-							style={{
-								fontFamily: FONT_STACKS[option.value as keyof typeof FONT_STACKS],
-								fontSize: 16,
-								fontWeight: textWeight,
-							}}
-						>
-							{option.label}
-						</span>
-					)}
-				/>
-				<SelectField
-					label="Font size"
-					value={String(textSize)}
-					options={FONT_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
-					onChange={(size) => setTextSize(Number(size))}
-					side="top"
-					renderItem={(option) => (
-						<span
-							style={{
-								fontFamily: FONT_STACKS[textFont as keyof typeof FONT_STACKS],
-								fontSize: Number(option.value),
-								fontWeight: textWeight,
-							}}
-						>
-							{option.label}
-						</span>
-					)}
-				/>
-				<SelectField
-					label="Font weight"
-					value={String(textWeight)}
-					options={FONT_WEIGHTS.map((weight) => ({ value: String(weight), label: String(weight) }))}
-					onChange={(weight) => setTextWeight(Number(weight))}
-					side="top"
-					renderItem={(option) => (
-						<span
-							style={{
-								fontFamily: FONT_STACKS[textFont as keyof typeof FONT_STACKS],
-								fontSize: 16,
-								fontWeight: Number(option.value),
-							}}
-						>
-							{option.label}
-						</span>
-					)}
-				/>
-			</fieldset>
-		) : null
-
 	return (
 		<main
 			className={`app ${aiPanelOpen ? 'ai-open' : ''}`}
@@ -1492,55 +1371,77 @@ export default function App() {
 					'--text-ui': `${TEXT_SIZE}px`,
 					'--frame-desktop-inset': `${FRAME_LAYOUT.desktopInset}px`,
 					'--frame-mobile-inset': `${FRAME_LAYOUT.mobileInset}px`,
+					'--dock-left': dockLayout ? `${dockLayout.left}px` : undefined,
+					'--measured-dock-height': dockLayout ? `${dockLayout.height}px` : undefined,
 				} as React.CSSProperties
 			}
 		>
-			<BoardFrame
-				tool={tool}
-				onToolChange={(next) => {
-					cancelInteraction()
-					setTool(next)
+			<IdentityFrame
+				state={{
+					canvases,
+					activeCanvasId,
+					canvasesOpen: canvasPanelOpen,
+					apiConnected,
+					wsConnected,
+					revision: board.revision,
+					objectCount: board.shapes.length,
 				}}
-				zoom={viewport.zoom}
-				onZoom={(factor) => zoomAt(viewport.zoom * factor)}
-				onReset={() => setViewport({ x: 0, y: 0, zoom: 1 })}
-				onFit={fitBoard}
-				onDelete={deleteSelected}
-				canDelete={selectedIds.length > 0}
-				apiConnected={apiConnected}
-				wsConnected={wsConnected}
-				revision={board.revision}
-				objectCount={board.shapes.length}
-				onFrame={frameSelection}
-				canFrame={selectedIds.length > 0}
-				toolOptions={toolOptions}
-				canvasesOpen={canvasPanelOpen}
-				onToggleCanvases={toggleCanvasPanel}
-				aiOpen={aiPanelOpen}
-				onToggleAi={() => setAiPanelOpen((open) => !open)}
+				actions={{
+					toggleCanvases: toggleCanvasPanel,
+					closeCanvases: closeCanvasPanel,
+					createCanvas,
+					switchCanvas,
+					renameCanvas,
+					deleteCanvas,
+				}}
 			/>
-
-			<AiPanel
-				open={aiPanelOpen}
-				onClose={closeAiPanel}
-				isGestureActive={isGestureActive}
-				selectedIds={selectedIds}
-				onClearSelection={clearSelection}
-				initialPrompt={aiPrompt}
-				onInitialPromptConsumed={consumeAiPrompt}
-				canvasId={activeCanvasId}
-				onCreateCanvas={createLessonCanvas}
+			<Toolbar
+				state={{
+					tool,
+					zoom: viewport.zoom,
+					canDelete: selectedIds.length > 0,
+					canFrame: selectedIds.length > 0,
+					brushStyle,
+					brushWidth,
+					noteColor,
+					textFont,
+					textSize,
+					textWeight,
+				}}
+				actions={{
+					reportLayout: reportDockLayout,
+					selectTool: (next) => {
+						cancelInteraction()
+						setTool(next)
+					},
+					zoom: (factor) => zoomAt(viewport.zoom * factor),
+					resetView: () => setViewport({ x: 0, y: 0, zoom: 1 }),
+					fitBoard,
+					deleteSelection: deleteSelected,
+					frameSelection,
+					setBrushStyle,
+					setBrushWidth,
+					setNoteColor,
+					setTextFont,
+					setTextSize,
+					setTextWeight,
+				}}
 			/>
-
-			<CanvasPanel
-				open={canvasPanelOpen}
-				canvases={canvases}
-				activeCanvasId={activeCanvasId}
-				onClose={closeCanvasPanel}
-				onCreate={createCanvas}
-				onSwitch={switchCanvas}
-				onRename={renameCanvas}
-				onDelete={deleteCanvas}
+			<AssistantFrame
+				state={{
+					open: aiPanelOpen,
+					canvasId: activeCanvasId,
+					selectedIds,
+					initialPrompt: aiPrompt,
+				}}
+				actions={{
+					close: closeAiPanel,
+					toggle: () => setAiPanelOpen((open) => !open),
+					clearSelection,
+					consumeInitialPrompt: consumeAiPrompt,
+					createCanvas: createLessonCanvas,
+					isGestureActive,
+				}}
 			/>
 
 			{tool === 'select' && (

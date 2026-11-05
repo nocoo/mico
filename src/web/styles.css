@@ -180,6 +180,9 @@ svg {
 	gap: var(--space-2);
 	pointer-events: none;
 }
+.ai-topbar {
+	justify-content: flex-end;
+}
 .identity-panel,
 .toolbar {
 	display: flex;
@@ -242,7 +245,11 @@ svg {
 	background: var(--ink-muted);
 }
 .status.live .status-dot {
-	background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--success) 55%, var(--surface)), var(--success) 75%);
+	background: radial-gradient(
+		circle at 35% 30%,
+		color-mix(in srgb, var(--success) 55%, var(--surface)),
+		var(--success) 75%
+	);
 	box-shadow:
 		0 0 4px color-mix(in srgb, var(--success) 40%, transparent),
 		0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
