@@ -8,6 +8,7 @@
 ## Tool usage
 
 - Passed exclusions to `fd` as positional paths; use `-E` for exclusions when discovering files. Wildcard filename patterns also need `-g` rather than regex mode.
+- Guessed a MOSS source filename and supplied an ambiguous edit match; discover the real file first and include a unique function header in targeted replacements.
 - CSS `inset(... round 10px)` scales both corner radii together on narrow shapes, unlike SVG rectangles. Clamp the horizontal and vertical radii separately and test both narrow orientations.
 - A delegated worker used recursive `find` despite the local tool rules. Use `fd` for filename discovery and keep delegated searches scoped to the repository.
 - A delegated UI worker started the Vite browser fixture in the background. Use the managed Playwright webServer or a visible herdr pane, and verify fixture ports are released afterward.
