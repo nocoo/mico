@@ -5,7 +5,7 @@ const INPUT_LIMIT = 64 * 1024
 const PROMPT_LIMIT = 16 * 1024
 const RESPONSE_LIMIT = 40 * 1024 * 1024
 const PNG_LIMIT = 10 * 1024 * 1024
-const REQUEST_TIMEOUT_MS = 120_000
+const REQUEST_TIMEOUT_MS = 180_000
 
 const SIZES = {
 	'1:1': { width: 1024, height: 1024 },
