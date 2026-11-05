@@ -47,10 +47,22 @@ export function CanvasPanel({
 	onRename,
 	onDelete,
 }: CanvasPanelProps) {
+	const panelRef = useRef<HTMLElement>(null)
 	const renameInputRef = useRef<HTMLInputElement>(null)
+	const renameCancelledRef = useRef(false)
+	const [mounted, setMounted] = useState(open)
 	const [renamingId, setRenamingId] = useState<string | null>(null)
 	const [renameValue, setRenameValue] = useState('')
 	const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+
+	useEffect(() => {
+		if (open) {
+			setMounted(true)
+			if (panelRef.current) panelRef.current.inert = false
+			return
+		}
+		if (panelRef.current) panelRef.current.inert = true
+	}, [open])
 
 	useEffect(() => {
 		if (!open) return
@@ -62,8 +74,12 @@ export function CanvasPanel({
 		}
 		const onKeyDown = (event: KeyboardEvent) => {
 			if (event.key !== 'Escape') return
+			event.preventDefault()
 			event.stopPropagation()
 			onClose()
+			window.requestAnimationFrame(() => {
+				document.querySelector<HTMLButtonElement>('[data-canvas-toggle="true"]')?.focus()
+			})
 		}
 		document.addEventListener('pointerdown', onPointerDown)
 		document.addEventListener('keydown', onKeyDown)
@@ -84,16 +100,31 @@ export function CanvasPanel({
 		return () => window.clearTimeout(timeout)
 	}, [confirmDeleteId])
 
-	if (!open) return null
+	if (!mounted) return null
 
 	const commitRename = (id: string) => {
+		if (renameCancelledRef.current) {
+			renameCancelledRef.current = false
+			setRenamingId(null)
+			return
+		}
 		const name = renameValue.trim()
 		setRenamingId(null)
 		if (name && name !== canvases.find((canvas) => canvas.id === id)?.name) onRename(id, name)
 	}
 
 	return (
-		<section className="canvas-panel floating-panel" aria-label="Canvases" data-canvas-panel="true">
+		<section
+			ref={panelRef}
+			className="canvas-panel floating-panel"
+			aria-label="Canvases"
+			aria-hidden={!open || undefined}
+			data-state={open ? 'open' : 'closed'}
+			data-canvas-panel="true"
+			onAnimationEnd={(event) => {
+				if (event.target === event.currentTarget && !open) setMounted(false)
+			}}
+		>
 			<header className="canvas-panel-header">
 				<div className="canvas-panel-heading">
 					<span className="canvas-panel-title">Canvases</span>
@@ -135,7 +166,11 @@ export function CanvasPanel({
 											}
 											if (event.key === 'Escape') {
 												event.preventDefault()
+												renameCancelledRef.current = true
 												setRenamingId(null)
+												window.requestAnimationFrame(() => {
+													document.querySelector<HTMLButtonElement>('[data-canvas-toggle="true"]')?.focus()
+												})
 											}
 										}}
 									/>
@@ -171,6 +206,7 @@ export function CanvasPanel({
 									tooltipSide="bottom"
 									onClick={() => {
 										setConfirmDeleteId(null)
+										renameCancelledRef.current = false
 										setRenamingId(canvas.id)
 										setRenameValue(canvas.name)
 									}}

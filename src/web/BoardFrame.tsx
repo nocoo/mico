@@ -135,7 +135,7 @@ export function BoardFrame({
 		}
 	}, [toolOptions])
 
-	const status = !apiConnected ? 'offline' : wsConnected ? 'live' : 'api'
+	const status = !apiConnected ? 'offline' : wsConnected ? 'live' : 'reconnecting'
 	const statusLabel = !apiConnected ? 'Offline' : wsConnected ? 'Live' : 'Reconnecting'
 
 	return (
@@ -143,7 +143,17 @@ export function BoardFrame({
 			<header className="topbar">
 				<div className="identity-panel floating-panel">
 					<div className="brand">
-						<PenTool className="brand-mark" strokeWidth={2.25} aria-hidden="true" />
+						<span className="brand-mark">
+							<PenTool className="brand-mark-icon" strokeWidth={2.25} aria-hidden="true" />
+							<span
+								className={`status ${status}`}
+								role="status"
+								aria-label={statusLabel}
+								title={`Revision ${revision} · ${objectCount} objects · ${statusLabel}`}
+							>
+								<span className="status-dot" aria-hidden="true" />
+							</span>
+						</span>
 						<strong>mico</strong>
 					</div>
 					<IconButton
@@ -155,14 +165,6 @@ export function BoardFrame({
 						onClick={onToggleCanvases}
 						data-canvas-toggle="true"
 					/>
-					<span
-						className={`status ${status}`}
-						role="status"
-						aria-label={statusLabel}
-						title={`Revision ${revision} · ${objectCount} objects`}
-					>
-						<span className="status-dot" aria-hidden="true" />
-					</span>
 				</div>
 				<div className="ai-trigger floating-panel">
 					<IconButton
