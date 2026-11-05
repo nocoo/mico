@@ -5,6 +5,7 @@ import {
 	CodeXml,
 	Frame,
 	Hand,
+	Image as ImageIcon,
 	Maximize,
 	Minus,
 	MousePointer2,
@@ -55,6 +56,7 @@ const toolIcons = {
 	path: Brush,
 	note: StickyNote,
 	html: CodeXml,
+	image: ImageIcon,
 	connector: ArrowUpRight,
 } satisfies Record<Tool, typeof MousePointer2>
 
@@ -140,7 +142,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
-			if (target.closest('.selection-panel')) return
+			if (target.closest('.selection-panel, .select-content')) return
 			if (target.closest('input, textarea, select, [contenteditable="true"]')) return
 			const command = toolbarCommandForKey(event.key, {
 				metaKey: event.metaKey,

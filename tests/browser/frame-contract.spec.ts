@@ -270,6 +270,20 @@ test('toolbar frame matches the approved toolbar geometry and control sizes', as
 			prototypeControlStyles[property],
 		)
 	}
+
+	await openPrototype(page, 'toolbar.html')
+	await page.setViewportSize({ width: 500, height: 844 })
+	await expect
+		.poll(async () => {
+			const box = await getBox(page.locator('.toolbar'), 'prototype toolbar')
+			return box.x >= 0 && box.x + box.width <= 500
+		})
+		.toBe(true)
+	for (const button of await page.locator('.drawing-tools button').all()) {
+		const box = await getBox(button, 'prototype drawing control')
+		expect(box.x).toBeGreaterThanOrEqual(0)
+		expect(box.x + box.width).toBeLessThanOrEqual(500)
+	}
 })
 
 test('AI trigger and panel match approved open-close and Live theme geometry', async ({ page }) => {

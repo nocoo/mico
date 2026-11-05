@@ -156,6 +156,9 @@ function projectOperations(current: Shape[], operations: Operation[]): Shape[] {
 			if (updated.type !== 'connector' && updated.frameId === null) {
 				const { frameId: _frameId, ...rest } = updated
 				projected[index] = rest as Shape
+			} else if (updated.type === 'frame' && updated.backgroundImageId === null) {
+				const { backgroundImageId: _backgroundImageId, ...rest } = updated
+				projected[index] = rest as Shape
 			} else {
 				projected[index] = updated
 			}
@@ -537,6 +540,44 @@ export function createCanvasTools(
 			},
 		}),
 
+		add_images: tool({
+			description:
+				'Place one or more pre-uploaded binary images on the board using their asset imageId. Uploads happen outside this tool; never use remote URLs or fetch external resources.',
+			inputSchema: z.object({
+				images: z
+					.array(
+						z.object({
+							id: idSchema.optional(),
+							imageId: z.string().min(1).describe('Existing pre-uploaded image asset id.'),
+							x: coord('Left edge.'),
+							y: coord('Top edge.'),
+							w: size('Width.'),
+							h: size('Height.'),
+							color: colorSchema.optional(),
+							frameId: frameIdSchema,
+						}),
+					)
+					.min(1)
+					.max(16),
+			}),
+			execute: async ({ images }) => {
+				const operations: Operation[] = images.map((image) => ({
+					type: 'create',
+					shape: {
+						...baseShape(image.id, 'image', image.color ?? CANDY_COLORS.ink),
+						type: 'image',
+						imageId: image.imageId,
+						x: image.x,
+						y: image.y,
+						w: image.w,
+						h: image.h,
+						...(image.frameId ? { frameId: image.frameId } : {}),
+					},
+				}))
+				return applyOperations(operations)
+			},
+		}),
+
 		add_lines: tool({
 			description:
 				'Add straight lines: axes, rays, vectors, separators, timelines or construction lines. Lines take absolute start and end points and may have signed direction.',
@@ -620,6 +661,11 @@ export function createCanvasTools(
 								.min(2)
 								.max(64)
 								.describe('Existing unframed regular object ids; at least two distinct ids.'),
+							backgroundImageId: z
+								.string()
+								.optional()
+								.describe('Existing image shape id for the frame background.'),
+							backgroundFit: z.enum(['cover', 'contain', 'stretch']).optional(),
 						}),
 					)
 					.min(1)
@@ -734,6 +780,14 @@ export function createCanvasTools(
 							w: bounds.right - bounds.left,
 							h: bounds.bottom - bounds.top,
 							title: frame.title,
+							...(frame.backgroundImageId
+								? {
+										backgroundImageId: frame.backgroundImageId,
+										backgroundFit: frame.backgroundFit ?? 'cover',
+									}
+								: frame.backgroundFit
+									? { backgroundFit: frame.backgroundFit }
+									: {}),
 						},
 					})
 					for (const memberId of memberIds) {
@@ -844,7 +898,7 @@ export function createCanvasTools(
 
 		update_shapes: tool({
 			description:
-				'Move, resize, recolor or relabel existing objects, reparent them into a frame, or rewire a connector. Patches are applied atomically. Keys must be valid for the object type. For HTML patches, use exact Lucide placeholders such as <i data-lucide="heart-pulse"></i>.',
+				'Move, resize, recolor or relabel existing objects, reparent them into a frame, set or unlink frame backgroundImageId, choose backgroundFit, or rewire a connector. Patches are applied atomically. Keys must be valid for the object type. For HTML patches, use exact Lucide placeholders such as <i data-lucide="heart-pulse"></i>.',
 			inputSchema: z.object({
 				updates: z
 					.array(
@@ -861,6 +915,9 @@ export function createCanvasTools(
 									title: z.string().min(1).max(120).optional(),
 									html: z.string().min(1).max(200000).optional(),
 									frameId: z.string().nullable().optional(),
+									imageId: z.string().min(1).optional(),
+									backgroundImageId: z.string().nullable().optional(),
+									backgroundFit: z.enum(['cover', 'contain', 'stretch']).optional(),
 									font: z.enum(['sans', 'serif', 'hand', 'mono']).optional(),
 									fontSize: z.number().min(8).max(256).optional(),
 									fontWeight: z.number().min(100).max(900).optional(),

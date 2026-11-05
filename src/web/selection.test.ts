@@ -117,6 +117,21 @@ test('intersects counts touching edges, containment and zero-size shapes', () =>
 	assert.equal(intersects({ x: 0, y: 0, w: 0, h: 0 }, { x: 1, y: 0, w: 0, h: 0 }), false)
 })
 
+test('marquee and frame bounds include image shapes', () => {
+	const image: CanvasShape = {
+		id: 'image',
+		type: 'image',
+		x: 20,
+		y: 30,
+		w: 120,
+		h: 80,
+		color: '#616161',
+		imageId: 'asset-image',
+	}
+	assert.deepEqual(selectInRect([image], { x: 0, y: 0, w: 200, h: 200 }), ['image'])
+	assert.deepEqual(boundsOf([image], ['image']), { x: 20, y: 30, w: 120, h: 80 })
+})
+
 test('a marquee selects intersecting shapes in input order without duplicates', () => {
 	const shapes: Shape[] = [
 		rectangle('first', 10, 10, 20, 20),

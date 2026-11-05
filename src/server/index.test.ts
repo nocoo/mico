@@ -227,6 +227,73 @@ test('AI settings expose only public fields and preserve the existing key contra
 	})
 })
 
+test('image routes validate signatures, serve safe bytes and reject bad ids', async () => {
+	await withLiveDaemon(async ({ url, port }) => {
+		const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
+		const uploaded = await fetch(`${url}/api/images`, {
+			method: 'POST',
+			headers: { origin: DEV_ORIGIN, 'Content-Type': 'image/png' },
+			body: png,
+		})
+		assert.equal(uploaded.status, 200)
+		const { id } = (await uploaded.json()) as { id: string }
+		assert.match(id, /^[0-9a-f-]{36}$/i)
+
+		const served = await fetch(`${url}/api/images/${id}`, { headers: { origin: DEV_ORIGIN } })
+		assert.equal(served.status, 200)
+		assert.equal(served.headers.get('content-type'), 'image/png')
+		assert.equal(served.headers.get('x-content-type-options'), 'nosniff')
+		assert.equal(served.headers.get('cache-control'), 'private, no-store')
+		assert.deepEqual(Buffer.from(await served.arrayBuffer()), png)
+
+		const mismatch = await fetch(`${url}/api/images`, {
+			method: 'POST',
+			headers: { origin: DEV_ORIGIN, 'Content-Type': 'image/jpeg' },
+			body: png,
+		})
+		assert.equal(mismatch.status, 415)
+
+		const invalidSignature = await fetch(`${url}/api/images`, {
+			method: 'POST',
+			headers: { origin: DEV_ORIGIN, 'Content-Type': 'image/png' },
+			body: Buffer.from('not an image'),
+		})
+		assert.equal(invalidSignature.status, 415)
+
+		const invalidId = await fetch(`${url}/api/images/not-an-id`, {
+			headers: { origin: DEV_ORIGIN },
+		})
+		assert.equal(invalidId.status, 400)
+		const unknownId = await fetch(`${url}/api/images/00000000-0000-4000-8000-000000000000`, {
+			headers: { origin: DEV_ORIGIN },
+		})
+		assert.equal(unknownId.status, 404)
+
+		const wrongOrigin = await fetch(`${url}/api/images/${id}`, {
+			headers: { origin: 'http://malicious.example' },
+		})
+		assert.equal(wrongOrigin.status, 403)
+
+		const blockedHost = await new Promise<number>((resolve, reject) => {
+			const req = request(
+				{
+					host: '127.0.0.1',
+					port,
+					path: `/api/images/${id}`,
+					headers: { host: 'evil.example', origin: DEV_ORIGIN },
+				},
+				(res) => {
+					res.resume()
+					res.on('end', () => resolve(res.statusCode ?? 0))
+				},
+			)
+			req.on('error', reject)
+			req.end()
+		})
+		assert.equal(blockedHost, 403)
+	})
+})
+
 test('invalid browser origins and malformed WebSocket frames are isolated', async () => {
 	await withLiveDaemon(async ({ directory, port }) => {
 		const good = new WebSocket(`ws://127.0.0.1:${port}/api/events`, {

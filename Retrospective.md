@@ -39,6 +39,9 @@
 
 ## Automated test architecture
 
+- Browser fixture ports are shared across worktrees. Check their owner before starting a suite and wait for another checkout's fixture to finish; never reuse or stop it, and recheck availability immediately before starting.
+- Radix Select hides the rest of the accessibility tree while its modal listbox is open. Assert canvas tool state through its stable DOM attribute before closing the menu, then assert the properties region after choosing an option.
+- Playwright can scroll a partially expanded toolbar-options container and click the wrong moving swatch. Wait until its measured width reaches its target, then assert the selected swatch before drawing.
 - A locator scoped through the assistant trigger's changing accessible name stops matching when the panel opens. Use its stable toggle attribute across the transition, and assert the name separately.
 - Escape closes a select but also returns the canvas to the Select tool; tests that inspect several Text dropdowns should close each by choosing its current option instead.
 - After pulling UI changes, inspect the current accessible names before writing a smoke check; the assistant trigger was renamed from `AI assistant` to `Open AI assistant` and the stale selector produced a false failure.
@@ -58,6 +61,7 @@
 
 ## Frame containers, HTML cards and membership
 
+- Clearing image backgrounds only after a batch left a deleted-and-recreated shape ID linked to the old frame. Cascade at the delete operation, and test explicit reassignment later in the same batch.
 - A foreignObject captures pointer events across its whole box, not just the visible HTML child. Measure the `.card-pill` width and drive a transparent SVG hit rect from it; keep the foreignObject at `pointer-events: none`. Tests must click `.card-pill`, not the handle group bounding box, which still spans the foreignObject.
 - Implicit pointer capture retargets double-click compatibility events to the capturing SVG. Resolve label double-clicks through the canvas `elementFromPoint` fallback and look up `[data-card-handle]`, not only `[data-shape-id]`.
 - "New member needs full containment" and "existing member detaches only when fully outside" are different rules. Reusing one full-containment check silently dropped partially overlapping members that the old detach semantics kept.

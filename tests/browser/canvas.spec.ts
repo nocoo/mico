@@ -154,7 +154,7 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
 	await expect(page.locator('.identity-panel img.brand-mark-icon')).toHaveCount(1)
 	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'connection-status-breathe')
-	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(15)
+	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(16)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	for (const topbar of await page.locator('.topbar').all()) {
 		await expect(topbar.locator('.view-controls')).toHaveCount(0)
@@ -306,7 +306,7 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 test('dock and its property popovers stay on-screen at narrow and wide widths', async ({
 	page,
 }) => {
-	for (const width of [360, 390, 768, 1440]) {
+	for (const width of [360, 390, 580, 768, 1440]) {
 		await page.setViewportSize({ width, height: 844 })
 		await page.getByRole('button', { name: 'Select', exact: true }).click()
 		await page.locator('[data-shape-id="a"] > rect').first().click()

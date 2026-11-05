@@ -22,6 +22,7 @@ export const TOOL_SHORTCUTS = [
 	{ id: 'path', label: 'Brush', shortcut: 'P' },
 	{ id: 'note', label: 'Sticky note', shortcut: 'N' },
 	{ id: 'html', label: 'HTML card', shortcut: 'W' },
+	{ id: 'image', label: 'Image', shortcut: 'I' },
 	{ id: 'connector', label: 'Connector', shortcut: 'C' },
 ] as const satisfies readonly { id: Tool; label: string; shortcut: string }[]
 
@@ -88,6 +89,7 @@ export function toolbarCommandForKey(
 		p: 'path',
 		n: 'note',
 		w: 'html',
+		i: 'image',
 		c: 'connector',
 	}
 	const tool = tools[key.toLowerCase()]
