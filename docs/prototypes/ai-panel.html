@@ -12,14 +12,18 @@
       --surface-muted: #f3f5f4;
       --surface-hover: #ecf1f4;
       --border: #dce4e9;
+      --border-strong: #c7d3da;
       --ink: #2b3038;
       --ink-secondary: #5e6a73;
       --ink-muted: #7a858d;
       --accent: #00a2e1;
       --accent-tint: #e2f5fc;
       --accent-ink: #0b7ba8;
+      --success: #4b9c6a;
+      --warning: #d79a33;
+      --danger: #c94d54;
       --inset: 24px;
-      --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43, 48, 56, .06), 0 2px 12px rgba(43, 48, 56, .08);
+      --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43,48,56,.06), 0 2px 12px rgba(43,48,56,.08);
       font: 14px/24px Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
       background: var(--canvas);
@@ -27,13 +31,16 @@
     }
     * { box-sizing: border-box; }
     body { margin: 0; min-height: 100vh; overflow: hidden; }
-    button, textarea { font: inherit; }
+    button, textarea, input, select { font: inherit; }
     button { cursor: pointer; }
-    button:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    button:disabled { cursor: default; }
+    button:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
     svg { display: block; }
+    [hidden] { display: none !important; }
+
     .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
     .floating-panel { background: var(--surface); border-radius: 20px; box-shadow: var(--panel-shadow); }
-    .ai-trigger { position: fixed; top: var(--inset); right: var(--inset); display: flex; padding: 8px; }
+    .ai-trigger { position: fixed; top: var(--inset); right: var(--inset); z-index: 35; display: flex; padding: 8px; }
     .icon-button {
       display: inline-flex;
       align-items: center;
@@ -50,41 +57,144 @@
     .icon-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .icon-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--ink); }
     .ai-trigger .icon-button { background: var(--accent); color: var(--surface); }
+    .ai-trigger .icon-button:hover { background: #078cbf; }
+
     .ai-panel {
       position: fixed;
       top: calc(var(--inset) + 68px);
       right: var(--inset);
+      z-index: 35;
       display: flex;
       flex-direction: column;
       width: min(380px, calc(100vw - var(--inset) * 2));
       height: min(700px, calc(100dvh - var(--inset) - 140px));
       overflow: hidden;
     }
-    .ai-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
+    .ai-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
     .ai-tabs { display: flex; align-items: center; gap: 4px; }
     .ai-tab, .ai-close { width: 32px; height: 32px; }
     .ai-tab svg, .ai-close svg { width: 16px; height: 16px; }
     .ai-tab svg { color: var(--ink-muted); }
+    .ai-tab:hover { background: var(--surface-hover); color: var(--ink); }
     .ai-tab[aria-selected="true"] { background: var(--accent-tint); color: var(--ink); }
     .ai-tab[aria-selected="true"] svg { color: var(--accent-ink); }
+
     .ai-chat { display: flex; flex: 1; flex-direction: column; min-height: 0; }
-    .ai-messages { display: flex; flex: 1; flex-direction: column; min-height: 0; padding: 12px; overflow-y: auto; }
+    .ai-messages { display: flex; flex: 1; flex-direction: column; gap: 12px; min-height: 0; padding: 12px; overflow-y: auto; overscroll-behavior: contain; }
     .ai-empty { display: flex; flex-direction: column; gap: 8px; padding: 12px 4px; }
     .ai-empty strong { font-size: 16px; font-weight: 600; }
     .ai-empty p { margin: 0; color: var(--ink-secondary); line-height: 24px; }
     .ai-quick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
     .ai-quick-prompt { padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--ink-secondary); font-size: 12px; line-height: 16px; }
     .ai-quick-prompt:hover { border-color: var(--accent); background: var(--accent-tint); color: var(--ink); }
-    .ai-composer { display: flex; align-items: flex-end; gap: 8px; padding: 8px; border-top: 1px solid var(--border); }
-    .ai-composer-input { flex: 1; min-width: 0; min-height: 40px; margin: 0; padding: 10px 8px; border: 0; background: transparent; color: var(--ink); font: inherit; line-height: 24px; resize: none; }
+    .ai-message { display: flex; flex-direction: column; max-width: 88%; gap: 4px; }
+    .ai-message.user { align-self: flex-end; align-items: flex-end; }
+    .ai-message.assistant { align-self: flex-start; align-items: flex-start; }
+    .ai-message-role { padding: 0 4px; color: var(--ink-muted); font-size: 11px; line-height: 16px; }
+    .ai-message-text { margin: 0; padding: 8px 12px; border-radius: 14px; background: var(--surface-muted); color: var(--ink); line-height: 20px; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .ai-message.user .ai-message-text { border-top-right-radius: 4px; background: var(--accent); color: #fff; }
+    .ai-message.assistant .ai-message-text { border-top-left-radius: 4px; }
+    .ai-demo-tag { display: block; margin-top: 4px; color: var(--ink-muted); font-size: 10px; line-height: 12px; }
+    .ai-typing { display: flex; align-items: center; gap: 4px; height: 36px; padding: 8px 12px; border-radius: 14px 14px 14px 4px; background: var(--surface-muted); }
+    .ai-typing span { width: 5px; height: 5px; border-radius: 50%; background: var(--ink-muted); animation: typing 1.1s ease-in-out infinite; }
+    .ai-typing span:nth-child(2) { animation-delay: 140ms; }
+    .ai-typing span:nth-child(3) { animation-delay: 280ms; }
+    @keyframes typing { 0%,60%,100% { opacity:.35; transform:translateY(0); } 30% { opacity:1; transform:translateY(-2px); } }
+    .ai-composer { display: flex; align-items: flex-end; gap: 8px; flex: 0 0 auto; padding: 8px; border-top: 1px solid var(--border); }
+    .ai-composer-input { flex: 1; min-width: 0; min-height: 40px; max-height: 120px; margin: 0; padding: 10px 8px; border: 0; background: transparent; color: var(--ink); line-height: 24px; resize: none; }
     .ai-composer-input::placeholder { color: var(--ink-muted); }
     .ai-composer-input:focus-visible { outline-offset: -1px; border-radius: 8px; }
-    .ai-send { border-radius: 999px; background: var(--surface-hover); color: var(--ink-muted); cursor: default; }
-    @media (max-width: 768px) {
-      :root { --inset: 16px; }
-      .ai-panel { width: calc(100vw - var(--inset) * 2); height: min(700px, calc(100dvh - var(--inset) * 2 - 172px)); }
+    .ai-send { width: 40px; height: 40px; border-radius: 999px; background: var(--accent); color: #fff; }
+    .ai-send:hover:not(:disabled) { background: #078cbf; }
+    .ai-send:disabled { background: var(--surface-hover); color: var(--ink-muted); }
+
+    .lesson, .microphone-panel, .ai-settings { display: flex; flex: 1; flex-direction: column; gap: 8px; min-height: 0; padding: 12px; overflow-y: auto; overscroll-behavior: contain; }
+    .lesson-clip { display: flex; flex-direction: column; gap: 4px; }
+    .select-label { color: var(--ink-secondary); font-size: 11px; font-weight: 600; line-height: 16px; }
+    .lecture-select { width: 100%; height: 40px; padding: 0 36px 0 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--ink); }
+    .lecture-select:hover { border-color: var(--border-strong); }
+    .lesson-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--ink-muted); font-size: 11px; line-height: 16px; }
+    .lesson-status { display: flex; align-items: center; gap: 6px; min-height: 20px; color: var(--ink-secondary); font-size: 11px; line-height: 16px; }
+    .lesson-dot { flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-muted); }
+    .lesson-dot[data-kind="ok"] { background: var(--success); }
+    .lesson-dot[data-kind="live"] { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-tint); }
+    .lesson-dot[data-kind="error"] { background: var(--danger); }
+    .lesson-ai { display: inline-flex; align-items: center; gap: 5px; margin-left: auto; color: var(--ink-muted); white-space: nowrap; }
+    .lesson-ai-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); }
+    .audio-error { margin: 0; padding: 8px 10px; border: 1px solid #efc4c7; border-radius: 8px; background: #fff5f5; color: var(--danger); font-size: 11px; line-height: 16px; }
+
+    .waveform { display: flex; align-items: center; gap: 2px; width: 100%; height: 52px; padding: 7px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-muted); overflow: hidden; }
+    .waveform i { flex: 1 1 2px; min-width: 1px; height: var(--h); max-height: 36px; border-radius: 2px; background: #cbd6dc; transition: background 120ms linear; }
+    .waveform i[data-played="true"] { background: var(--accent); }
+    .waveform i[data-speaking="true"] { background: var(--success); }
+    .seek-row { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 6px; color: var(--ink-muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .seek-row input[type="range"] { width: 100%; }
+    .lesson-live { display: flex; flex-direction: column; gap: 4px; padding: 8px 12px; border: 1px solid #bedfec; border-radius: 8px; background: linear-gradient(180deg,var(--accent-tint),var(--surface) 120%); }
+    .lesson-live-label { color: var(--accent-ink); font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .lesson-live p { min-height: 44px; max-height: 92px; margin: 0; overflow-y: auto; line-height: 22px; overflow-wrap: anywhere; }
+    .lesson-live-empty { color: var(--ink-muted); }
+    .lesson-hypothesis { color: var(--ink-secondary); border-bottom: 1px dashed var(--border-strong); }
+
+    .lesson-controls, .microphone-controls { display: flex; gap: 6px; }
+    .lesson-primary, .lesson-button, .summary-button, .settings-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 32px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      line-height: 16px;
+      white-space: nowrap;
     }
-    @media (max-height: 440px) { .ai-messages { padding: 8px; } }
+    .lesson-primary { flex: 1; border: 0; background: var(--accent); color: #fff; font-weight: 600; }
+    .lesson-primary:hover { background: #078cbf; }
+    .lesson-button { border: 1px solid var(--border); background: var(--surface); color: var(--ink-secondary); }
+    .lesson-button:hover { background: var(--surface-hover); color: var(--ink); }
+    .lesson-button:disabled, .summary-button:disabled { opacity: .55; }
+    .lesson-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 8px; border-radius: 8px; background: var(--surface-muted); }
+    .lesson-metrics div { display:flex; flex-direction:column; min-width:0; gap:1px; }
+    .lesson-metric-label { color: var(--ink-muted); font-size: 9px; line-height: 12px; text-transform: uppercase; letter-spacing: .04em; }
+    .lesson-metrics b { font-size: 11px; font-variant-numeric: tabular-nums; }
+    .lesson-sliders { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+    .lesson-sliders label { display:flex; flex-direction:column; gap:2px; color:var(--ink-secondary); font-size:10px; line-height:12px; }
+    .lesson-sliders label > span { display:flex; justify-content:space-between; }
+    .lesson-sliders b { color:var(--ink); }
+    .lesson-sliders input { width:100%; accent-color:var(--accent); }
+
+    .lesson-vad { display:flex; align-items:center; gap:6px; color:var(--ink-muted); font-size:10px; line-height:12px; }
+    .lesson-meter { flex:1; height:4px; border-radius:999px; background:var(--surface-hover); overflow:hidden; }
+    .lesson-meter i { display:block; height:100%; border-radius:inherit; background:var(--ink-muted); transition:width 100ms linear; }
+    .lesson-meter i[data-speaking="true"] { background:var(--accent); }
+    .lesson-vad-label { min-width:88px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .lesson-segments { display:flex; flex-direction:column; flex:1 0 108px; min-height:108px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+    .lesson-segments-head { display:flex; justify-content:space-between; gap:8px; padding:4px 8px; background:var(--surface-muted); color:var(--ink-muted); font-size:10px; line-height:14px; }
+    .lesson-segments ol { flex:1; min-height:0; margin:0; padding:0; overflow-y:auto; list-style:none; }
+    .lesson-segments li { display:flex; gap:8px; padding:4px 8px; border-top:1px solid var(--border); color:var(--ink-secondary); font-size:11px; line-height:16px; }
+    .lesson-segments li[aria-current="true"] { background:var(--accent-tint); }
+    .lesson-seg-time { flex:0 0 auto; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
+    .lesson-seg-empty { color:var(--ink-muted); font-style:italic; }
+    .summary-button { flex:1; border:1px dashed var(--border-strong); background:var(--surface); color:var(--ink-secondary); }
+    .summary-button:hover:not(:disabled) { border-color:var(--accent); background:var(--accent-tint); color:var(--ink); }
+    .summary-result { margin:0; padding:8px 10px; border-radius:8px; background:var(--surface-muted); color:var(--ink-secondary); font-size:11px; line-height:16px; }
+
+    .ai-settings { gap:12px; }
+    .demo-banner { margin:0; padding:8px 10px; border:1px solid #bedfec; border-radius:8px; background:var(--accent-tint); color:var(--accent-ink); font-size:11px; line-height:16px; }
+    .ai-settings-form { display:flex; flex-direction:column; align-items:stretch; gap:12px; }
+    .ai-settings-field { display:flex; flex-direction:column; gap:4px; color:var(--ink-secondary); font-size:12px; font-weight:600; }
+    .ai-settings-field input { width:100%; height:40px; padding:0 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--ink); }
+    .ai-settings-field input:hover { border-color:var(--border-strong); }
+    .ai-settings-clear { display:flex; align-items:center; gap:8px; color:var(--ink-secondary); font-size:12px; }
+    .settings-button { align-self:flex-start; border:0; background:var(--accent); color:#fff; font-weight:600; }
+    .settings-button:hover { background:#078cbf; }
+    .settings-note { margin:0; color:var(--ink-secondary); font-size:11px; line-height:16px; }
+
+    @media (max-width:768px) {
+      :root { --inset:16px; }
+      .ai-panel { width:calc(100vw - var(--inset)*2); height:min(700px,calc(100dvh - var(--inset)*2 - 172px)); }
+    }
+    @media (max-height:440px) { .ai-messages { padding:8px; } .lesson-live p { max-height:56px; min-height:32px; } }
   </style>
 </head>
 <body>
@@ -103,21 +213,23 @@
   </svg>
 
   <div class="ai-trigger floating-panel">
-    <button class="icon-button" type="button" aria-label="AI assistant" aria-expanded="true" title="AI assistant"><svg aria-hidden="true"><use href="#sparkles"/></svg></button>
+    <button id="ai-trigger" class="icon-button" type="button" aria-label="Open AI assistant" aria-expanded="true" title="AI assistant"><svg aria-hidden="true"><use href="#sparkles"/></svg></button>
   </div>
-  <section class="ai-panel floating-panel" aria-label="AI assistant">
+
+  <section id="ai-panel" class="ai-panel floating-panel" aria-label="AI assistant">
     <header class="ai-panel-header">
       <div class="ai-tabs" role="tablist" aria-label="AI modes">
-        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Chat" aria-selected="true" title="Chat"><svg aria-hidden="true"><use href="#chat"/></svg></button>
-        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Live" aria-selected="false" title="Live"><svg aria-hidden="true"><use href="#live"/></svg></button>
-        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Audio" aria-selected="false" title="Audio"><svg aria-hidden="true"><use href="#audio"/></svg></button>
-        <button class="icon-button ai-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" title="Settings"><svg aria-hidden="true"><use href="#settings"/></svg></button>
+        <button id="ai-tab-chat" class="icon-button ai-tab" type="button" role="tab" aria-label="Chat" aria-selected="true" aria-controls="ai-panel-chat" title="Chat"><svg aria-hidden="true"><use href="#chat"/></svg></button>
+        <button id="ai-tab-live" class="icon-button ai-tab" type="button" role="tab" aria-label="Live lecture" aria-selected="false" aria-controls="ai-panel-live" tabindex="-1" title="Live"><svg aria-hidden="true"><use href="#live"/></svg></button>
+        <button id="ai-tab-audio" class="icon-button ai-tab" type="button" role="tab" aria-label="Audio simulation" aria-selected="false" aria-controls="ai-panel-audio" tabindex="-1" title="Audio"><svg aria-hidden="true"><use href="#audio"/></svg></button>
+        <button id="ai-tab-settings" class="icon-button ai-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="ai-panel-settings" tabindex="-1" title="Settings"><svg aria-hidden="true"><use href="#settings"/></svg></button>
       </div>
-      <button class="icon-button ai-close" type="button" aria-label="Close AI assistant" title="Close AI assistant"><svg aria-hidden="true"><use href="#close"/></svg></button>
+      <button id="ai-close" class="icon-button ai-close" type="button" aria-label="Close AI assistant" title="Close AI assistant"><svg aria-hidden="true"><use href="#close"/></svg></button>
     </header>
-    <div class="ai-chat" role="tabpanel" aria-label="Chat">
-      <div class="ai-messages">
-        <div class="ai-empty">
+
+    <div id="ai-panel-chat" class="ai-chat" role="tabpanel" aria-labelledby="ai-tab-chat">
+      <div id="ai-messages" class="ai-messages" role="log" aria-live="polite" aria-label="Conversation">
+        <div id="ai-empty" class="ai-empty">
           <strong>Draw a lesson with Mico</strong>
           <p>Describe a high-school science topic. Mico sketches it step by step.</p>
           <div class="ai-quick">
@@ -128,11 +240,541 @@
           </div>
         </div>
       </div>
-      <div class="ai-composer">
-        <textarea class="ai-composer-input" aria-label="Message the assistant" placeholder="Describe what to draw…" rows="1"></textarea>
-        <button class="icon-button ai-send" type="button" aria-label="Send message" disabled><svg aria-hidden="true"><use href="#send"/></svg></button>
+      <form id="ai-composer" class="ai-composer">
+        <textarea id="ai-input" class="ai-composer-input" aria-label="Message the assistant" placeholder="Describe what to draw…" rows="1"></textarea>
+        <button id="ai-send" class="icon-button ai-send" type="submit" aria-label="Send message" disabled><svg aria-hidden="true"><use href="#send"/></svg></button>
+      </form>
+    </div>
+
+    <div id="ai-panel-live" class="lesson" role="tabpanel" aria-labelledby="ai-tab-live" hidden>
+      <div class="lesson-clip">
+        <label class="select-label" for="lecture-select">Lecture</label>
+        <select id="lecture-select" class="lecture-select">
+          <option value="dc">EN · Physics · DC circuit with internal resistance</option>
+          <option value="double-slit">EN · Physics · Double-slit interference</option>
+        </select>
+        <div class="lesson-meta"><span id="lecture-meta">Physics · en-US-GuyNeural</span><span id="lecture-duration">02:54</span></div>
+      </div>
+
+      <div class="lesson-status" aria-live="polite"><span id="live-dot" class="lesson-dot" data-kind="ok"></span><span id="live-status">Ready · local demo audio</span><span class="lesson-ai"><span class="lesson-ai-dot"></span>Mock transcription</span></div>
+      <div id="live-error" class="audio-error" role="alert" hidden></div>
+
+      <div id="live-waveform" class="waveform" role="img" aria-label="Mock lecture waveform"></div>
+      <div class="seek-row"><span id="live-current">0:00</span><input id="live-seek" type="range" min="0" max="174.4" value="0" step="0.1" aria-label="Seek lecture"><span id="live-end">2:54</span></div>
+
+      <div class="lesson-live" aria-live="polite">
+        <span class="lesson-live-label">Live transcript · mock</span>
+        <p id="live-transcript"><span class="lesson-live-empty">Waiting for speech…</span></p>
+      </div>
+
+      <div class="lesson-controls">
+        <button id="live-play" class="lesson-primary" type="button" aria-pressed="false">Play lecture</button>
+        <button id="live-restart" class="lesson-button" type="button">Restart</button>
+      </div>
+
+      <div class="lesson-metrics">
+        <div><span class="lesson-metric-label">Played</span><b id="metric-played">0.0s</b></div>
+        <div><span class="lesson-metric-label">Sent</span><b id="metric-sent">0.0s</b></div>
+        <div><span class="lesson-metric-label">Segments</span><b id="metric-segments">0</b></div>
+        <div><span class="lesson-metric-label">Mode</span><b>Demo</b></div>
+      </div>
+
+      <div class="lesson-sliders">
+        <label><span>Playback speed <b id="speed-value">1×</b></span><input id="speed-range" type="range" min="0.75" max="2" value="1" step="0.25" aria-label="Playback speed"></label>
+        <label><span>Silence threshold <b id="silence-value">500ms</b></span><input id="silence-range" type="range" min="200" max="1200" value="500" step="100" aria-label="Mock silence threshold"></label>
+      </div>
+
+      <div class="lesson-segments">
+        <div class="lesson-segments-head"><span>Confirmed mock segments</span><span id="segment-count">0 / 5</span></div>
+        <ol id="live-segments"><li class="lesson-seg-empty">Segments appear as the lecture progresses.</li></ol>
+      </div>
+
+      <audio id="live-audio" preload="metadata"></audio>
+    </div>
+
+    <div id="ai-panel-audio" role="tabpanel" aria-labelledby="ai-tab-audio" hidden>
+      <div class="microphone-panel">
+        <div class="lesson-status" aria-live="polite"><span id="audio-dot" class="lesson-dot" data-kind="ok"></span><span id="audio-status">Ready · simulated recording</span><span class="lesson-ai"><span class="lesson-ai-dot"></span>Demo only</span></div>
+        <div class="microphone-controls"><button id="audio-toggle" class="lesson-primary" type="button" aria-pressed="false">Start recording</button><span id="audio-timer" class="lesson-vad-label">0:00</span></div>
+        <div id="audio-waveform" class="waveform" role="img" aria-label="Simulated microphone waveform"></div>
+        <div class="lesson-vad"><span>Energy</span><div class="lesson-meter"><i id="audio-meter" data-speaking="false" style="width:18%"></i></div><span id="audio-vad-label" class="lesson-vad-label">idle</span></div>
+        <div class="lesson-live" aria-live="polite"><span class="lesson-live-label">Live transcript · simulated</span><p id="audio-transcript"><span class="lesson-live-empty">Waiting for simulated speech…</span></p></div>
+        <button id="audio-summary" class="summary-button" type="button" disabled>Generate mock summary</button>
+        <p id="audio-summary-result" class="summary-result" hidden></p>
+        <div class="lesson-segments"><div class="lesson-segments-head"><span>Confirmed segments</span><span id="audio-segment-count">0 segments</span></div><ol id="audio-segments"><li class="lesson-seg-empty">Your simulated speech will appear here.</li></ol></div>
+      </div>
+    </div>
+
+    <div id="ai-panel-settings" role="tabpanel" aria-labelledby="ai-tab-settings" hidden>
+      <div class="ai-settings">
+        <p class="demo-banner">Demo settings — changes stay in this open page and are never sent or persisted.</p>
+        <form id="settings-form" class="ai-settings-form">
+          <label class="ai-settings-field" for="settings-endpoint">Endpoint<input id="settings-endpoint" type="url" value="https://demo.local/v1" required></label>
+          <label class="ai-settings-field" for="settings-model">Model<input id="settings-model" type="text" value="mico-demo" required></label>
+          <label class="ai-settings-field" for="settings-key">API key<input id="settings-key" type="password" autocomplete="off" placeholder="Optional demo key"></label>
+          <label class="ai-settings-clear"><input id="settings-clear" type="checkbox"> Remove current demo key</label>
+          <p class="settings-note">Nothing is networked. Do not enter a real credential.</p>
+          <button class="settings-button" type="submit">Save demo settings</button>
+          <p id="settings-status" class="settings-note" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </div>
   </section>
+
+  <script>
+    (() => {
+      const panel = document.getElementById('ai-panel');
+      const trigger = document.getElementById('ai-trigger');
+      const tabs = [...document.querySelectorAll('[role="tab"]')];
+      const tabIds = ['chat', 'live', 'audio', 'settings'];
+
+      function setPanelOpen(open) {
+        panel.hidden = !open;
+        trigger.setAttribute('aria-expanded', String(open));
+        trigger.setAttribute('aria-label', open ? 'Close AI assistant' : 'Open AI assistant');
+        if (!open) trigger.focus();
+        if (open) document.getElementById('ai-input').focus();
+      }
+
+      trigger.onclick = () => setPanelOpen(panel.hidden);
+      document.getElementById('ai-close').onclick = () => setPanelOpen(false);
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !panel.hidden) {
+          event.preventDefault();
+          setPanelOpen(false);
+        }
+      });
+
+      function selectTab(id, focus = false) {
+        tabIds.forEach((tabId) => {
+          const tab = document.getElementById(`ai-tab-${tabId}`);
+          const selected = tabId === id;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          document.getElementById(`ai-panel-${tabId}`).hidden = !selected;
+          if (selected && focus) tab.focus();
+        });
+      }
+
+      tabs.forEach((tab) => {
+        tab.onclick = () => selectTab(tab.id.replace('ai-tab-', ''));
+      });
+      document.querySelector('.ai-tabs').addEventListener('keydown', (event) => {
+        if (!['ArrowLeft','ArrowRight','Home','End'].includes(event.key)) return;
+        event.preventDefault();
+        const current = tabIds.findIndex((id) => document.getElementById(`ai-tab-${id}`).getAttribute('aria-selected') === 'true');
+        let next = current;
+        if (event.key === 'ArrowLeft') next = (current - 1 + tabIds.length) % tabIds.length;
+        if (event.key === 'ArrowRight') next = (current + 1) % tabIds.length;
+        if (event.key === 'Home') next = 0;
+        if (event.key === 'End') next = tabIds.length - 1;
+        selectTab(tabIds[next], true);
+      });
+
+      const messages = document.getElementById('ai-messages');
+      const empty = document.getElementById('ai-empty');
+      const input = document.getElementById('ai-input');
+      const send = document.getElementById('ai-send');
+
+      function resizeComposer() {
+        input.style.height = 'auto';
+        input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+      }
+      input.addEventListener('input', () => {
+        resizeComposer();
+        send.disabled = input.value.trim().length === 0;
+      });
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+          event.preventDefault();
+          if (!send.disabled) sendChat(input.value);
+        }
+      });
+
+      function addMessage(role, text, demo = false) {
+        empty.hidden = true;
+        const article = document.createElement('article');
+        article.className = `ai-message ${role}`;
+        const roleLabel = document.createElement('span');
+        roleLabel.className = 'ai-message-role';
+        roleLabel.textContent = role === 'user' ? 'You' : 'Mico';
+        const bubble = document.createElement('p');
+        bubble.className = 'ai-message-text';
+        bubble.textContent = text;
+        if (demo) {
+          const tag = document.createElement('span');
+          tag.className = 'ai-demo-tag';
+          tag.textContent = 'Clearly simulated response';
+          bubble.appendChild(tag);
+        }
+        article.append(roleLabel, bubble);
+        messages.appendChild(article);
+        messages.scrollTop = messages.scrollHeight;
+      }
+
+      function mockResponse(text) {
+        if (/projectile/i.test(text)) return 'Start with the launch velocity split into horizontal and vertical components. Draw a horizontal axis, a vertical axis, and a labelled parabola; add gravity as 9.8 m/s² downward.';
+        if (/titration/i.test(text)) return 'Sketch the burette above a flask, mark the analyte and indicator, then draw an S-shaped pH curve. Add equivalence, endpoint, and buffer regions to the diagram.';
+        if (/quadratic/i.test(text)) return 'Draw y = a(x − h)² + k, marking vertex (h, k), axis x = h, and roots where y = 0. Show how changing a, h, and k transforms the parabola.';
+        if (/electrolysis/i.test(text)) return 'Draw the water electrolysis cell with two electrodes, a power supply, and collected gases. Label hydrogen at the cathode and oxygen at the anode.';
+        return 'I would draw a labelled diagram, add the key variables, and then build the explanation in three short steps. This is a mocked reply for the offline prototype.';
+      }
+
+      let chatBusy = false;
+      function sendChat(text) {
+        const value = text.trim();
+        if (!value || chatBusy) return;
+        chatBusy = true;
+        input.value = '';
+        input.style.height = 'auto';
+        send.disabled = true;
+        addMessage('user', value);
+        const typing = document.createElement('article');
+        typing.className = 'ai-message assistant';
+        typing.innerHTML = '<span class="ai-message-role">Mico</span><span class="ai-typing" aria-label="Mico is composing"><span></span><span></span><span></span></span>';
+        messages.appendChild(typing);
+        messages.scrollTop = messages.scrollHeight;
+        window.setTimeout(() => {
+          typing.remove();
+          addMessage('assistant', mockResponse(value), true);
+          chatBusy = false;
+        }, 700);
+      }
+      document.getElementById('ai-composer').addEventListener('submit', (event) => { event.preventDefault(); sendChat(input.value); });
+      document.querySelectorAll('.ai-quick-prompt').forEach((button) => button.addEventListener('click', () => sendChat(button.textContent)));
+
+      const lectureSelect = document.getElementById('lecture-select');
+      const liveAudio = document.getElementById('live-audio');
+      const livePlay = document.getElementById('live-play');
+      const liveRestart = document.getElementById('live-restart');
+      const liveSeek = document.getElementById('live-seek');
+      const liveWave = document.getElementById('live-waveform');
+      const liveError = document.getElementById('live-error');
+      const lectures = {
+        dc: {
+          src: '../../public/evals/audio/en-physics-dc-circuit.mp3',
+          duration: 174.4,
+          meta: 'Physics · en-US-GuyNeural',
+          segments: [
+            {start:0,end:35,text:'We begin by drawing the source, resistor, and internal resistance in a simple circuit.'},
+            {start:35,end:70,text:'The terminal voltage is the source electromotive force minus the internal voltage drop.'},
+            {start:70,end:105,text:'Using Ohm’s law, calculate the current before finding the terminal voltage.'},
+            {start:105,end:140,text:'The external resistor and internal resistance are in series, so their resistance adds.'},
+            {start:140,end:174.4,text:'A high internal resistance reduces the terminal voltage delivered to the load.'}
+          ]
+        },
+        'double-slit': {
+          src: '../../public/evals/audio/en-physics-double-slit.mp3',
+          duration: 189.1,
+          meta: 'Physics · en-US-AriaNeural',
+          segments: [
+            {start:0,end:38,text:'Draw the source, the double slit, and the screen in a straight viewing line.'},
+            {start:38,end:76,text:'Light from the two openings travels different distances to each point on the screen.'},
+            {start:76,end:114,text:'Constructive interference occurs where the path difference is a whole wavelength.'},
+            {start:114,end:152,text:'Destructive interference occurs at odd half-wavelength path differences.'},
+            {start:152,end:189.1,text:'The fringe spacing increases as wavelength or screen distance increases.'}
+          ]
+        }
+      };
+
+      function formatTime(seconds) {
+        const safe = Number.isFinite(seconds) ? Math.max(0, seconds) : 0;
+        const minutes = Math.floor(safe / 60);
+        return `${minutes}:${Math.floor(safe % 60).toString().padStart(2,'0')}`;
+      }
+
+      function makeWave(container, count) {
+        container.replaceChildren();
+        for (let i = 0; i < count; i += 1) {
+          const bar = document.createElement('i');
+          const height = 8 + ((i * 37 + i * i * 11) % 29);
+          bar.style.setProperty('--h', `${height}px`);
+          container.appendChild(bar);
+        }
+      }
+
+      function updateWave(container, progress, speaking = false) {
+        const bars = [...container.children];
+        bars.forEach((bar, index) => {
+          bar.dataset.played = String(index / bars.length <= progress);
+          bar.dataset.speaking = String(speaking && index / bars.length <= progress);
+        });
+      }
+
+      makeWave(liveWave, 72);
+      makeWave(document.getElementById('audio-waveform'), 56);
+
+      let selectedLecture = lectures.dc;
+      let lecturePlaying = false;
+      liveAudio.src = selectedLecture.src;
+
+      function renderLiveSegments() {
+        const list = document.getElementById('live-segments');
+        list.replaceChildren();
+        const time = Number.isFinite(liveAudio.currentTime) ? liveAudio.currentTime : 0;
+        let count = 0;
+        selectedLecture.segments.forEach((segment) => {
+          const past = time >= segment.start;
+          if (past) count += 1;
+          const item = document.createElement('li');
+          item.setAttribute('aria-current', String(time >= segment.start && time < segment.end));
+          const stamp = document.createElement('span');
+          stamp.className = 'lesson-seg-time';
+          stamp.textContent = `${formatTime(segment.start)}–${formatTime(segment.end)}`;
+          const text = document.createElement('span');
+          text.textContent = past ? segment.text : 'Pending mock transcript';
+          item.append(stamp, text);
+          list.appendChild(item);
+        });
+        document.getElementById('segment-count').textContent = `${count} / ${selectedLecture.segments.length}`;
+        document.getElementById('metric-segments').textContent = String(count);
+      }
+
+      function updateLiveProgress() {
+        const duration = Number.isFinite(liveAudio.duration) && liveAudio.duration > 0 ? liveAudio.duration : selectedLecture.duration;
+        const time = Number.isFinite(liveAudio.currentTime) ? liveAudio.currentTime : 0;
+        const ratio = duration ? time / duration : 0;
+        liveSeek.max = String(duration);
+        liveSeek.value = String(time);
+        document.getElementById('live-current').textContent = formatTime(time);
+        document.getElementById('live-end').textContent = formatTime(duration);
+        document.getElementById('metric-played').textContent = `${time.toFixed(1)}s`;
+        document.getElementById('metric-sent').textContent = `${time.toFixed(1)}s`;
+        updateWave(liveWave, ratio, lecturePlaying);
+
+        const active = selectedLecture.segments.find((segment) => time >= segment.start && time < segment.end);
+        const transcript = document.getElementById('live-transcript');
+        if (active) {
+          transcript.replaceChildren();
+          transcript.append(document.createTextNode(active.text + ' '));
+          const hypothesis = document.createElement('span');
+          hypothesis.className = 'lesson-hypothesis';
+          hypothesis.textContent = lecturePlaying ? 'recognizing…' : '';
+          transcript.appendChild(hypothesis);
+        } else if (time >= duration) {
+          transcript.textContent = 'Lecture complete · mock transcription finished.';
+        } else {
+          transcript.innerHTML = '<span class="lesson-live-empty">Waiting for speech…</span>';
+        }
+        renderLiveSegments();
+      }
+
+      lectureSelect.addEventListener('change', () => {
+        liveAudio.pause();
+        selectedLecture = lectures[lectureSelect.value];
+        liveAudio.src = selectedLecture.src;
+        liveAudio.load();
+        liveAudio.currentTime = 0;
+        liveSeek.value = '0';
+        liveSeek.max = String(selectedLecture.duration);
+        document.getElementById('lecture-meta').textContent = selectedLecture.meta;
+        document.getElementById('lecture-duration').textContent = formatTime(selectedLecture.duration);
+        document.getElementById('live-status').textContent = 'Ready · local demo audio';
+        document.getElementById('live-dot').dataset.kind = 'ok';
+        livePlay.textContent = 'Play lecture';
+        livePlay.setAttribute('aria-pressed','false');
+        liveError.hidden = true;
+        updateLiveProgress();
+      });
+
+      liveAudio.addEventListener('loadedmetadata', () => {
+        if (Number.isFinite(liveAudio.duration) && liveAudio.duration > 0) {
+          liveSeek.max = String(liveAudio.duration);
+          document.getElementById('lecture-duration').textContent = formatTime(liveAudio.duration);
+        }
+        updateLiveProgress();
+      });
+      liveAudio.addEventListener('timeupdate', updateLiveProgress);
+      liveAudio.addEventListener('ended', () => {
+        lecturePlaying = false;
+        livePlay.textContent = 'Play lecture';
+        livePlay.setAttribute('aria-pressed','false');
+        document.getElementById('live-status').textContent = 'Lecture complete';
+        document.getElementById('live-dot').dataset.kind = 'ok';
+        updateLiveProgress();
+      });
+      liveAudio.addEventListener('error', () => {
+        lecturePlaying = false;
+        livePlay.textContent = 'Play lecture';
+        liveError.textContent = `Could not play ${selectedLecture.src}. Confirm the local MP3 exists beside this prototype.`;
+        liveError.hidden = false;
+        document.getElementById('live-status').textContent = 'Audio load error';
+        document.getElementById('live-dot').dataset.kind = 'error';
+      });
+      liveAudio.addEventListener('play', () => {
+        lecturePlaying = true;
+        liveError.hidden = true;
+        livePlay.textContent = 'Pause';
+        livePlay.setAttribute('aria-pressed','true');
+        document.getElementById('live-status').textContent = 'Playing local lecture';
+        document.getElementById('live-dot').dataset.kind = 'live';
+      });
+      liveAudio.addEventListener('pause', () => {
+        lecturePlaying = false;
+        if (!liveAudio.ended) {
+          livePlay.textContent = 'Resume';
+          livePlay.setAttribute('aria-pressed','false');
+          document.getElementById('live-status').textContent = 'Paused';
+          document.getElementById('live-dot').dataset.kind = 'ok';
+          updateLiveProgress();
+        }
+      });
+
+      livePlay.addEventListener('click', async () => {
+        if (!liveAudio.paused) {
+          liveAudio.pause();
+          return;
+        }
+        try {
+          await liveAudio.play();
+        } catch (error) {
+          liveError.textContent = `Playback could not start: ${error instanceof Error ? error.message : 'browser playback was blocked or unavailable.'}`;
+          liveError.hidden = false;
+          document.getElementById('live-status').textContent = 'Playback error';
+          document.getElementById('live-dot').dataset.kind = 'error';
+        }
+      });
+      liveRestart.addEventListener('click', async () => {
+        liveAudio.pause();
+        liveAudio.currentTime = 0;
+        liveSeek.value = '0';
+        updateLiveProgress();
+        try { await liveAudio.play(); } catch (error) {
+          liveError.textContent = `Playback could not restart: ${error instanceof Error ? error.message : 'browser playback was blocked or unavailable.'}`;
+          liveError.hidden = false;
+        }
+      });
+      liveSeek.addEventListener('input', () => {
+        const next = Number(liveSeek.value);
+        if (Number.isFinite(next)) {
+          try { liveAudio.currentTime = next; } catch (_) {}
+        }
+        updateLiveProgress();
+      });
+
+      const speedRange = document.getElementById('speed-range');
+      speedRange.addEventListener('input', () => {
+        const speed = Number(speedRange.value);
+        liveAudio.playbackRate = speed;
+        document.getElementById('speed-value').textContent = `${speed}×`;
+      });
+      document.getElementById('silence-range').addEventListener('input', (event) => {
+        document.getElementById('silence-value').textContent = `${event.target.value}ms`;
+      });
+
+      const audioToggle = document.getElementById('audio-toggle');
+      const audioWave = document.getElementById('audio-waveform');
+      const audioMeter = document.getElementById('audio-meter');
+      const audioStatus = document.getElementById('audio-status');
+      const audioDot = document.getElementById('audio-dot');
+      const audioTranscript = document.getElementById('audio-transcript');
+      const audioSegments = document.getElementById('audio-segments');
+      const audioSummary = document.getElementById('audio-summary');
+      const simulatedLines = [
+        'Today we will compare the voltage across each resistor.',
+        'The current is the same in both components in series.',
+        'As internal resistance increases, the terminal voltage falls.',
+        'The final diagram should show power supply and load separately.'
+      ];
+      let audioRecording = false;
+      let audioElapsed = 0;
+      let audioTimer = null;
+      let audioMockSegments = [];
+
+      function renderAudioSegments() {
+        audioSegments.replaceChildren();
+        if (audioMockSegments.length === 0) {
+          audioSegments.innerHTML = '<li class="lesson-seg-empty">Your simulated speech will appear here.</li>';
+        } else {
+          audioMockSegments.forEach((segment) => {
+            const item = document.createElement('li');
+            const stamp = document.createElement('span');
+            stamp.className = 'lesson-seg-time';
+            stamp.textContent = segment.time;
+            const text = document.createElement('span');
+            text.textContent = segment.text;
+            item.append(stamp, text);
+            audioSegments.appendChild(item);
+          });
+        }
+        document.getElementById('audio-segment-count').textContent = `${audioMockSegments.length} segments`;
+        audioSummary.disabled = audioMockSegments.length === 0;
+      }
+
+      function stopAudioSimulation() {
+        if (!audioRecording) return;
+        audioRecording = false;
+        window.clearInterval(audioTimer);
+        audioTimer = null;
+        audioToggle.textContent = 'Start recording';
+        audioToggle.setAttribute('aria-pressed','false');
+        audioStatus.textContent = 'Recording complete · simulated';
+        audioDot.dataset.kind = 'ok';
+        audioMeter.style.width = '18%';
+        audioMeter.dataset.speaking = 'false';
+        document.getElementById('audio-vad-label').textContent = 'idle';
+        audioTranscript.textContent = 'Simulated recording complete.';
+        updateWave(audioWave, 1, false);
+      }
+
+      audioToggle.addEventListener('click', () => {
+        if (audioRecording) {
+          stopAudioSimulation();
+          return;
+        }
+        audioRecording = true;
+        audioElapsed = 0;
+        audioMockSegments = [];
+        document.getElementById('audio-summary-result').hidden = true;
+        audioToggle.textContent = 'Stop recording';
+        audioToggle.setAttribute('aria-pressed','true');
+        audioStatus.textContent = 'Listening… · simulated';
+        audioDot.dataset.kind = 'live';
+        audioTranscript.textContent = 'Simulated listening started.';
+        renderAudioSegments();
+        let segmentIndex = 0;
+        audioTimer = window.setInterval(() => {
+          audioElapsed += 0.25;
+          document.getElementById('audio-timer').textContent = formatTime(audioElapsed);
+          const db = -42 + ((Math.floor(audioElapsed * 4) % 5) * 4) + Math.floor(Math.random() * 5);
+          const width = Math.max(18, Math.min(92, ((db + 60) / 54) * 100));
+          const speaking = Math.floor(audioElapsed) % 8 < 5;
+          audioMeter.style.width = `${width}%`;
+          audioMeter.dataset.speaking = String(speaking);
+          document.getElementById('audio-vad-label').textContent = speaking ? `speech · ${db}dB` : `silence · ${db}dB`;
+          updateWave(audioWave, audioElapsed / 60, speaking);
+          if (segmentIndex < simulatedLines.length && audioElapsed >= (segmentIndex + 1) * 4) {
+            audioMockSegments.push({time:formatTime(audioElapsed),text:simulatedLines[segmentIndex]});
+            segmentIndex += 1;
+            audioTranscript.textContent = simulatedLines[segmentIndex - 1];
+            renderAudioSegments();
+          }
+          if (audioElapsed >= 20) stopAudioSimulation();
+        }, 250);
+      });
+
+      audioSummary.addEventListener('click', () => {
+        const result = document.getElementById('audio-summary-result');
+        result.textContent = 'Mock summary: The recording covered series resistance, terminal voltage, internal resistance, and how load behavior changes the measured voltage.';
+        result.hidden = false;
+      });
+
+      document.getElementById('settings-key').addEventListener('input', (event) => {
+        if (event.target.value) document.getElementById('settings-clear').checked = false;
+      });
+      document.getElementById('settings-clear').addEventListener('change', (event) => {
+        document.getElementById('settings-key').disabled = event.target.checked;
+        if (!event.target.checked) document.getElementById('settings-key').focus();
+      });
+      document.getElementById('settings-form').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const clear = document.getElementById('settings-clear').checked;
+        if (clear) document.getElementById('settings-key').value = '';
+        document.getElementById('settings-status').textContent = 'Saved in memory for this demo only. Nothing was persisted or sent.';
+      });
+
+      updateLiveProgress();
+    })();
+  </script>
 </body>
 </html>
