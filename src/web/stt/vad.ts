@@ -25,7 +25,7 @@ export class SilenceSegmenter {
 	private readonly frameSamples: number
 	private silenceMs = 500
 	private readonly minSpeechMs = 300
-	private readonly maxSegmentMs = 15_000
+	private readonly maxSegmentMs: number | null
 	private carry: Int16Array | null = null
 	private lastTrailingMs = 0
 	private floorDb = -70
@@ -36,8 +36,12 @@ export class SilenceSegmenter {
 	private recent: number[] = []
 	db = -90
 
-	constructor({ rate = 16000 } = {}) {
+	constructor({
+		rate = 16000,
+		maxSegmentMs = 15_000,
+	}: { rate?: number; maxSegmentMs?: number | null } = {}) {
 		this.frameSamples = Math.round((rate * FRAME_MS) / 1000)
+		this.maxSegmentMs = maxSegmentMs
 	}
 
 	get speaking(): boolean {
@@ -56,8 +60,21 @@ export class SilenceSegmenter {
 		return this.lastTrailingMs
 	}
 
+	get hasSpeech(): boolean {
+		return this.speechRunMs > 0
+	}
+
 	setSilenceMs(ms: number): void {
 		this.silenceMs = ms
+	}
+
+	flush(): boolean {
+		if (!this.carry?.length) return false
+		const tail = this.carry
+		this.carry = null
+		const frame = new Int16Array(this.frameSamples)
+		frame.set(tail.subarray(0, this.frameSamples))
+		return this.push(frame)
 	}
 
 	reset(): void {
@@ -99,7 +116,8 @@ export class SilenceSegmenter {
 			}
 
 			const paused = this.speakingNow && this.silenceRunMs >= this.silenceMs
-			if ((paused && this.speechRunMs >= this.minSpeechMs) || this.segmentMs >= this.maxSegmentMs) {
+			const hardCapReached = this.maxSegmentMs !== null && this.segmentMs >= this.maxSegmentMs
+			if ((paused && this.speechRunMs >= this.minSpeechMs) || hardCapReached) {
 				commit = true
 				this.lastTrailingMs = this.silenceRunMs
 				this.speakingNow = false

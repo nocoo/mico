@@ -18,6 +18,54 @@ function base64FromBytes(bytes: Uint8Array): string {
 
 type Handler = (event: MaiEvent) => void
 
+function record(value: unknown): MaiEvent | null {
+	return value !== null && typeof value === 'object' ? (value as MaiEvent) : null
+}
+
+export function maiEventRequestId(event: MaiEvent): string | null {
+	const nested = record(event.error)
+	for (const candidate of [nested?.event_id, event.event_id]) {
+		if (typeof candidate === 'string' && candidate.trim()) return candidate
+	}
+	return null
+}
+
+export function maiErrorCode(event: MaiEvent): string | null {
+	const nested = record(event.error)
+	for (const candidate of [nested?.code, event.code]) {
+		if (typeof candidate === 'string' && candidate.trim()) return candidate
+	}
+	return null
+}
+
+export function maiEmptyAudioBufferError(event: MaiEvent): boolean {
+	if (maiErrorCode(event) === 'input_audio_buffer_commit_empty') return true
+	const nested = record(event.error)
+	for (const candidate of [nested?.message, event.message]) {
+		if (
+			typeof candidate === 'string' &&
+			candidate.toLowerCase().includes('input audio buffer is empty')
+		)
+			return true
+	}
+	return false
+}
+
+export function maiErrorMessage(event: MaiEvent): string {
+	const nested = record(event.error)
+	for (const candidate of [nested?.message, event.message]) {
+		if (typeof candidate === 'string' && candidate.trim()) return candidate
+	}
+	const code = maiErrorCode(event)
+	if (code) return `Transcription provider error: ${code}`
+	for (const candidate of [nested?.type, event.type]) {
+		if (typeof candidate === 'string' && candidate.trim()) {
+			return `Transcription provider error: ${candidate}`
+		}
+	}
+	return 'Transcription provider failed.'
+}
+
 export class MaiClient {
 	private ws: WebSocket | null = null
 	private readonly handlers = new Map<string, Handler[]>()
@@ -94,7 +142,8 @@ export class MaiClient {
 					return
 				}
 				if (type === 'error' || type.endsWith('.failed')) {
-					this.emit('error', (message.error as MaiEvent) ?? message)
+					const nested = record(message.error)
+					this.emit('error', nested ? { ...message, error: nested } : message)
 					return
 				}
 				if (type === 'session.created') this.emit('created', message)
@@ -117,8 +166,11 @@ export class MaiClient {
 		this.send({ type: 'input_audio_buffer.append', audio: base64FromBytes(bytes) })
 	}
 
-	commit(): void {
-		this.send({ type: 'input_audio_buffer.commit' })
+	commit(eventId?: string): void {
+		this.send({
+			type: 'input_audio_buffer.commit',
+			...(eventId ? { event_id: eventId } : {}),
+		})
 	}
 
 	close(): void {

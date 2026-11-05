@@ -36,11 +36,19 @@ test('speech followed by 500 ms of silence commits once', () => {
 	assert.equal(segmenter.currentSilenceMs, 500)
 })
 
-test('continuous speech never commits before the hard cap', () => {
+test('the Live default hard cap still commits continuous speech at 15 seconds', () => {
 	const segmenter = new SilenceSegmenter()
-	assert.equal(segmenter.push(tone(3000)), false)
+	assert.equal(segmenter.push(tone(15_000)), true)
+	assert.equal(segmenter.speaking, false)
+})
+
+test('Audio mode without a hard cap waits for a pause after continuous speech', () => {
+	const segmenter = new SilenceSegmenter({ maxSegmentMs: null })
+	segmenter.setSilenceMs(1000)
+	assert.equal(segmenter.push(tone(16_000)), false)
 	assert.equal(segmenter.speaking, true)
-	assert.ok(segmenter.peakDb > -30)
+	assert.equal(segmenter.push(silence(1000)), true)
+	assert.equal(segmenter.speaking, false)
 })
 
 test('the silence threshold is configurable', () => {
@@ -48,4 +56,20 @@ test('the silence threshold is configurable', () => {
 	segmenter.setSilenceMs(250)
 	assert.equal(segmenter.push(concat(silence(600), tone(600), silence(350))), true)
 	assert.equal(segmenter.currentSilenceMs, 250)
+})
+
+test('a sub-frame voiced tail remains detectable when the VAD is flushed', () => {
+	const segmenter = new SilenceSegmenter({ maxSegmentMs: null })
+	segmenter.setSilenceMs(1000)
+	assert.equal(segmenter.push(tone(10)), false)
+	assert.equal(segmenter.flush(), false)
+	assert.equal(segmenter.hasSpeech, true)
+})
+
+test('1000 ms is a valid default Audio pause threshold', () => {
+	const segmenter = new SilenceSegmenter({ maxSegmentMs: null })
+	segmenter.setSilenceMs(1000)
+	assert.equal(segmenter.push(concat(silence(600), tone(600), silence(999))), false)
+	assert.equal(segmenter.push(silence(20)), true)
+	assert.equal(segmenter.currentSilenceMs, 1000)
 })

@@ -2,7 +2,13 @@ import { FileText, LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-rea
 import { useEffect, useRef, useState } from 'react'
 import { SelectField } from '../../SelectField'
 import { type LectureAudio, loadLecture, Player, TARGET_RATE } from '../../stt/audioSource'
-import { MaiClient, type MaiConfig } from '../../stt/maiClient'
+import {
+	MaiClient,
+	type MaiConfig,
+	maiEmptyAudioBufferError,
+	maiErrorMessage,
+	maiEventRequestId,
+} from '../../stt/maiClient'
 import { dedupeHypothesis, formatClock, type LessonClip } from '../../stt/transcript'
 import { SilenceSegmenter } from '../../stt/vad'
 import { drawWave } from '../../waveform.ts'
@@ -51,7 +57,7 @@ interface Runtime {
 	segmenter: SilenceSegmenter
 	sentSamples: number
 	sentAtLastCommit: number
-	pendingCommits: { at: number; start: number; end: number }[]
+	pendingCommits: { at: number; start: number; end: number; eventId: string }[]
 	deltas: string[]
 	intermediate: string
 	frames: number
@@ -93,13 +99,15 @@ const PHASE_KIND: Record<Phase, string> = {
 }
 
 function newRuntime(): Runtime {
+	const segmenter = new SilenceSegmenter({ rate: TARGET_RATE, maxSegmentMs: null })
+	segmenter.setSilenceMs(1000)
 	return {
 		ctx: null,
 		lecture: null,
 		loadedId: null,
 		player: null,
 		client: null,
-		segmenter: new SilenceSegmenter({ rate: TARGET_RATE }),
+		segmenter,
 		sentSamples: 0,
 		sentAtLastCommit: 0,
 		pendingCommits: [],
@@ -152,7 +160,7 @@ export function LessonPanel({
 	const [vad, setVad] = useState({ db: -90, speaking: false })
 	const [progress, setProgress] = useState(0)
 	const [peaks, setPeaks] = useState<Float32Array | null>(null)
-	const [silenceMs, setSilenceMs] = useState(500)
+	const [silenceMs, setSilenceMs] = useState(1000)
 	const [rate, setRate] = useState(1)
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const endedNotified = useRef(false)
@@ -359,8 +367,18 @@ export function LessonPanel({
 
 		client.on('error', (event) => {
 			if (!current()) return
-			const nested = event.error as { message?: string } | undefined
-			failSession(nested?.message ?? 'Transcription model error')
+			if (rt.stopping && maiEmptyAudioBufferError(event)) {
+				const eventId = maiEventRequestId(event)
+				const pendingIndex = eventId
+					? rt.pendingCommits.findIndex((pending) => pending.eventId === eventId)
+					: -1
+				if (eventId && pendingIndex >= 0) {
+					rt.pendingCommits.splice(pendingIndex, 1)
+					if (rt.pendingCommits.length === 0) finish()
+					return
+				}
+			}
+			failSession(maiErrorMessage(event))
 		})
 		client.on('closed', (event) => {
 			if (!current()) return
@@ -384,7 +402,13 @@ export function LessonPanel({
 		})
 		client.on('completed', (event) => {
 			if (!current()) return
-			const pending = rt.pendingCommits.shift()
+			const eventId = maiEventRequestId(event)
+			const pendingIndex = eventId
+				? rt.pendingCommits.findIndex((pending) => pending.eventId === eventId)
+				: rt.pendingCommits.length
+					? 0
+					: -1
+			const pending = pendingIndex >= 0 ? rt.pendingCommits.splice(pendingIndex, 1)[0] : undefined
 			if (pending) rt.latencies.push(performance.now() - pending.at)
 			const text = typeof event.transcript === 'string' ? event.transcript : rt.deltas.join('')
 			const segment: LessonSegment = {
@@ -413,25 +437,35 @@ export function LessonPanel({
 		setPhase('ready')
 	}
 
-	const commit = () => {
+	const commit = (force = false) => {
 		const rt = runtime.current
-		if (!rt.client || rt.sentSamples === rt.sentAtLastCommit) return
+		const unsent = rt.sentSamples - rt.sentAtLastCommit
+		if (!rt.client || unsent <= 0) return
+		if (!force && unsent < TARGET_RATE / 10) return
+		if (force && unsent < TARGET_RATE / 10) {
+			const padding = new Int16Array(TARGET_RATE / 10 - unsent)
+			rt.client.append(padding, 0, padding.length)
+		}
 		rt.commits++
+		const eventId = `commit-${rt.generation}-${rt.commits}`
 		const start = rt.sentAtLastCommit / TARGET_RATE
 		const end = Math.max(
 			start,
 			rt.sentSamples / TARGET_RATE - rt.segmenter.lastTrailingMsValue / 1000,
 		)
-		rt.pendingCommits.push({ at: performance.now(), start, end })
+		rt.pendingCommits.push({ at: performance.now(), start, end, eventId })
 		rt.sentAtLastCommit = rt.sentSamples
-		rt.client.commit()
+		rt.client.commit(eventId)
 		refreshStats()
 	}
 
 	const sendUpTo = (seconds: number) => {
 		const rt = runtime.current
 		if (!rt.lecture || !rt.client) return
-		const target = Math.min(rt.lecture.pcm.length, Math.floor(seconds * TARGET_RATE))
+		const target =
+			seconds >= rt.lecture.duration
+				? rt.lecture.pcm.length
+				: Math.min(rt.lecture.pcm.length, Math.ceil(seconds * TARGET_RATE))
 		if (target <= rt.sentSamples) return
 		const maxChunk = TARGET_RATE / 5
 		while (rt.sentSamples < target) {
@@ -450,7 +484,9 @@ export function LessonPanel({
 		rt.player?.seekTo(rt.player.duration)
 		if (rt.timer !== null) window.clearInterval(rt.timer)
 		rt.timer = null
-		commit()
+		if (rt.lecture) sendUpTo(rt.lecture.duration)
+		rt.segmenter.flush()
+		if (rt.segmenter.hasSpeech) commit(true)
 		if (rt.pendingCommits.length === 0) finish()
 		else {
 			rt.stopping = true
@@ -472,7 +508,7 @@ export function LessonPanel({
 		})
 		setVad({ db: rt.segmenter.peakDb, speaking: rt.segmenter.speaking })
 		setProgress(position)
-		if (position >= (rt.lecture?.duration ?? 0) - 0.02) {
+		if (position >= (rt.lecture?.duration ?? 0)) {
 			endOfAudio()
 			return
 		}
@@ -703,7 +739,7 @@ export function LessonPanel({
 					<input
 						type="range"
 						min={250}
-						max={750}
+						max={1000}
 						step={50}
 						value={silenceMs}
 						onChange={(event) => changeSilence(Number(event.target.value))}

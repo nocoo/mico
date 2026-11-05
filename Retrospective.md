@@ -52,6 +52,7 @@
 
 ## Automated test architecture
 
+- A synthetic Audio test placed the next speech exactly at the silence threshold, so a single 200ms chunk could include both sides and yield one commit instead of two. Leave more than one maximum chunk of silence when a test requires two distinct commits.
 - A locator scoped through the assistant trigger's changing accessible name stops matching when the panel opens. Use its stable toggle attribute across the transition, and assert the name separately.
 - Escape closes a select but also returns the canvas to the Select tool; tests that inspect several Text dropdowns should close each by choosing its current option instead.
 - After pulling UI changes, inspect the current accessible names before writing a smoke check; the assistant trigger was renamed from `AI assistant` to `Open AI assistant` and the stale selector produced a false failure.
