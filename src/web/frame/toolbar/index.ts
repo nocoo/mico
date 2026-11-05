@@ -1,15 +1,16 @@
-export { Toolbar } from './Toolbar'
 export type { ToolbarProps } from './Toolbar'
-export {
-	deriveToolbarViewModel,
-	executeToolbarCommand,
-	isToolbarArrowNavigationAllowed,
-	toolbarCommandForKey,
-	TOOL_SHORTCUTS,
-} from './viewmodel'
+export { Toolbar } from './Toolbar'
 export type {
 	ToolbarCommand,
 	ToolbarNavigationRegion,
 	ToolbarOptionsKind,
 	ToolbarViewModel,
+} from './viewmodel'
+export {
+	calculateToolbarOptionsWidth,
+	deriveToolbarViewModel,
+	executeToolbarCommand,
+	isToolbarArrowNavigationAllowed,
+	TOOL_SHORTCUTS,
+	toolbarCommandForKey,
 } from './viewmodel'

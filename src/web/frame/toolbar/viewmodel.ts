@@ -1,5 +1,5 @@
-import type { ToolbarActions, ToolbarState } from '../contracts'
 import type { Tool } from '../../design'
+import type { ToolbarActions, ToolbarState } from '../contracts'
 
 export type ToolbarOptionsKind = 'brush' | 'note' | 'text' | null
 export type ToolbarNavigationRegion = 'drawing' | 'view' | 'options' | 'selection' | 'outside'
@@ -44,6 +44,14 @@ export function deriveToolbarViewModel(state: ToolbarState): ToolbarViewModel {
 
 export function isToolbarArrowNavigationAllowed(region: ToolbarNavigationRegion): boolean {
 	return region === 'drawing' || region === 'view'
+}
+
+export function calculateToolbarOptionsWidth(
+	optionsWidth: number,
+	dividerWidth: number,
+	horizontalPadding: number,
+): number {
+	return optionsWidth + dividerWidth + horizontalPadding
 }
 
 export type ToolbarCommand =

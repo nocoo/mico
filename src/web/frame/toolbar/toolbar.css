@@ -1,0 +1,332 @@
+.toolbar-module.toolbar {
+	position: fixed;
+	z-index: 20;
+	left: var(--dock-left, 50%);
+	bottom: var(--frame-block-end);
+	display: flex;
+	align-items: center;
+	flex-direction: column;
+	flex-wrap: nowrap;
+	width: max-content;
+	max-width: calc(100vw - var(--space-2));
+	min-height: 56px;
+	padding: var(--space-1);
+	gap: 0;
+}
+
+.toolbar-module .dock-main {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-wrap: wrap;
+	width: max-content;
+	max-width: 100%;
+}
+
+.toolbar-module .drawing-tools,
+.toolbar-module .view-controls,
+.toolbar-module .zoom-controls {
+	display: flex;
+	align-items: center;
+	gap: var(--space-05);
+}
+
+.toolbar-module .view-controls {
+	padding: 0;
+	border: 0;
+	min-width: 0;
+}
+
+.toolbar-module .panel-divider {
+	flex: 0 0 var(--space-1);
+	width: var(--space-1);
+	height: var(--space-3);
+	background: linear-gradient(var(--border), var(--border)) center / var(--hairline) 100% no-repeat;
+}
+
+.toolbar-module .icon-button,
+.toolbar-module .text-button,
+.toolbar-module .zoom-value {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	height: var(--control-size);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: calc(var(--panel-radius) - var(--space-1));
+	background: transparent;
+	color: var(--ink-secondary);
+	transition:
+		background var(--motion-fast),
+		color var(--motion-fast),
+		box-shadow var(--motion-fast);
+}
+
+.toolbar-module .icon-button {
+	width: var(--control-size);
+}
+
+.toolbar-module .icon-button > svg,
+.toolbar-module .text-button > svg {
+	width: var(--icon-size);
+	height: var(--icon-size);
+	flex-shrink: 0;
+	stroke-width: 1.5;
+}
+
+.toolbar-module .icon-button:hover:not(:disabled),
+.toolbar-module .text-button:hover:not(:disabled),
+.toolbar-module .zoom-value:hover {
+	background: var(--surface-hover);
+	color: var(--ink);
+}
+
+.toolbar-module .tool-slot {
+	display: contents;
+}
+
+.toolbar-module
+	.tool-slot:is(
+		[data-tool-id="select"],
+		[data-tool-id="hand"],
+		[data-tool-id="rectangle"],
+		[data-tool-id="html"],
+		[data-tool-id="text"]
+	) {
+	--tool-accent: var(--candy-blue);
+	--tool-tint: var(--candy-blue-tint);
+	--tool-active-ink: var(--candy-blue-stroke);
+}
+
+.toolbar-module .tool-slot:is([data-tool-id="ellipse"], [data-tool-id="connector"]) {
+	--tool-accent: var(--candy-green);
+	--tool-tint: var(--candy-green-tint);
+	--tool-active-ink: var(--candy-green-stroke);
+}
+
+.toolbar-module .tool-slot:is([data-tool-id="line"], [data-tool-id="note"]) {
+	--tool-accent: var(--candy-yellow);
+	--tool-tint: var(--candy-yellow-tint);
+	--tool-active-ink: var(--candy-yellow-stroke);
+}
+
+.toolbar-module .tool-slot[data-tool-id="path"] {
+	--tool-accent: var(--candy-pink);
+	--tool-tint: var(--candy-pink-tint);
+	--tool-active-ink: var(--candy-pink-stroke);
+}
+
+.toolbar-module .drawing-tools .icon-button[aria-pressed="true"],
+.toolbar-module .drawing-tools .icon-button[aria-pressed="true"]:hover {
+	background: var(--tool-tint);
+	color: var(--tool-active-ink);
+	box-shadow: inset 0 0 0 var(--stroke-strong) var(--tool-accent);
+}
+
+.toolbar-module .zoom-value {
+	width: var(--space-8);
+	font-size: 13px;
+	font-variant-numeric: tabular-nums;
+	font-weight: var(--weight-medium);
+	line-height: var(--line-body);
+	color: var(--ink);
+}
+
+.toolbar-module .delete-tool:hover:not(:disabled) {
+	color: var(--danger);
+}
+
+.toolbar-module .tool-options-wrap {
+	display: flex;
+	align-items: center;
+	flex: 0 0 auto;
+	width: 0;
+	max-width: 100%;
+	overflow: hidden;
+	transition: width 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.toolbar-module .tool-options-wrap.open {
+	padding: 0;
+}
+
+.toolbar-module .brush-options {
+	display: flex;
+	align-items: center;
+	gap: var(--space-05);
+	min-width: 0;
+	padding: 0;
+	border: 0;
+}
+
+.toolbar-module .tool-options-wrap > .brush-options {
+	flex: 0 0 auto;
+	width: max-content;
+}
+
+.toolbar-module .note-colors button {
+	width: var(--control-compact);
+	border: var(--hairline) solid var(--border);
+}
+
+.toolbar-module .segmented-control {
+	display: flex;
+	align-items: center;
+	--choice-accent: var(--candy-pink);
+	--choice-tint: var(--candy-pink-tint);
+	--choice-ink: var(--candy-pink-stroke);
+}
+
+.toolbar-module .segmented-control button {
+	height: var(--control-compact);
+	padding: 0 var(--space-1);
+	border: var(--hairline) solid var(--border);
+	border-radius: 0;
+	background: var(--surface);
+	color: var(--ink-secondary);
+	font-size: var(--type-caption);
+}
+
+.toolbar-module .segmented-control button + button {
+	margin-left: -1px;
+}
+
+.toolbar-module .segmented-control button:first-child {
+	border-radius: var(--radius-control) 0 0 var(--radius-control);
+}
+
+.toolbar-module .segmented-control button:last-child {
+	border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+.toolbar-module .segmented-control button[aria-pressed="true"] {
+	position: relative;
+	border-color: var(--choice-accent);
+	background: var(--choice-tint);
+	color: var(--choice-ink);
+	box-shadow: inset 0 0 0 var(--hairline) var(--choice-accent);
+}
+
+.toolbar-module .brush-options .segmented-control button {
+	height: var(--control-compact);
+	padding-inline: var(--space-1);
+	font-size: var(--type-caption);
+}
+
+.toolbar-module .note-colors button:nth-child(1) {
+	--choice-accent: var(--candy-yellow);
+}
+
+.toolbar-module .note-colors button:nth-child(2) {
+	--choice-accent: var(--candy-pink);
+}
+
+.toolbar-module .note-colors button:nth-child(3) {
+	--choice-accent: var(--candy-green);
+}
+
+.toolbar-module .note-colors button:nth-child(4),
+.toolbar-module .note-colors button:nth-child(5) {
+	--choice-accent: var(--candy-blue);
+}
+
+.toolbar-module .note-colors button[aria-pressed="true"] {
+	border-color: var(--choice-accent);
+	box-shadow: inset 0 0 0 var(--stroke-strong) var(--choice-accent);
+}
+
+.toolbar-module .text-options .select-trigger {
+	flex: 0 0 88px;
+	width: 88px;
+	height: var(--control-compact);
+	padding: 0 var(--space-1);
+	border: var(--hairline) solid var(--border-strong);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	color: var(--ink);
+	font-size: var(--type-caption);
+}
+
+.toolbar-module .text-options .select-trigger:focus-visible,
+.toolbar-module .text-options .select-trigger[aria-expanded="true"] {
+	outline: none;
+	border-color: var(--accent);
+	box-shadow: inset 0 0 0 var(--hairline) var(--accent);
+}
+
+body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"]) .select-content {
+	min-width: 200px;
+	max-width: calc(100vw - var(--space-2));
+	max-height: min(65vh, 480px);
+	padding: var(--space-05);
+	border: var(--hairline) solid var(--border);
+	border-radius: calc(var(--radius-control) + var(--space-05));
+	background: var(--surface);
+	box-shadow: var(--shadow-popover);
+}
+
+@media (max-width: 768px) {
+	.toolbar-module.toolbar {
+		bottom: var(--frame-block-end);
+	}
+
+	.toolbar-module .dock-main {
+		flex-direction: column;
+		gap: 0;
+	}
+
+	.toolbar-module .dock-main > .dock-divider,
+	.toolbar-module .tool-options-wrap > .tool-options-divider {
+		display: none;
+	}
+
+	.toolbar-module .tool-options-wrap {
+		width: 100%;
+		height: 0;
+		padding: 0;
+		transition:
+			width 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+			height 320ms cubic-bezier(0.2, 0.7, 0.2, 1),
+			margin 320ms cubic-bezier(0.2, 0.7, 0.2, 1);
+	}
+
+	.toolbar-module .tool-options-wrap.open {
+		height: 40px;
+		margin-top: var(--space-1);
+		padding: 0;
+	}
+
+	.toolbar-module .view-controls {
+		justify-content: flex-end;
+		width: 100%;
+		margin-top: var(--space-1);
+	}
+}
+
+@media (max-width: 480px) {
+	.toolbar-module .panel-divider {
+		display: none;
+	}
+
+	.toolbar-module .drawing-tools {
+		display: grid;
+		grid-template-columns: repeat(4, var(--control-size));
+		row-gap: var(--space-1);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.toolbar-module .icon-button,
+	.toolbar-module .text-button,
+	.toolbar-module .zoom-value,
+	.toolbar-module .tool-options-wrap {
+		transition: none;
+	}
+
+	body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"])
+		.select-content[data-state] {
+		animation-duration: 1ms;
+	}
+}

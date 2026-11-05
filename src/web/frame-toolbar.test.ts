@@ -3,11 +3,12 @@ import { test } from 'node:test'
 import type { DockLayout, ToolbarActions, ToolbarState } from './frame/contracts.ts'
 import { dockLeft } from './frame/layout.ts'
 import {
+	calculateToolbarOptionsWidth,
 	deriveToolbarViewModel,
 	executeToolbarCommand,
 	isToolbarArrowNavigationAllowed,
-	toolbarCommandForKey,
 	TOOL_SHORTCUTS,
+	toolbarCommandForKey,
 } from './frame/toolbar/viewmodel.ts'
 
 const state: ToolbarState = {
@@ -79,10 +80,7 @@ test('tool shortcuts cover every toolbar tool and keyboard protocol', () => {
 	assert.deepEqual(toolbarCommandForKey('-'), { type: 'zoom-out' })
 	assert.deepEqual(toolbarCommandForKey('0'), { type: 'reset-view' })
 	assert.deepEqual(toolbarCommandForKey('f'), { type: 'fit-board' })
-	assert.equal(
-		toolbarCommandForKey('r', { metaKey: true, ctrlKey: false, altKey: false }),
-		null,
-	)
+	assert.equal(toolbarCommandForKey('r', { metaKey: true, ctrlKey: false, altKey: false }), null)
 })
 
 test('arrow navigation is restricted to drawing and view controls', () => {
@@ -115,6 +113,12 @@ test('toolbar commands preserve action guards and zoom factors', () => {
 	executeToolbarCommand({ type: 'delete-selection' }, { ...state, canDelete: false }, blocked)
 	executeToolbarCommand({ type: 'frame-selection' }, { ...state, canFrame: false }, blocked)
 	assert.deepEqual(blocked.calls, [])
+})
+
+test('toolbar options width includes divider and horizontal padding', () => {
+	assert.equal(calculateToolbarOptionsWidth(264, 8, 0), 272)
+	assert.equal(calculateToolbarOptionsWidth(264, 8, 6), 278)
+	assert.equal(calculateToolbarOptionsWidth(0, 8, 0), 8)
 })
 
 test('measured dock placement uses the shared frame layout contract', () => {

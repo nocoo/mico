@@ -16,10 +16,7 @@ import {
 	Type,
 } from 'lucide-react'
 import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useLayoutEffect, useRef } from 'react'
-import type { ToolbarActions, ToolbarState } from '../contracts'
-import { dockLeft } from '../layout'
-import { IconButton } from '../../IconButton'
-import { SelectField } from '../../SelectField'
+import './toolbar.css'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
@@ -30,7 +27,12 @@ import {
 	NOTE_COLORS,
 	type Tool,
 } from '../../design'
+import { IconButton } from '../../IconButton'
+import { SelectField } from '../../SelectField'
+import type { ToolbarActions, ToolbarState } from '../contracts'
+import { dockLeft } from '../layout'
 import {
+	calculateToolbarOptionsWidth,
 	deriveToolbarViewModel,
 	executeToolbarCommand,
 	isToolbarArrowNavigationAllowed,
@@ -89,22 +91,23 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	useLayoutEffect(() => {
 		const wrap = toolOptionsWrapRef.current
 		if (!wrap) return
+		const optionsKind = viewModel.optionsKind
 		const options = wrap.querySelector<HTMLElement>('.brush-options')
 		const divider = wrap.querySelector<HTMLElement>('.tool-options-divider')
 		const measure = () => {
-			if (!options) {
+			if (!options || optionsKind === null) {
 				wrap.classList.remove('open')
 				wrap.style.width = '0px'
 				return
 			}
 			wrap.classList.add('open')
 			const styles = getComputedStyle(wrap)
-			const horizontalPadding =
-				parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight)
-			const width =
-				(options.offsetWidth ?? 0) +
-				(divider?.offsetWidth ?? 0) +
-				horizontalPadding
+			const horizontalPadding = parseFloat(styles.paddingLeft) + parseFloat(styles.paddingRight)
+			const width = calculateToolbarOptionsWidth(
+				options.offsetWidth ?? 0,
+				divider?.offsetWidth ?? 0,
+				horizontalPadding,
+			)
 			wrap.style.width = `${width}px`
 		}
 		measure()
@@ -217,6 +220,17 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					options={FONT_OPTIONS.map(({ id, label }) => ({ value: id, label }))}
 					onChange={actions.setTextFont}
 					side="top"
+					renderValue={(option) => (
+						<span
+							style={{
+								fontFamily: FONT_STACKS[option.value as keyof typeof FONT_STACKS],
+								fontSize: 16,
+								fontWeight: state.textWeight,
+							}}
+						>
+							{option.label}
+						</span>
+					)}
 					renderItem={(option) => (
 						<span
 							style={{
@@ -235,6 +249,17 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					options={FONT_SIZES.map((size) => ({ value: String(size), label: String(size) }))}
 					onChange={(size) => actions.setTextSize(Number(size))}
 					side="top"
+					renderValue={(option) => (
+						<span
+							style={{
+								fontFamily: FONT_STACKS[state.textFont as keyof typeof FONT_STACKS],
+								fontSize: Number(option.value),
+								fontWeight: state.textWeight,
+							}}
+						>
+							{option.label}
+						</span>
+					)}
 					renderItem={(option) => (
 						<span
 							style={{
@@ -253,6 +278,17 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					options={FONT_WEIGHTS.map((weight) => ({ value: String(weight), label: String(weight) }))}
 					onChange={(weight) => actions.setTextWeight(Number(weight))}
 					side="top"
+					renderValue={(option) => (
+						<span
+							style={{
+								fontFamily: FONT_STACKS[state.textFont as keyof typeof FONT_STACKS],
+								fontSize: 16,
+								fontWeight: Number(option.value),
+							}}
+						>
+							{option.label}
+						</span>
+					)}
 					renderItem={(option) => (
 						<span
 							style={{
@@ -270,7 +306,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 
 	return (
 		<div
-			className="toolbar floating-panel"
+			className="toolbar floating-panel toolbar-module"
 			ref={dockRef}
 			role="toolbar"
 			aria-label="Canvas tools"
