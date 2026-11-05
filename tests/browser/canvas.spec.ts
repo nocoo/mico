@@ -152,11 +152,16 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
-	await expect(page.locator('.identity-panel .brand-mark.lucide')).toHaveCount(1)
-	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
+	await expect(page.locator('.identity-panel .brand-mark-icon.lucide')).toHaveCount(1)
+	await expect(page.locator('.status-dot')).toHaveCSS(
+		'animation-name',
+		'frame-identity-status-breathe',
+	)
 	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(15)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
-	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
+	for (const topbar of await page.locator('.topbar').all()) {
+		await expect(topbar.locator('.view-controls')).toHaveCount(0)
+	}
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
 	const select = page.getByRole('button', { name: 'Select', exact: true })
 	await expect(page.getByRole('tooltip')).toHaveCount(0)
@@ -210,7 +215,9 @@ test('frame controls align to four-pixel layout slots even on fractional viewpor
 }) => {
 	await page.setViewportSize({ width: 1453, height: 969 })
 	const controls = await page
-		.locator('.topbar .icon-button, .toolbar .icon-button, .zoom-value')
+		.locator(
+			'.topbar.frame-identity .icon-button, .topbar.ai-topbar .icon-button, .toolbar .icon-button, .zoom-value',
+		)
 		.evaluateAll((buttons) =>
 			buttons.map((button) => {
 				const { x, y, width, height } = button.getBoundingClientRect()
@@ -260,7 +267,9 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 		})
 	const verify = async (initial: Awaited<ReturnType<typeof snapshot>>) => {
 		expect(await snapshot()).toEqual(initial)
-		await expect(page.locator('.topbar')).toHaveCSS('position', 'fixed')
+		for (const topbar of await page.locator('.topbar').all()) {
+			await expect(topbar).toHaveCSS('position', 'fixed')
+		}
 		await expect(page.locator('.toolbar')).toHaveCSS('position', 'fixed')
 		for (const button of await page.getByRole('toolbar').getByRole('button').all())
 			await expect(button).toBeVisible()
@@ -1058,7 +1067,7 @@ test('concurrent API edits are not overwritten by an in-flight endpoint drag', a
 	const updated = (await response.json()) as Board
 	await expect(page.locator('.status')).toHaveAttribute(
 		'title',
-		`Revision ${updated.revision} · 5 objects`,
+		`Revision ${updated.revision} · 5 objects · Live`,
 	)
 	await page.mouse.up()
 	await expect(page.locator('.notice')).toContainText('Object changed during drag')
