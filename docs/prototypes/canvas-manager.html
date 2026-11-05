@@ -19,7 +19,16 @@
       --accent-tint: #e2f5fc;
       --success: #4fae3f;
       --danger: #c13a5c;
-      --inset: 24px;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --type-caption: 12px;
+      --type-body: 14px;
+      --inset: var(--space-6);
+      --motion-fast: 160ms;
+      --motion-panel: 240ms;
       --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43, 48, 56, .06), 0 2px 12px rgba(43, 48, 56, .08);
       font: 14px/24px Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
@@ -41,12 +50,12 @@
       left: var(--inset);
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: var(--space-3);
       min-height: 56px;
-      padding: 8px;
+      padding: var(--space-2);
     }
-    .brand { display: flex; align-items: center; gap: 4px; width: 92px; white-space: nowrap; }
-    .brand-mark { width: 40px; height: 40px; padding: 8px; color: var(--accent); }
+    .brand { display: flex; align-items: center; gap: var(--space-1); width: 92px; white-space: nowrap; }
+    .brand-mark { width: 40px; height: 40px; padding: var(--space-2); color: var(--accent); }
     .brand strong { width: 48px; font-size: 20px; font-weight: 700; line-height: 32px; letter-spacing: -.04em; }
     .icon-button {
       display: inline-flex;
@@ -60,7 +69,7 @@
       border-radius: 8px;
       background: transparent;
       color: var(--ink-secondary);
-      transition: background 120ms, color 120ms;
+      transition: background var(--motion-fast), color var(--motion-fast);
     }
     .icon-button svg { width: 20px; height: 20px; }
     .icon-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--ink); }
@@ -68,11 +77,28 @@
     .icon-button.compact { width: 32px; height: 32px; }
     .icon-button.compact svg { width: 16px; height: 16px; }
     .icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
-    .status { display: grid; place-items: center; width: 8px; height: 40px; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); animation: breathe 2400ms ease-in-out infinite; }
+    .status { display: grid; place-items: center; width: 32px; height: 40px; }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--success) 55%, var(--surface)), var(--success) 75%);
+      box-shadow: 0 0 4px color-mix(in srgb, var(--success) 40%, transparent), 0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+      animation: breathe 2800ms infinite;
+    }
     @keyframes breathe {
-      0%, 100% { opacity: .6; box-shadow: 0 0 8px rgba(79, 174, 63, .28); }
-      50% { opacity: 1; box-shadow: 0 0 16px rgba(79, 174, 63, .28); }
+      0%, 100% {
+        opacity: .7;
+        transform: scale(.94);
+        box-shadow: 0 0 4px color-mix(in srgb, var(--success) 40%, transparent), 0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+        animation-timing-function: cubic-bezier(.45, 0, .2, 1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.04);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--success) 65%, transparent), 0 0 12px color-mix(in srgb, var(--success) 38%, transparent);
+        animation-timing-function: cubic-bezier(.45, 0, .2, 1);
+      }
     }
     .canvas-panel {
       position: fixed;
@@ -83,29 +109,44 @@
       width: min(340px, calc(100vw - var(--inset) * 2));
       max-height: calc(100dvh - var(--inset) * 2 - 68px);
       overflow: hidden;
+      transform-origin: top left;
     }
     .canvas-panel[hidden] { display: none; }
-    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 12px 8px; border-bottom: 1px solid var(--border); }
-    .panel-heading { display: flex; align-items: baseline; gap: 8px; }
-    .panel-title { font-size: 14px; font-weight: 600; }
-    .panel-count { color: var(--ink-muted); font-size: 12px; }
-    .canvas-list { display: flex; flex-direction: column; gap: 4px; min-height: 0; margin: 0; padding: 8px; overflow-y: auto; list-style: none; }
-    .canvas-item { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 8px; }
+    .canvas-panel[data-state="open"] { animation: panel-open var(--motion-panel) cubic-bezier(.2, .7, .2, 1) both; }
+    .canvas-panel[data-state="closed"] { animation: panel-close 160ms ease-in both; pointer-events: none; }
+    @keyframes panel-open {
+      from { opacity: 0; transform: translateY(-4px) scale(.99); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes panel-close {
+      from { opacity: 1; transform: none; }
+      to { opacity: 0; transform: translateY(-4px) scale(.99); }
+    }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-2); border-bottom: 1px solid var(--border); }
+    .panel-heading { display: flex; align-items: baseline; gap: var(--space-2); }
+    .panel-title { font-size: var(--type-body); font-weight: 600; line-height: 20px; }
+    .panel-count { color: var(--ink-muted); font-size: var(--type-caption); line-height: 16px; }
+    .canvas-list { display: flex; flex-direction: column; gap: var(--space-1); min-height: 0; margin: 0; padding: var(--space-2); overflow-y: auto; list-style: none; }
+    .canvas-item { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: 8px; }
     .canvas-item.active { background: var(--accent-tint); }
-    .canvas-switch { display: flex; align-items: center; flex: 1; gap: 8px; min-width: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; }
+    .canvas-switch { display: flex; align-items: center; flex: 1; gap: var(--space-2); min-width: 0; padding: 0; border: 0; border-radius: 8px; background: transparent; color: var(--ink); text-align: left; }
     .canvas-preview { flex: 0 0 64px; width: 64px; height: 40px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); }
-    .canvas-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: 4px; }
-    .canvas-name { overflow: hidden; color: var(--ink); font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
-    .canvas-time { color: var(--ink-muted); font-size: 12px; line-height: 16px; }
+    .canvas-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: var(--space-1); }
+    .canvas-name { overflow: hidden; color: var(--ink); font-size: var(--type-body); font-weight: 500; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+    .canvas-time { color: var(--ink-muted); font-size: var(--type-caption); line-height: 16px; }
     .canvas-name-input { width: 100%; height: 24px; padding: 0 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); color: var(--ink); outline: none; }
-    .canvas-actions { display: flex; flex: 0 0 auto; gap: 4px; opacity: 0; }
+    .canvas-actions { display: flex; flex: 0 0 auto; gap: var(--space-1); opacity: 0; transition: opacity var(--motion-fast); }
     .canvas-item:hover .canvas-actions, .canvas-item:focus-within .canvas-actions { opacity: 1; }
     .canvas-actions .danger { color: var(--danger); }
     .canvas-active { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; color: var(--accent); }
     .canvas-active svg { width: 16px; height: 16px; stroke-width: 2; }
-    @media (max-width: 768px) { :root { --inset: 16px; } }
+    @media (max-width: 768px) { :root { --inset: var(--space-4); } }
     @media (hover: none) { .canvas-actions { opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .status-dot { animation: none; } .icon-button { transition: none; } }
+    @media (prefers-reduced-motion: reduce) {
+      .status-dot { animation: none; }
+      .icon-button, .canvas-actions { transition: none; }
+      .canvas-panel[data-state] { animation-duration: 1ms; }
+    }
   </style>
 </head>
 <body>
@@ -127,7 +168,7 @@
     <button class="icon-button" id="canvas-toggle" type="button" aria-label="Canvases" aria-controls="canvas-panel" aria-pressed="true" aria-expanded="true" title="Canvases"><svg class="icon" aria-hidden="true"><use href="#layers"/></svg></button>
     <span class="status" role="status" aria-label="Live"><span class="status-dot"></span></span>
   </header>
-  <section class="canvas-panel panel" id="canvas-panel" aria-label="Canvases">
+  <section class="canvas-panel panel" id="canvas-panel" aria-label="Canvases" data-state="open">
     <header class="panel-header">
       <div class="panel-heading"><span class="panel-title">Canvases</span><span class="panel-count"></span></div>
       <button class="icon-button compact" id="new-canvas" type="button" aria-label="New canvas" title="New canvas"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg></button>
@@ -257,11 +298,22 @@
       }));
     }
 
-    toggle.addEventListener('click', () => {
-      panel.hidden = !panel.hidden;
-      toggle.setAttribute('aria-expanded', String(!panel.hidden));
-      toggle.setAttribute('aria-pressed', String(!panel.hidden));
+    function setPanelOpen(open) {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-pressed', String(open));
+      panel.inert = !open;
+      if (open) {
+        panel.hidden = false;
+        panel.removeAttribute('aria-hidden');
+      } else {
+        panel.setAttribute('aria-hidden', 'true');
+      }
+      panel.dataset.state = open ? 'open' : 'closed';
+    }
+    panel.addEventListener('animationend', (event) => {
+      if (event.target === panel && panel.dataset.state === 'closed') panel.hidden = true;
     });
+    toggle.addEventListener('click', () => setPanelOpen(toggle.getAttribute('aria-expanded') !== 'true'));
     document.querySelector('#new-canvas').addEventListener('click', () => {
       const canvas = { id: nextId++, name: `Canvas ${canvases.length + 1}`, time: 'just now', preview: 0 };
       canvases.unshift(canvas);
@@ -270,17 +322,13 @@
       render();
     });
     document.addEventListener('pointerdown', (event) => {
-      if (!panel.hidden && !panel.contains(event.target) && !toggle.contains(event.target)) {
-        panel.hidden = true;
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.setAttribute('aria-pressed', 'false');
+      if (toggle.getAttribute('aria-expanded') === 'true' && !panel.contains(event.target) && !toggle.contains(event.target)) {
+        setPanelOpen(false);
       }
     });
     document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && !panel.hidden && !event.target.matches('input')) {
-        panel.hidden = true;
-        toggle.setAttribute('aria-expanded', 'false');
-        toggle.setAttribute('aria-pressed', 'false');
+      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true' && !event.target.matches('input')) {
+        setPanelOpen(false);
         toggle.focus();
       }
     });
