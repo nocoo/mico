@@ -91,6 +91,8 @@
     .trigger-close { opacity: 0; transform: translate(-50%, -50%) scale(.6) rotate(-45deg); }
     .ai-trigger[data-open="true"] .icon-button { width: 32px; height: 32px; border-radius: 8px; background: transparent; color: var(--ink-secondary); box-shadow: none; }
     .ai-trigger[data-open="true"] .icon-button:hover { background: var(--surface-hover); color: var(--ink); }
+    .ai-trigger[data-open="true"][data-immersive="true"] .icon-button { color:var(--call-ink); }
+    .ai-trigger[data-open="true"][data-immersive="true"] .icon-button:hover { background:rgba(241, 255, 253, .12); color:var(--call-ink); }
     .ai-trigger[data-open="true"] .icon-button svg { width: 16px; height: 16px; }
     .ai-trigger[data-open="true"] .trigger-sparkles { opacity: 0; transform: translate(-50%, -50%) scale(.6) rotate(45deg); }
     .ai-trigger[data-open="true"] .trigger-close { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
@@ -118,14 +120,23 @@
       clip-path: inset(-16px -16px -16px -16px round 20px);
       transition: clip-path var(--motion-panel) var(--ease-panel), opacity var(--motion-panel) var(--ease-panel), visibility 0s;
     }
-    .ai-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
+    .ai-panel::before { content:""; position:absolute; inset:0; z-index:0; pointer-events:none; opacity:0; background:radial-gradient(ellipse at 50% 35%, color-mix(in srgb, var(--call-light) 45%, transparent), transparent 68%), linear-gradient(90deg, var(--call-deep), var(--call-mid) 50%, var(--call-deep)); transition:opacity 420ms var(--ease-panel); }
+    .ai-panel[data-immersive="true"]::before { opacity:1; }
+    .ai-panel > * { position:relative; z-index:1; }
+    .ai-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); transition:border-color 420ms var(--ease-panel); }
+    .ai-panel[data-immersive="true"] .ai-panel-header { border-color:rgba(241, 255, 253, .16); }
     .ai-tabs { display: flex; align-items: center; min-width: 0; gap: 4px; }
-    .ai-tab { width: auto; height: 32px; padding: 0 8px; gap: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+    .ai-tab { width: auto; height: 32px; padding: 0 8px; gap: 4px; font-size: 12px; font-weight: 500; white-space: nowrap; transition:background 420ms var(--ease-panel), color 420ms var(--ease-panel), box-shadow 420ms var(--ease-panel); }
     .ai-close-slot { flex: 0 0 32px; width: 32px; height: 32px; }
     .ai-tab svg { width: 16px; height: 16px; color: var(--ink-muted); }
     .ai-tab:hover { background: var(--surface-hover); color: var(--ink); }
     .ai-tab[aria-selected="true"] { background: var(--accent-tint); color: var(--accent-ink); box-shadow: inset 0 0 0 1px var(--accent); }
     .ai-tab[aria-selected="true"] svg { color: var(--accent-ink); }
+    .ai-tab svg { transition:color 420ms var(--ease-panel); }
+    .ai-panel[data-immersive="true"] .ai-tab, .ai-panel[data-immersive="true"] .ai-tab svg { color:var(--call-muted); }
+    .ai-panel[data-immersive="true"] .ai-tab:hover { background:rgba(241, 255, 253, .1); color:var(--call-ink); }
+    .ai-panel[data-immersive="true"] .ai-tab[aria-selected="true"] { background:rgba(241, 255, 253, .14); color:var(--call-ink); box-shadow:inset 0 0 0 1px rgba(241, 255, 253, .28); }
+    .ai-panel[data-immersive="true"] .ai-tab[aria-selected="true"] svg { color:var(--call-ink); }
 
     .ai-chat { display: flex; flex: 1; flex-direction: column; min-height: 0; }
     .ai-messages { display: flex; flex: 1; flex-direction: column; gap: 12px; min-height: 0; padding: 16px; overflow-y: auto; overscroll-behavior: contain; }
@@ -205,8 +216,8 @@
     .lesson-live-empty { color: var(--ink-muted); }
     .lesson-hypothesis { color: var(--ink-secondary); border-bottom: 1px dashed var(--border-strong); }
 
-    .lesson-controls, .microphone-controls { display: flex; gap: 6px; }
-    .lesson-primary, .lesson-button, .summary-button, .settings-button {
+    .lesson-controls { display: flex; gap: 6px; }
+    .lesson-primary, .lesson-button, .settings-button {
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -222,7 +233,7 @@
     .lesson-primary:hover { background: var(--accent); }
     .lesson-button { border: 1px solid var(--border); background: var(--surface); color: var(--ink-secondary); }
     .lesson-button:hover { background: var(--surface-hover); color: var(--ink); }
-    .lesson-button:disabled, .summary-button:disabled { opacity: .55; }
+    .lesson-button:disabled { opacity: .55; }
     .lesson-metrics { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 4px; padding: 8px; border-radius: 8px; background: var(--surface-muted); }
     .lesson-metrics div { display:flex; flex-direction:column; min-width:0; gap:1px; }
     .lesson-metric-label { color: var(--ink-muted); font-size: 12px; line-height: 16px; }
@@ -232,11 +243,6 @@
     .lesson-sliders label > span { display:flex; justify-content:space-between; }
     .lesson-sliders b { color:var(--ink); }
 
-    .lesson-vad { display:flex; align-items:center; gap:8px; color:var(--ink-muted); font-size:12px; line-height:16px; }
-    .lesson-meter { flex:1; height:4px; border-radius:999px; background:var(--surface-hover); overflow:hidden; }
-    .lesson-meter i { display:block; height:100%; border-radius:inherit; background:var(--ink-muted); transition:width 100ms linear; }
-    .lesson-meter i[data-speaking="true"] { background:var(--accent); }
-    .lesson-vad-label { min-width:88px; text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
     .lesson-segments { display:flex; flex-direction:column; flex:1 0 108px; min-height:108px; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
     .lesson-segments-head { display:flex; justify-content:space-between; gap:8px; padding:8px 12px; background:var(--surface-muted); color:var(--ink-secondary); font-size:12px; line-height:16px; }
     .lesson-segments ol { flex:1; min-height:0; margin:0; padding:0; overflow-y:auto; list-style:none; }
@@ -244,10 +250,6 @@
     .lesson-segments li[aria-current="true"] { background:var(--accent-tint); }
     .lesson-seg-time { flex:0 0 auto; color:var(--ink-muted); font-variant-numeric:tabular-nums; }
     .lesson-seg-empty { color:var(--ink-muted); }
-    .summary-button { flex:1; border:1px dashed var(--border-strong); background:var(--surface); color:var(--ink-secondary); }
-    .summary-button:hover:not(:disabled) { border-color:var(--accent); background:var(--accent-tint); color:var(--ink); }
-    .summary-result { margin:0; padding:8px 12px; border-radius:8px; background:var(--surface-muted); color:var(--ink-secondary); font-size:12px; line-height:16px; }
-
     .ai-settings { gap:12px; }
     .demo-banner { margin:0; padding:12px; border:1px solid var(--border); border-radius:10px; background:var(--surface-muted); color:var(--ink-secondary); font-size:12px; line-height:16px; }
     .ai-settings-form { display:flex; flex-direction:column; align-items:stretch; gap:12px; }
@@ -259,12 +261,9 @@
     .settings-button:hover { background:var(--ink); }
     .settings-note { margin:0; color:var(--ink-secondary); font-size:12px; line-height:16px; }
 
-    .microphone-panel {
-      color: var(--call-ink);
-      background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--call-light) 55%, transparent), transparent 58%), linear-gradient(160deg, var(--call-mid), var(--call-deep) 78%);
-    }
-    .call-stage { display:flex; flex-direction:column; gap:12px; }
-    .call-meta { display:flex; align-items:center; justify-content:space-between; gap:8px; color:var(--call-muted); font-size:12px; line-height:16px; animation:call-enter 420ms var(--ease-panel) both; }
+    .microphone-panel { color:var(--call-ink); }
+    .call-stage { position:relative; display:flex; flex:1; flex-direction:column; align-items:center; justify-content:center; min-height:400px; }
+    .call-meta { display:flex; align-items:center; justify-content:center; gap:12px; color:var(--call-muted); font-size:12px; line-height:16px; }
     .call-meta .lesson-status { color:inherit; }
     .call-meta .lesson-dot[data-kind="ok"] { background:var(--call-muted); }
     .call-meta .lesson-dot[data-kind="live"] { background:#7ce6bc; box-shadow:0 0 0 4px rgba(124, 230, 188, .16); }
@@ -284,29 +283,21 @@
     .call-control:has(.call-mic[aria-pressed="true"])::after { animation:call-ring 2.4s ease-in-out infinite; }
     .call-presence strong { font-size:16px; font-weight:600; line-height:20px; }
     .call-presence > span { color:var(--call-muted); font-size:12px; line-height:16px; }
-    .call-wave-group { display:flex; flex-direction:column; gap:8px; animation:call-enter 480ms 120ms var(--ease-panel) both; }
+    .call-output { position:absolute; top:calc(50% + 104px); left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:12px; pointer-events:none; }
+    .call-wave-group, .call-caption { width:100%; max-width:288px; opacity:0; visibility:hidden; transform:translateY(8px); transition:opacity 420ms var(--ease-panel), transform 420ms var(--ease-panel), visibility 0s linear 420ms; }
+    .call-stage.has-output .call-wave-group, .call-stage.has-output .call-caption { opacity:1; visibility:visible; transform:none; transition:opacity 420ms var(--ease-panel), transform 420ms var(--ease-panel), visibility 0s; }
+    .call-stage.has-output .call-caption { transition-delay:80ms; }
+    .call-wave-group { display:flex; flex-direction:column; gap:8px; }
     .call-wave-group .waveform { height:52px; border-color:rgba(241, 255, 253, .14); background:rgba(241, 255, 253, .06); }
     .call-wave-group .waveform i { background:rgba(214, 242, 238, .3); transform-origin:center; }
     .call-wave-group .waveform i[data-played="true"] { background:rgba(214, 242, 238, .6); }
     .call-wave-group .waveform i[data-speaking="true"] { background:#a1efcf; animation:call-wave 800ms ease-in-out infinite alternate; }
     .call-wave-group .waveform i:nth-child(3n) { animation-delay:-240ms; }
     .call-wave-group .waveform i:nth-child(4n) { animation-delay:-480ms; }
-    .call-wave-group .lesson-vad { color:var(--call-muted); }
-    .call-wave-group .lesson-meter { background:rgba(241, 255, 253, .16); }
-    .call-wave-group .lesson-meter i { background:var(--call-muted); }
-    .call-wave-group .lesson-meter i[data-speaking="true"] { background:#a1efcf; }
-    .call-caption { padding:12px; border:1px solid rgba(241, 255, 253, .16); border-radius:12px; background:rgba(241, 255, 253, .08); animation:call-enter 480ms 180ms var(--ease-panel) both; }
+    .call-caption { padding:0 12px; text-align:center; }
     .call-caption .lesson-live-label { color:var(--call-muted); }
-    .call-caption p { min-height:44px; margin:4px 0 0; font-size:14px; line-height:20px; overflow-wrap:anywhere; }
+    .call-caption p { min-height:44px; margin:8px 0 0; font-size:16px; line-height:24px; overflow-wrap:anywhere; }
     .call-caption .lesson-live-empty { color:var(--call-muted); }
-    .call-details { display:flex; flex:1; flex-direction:column; gap:12px; min-height:120px; animation:call-enter 480ms 240ms var(--ease-panel) both; }
-    .call-details .summary-button { flex:0 0 auto; border-color:rgba(241, 255, 253, .35); background:transparent; color:var(--call-ink); }
-    .call-details .summary-button:hover:not(:disabled) { border-color:var(--call-ink); background:rgba(241, 255, 253, .1); color:var(--call-ink); }
-    .call-details .summary-result { background:rgba(241, 255, 253, .1); color:var(--call-ink); }
-    .call-details .lesson-segments { border-color:rgba(241, 255, 253, .16); }
-    .call-details .lesson-segments-head { background:rgba(241, 255, 253, .08); color:var(--call-muted); }
-    .call-details .lesson-segments li { border-color:rgba(241, 255, 253, .12); color:var(--call-ink); }
-    .call-details .lesson-seg-time, .call-details .lesson-seg-empty { color:var(--call-muted); }
     @keyframes call-enter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
     @keyframes call-ring { 0%, 100% { opacity:.3; transform:scale(.98); } 50% { opacity:.65; transform:scale(1.08); } }
     @keyframes call-wave { from { transform:scaleY(.5); } to { transform:scaleY(1); } }
@@ -318,8 +309,8 @@
     @media (max-width:390px) { .ai-tab span { display:none; } }
     @media (max-height:440px) { .ai-messages { padding:8px; } .lesson-live p { max-height:56px; min-height:32px; } }
     @media (prefers-reduced-motion: reduce) {
-      .ai-trigger, .ai-trigger .icon-button, .ai-trigger .icon-button svg, .ai-panel, .ai-panel.is-open { transition: none; }
-      .call-meta, .call-presence, .call-wave-group, .call-caption, .call-details, .call-control::after, .call-wave-group .waveform i { animation:none !important; }
+      .ai-trigger, .ai-trigger .icon-button, .ai-trigger .icon-button svg, .ai-panel, .ai-panel.is-open, .ai-panel::before, .ai-panel-header, .ai-tab, .ai-tab svg, .call-wave-group, .call-caption { transition: none !important; }
+      .call-presence, .call-control::after, .call-wave-group .waveform i { animation:none !important; }
       .recording-menu[data-state] { animation-duration:1ms; }
     }
   </style>
@@ -350,8 +341,8 @@
     <header class="ai-panel-header">
       <div class="ai-tabs" role="tablist" aria-label="AI modes">
         <button id="ai-tab-chat" class="icon-button ai-tab" type="button" role="tab" aria-label="Chat" aria-selected="true" aria-controls="ai-panel-chat" title="Chat"><svg aria-hidden="true"><use href="#chat"/></svg><span>Chat</span></button>
-        <button id="ai-tab-live" class="icon-button ai-tab" type="button" role="tab" aria-label="Recorded audio" aria-selected="false" aria-controls="ai-panel-live" tabindex="-1" title="Recorded"><svg aria-hidden="true"><use href="#live"/></svg><span>Recorded</span></button>
-        <button id="ai-tab-audio" class="icon-button ai-tab" type="button" role="tab" aria-label="Audio simulation" aria-selected="false" aria-controls="ai-panel-audio" tabindex="-1" title="Audio"><svg aria-hidden="true"><use href="#audio"/></svg><span>Audio</span></button>
+        <button id="ai-tab-live" class="icon-button ai-tab" type="button" role="tab" aria-label="Audio recordings" aria-selected="false" aria-controls="ai-panel-live" tabindex="-1" title="Audio"><svg aria-hidden="true"><use href="#live"/></svg><span>Audio</span></button>
+        <button id="ai-tab-audio" class="icon-button ai-tab" type="button" role="tab" aria-label="Live microphone simulation" aria-selected="false" aria-controls="ai-panel-audio" tabindex="-1" title="Live"><svg aria-hidden="true"><use href="#audio"/></svg><span>Live</span></button>
         <button id="ai-tab-settings" class="icon-button ai-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="ai-panel-settings" tabindex="-1" title="Settings"><svg aria-hidden="true"><use href="#settings"/></svg><span>Settings</span></button>
       </div>
       <span class="ai-close-slot" aria-hidden="true"></span>
@@ -423,10 +414,6 @@
     <div id="ai-panel-audio" role="tabpanel" aria-labelledby="ai-tab-audio" hidden>
       <div class="microphone-panel">
         <div class="call-stage">
-          <div class="call-meta">
-            <div class="lesson-status" aria-live="polite"><span id="audio-dot" class="lesson-dot" data-kind="ok"></span><span id="audio-status">Ready · simulated recording</span></div>
-            <span id="audio-timer" class="call-timer">0:00</span>
-          </div>
           <div class="call-presence">
             <div class="call-control">
               <button id="audio-toggle" class="call-mic" type="button" aria-label="Start recording" aria-pressed="false">
@@ -434,19 +421,16 @@
                 <svg class="call-end-icon" aria-hidden="true"><use href="#phone-off"/></svg>
               </button>
             </div>
-            <strong>Voice with Mico</strong>
+            <div class="call-meta">
+              <div class="lesson-status" aria-live="polite"><span id="audio-dot" class="lesson-dot" data-kind="ok"></span><span id="audio-status">Ready · simulated</span></div>
+              <span id="audio-timer" class="call-timer">0:00</span>
+            </div>
             <span id="audio-action-label">Tap the microphone to start</span>
           </div>
-          <div class="call-wave-group">
-            <div id="audio-waveform" class="waveform" role="img" aria-label="Simulated microphone waveform"></div>
-            <div class="lesson-vad"><span>Energy</span><div class="lesson-meter"><i id="audio-meter" data-speaking="false" style="width:18%"></i></div><span id="audio-vad-label" class="lesson-vad-label">idle</span></div>
+          <div class="call-output" aria-hidden="true">
+            <div class="call-wave-group"><div id="audio-waveform" class="waveform" role="img" aria-label="Simulated microphone waveform"></div></div>
+            <div class="call-caption" aria-live="polite"><span class="lesson-live-label">Live transcript · simulated</span><p id="audio-transcript"></p></div>
           </div>
-          <div class="call-caption" aria-live="polite"><span class="lesson-live-label">Live transcript · simulated</span><p id="audio-transcript"><span class="lesson-live-empty">Waiting for simulated speech…</span></p></div>
-        </div>
-        <div class="call-details">
-          <button id="audio-summary" class="summary-button" type="button" disabled>Generate mock summary</button>
-          <p id="audio-summary-result" class="summary-result" hidden></p>
-          <div class="lesson-segments"><div class="lesson-segments-head"><span>Confirmed segments</span><span id="audio-segment-count">0 segments</span></div><ol id="audio-segments"><li class="lesson-seg-empty">Your simulated speech will appear here.</li></ol></div>
         </div>
       </div>
     </div>
@@ -517,6 +501,8 @@
 
       function selectTab(id, focus = false) {
         if (id !== 'live') closeRecordingMenu();
+        panel.dataset.immersive = String(id === 'audio');
+        triggerShell.dataset.immersive = String(id === 'audio');
         tabIds.forEach((tabId) => {
           const tab = document.getElementById(`ai-tab-${tabId}`);
           const selected = tabId === id;
@@ -926,12 +912,11 @@
 
       const audioToggle = document.getElementById('audio-toggle');
       const audioWave = document.getElementById('audio-waveform');
-      const audioMeter = document.getElementById('audio-meter');
       const audioStatus = document.getElementById('audio-status');
       const audioDot = document.getElementById('audio-dot');
       const audioTranscript = document.getElementById('audio-transcript');
-      const audioSegments = document.getElementById('audio-segments');
-      const audioSummary = document.getElementById('audio-summary');
+      const callStage = document.querySelector('.call-stage');
+      const callOutput = document.querySelector('.call-output');
       const simulatedLines = [
         'Today we will compare the voltage across each resistor.',
         'The current is the same in both components in series.',
@@ -941,7 +926,6 @@
       let audioRecording = false;
       let audioElapsed = 0;
       let audioTimer = null;
-      let audioMockSegments = [];
 
       function showAudioTranscript(text) {
         audioTranscript.textContent = text;
@@ -951,26 +935,6 @@
             { duration: 280, easing: 'cubic-bezier(.22, 1, .36, 1)' }
           );
         }
-      }
-
-      function renderAudioSegments() {
-        audioSegments.replaceChildren();
-        if (audioMockSegments.length === 0) {
-          audioSegments.innerHTML = '<li class="lesson-seg-empty">Your simulated speech will appear here.</li>';
-        } else {
-          audioMockSegments.forEach((segment) => {
-            const item = document.createElement('li');
-            const stamp = document.createElement('span');
-            stamp.className = 'lesson-seg-time';
-            stamp.textContent = segment.time;
-            const text = document.createElement('span');
-            text.textContent = segment.text;
-            item.append(stamp, text);
-            audioSegments.appendChild(item);
-          });
-        }
-        document.getElementById('audio-segment-count').textContent = `${audioMockSegments.length} segments`;
-        audioSummary.disabled = audioMockSegments.length === 0;
       }
 
       function stopAudioSimulation() {
@@ -983,10 +947,6 @@
         document.getElementById('audio-action-label').textContent = 'Tap the microphone to start again';
         audioStatus.textContent = 'Recording complete · simulated';
         audioDot.dataset.kind = 'ok';
-        audioMeter.style.width = '18%';
-        audioMeter.dataset.speaking = 'false';
-        document.getElementById('audio-vad-label').textContent = 'idle';
-        showAudioTranscript('Simulated recording complete.');
         updateWave(audioWave, 1, false);
       }
 
@@ -997,40 +957,27 @@
         }
         audioRecording = true;
         audioElapsed = 0;
-        audioMockSegments = [];
-        document.getElementById('audio-summary-result').hidden = true;
+        document.getElementById('audio-timer').textContent = '0:00';
+        callStage.classList.add('has-output');
+        callOutput.setAttribute('aria-hidden', 'false');
         audioToggle.setAttribute('aria-label','Stop recording');
         audioToggle.setAttribute('aria-pressed','true');
         document.getElementById('audio-action-label').textContent = 'Tap to end the conversation';
         audioStatus.textContent = 'Listening… · simulated';
         audioDot.dataset.kind = 'live';
-        showAudioTranscript('Simulated listening started.');
-        renderAudioSegments();
-        let segmentIndex = 0;
+        showAudioTranscript('Listening for simulated speech…');
+        let lineIndex = 0;
         audioTimer = window.setInterval(() => {
           audioElapsed += 0.25;
           document.getElementById('audio-timer').textContent = formatTime(audioElapsed);
-          const db = -42 + ((Math.floor(audioElapsed * 4) % 5) * 4) + Math.floor(Math.random() * 5);
-          const width = Math.max(18, Math.min(92, ((db + 60) / 54) * 100));
           const speaking = Math.floor(audioElapsed) % 8 < 5;
-          audioMeter.style.width = `${width}%`;
-          audioMeter.dataset.speaking = String(speaking);
-          document.getElementById('audio-vad-label').textContent = speaking ? `speech · ${db}dB` : `silence · ${db}dB`;
           updateWave(audioWave, 1, speaking);
-          if (segmentIndex < simulatedLines.length && audioElapsed >= (segmentIndex + 1) * 4) {
-            audioMockSegments.push({time:formatTime(audioElapsed),text:simulatedLines[segmentIndex]});
-            segmentIndex += 1;
-            showAudioTranscript(simulatedLines[segmentIndex - 1]);
-            renderAudioSegments();
+          if (lineIndex < simulatedLines.length && audioElapsed >= (lineIndex + 1) * 4) {
+            showAudioTranscript(simulatedLines[lineIndex]);
+            lineIndex += 1;
           }
           if (audioElapsed >= 20) stopAudioSimulation();
         }, 250);
-      });
-
-      audioSummary.addEventListener('click', () => {
-        const result = document.getElementById('audio-summary-result');
-        result.textContent = 'Mock summary: The recording covered series resistance, terminal voltage, internal resistance, and how load behavior changes the measured voltage.';
-        result.hidden = false;
       });
 
       document.getElementById('settings-key').addEventListener('input', (event) => {
