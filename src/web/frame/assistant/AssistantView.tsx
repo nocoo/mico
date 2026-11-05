@@ -187,7 +187,7 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 
 	return (
 		<>
-			<header className="topbar">
+			<header className="topbar ai-topbar">
 				<div className="ai-trigger floating-panel">
 					<IconButton
 						icon={Sparkles}

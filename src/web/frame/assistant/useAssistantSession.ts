@@ -21,6 +21,7 @@ export interface AssistantSessionProps {
 }
 
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
+	const { close, consumeInitialPrompt, isGestureActive } = actions
 	const [tab, setTab] = useState<AssistantTab>('chat')
 	const [draft, setDraft] = useState('')
 	const panelRef = useRef<HTMLElement>(null)
@@ -151,11 +152,11 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		if (!shouldConsumeInitialPrompt(state.open, state.initialPrompt)) return
 		const timer = window.setTimeout(() => {
 			setDraft(state.initialPrompt)
-			actions.consumeInitialPrompt()
+			consumeInitialPrompt()
 			send(state.initialPrompt)
 		}, 0)
 		return () => window.clearTimeout(timer)
-	}, [state.open, state.initialPrompt, actions, send])
+	}, [state.open, state.initialPrompt, consumeInitialPrompt, send])
 
 	const enqueueLecture = useCallback(
 		(segment: LessonSegment, clip: Pick<LessonClip, 'subject' | 'title'>) => {
@@ -241,13 +242,13 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			if (
 				shouldCloseAssistantEscape(
 					event.key,
-					actions.isGestureActive(),
+					isGestureActive(),
 					pointerInside.current,
 					Boolean(focusInside),
 				)
 			) {
 				event.stopPropagation()
-				actions.close()
+				close()
 			}
 		}
 		document.addEventListener('pointerdown', onPointerDown, true)
@@ -256,7 +257,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			document.removeEventListener('pointerdown', onPointerDown, true)
 			document.removeEventListener('keydown', onKeyDown, true)
 		}
-	}, [state.open, actions])
+	}, [state.open, close, isGestureActive])
 
 	useEffect(() => {
 		if (shouldRestoreAssistantTriggerFocus(wasOpen.current, state.open)) {
