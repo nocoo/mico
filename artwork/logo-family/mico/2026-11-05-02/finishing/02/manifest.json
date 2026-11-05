@@ -1,0 +1,29 @@
+{
+  "source": "../01/extracted-foreground.png",
+  "sourceSha256": "590b9c9e95ae5785822e3bb5787d1f90e9680ae332137342af38fcdc10f6f7d1",
+  "sourceBoundsAlpha16": [
+    405,
+    367,
+    1640,
+    1652
+  ],
+  "cropBox": [
+    302,
+    290,
+    1742,
+    1730
+  ],
+  "transparentMaster": {
+    "path": "transparent-cropped.png",
+    "width": 1440,
+    "height": 1440,
+    "sha256": "012db800045ef65d7715129343dd4344ca3c77ea7cbbee703f67e0615b3cc521"
+  },
+  "publicLogo": {
+    "path": "../../../../../../public/logo.png",
+    "width": 256,
+    "height": 256,
+    "sha256": "ab6cc314e06b210f2248f9d17a596f5cb36d1acc94acced2f19c315131cda0bd"
+  },
+  "method": "Uniform centered square crop with 12% padding, no recoloring or added shadows. Public image is Lanczos-downsampled."
+}

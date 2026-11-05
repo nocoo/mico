@@ -7,7 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": ["**", "!pnpm-lock.yaml", "!evals/runs"]
+		"includes": ["**", "!pnpm-lock.yaml", "!evals/runs", "!artwork/logo-family"]
 	},
 	"formatter": {
 		"indentStyle": "tab",

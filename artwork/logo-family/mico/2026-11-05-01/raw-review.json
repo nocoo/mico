@@ -1,0 +1,9 @@
+{
+	"status": "rejected",
+	"imageSha256": "0b56e2df0de67dfe8fa48aea2585d9fd5d8b86b4a796050d6629ce99ba3ea029",
+	"recordedAt": "2026-11-05T02:25:18.918950+00:00",
+	"decisionSource": "owner requested a new Flare generation",
+	"ownerReviewedExactBytes": false,
+	"feedback": "你参考这个风格，用gpt 2.5 image flare重新生成，再裁剪使用。",
+	"notes": "The owner requested another model output; no aesthetic rejection is inferred."
+}

@@ -1,0 +1,28 @@
+{
+  "startedAt": "2026-11-05T02:27:30.277394+00:00",
+  "provider": "Azure OpenAI / Foundry",
+  "endpoint": "<configured Azure OpenAI v1>/images/edits",
+  "method": "POST",
+  "contentType": "multipart/form-data",
+  "parameters": {
+    "model": "gpt-image-2.5-flare",
+    "size": "2048x2048",
+    "quality": "high",
+    "n": "1",
+    "background": "opaque",
+    "output_format": "png"
+  },
+  "promptFile": "prompt.txt",
+  "promptSha256": "2172fcf7dbb7aee3434bac56a7bc969908bbaa02e341ea1d72d72274a8bf0c17",
+  "images": [
+    {
+      "index": 1,
+      "path": "references/source.jpg",
+      "sha256": "9330e8ae798b01c4ec71d3c6f305bca5cfe00499a277ee44c33dcb94f34fde88",
+      "bytes": 113349,
+      "mime": "image/jpeg"
+    }
+  ],
+  "transportReference": "workflow/agents/skills/agi-image-generation/scripts/generate.py",
+  "documentation": "https://developers.openai.com/api/docs/guides/image-generation"
+}

@@ -1,0 +1,5 @@
+Use the supplied image as the sole visual reference. Create a refined standalone identity for Mico, a shared whiteboard where people and AI draw together. Faithfully retain the same friendly, front-facing rounded whiteboard silhouette, thick warm-ivory frame, soft blush header, the distinctive folded top-left corner with its diagonal stylus detail, and the two small pink and pale-blue circular elements on the board.
+
+Preserve the reference's tactile, softly molded ceramic-like material and delicate surface highlights. The colors may be adjusted subtly for clear contrast and recognition at 16–32 pixels, but do not change the overall design, add a new character, or flatten it into a generic vector icon. Keep the entire object centered and fully visible with even breathing room, no text, no separate background tile and no surrounding decorations.
+
+Remove every cast, drop, floor and contact shadow outside the object, and remove background glow or gradients. Retain only restrained material shading within the silhouette. Use a uniform solid pure-white background edge to edge, suitable for later transparent-background extraction. One square image, 2048 × 2048 pixels.

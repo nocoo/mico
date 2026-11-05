@@ -1,0 +1,36 @@
+{
+	"project": "mico",
+	"series": "material",
+	"sourceMode": "isolated-white",
+	"cornerRadius": 0.23,
+	"exportSizes": [2048, 1024, 512, 256, 128, 64, 32, 24, 16],
+	"background": {
+		"base": "#ffffff",
+		"light": "#ffffff",
+		"shade": "#ffffff",
+		"motif": "#ffffff",
+		"grainAmplitude": 0,
+		"grainSeed": 1,
+		"motifOpacity": 0,
+		"highlightOpacity": 0,
+		"ribbonOpacity": 0,
+		"pattern": {
+			"name": "Mico neutral white",
+			"layers": [{ "d": "M0 0h1v1H0z", "tone": "motif" }]
+		}
+	},
+	"shadows": [],
+	"framing": { "scale": 1, "offsetAt2048": [0, 0] },
+	"matte": {
+		"minimumChannel": 247,
+		"maximumChroma": 8,
+		"backgroundRgb": [252, 252, 252],
+		"edgeBand": 2,
+		"interiorDistance": 4,
+		"searchRadius": 8,
+		"minimumColorAlignment": 0.98,
+		"maximumMatteEnergy": 150,
+		"minimumComponentPixels": 64,
+		"calibrationNote": "Remove only near-neutral, near-white pixels connected to the outside; preserve the pale ceramic interior and its highlights. The source has no intended outer shadow."
+	}
+}

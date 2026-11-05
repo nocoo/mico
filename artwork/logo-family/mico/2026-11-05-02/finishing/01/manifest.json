@@ -1,0 +1,292 @@
+{
+	"createdAt": "2026-11-05T02:31:12.686Z",
+	"pass": "01",
+	"tool": "artwork/logo-family/tools/finish_study.mjs",
+	"toolSha256": "3e68fac6f8c8f55721d15b50ca5b6eddb6ab1176f121ca341333699c7056ab88",
+	"sharp": "0.35.5",
+	"input": {
+		"path": "../../raw/generated.png",
+		"sha256": "8890578383a49b0cb3469666af74c76b16ce734cd5c2e2911453f57dcc843032",
+		"width": 2048,
+		"height": 2048
+	},
+	"method": "Border-connected near-white extraction with optional recorded interior background seeds and pale-anatomy protection; recipe-specific edge alpha matting and color decontamination. No global white deletion. Whole-group placement is recorded separately.",
+	"settings": {
+		"project": "mico",
+		"series": "material",
+		"sourceMode": "isolated-white",
+		"cornerRadius": 0.23,
+		"exportSizes": [
+			2048,
+			1024,
+			512,
+			256,
+			128,
+			64,
+			32,
+			24,
+			16
+		],
+		"background": {
+			"base": "#ffffff",
+			"light": "#ffffff",
+			"shade": "#ffffff",
+			"motif": "#ffffff",
+			"grainAmplitude": 0,
+			"grainSeed": 1,
+			"motifOpacity": 0,
+			"highlightOpacity": 0,
+			"ribbonOpacity": 0,
+			"pattern": {
+				"name": "Mico neutral white",
+				"layers": [
+					{
+						"d": "M0 0h1v1H0z",
+						"tone": "motif"
+					}
+				]
+			}
+		},
+		"shadows": [],
+		"framing": {
+			"scale": 1,
+			"offsetAt2048": [
+				0,
+				0
+			]
+		},
+		"matte": {
+			"minimumChannel": 247,
+			"maximumChroma": 8,
+			"backgroundRgb": [
+				252,
+				252,
+				252
+			],
+			"edgeBand": 2,
+			"interiorDistance": 4,
+			"searchRadius": 8,
+			"minimumColorAlignment": 0.98,
+			"maximumMatteEnergy": 150,
+			"minimumComponentPixels": 64,
+			"calibrationNote": "Remove only near-neutral, near-white pixels connected to the outside; preserve the pale ceramic interior and its highlights. The source has no intended outer shadow."
+		}
+	},
+	"statistics": {
+		"backgroundPixels": 2729399,
+		"foregroundPixels": 1464905,
+		"softEdgePixels": 3645,
+		"removedComponents": 0,
+		"removedComponentPixels": 0,
+		"bounds": {
+			"left": 405,
+			"top": 367,
+			"right": 1639,
+			"bottom": 1651
+		}
+	},
+	"placement": {
+		"scale": 1,
+		"offsetAt2048": [
+			0,
+			0
+		],
+		"bounds": {
+			"left": 405,
+			"top": 367,
+			"right": 1639,
+			"bottom": 1651
+		},
+		"visibleAlphaThreshold": 16,
+		"minimumRoundedEdgeClearance": 367.50000000000006,
+		"clippedPixels": 0
+	},
+	"emission": [],
+	"files": [
+		{
+			"path": "settings.json",
+			"bytes": 1000,
+			"sha256": "dbe2754ac26face113c241d571349ae653589ef59a1e7e8f6169dbcb223905ca"
+		},
+		{
+			"path": "raw-review.json",
+			"bytes": 323,
+			"sha256": "d2ad5a4b0bee81017c73ed22cd786a7fbee7e5b593ce7fe606273d5c4e3497fc"
+		},
+		{
+			"path": "tool-snapshot.mjs",
+			"bytes": 29501,
+			"sha256": "3e68fac6f8c8f55721d15b50ca5b6eddb6ab1176f121ca341333699c7056ab88"
+		},
+		{
+			"path": "extracted-foreground.png",
+			"bytes": 1799856,
+			"sha256": "590b9c9e95ae5785822e3bb5787d1f90e9680ae332137342af38fcdc10f6f7d1"
+		},
+		{
+			"path": "alpha-mask.png",
+			"bytes": 30909,
+			"sha256": "645cfdadd9e39ffc39743754b18c50c93bde860ea02a2222e30ae12dd3dfd1e8"
+		},
+		{
+			"path": "background.svg",
+			"bytes": 454,
+			"sha256": "57154aa902526a49e44d4906796aa198766deb451d88b4ce454340553b706352"
+		},
+		{
+			"path": "background.png",
+			"bytes": 16898,
+			"sha256": "b519d4118d8fd6368e631405989a04954c580e8a700641adaac5e3a7509d9d32"
+		},
+		{
+			"path": "exports/mico-transparent-2048.png",
+			"bytes": 1799856,
+			"sha256": "590b9c9e95ae5785822e3bb5787d1f90e9680ae332137342af38fcdc10f6f7d1"
+		},
+		{
+			"path": "exports/mico-icon-2048.png",
+			"bytes": 1799946,
+			"sha256": "db904045d80ff5e6e9f1d1c0c350b62d2f32732cc6455029cb2ae0dd80b2d4ac"
+		},
+		{
+			"path": "exports/mico-rounded-2048.png",
+			"bytes": 1810573,
+			"sha256": "cb2bc49031dea7d5a9e77469c4f00d320f40560828af6db31f607ead8d8b41e4"
+		},
+		{
+			"path": "exports/mico-transparent-1024.png",
+			"bytes": 485700,
+			"sha256": "79651d0c301a1d632fbc492e33b95154ee3962bc5a87f3f007b9e7098606d826"
+		},
+		{
+			"path": "exports/mico-icon-1024.png",
+			"bytes": 480717,
+			"sha256": "9fcc4b15a549d8dccbd4ce0fc17303fe1e48ba19d7aa03af0f21d150f30a354b"
+		},
+		{
+			"path": "exports/mico-rounded-1024.png",
+			"bytes": 489983,
+			"sha256": "0e723602a273ca95e234bf9b2bc348bfbb4fd8adbe5702430875640fa98d3607"
+		},
+		{
+			"path": "exports/mico-transparent-512.png",
+			"bytes": 128897,
+			"sha256": "1a4c0798b8a02e537ece347e05b99e4752b9fbf7fee67ac8dae0e7aac9641c23"
+		},
+		{
+			"path": "exports/mico-icon-512.png",
+			"bytes": 125994,
+			"sha256": "93c4812fc4468561e567350d9f0cbab17c8e2ef1eb3e37663f0507e1bae2319d"
+		},
+		{
+			"path": "exports/mico-rounded-512.png",
+			"bytes": 130472,
+			"sha256": "a6595400789f7c767ba8b0fd569b7827b41d455c2b4fc3b902ad08638f8c2360"
+		},
+		{
+			"path": "exports/mico-transparent-256.png",
+			"bytes": 38045,
+			"sha256": "dc54a963cdda13b3e75f1dea136449f05bf26571be8ce45e94a526615fa41824"
+		},
+		{
+			"path": "exports/mico-icon-256.png",
+			"bytes": 36468,
+			"sha256": "1f084536257e177c7941fc7e1c2ae49ecea3567528f4a87902dec0384e9bf089"
+		},
+		{
+			"path": "exports/mico-rounded-256.png",
+			"bytes": 38521,
+			"sha256": "cef4a6ce65d0d1e2aba0414b19134919cfe4cc2257c95aaaf98e76565e93a70c"
+		},
+		{
+			"path": "exports/mico-transparent-128.png",
+			"bytes": 11680,
+			"sha256": "8a86b6f56e8c9d22f23471bd1089f1ce78cc3b52842994a3ae2b47e873e1b0cb"
+		},
+		{
+			"path": "exports/mico-icon-128.png",
+			"bytes": 10874,
+			"sha256": "d4e25d55c3b6d2f75eecd6b4408541566db93b735640ca191c0700b2f52c279d"
+		},
+		{
+			"path": "exports/mico-rounded-128.png",
+			"bytes": 11880,
+			"sha256": "e3ee7177249e188bac0d80bad4849a7029e0670a563365c89321a8775af6db2a"
+		},
+		{
+			"path": "exports/mico-transparent-64.png",
+			"bytes": 3756,
+			"sha256": "22bcb15d26f62dfa62d6fe7e6951e06e3e333a0a73bb535478e6e54f1a96d78e"
+		},
+		{
+			"path": "exports/mico-icon-64.png",
+			"bytes": 3282,
+			"sha256": "12bd5b0e582cb9ea34abc3bf67f5993ca8f4f42a804aced98a2bae35d68c103b"
+		},
+		{
+			"path": "exports/mico-rounded-64.png",
+			"bytes": 3615,
+			"sha256": "6c7de03bf0cb6c8b9d9bf09df3651d309405c07d1721b7f8d91d5f662ed8747f"
+		},
+		{
+			"path": "exports/mico-transparent-32.png",
+			"bytes": 1306,
+			"sha256": "c605c4c0b1bb89b31e3f7fb9cdbd0a3da9ec4787740a7edaee6d01aa7d789cc6"
+		},
+		{
+			"path": "exports/mico-icon-32.png",
+			"bytes": 1107,
+			"sha256": "2bb289cb76e50e578d2ed7fe86314f849521e3f8725688c9edab3011d9a23ad9"
+		},
+		{
+			"path": "exports/mico-rounded-32.png",
+			"bytes": 1249,
+			"sha256": "16502c61e42c31d34a0d98fc33fb679cf1a1f380467eff2b49133ea2d437d627"
+		},
+		{
+			"path": "exports/mico-transparent-24.png",
+			"bytes": 940,
+			"sha256": "093c67fd426ef4c8587566721adc12dcd4fc9fa38d4c93463ab736e7f3132445"
+		},
+		{
+			"path": "exports/mico-icon-24.png",
+			"bytes": 763,
+			"sha256": "fa468943061f4f31e0c05a74465ca45eb5030b66937717386a054c84f15a1483"
+		},
+		{
+			"path": "exports/mico-rounded-24.png",
+			"bytes": 913,
+			"sha256": "2fca3e4abf780f7b11e5fcc84278c2f97387232829cf9ce4b788145ba58d5d03"
+		},
+		{
+			"path": "exports/mico-transparent-16.png",
+			"bytes": 562,
+			"sha256": "927490de81832c37b219f9ff36f19d9776d69ac70aba42d79e23ba7b90692758"
+		},
+		{
+			"path": "exports/mico-icon-16.png",
+			"bytes": 435,
+			"sha256": "32a820abe04176a1ede741c3c675d5e291c8047f9c5fb6e1faf39450b9697688"
+		},
+		{
+			"path": "exports/mico-rounded-16.png",
+			"bytes": 493,
+			"sha256": "c4836d62a5beb4dba6b764239db814531e95e7fdc87bad69a59739c554314c78"
+		},
+		{
+			"path": "exports/mico-white-2048.png",
+			"bytes": 1669762,
+			"sha256": "22a8245d065c3902b3d8d3a9c265c36cb812a84f92eb54d8ceba119526561d80"
+		},
+		{
+			"path": "previews/on-light-1024.png",
+			"bytes": 455056,
+			"sha256": "d29a61691d28b68fb440ba855236bf1f40fd43bd4a289b5568fc0ab35269c9c0"
+		},
+		{
+			"path": "previews/on-dark-1024.png",
+			"bytes": 465283,
+			"sha256": "0e23da1f33b2724a65f16eb018e2559652f4abc8d121f6cf15842f9840c16ed0"
+		}
+	]
+}

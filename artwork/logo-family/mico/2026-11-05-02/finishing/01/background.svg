@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="2048" viewBox="0 0 1024 1024">
+<title>Mico neutral white</title>
+<defs><radialGradient id="field" cx="26%" cy="14%" r="115%"><stop stop-color="#ffffff"/><stop offset=".52" stop-color="#ffffff"/><stop offset="1" stop-color="#ffffff"/></radialGradient></defs>
+<path fill="url(#field)" d="M0 0h1024v1024H0z"/>
+<g stroke-linecap="round"><path d="M0 0h1v1H0z" fill="#ffffff" opacity="0"/></g></svg>
