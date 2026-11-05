@@ -1,5 +1,9 @@
 # Retrospective
 
+## MOSS Live verification
+
+- A fake audio file began playing as soon as the microphone opened, before MOSS finished connecting. The client discards pre-ready frames, so only the end of the synthetic request reached the provider and no tool call was observed. Future probes must start synthetic speech only after the session is ready; distinguish a validated connection from an unverified tool-call path.
+
 ## Tool usage
 
 - Parallel client and browser-test work disagreed on a translated error message. Freeze the user-visible error contract before writing cross-agent assertions, then run the integration test against the final implementation.
