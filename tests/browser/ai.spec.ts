@@ -74,15 +74,20 @@ test('the Audio tab loads prerecorded sessions and playback controls', async ({ 
 	const lesson = prerecorded.locator('.lesson')
 	await expect
 		.poll(() => lesson.evaluate((el) => el.scrollHeight - el.clientHeight))
-		.toBeLessThanOrEqual(1)
+		.toBeGreaterThan(0)
+	const summary = prerecorded.getByRole('button', { name: 'Create session summary' })
+	await summary.scrollIntoViewIfNeeded()
+	await expect(summary).toBeVisible()
+	const segments = prerecorded.locator('.lesson-segments')
+	await segments.scrollIntoViewIfNeeded()
+	await expect(segments).toBeVisible()
 	const panelBox = await panel.boundingBox()
-	const segmentsBox = await prerecorded.locator('.lesson-segments').boundingBox()
-	if (!panelBox || !segmentsBox) throw new Error('Missing live panel layout')
+	if (!panelBox) throw new Error('Missing live panel layout')
 	expect(panelBox.height).toBe(700)
-	expect(panelBox.y + panelBox.height - segmentsBox.y - segmentsBox.height).toBeLessThan(20)
 
 	const picker = panel.getByRole('combobox', { name: 'Recording', exact: true })
 	await expect(picker).toBeVisible()
+	await expect(picker).toContainText('中文 · 物理 · 斜面、定滑轮与摩擦：连接体受力分析')
 	await picker.click()
 	await expect(page.getByRole('option')).toHaveCount(20)
 	await page.keyboard.press('Escape')
@@ -114,7 +119,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 	const fieldBox = await settings.locator('.rt-TextFieldRoot').first().boundingBox()
 	const checkboxBox = await settings.getByRole('checkbox').boundingBox()
 	const saveBox = await settings.getByRole('button', { name: 'Save settings' }).boundingBox()
-	expect(fieldBox?.height).toBe(32)
+	expect(fieldBox?.height).toBe(40)
 	expect(checkboxBox?.height).toBe(16)
 	expect(saveBox?.height).toBe(32)
 	await settings.getByLabel('Endpoint').fill('https://example.test/v1')
@@ -262,15 +267,13 @@ test('the Live tab preserves the microphone layout', async ({ page }) => {
 	const box = await mic.boundingBox()
 	const panelBox = await panel.boundingBox()
 	if (!box || !panelBox) throw new Error('Missing microphone or panel box')
-	expect(box.height).toBeGreaterThanOrEqual(28)
-	expect(box.height).toBeLessThan(48)
+	expect(box.height).toBe(64)
 
 	await page.setViewportSize({ width: 667, height: 375 })
 	await expect(panel).toBeVisible()
 	const compactBox = await panel.getByRole('button', { name: 'Start recording' }).boundingBox()
 	if (!compactBox) throw new Error('Missing compact microphone')
-	expect(compactBox.height).toBeGreaterThanOrEqual(28)
-	expect(compactBox.height).toBeLessThan(48)
+	expect(compactBox.height).toBe(64)
 
 	await panel.getByRole('tab', { name: 'Chat' }).click()
 	const shortComposer = panel.getByRole('textbox', { name: COMPOSER })
@@ -349,13 +352,16 @@ test('the AI panel replaces the narrow properties sheet instead of hiding its co
 	await resetBoard(request, [
 		{
 			id: 'selected',
-			type: 'rectangle',
+			type: 'text',
 			x: 120,
 			y: 120,
 			w: 180,
 			h: 80,
-			color: '#00a2e1',
+			color: '#263248',
 			text: 'Selected',
+			font: 'serif',
+			fontSize: 24,
+			fontWeight: 400,
 		},
 	])
 	await page.reload()
@@ -364,6 +370,15 @@ test('the AI panel replaces the narrow properties sheet instead of hiding its co
 
 	const properties = page.getByRole('region', { name: 'Selected object properties' })
 	await expect(properties).toBeVisible()
+	await expect(
+		properties.getByRole('combobox', { name: 'Font family', exact: true }),
+	).toContainText('Serif')
+	await expect(properties.getByRole('combobox', { name: 'Font size', exact: true })).toContainText(
+		'24',
+	)
+	await expect(
+		properties.getByRole('combobox', { name: 'Font weight', exact: true }),
+	).toContainText('400')
 	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
 	await expect(properties).toBeHidden()
 
