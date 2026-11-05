@@ -11,7 +11,7 @@
 		"daemon": "node --env-file-if-exists=.env --watch src/server/index.ts",
 		"eval:server": "node scripts/eval-server.ts",
 		"eval:capture": "node scripts/eval-capture.ts",
-		"eval:handover": "node scripts/run-handover.ts",
+		"eval:live-case": "node scripts/run-live-case.ts",
 		"mico": "node src/cli/index.ts",
 		"build": "tsc --noEmit && vite build",
 		"check": "biome check . && tsc --noEmit",

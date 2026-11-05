@@ -5,15 +5,42 @@ import { Chat } from '@ai-sdk/react'
 import { DefaultChatTransport, getToolName, isToolUIPart, type UIMessage } from 'ai'
 import { POST_SESSION_SUMMARY_PROMPT } from '../src/shared/summaryPrompt.ts'
 
-const FIXED_TEXT = join('evals', 'cases', 'c11-er-handover.zh.txt')
 const RUN_ROOT = join('evals', 'runs')
 const DEFAULT_BASE = 'http://127.0.0.1:37063'
-const SUBJECT = '急诊护理交接'
-const TITLE = '急诊交接'
+
+export type LiveCaseId = 'handover' | 'incident'
+
+export interface LiveCaseConfig {
+	id: LiveCaseId
+	fixedText: string
+	subject: string
+	title: string
+	canvasTitle: string
+	directoryPrefix: string
+}
+
+export const LIVE_CASES: Record<LiveCaseId, LiveCaseConfig> = {
+	handover: {
+		id: 'handover',
+		fixedText: join('evals', 'cases', 'c11-er-handover.zh.txt'),
+		subject: '急诊护理交接',
+		title: '急诊交接',
+		canvasTitle: '急诊交接',
+		directoryPrefix: 'handover',
+	},
+	incident: {
+		id: 'incident',
+		fixedText: join('evals', 'cases', 'c12-service-incident.zh.txt'),
+		subject: '服务故障复盘',
+		title: '线上结算故障复盘',
+		canvasTitle: '服务故障复盘',
+		directoryPrefix: 'incident',
+	},
+}
 
 export type FetchLike = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
 
-export interface HandoverChat {
+export interface LiveCaseChat {
 	messages: UIMessage[]
 	status: string
 	error?: Error
@@ -23,17 +50,25 @@ export interface HandoverChat {
 
 export function parseRound(value: string | undefined): number {
 	if (!value || !/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) {
-		throw new Error('Usage: node scripts/run-handover.ts <round-number> --confirm-live-canvas')
+		throw new Error(
+			'Usage: node scripts/run-live-case.ts <round-number> --case handover|incident --confirm-live-canvas',
+		)
 	}
 	return Number(value)
+}
+
+export function parseCase(value: string | undefined): LiveCaseId {
+	if (value === 'handover') return 'handover'
+	if (value === 'incident') return 'incident'
+	throw new Error('Case must be "handover" or "incident"')
 }
 
 export function compactTimestamp(date: Date): string {
 	return date.toISOString().replace(/[-:.]/g, '')
 }
 
-export function canvasName(round: number, date: Date): string {
-	const name = `急诊交接 · 第${round}轮 · ${compactTimestamp(date)}`
+export function canvasName(round: number, date: Date, caseId: LiveCaseId = 'handover'): string {
+	const name = `${LIVE_CASES[caseId].canvasTitle} · 第${round}轮 · ${compactTimestamp(date)}`
 	if (name.length > 80) throw new Error('Canvas name exceeds 80 characters')
 	return name
 }
@@ -48,8 +83,13 @@ export function splitZhSentences(text: string): string[] {
 	return [...segmenter.segment(normal)].map((part) => part.segment.trim()).filter(Boolean)
 }
 
-export function formatLectureSegmentText(index: number, text: string): string {
-	return `[Lecture | ${SUBJECT} · ${TITLE} | segment ${index} | 0:00–0:00] ${text}`
+export function formatLectureSegmentText(
+	index: number,
+	text: string,
+	caseId: LiveCaseId = 'handover',
+): string {
+	const config = LIVE_CASES[caseId]
+	return `[Lecture | ${config.subject} · ${config.title} | segment ${index} | 0:00–0:00] ${text}`
 }
 
 export function buildTurnRequest(
@@ -60,9 +100,14 @@ export function buildTurnRequest(
 	return { text, body: { selection: [], mode, canvasId } }
 }
 
-export function createUniqueRunDirectory(round: number, date: Date): string {
+export function createUniqueRunDirectory(
+	round: number,
+	date: Date,
+	caseId: LiveCaseId = 'handover',
+): string {
 	mkdirSync(RUN_ROOT, { recursive: true })
-	return mkdtempSync(join(RUN_ROOT, `handover-r${round}-${compactTimestamp(date)}-`))
+	const prefix = `${LIVE_CASES[caseId].directoryPrefix}-r${round}-${compactTimestamp(date)}-`
+	return mkdtempSync(join(RUN_ROOT, prefix))
 }
 
 async function api(
@@ -82,7 +127,7 @@ async function api(
 	return response
 }
 
-export async function createHandoverCanvas(
+export async function createLiveCaseCanvas(
 	fetchImpl: FetchLike,
 	base: string,
 	name: string,
@@ -123,7 +168,7 @@ interface ToolLog {
 }
 
 function inspectAssistant(
-	chat: HandoverChat,
+	chat: LiveCaseChat,
 	beforeIds: Set<string>,
 ): { text: string; tools: ToolLog[]; assistantMessages: unknown[] } {
 	const messages = chat.messages.filter((message) => !beforeIds.has(message.id))
@@ -188,6 +233,9 @@ function appendJsonl(directory: string, record: unknown): void {
 }
 
 interface RunState {
+	caseId: LiveCaseId
+	subject: string
+	title: string
 	round: number
 	startedAt: string
 	canvasId?: string
@@ -202,7 +250,7 @@ interface RunState {
 }
 
 async function sendOneTurn(options: {
-	chat: HandoverChat
+	chat: LiveCaseChat
 	fetchImpl: FetchLike
 	base: string
 	canvasId: string
@@ -276,26 +324,43 @@ async function sendOneTurn(options: {
 
 async function main(): Promise<void> {
 	const round = parseRound(process.argv[2])
-	if (process.argv[3] !== '--confirm-live-canvas') {
+	const args = process.argv.slice(3)
+	if (!args.includes('--confirm-live-canvas')) {
 		throw new Error(
 			'Pass --confirm-live-canvas to create a new canvas and send the fixed transcript',
 		)
 	}
-	if (!existsSync(FIXED_TEXT)) throw new Error(`Fixed text file missing: ${FIXED_TEXT}`)
-	const text = readFileSync(FIXED_TEXT, 'utf8')
+	let caseId: LiveCaseId | undefined
+	for (let index = 0; index < args.length; index++) {
+		if (args[index] === '--case') {
+			caseId = parseCase(args[index + 1])
+			index++
+		} else if (args[index]?.startsWith('--case=')) {
+			caseId = parseCase(args[index].slice('--case='.length))
+		} else if (args[index] !== '--confirm-live-canvas') {
+			throw new Error(`Unknown argument: ${args[index]}`)
+		}
+	}
+	if (!caseId) throw new Error('Pass --case handover or --case incident')
+	const config = LIVE_CASES[caseId]
+	if (!existsSync(config.fixedText)) throw new Error(`Fixed text file missing: ${config.fixedText}`)
+	const text = readFileSync(config.fixedText, 'utf8')
 	const segments = splitZhSentences(text)
 	if (segments.length === 0) throw new Error('Fixed text contains no Chinese sentences')
 
 	const base = process.env.MICO_API?.trim() || DEFAULT_BASE
 	const fetchImpl = fetch
 	const now = new Date()
-	const directory = createUniqueRunDirectory(round, now)
-	const name = canvasName(round, now)
+	const directory = createUniqueRunDirectory(round, now, caseId)
+	const name = canvasName(round, now, caseId)
 	const state: RunState = {
+		caseId,
+		subject: config.subject,
+		title: config.title,
 		round,
 		startedAt: now.toISOString(),
 		canvasName: name,
-		fixedText: FIXED_TEXT,
+		fixedText: config.fixedText,
 		segments: segments.length,
 		summaryRequested: false,
 		turns: 0,
@@ -303,20 +368,20 @@ async function main(): Promise<void> {
 	}
 	let canvasId: string | undefined
 	try {
-		canvasId = await createHandoverCanvas(fetchImpl, base, name)
+		canvasId = await createLiveCaseCanvas(fetchImpl, base, name)
 		state.canvasId = canvasId
 		writeFileSync(join(directory, 'run.json'), `${JSON.stringify(state, null, 2)}\n`)
 
 		const chat = new Chat({
 			transport: new DefaultChatTransport({ api: `${base}/api/ai/chat` }),
-		}) as unknown as HandoverChat
+		}) as unknown as LiveCaseChat
 		for (let index = 0; index < segments.length; index++) {
 			await sendOneTurn({
 				chat,
 				fetchImpl,
 				base,
 				canvasId,
-				text: formatLectureSegmentText(index + 1, segments[index]),
+				text: formatLectureSegmentText(index + 1, segments[index], caseId),
 				mode: 'lecture',
 				timeoutMs: Number(process.env.SEGMENT_TIMEOUT_MS ?? 120_000),
 				directory,

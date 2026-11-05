@@ -69,7 +69,7 @@ The Live tab plays one of twenty recorded lectures or meeting cases through the 
 - `New canvas` creates and activates a named canvas so a lecture starts from an empty board. The AI keeps its queue serialized: one lecture request at a time, with up to three pending segments coalesced when it falls behind. Segments that are incomplete or carry no new visual fact can return exactly `WAIT`; those replies render as a small waiting chip and do not draw.
 - `?ai=<prompt>` still opens the chat and submits immediately for scripted tests.
 
-The evaluation harness `scripts/run-ai-cases.ts` feeds the case scripts to the daemon sentence by sentence, then requests the post-session summary. Round artifacts, board snapshots and screenshots live under `evals/runs/roundN/`. The explicitly authorized handover replay uses the fixed fictional transcript in `evals/cases/c11-er-handover.zh.txt`: `pnpm eval:handover 3 --confirm-live-canvas` creates and activates a new canvas for that round; it never deletes or restores another canvas.
+The evaluation harness `scripts/run-ai-cases.ts` feeds the case scripts to the daemon sentence by sentence, then requests the post-session summary. Round artifacts, board snapshots and screenshots live under `evals/runs/roundN/`. The explicitly authorized live-case runner uses fixed fictional transcripts in `evals/cases/c11-er-handover.zh.txt` or `evals/cases/c12-service-incident.zh.txt`: `pnpm eval:live-case 4 --case incident --confirm-live-canvas` creates and activates a new canvas for the incident round; it never deletes or restores another canvas.
 
 The MAI proxy exists only in the Vite dev server. A static production build serves the audio and UI but needs an equivalent server-side WebSocket proxy for live transcription.
 
