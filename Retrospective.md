@@ -7,6 +7,7 @@
 
 ## Tool usage
 
+- A delegated UI worker started the Vite browser fixture in the background. Use the managed Playwright webServer or a visible herdr pane, and verify fixture ports are released afterward.
 - Parallel client and browser-test work disagreed on a translated error message. Freeze the user-visible error contract before writing cross-agent assertions, then run the integration test against the final implementation.
 - Used `sed` unnecessarily during inspection. Read files with the designated read tool and use `rg` for searches instead.
 - `herdr pane resize --current` acted on another focused workspace despite the inherited pane context. The prior layout was restored; use an explicit pane ID for resize and verify the returned workspace.
@@ -17,6 +18,7 @@
 
 ## UI prototypes
 
+- I reversed the requested assistant status-dot behavior: the dot belongs with the closed pen icon, not the open close icon. Confirm the intended visible state when a bug report can be read in both directions, and test both transitions.
 - The commit rules allow a limited set of types; check that list before using a familiar Conventional Commits type such as `style`.
 - Non-linear animation means easing, not necessarily a bounce. Keep the requested motion and timing curve separate; do not add extra movement without asking.
 - An explicit null child in the Radix select trigger hid the selected value; assert the visible value in browser tests and render the selected label explicitly.

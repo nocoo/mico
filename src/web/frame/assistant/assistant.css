@@ -145,6 +145,10 @@
 	box-shadow: none;
 }
 
+.ai-assistant .ai-trigger[data-open="true"] .status-dot {
+	visibility: hidden;
+}
+
 .ai-assistant .ai-trigger-button {
 	position: relative;
 	display: inline-grid;
