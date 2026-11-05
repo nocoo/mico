@@ -1,0 +1,13 @@
+# Service incident — round 4
+
+- Input: `evals/cases/c12-service-incident.zh.txt`, a new fictional non-medical incident with 17 sentences. SHA-256: `d19484145c462baaa18fe401d0407f7296611ef9715f7c92fbe6c45e55b8bfa3`.
+- Product revision: `c8ba982`; model: `auto/gpt-6.1-sol`; same user-authorized development daemon as previous rounds, with a new pinned canvas.
+- Canvas: `服务故障复盘 · 第4轮 · 20261105T004649235Z` (`e8854c97-0236-4950-bc06-b26770f93da9`). All 17 sentences and the automatic post-session request completed; one tool call failed and was retried. Final revision 42.
+- Layout: three topic-specific groups run left to right. The facts occupy x=80–752, the logic shapes x=944–1488, and the HTML summary x=1648–2928, giving gaps of 192px and 160px. Visible headings are `已知背景`, `故障机制与整改`, and the summary's subject-specific title, not letter labels. The summary starts at y=256 alongside the other groups.
+- Updates: later evidence corrected the earlier all-regions claim to 京/鲁 only and changed the unconfirmed storage blame to an explicitly qualified conclusion. The confirmed configuration-change trigger, incomplete rollback, and still-unverified storage defect are distinguished in the summary.
+- Logic: 23 rectangles and 10 connectors form several useful short chains, but much of the middle group remains separate vertically stacked fragments rather than one connected end-to-end explanation. Three initial service nodes have no connectors. See `logic.png`; do not infer a complete causal graph from the shape count alone.
+- Summary: the model proactively created one HTML card at sentence 17 and updated the same card during the automatic summary turn. The iframe has Bootstrap available, but this particular generated card uses no SVG icons or interactive controls. Its viewport is 1280 × 1000 while the document height is 1163px, so 163px of content overflows and the screenshot shows only the visible portion. See `summary.png`.
+- The failed call at turn 7 attempted to recolor a note to a pale tint not accepted by the update tool's schema; the model retried with a vivid green color and continued. This remains a tool inconsistency, not an infrastructure success.
+- `screenshot.png` is the fitted 1440 × 960 board. `logic.png` and `summary.png` are local 1:1 views of the same canvas with application chrome hidden only in the screenshot browser; neither changes the saved board. `transcript.jsonl` and `final-board.json` preserve all input, tool calls, results and objects. Synthetic segment timestamps are `0:00–0:00`, as in earlier rounds.
+
+This is a different case from the emergency-handover rounds, so the results are not a controlled quality comparison. One run cannot establish reliability.
