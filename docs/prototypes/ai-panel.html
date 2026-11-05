@@ -23,6 +23,8 @@
       --warning: #d79a33;
       --danger: #c94d54;
       --inset: 24px;
+      --motion-panel: 560ms;
+      --ease-panel: cubic-bezier(.22, 1, .36, 1);
       --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43,48,56,.06), 0 2px 12px rgba(43,48,56,.08);
       font: 14px/24px Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--ink);
@@ -40,7 +42,16 @@
 
     .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
     .floating-panel { background: var(--surface); border-radius: 20px; box-shadow: var(--panel-shadow); }
-    .ai-trigger { position: fixed; top: var(--inset); right: var(--inset); z-index: 35; display: flex; padding: 8px; }
+    .ai-trigger {
+      position: fixed;
+      top: var(--inset);
+      right: var(--inset);
+      z-index: 36;
+      display: flex;
+      padding: 8px;
+      transition: background var(--motion-panel) var(--ease-panel), box-shadow var(--motion-panel) var(--ease-panel);
+    }
+    .ai-trigger[data-open="true"] { background: transparent; box-shadow: none; }
     .icon-button {
       display: inline-flex;
       align-items: center;
@@ -56,12 +67,30 @@
     }
     .icon-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
     .icon-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--ink); }
-    .ai-trigger .icon-button { background: var(--accent); color: var(--surface); }
+    .ai-trigger .icon-button {
+      position: relative;
+      background: var(--accent);
+      color: var(--surface);
+      transition: width var(--motion-panel) var(--ease-panel), height var(--motion-panel) var(--ease-panel), background var(--motion-panel) var(--ease-panel), color var(--motion-panel) var(--ease-panel);
+    }
     .ai-trigger .icon-button:hover { background: #078cbf; }
+    .ai-trigger .icon-button svg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transition: opacity var(--motion-panel) var(--ease-panel), transform var(--motion-panel) var(--ease-panel), width var(--motion-panel) var(--ease-panel), height var(--motion-panel) var(--ease-panel);
+    }
+    .trigger-sparkles { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
+    .trigger-close { opacity: 0; transform: translate(-50%, -50%) scale(.6) rotate(-45deg); }
+    .ai-trigger[data-open="true"] .icon-button { width: 32px; height: 32px; background: transparent; color: var(--ink-secondary); }
+    .ai-trigger[data-open="true"] .icon-button:hover { background: var(--surface-hover); color: var(--ink); }
+    .ai-trigger[data-open="true"] .icon-button svg { width: 16px; height: 16px; }
+    .ai-trigger[data-open="true"] .trigger-sparkles { opacity: 0; transform: translate(-50%, -50%) scale(.6) rotate(45deg); }
+    .ai-trigger[data-open="true"] .trigger-close { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(0); }
 
     .ai-panel {
       position: fixed;
-      top: calc(var(--inset) + 68px);
+      top: var(--inset);
       right: var(--inset);
       z-index: 35;
       display: flex;
@@ -69,11 +98,23 @@
       width: min(380px, calc(100vw - var(--inset) * 2));
       height: min(700px, calc(100dvh - var(--inset) - 140px));
       overflow: hidden;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      clip-path: inset(0 0 calc(100% - 56px) calc(100% - 56px) round 20px);
+      transition: clip-path var(--motion-panel) var(--ease-panel), opacity var(--motion-panel) var(--ease-panel), visibility 0s linear var(--motion-panel);
+    }
+    .ai-panel.is-open {
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      clip-path: inset(-16px -16px -16px -16px round 20px);
+      transition: clip-path var(--motion-panel) var(--ease-panel), opacity var(--motion-panel) var(--ease-panel), visibility 0s;
     }
     .ai-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: 0 0 auto; padding: 8px 8px 8px 12px; border-bottom: 1px solid var(--border); }
     .ai-tabs { display: flex; align-items: center; gap: 4px; }
-    .ai-tab, .ai-close { width: 32px; height: 32px; }
-    .ai-tab svg, .ai-close svg { width: 16px; height: 16px; }
+    .ai-tab, .ai-close-slot { width: 32px; height: 32px; }
+    .ai-tab svg { width: 16px; height: 16px; }
     .ai-tab svg { color: var(--ink-muted); }
     .ai-tab:hover { background: var(--surface-hover); color: var(--ink); }
     .ai-tab[aria-selected="true"] { background: var(--accent-tint); color: var(--ink); }
@@ -195,6 +236,9 @@
       .ai-panel { width:calc(100vw - var(--inset)*2); height:min(700px,calc(100dvh - var(--inset)*2 - 172px)); }
     }
     @media (max-height:440px) { .ai-messages { padding:8px; } .lesson-live p { max-height:56px; min-height:32px; } }
+    @media (prefers-reduced-motion: reduce) {
+      .ai-trigger, .ai-trigger .icon-button, .ai-trigger .icon-button svg, .ai-panel, .ai-panel.is-open { transition: none; }
+    }
   </style>
 </head>
 <body>
@@ -212,11 +256,11 @@
     <symbol id="send" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7 M12 19V5"/></symbol>
   </svg>
 
-  <div class="ai-trigger floating-panel">
-    <button id="ai-trigger" class="icon-button" type="button" aria-label="Open AI assistant" aria-expanded="true" title="AI assistant"><svg aria-hidden="true"><use href="#sparkles"/></svg></button>
+  <div class="ai-trigger floating-panel" data-open="false">
+    <button id="ai-trigger" class="icon-button" type="button" aria-label="Open AI assistant" aria-expanded="false" aria-controls="ai-panel" title="AI assistant"><svg class="trigger-sparkles" aria-hidden="true"><use href="#sparkles"/></svg><svg class="trigger-close" aria-hidden="true"><use href="#close"/></svg></button>
   </div>
 
-  <section id="ai-panel" class="ai-panel floating-panel" aria-label="AI assistant">
+  <section id="ai-panel" class="ai-panel floating-panel" aria-label="AI assistant" aria-hidden="true" inert>
     <header class="ai-panel-header">
       <div class="ai-tabs" role="tablist" aria-label="AI modes">
         <button id="ai-tab-chat" class="icon-button ai-tab" type="button" role="tab" aria-label="Chat" aria-selected="true" aria-controls="ai-panel-chat" title="Chat"><svg aria-hidden="true"><use href="#chat"/></svg></button>
@@ -224,7 +268,7 @@
         <button id="ai-tab-audio" class="icon-button ai-tab" type="button" role="tab" aria-label="Audio simulation" aria-selected="false" aria-controls="ai-panel-audio" tabindex="-1" title="Audio"><svg aria-hidden="true"><use href="#audio"/></svg></button>
         <button id="ai-tab-settings" class="icon-button ai-tab" type="button" role="tab" aria-label="Settings" aria-selected="false" aria-controls="ai-panel-settings" tabindex="-1" title="Settings"><svg aria-hidden="true"><use href="#settings"/></svg></button>
       </div>
-      <button id="ai-close" class="icon-button ai-close" type="button" aria-label="Close AI assistant" title="Close AI assistant"><svg aria-hidden="true"><use href="#close"/></svg></button>
+      <span class="ai-close-slot" aria-hidden="true"></span>
     </header>
 
     <div id="ai-panel-chat" class="ai-chat" role="tabpanel" aria-labelledby="ai-tab-chat">
@@ -325,21 +369,36 @@
     (() => {
       const panel = document.getElementById('ai-panel');
       const trigger = document.getElementById('ai-trigger');
+      const triggerShell = document.querySelector('.ai-trigger');
       const tabs = [...document.querySelectorAll('[role="tab"]')];
       const tabIds = ['chat', 'live', 'audio', 'settings'];
+      let panelOpen = false;
+      let focusTimer;
 
       function setPanelOpen(open) {
-        panel.hidden = !open;
+        panelOpen = open;
+        window.clearTimeout(focusTimer);
+        panel.classList.toggle('is-open', open);
+        panel.inert = !open;
+        panel.setAttribute('aria-hidden', String(!open));
+        triggerShell.dataset.open = String(open);
         trigger.setAttribute('aria-expanded', String(open));
         trigger.setAttribute('aria-label', open ? 'Close AI assistant' : 'Open AI assistant');
+        trigger.title = open ? 'Close AI assistant' : 'AI assistant';
         if (!open) trigger.focus();
-        if (open) document.getElementById('ai-input').focus();
+        if (open) {
+          const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 560;
+          focusTimer = window.setTimeout(() => {
+            if (panelOpen && document.activeElement === trigger && !document.getElementById('ai-panel-chat').hidden) {
+              document.getElementById('ai-input').focus();
+            }
+          }, delay);
+        }
       }
 
-      trigger.onclick = () => setPanelOpen(panel.hidden);
-      document.getElementById('ai-close').onclick = () => setPanelOpen(false);
+      trigger.onclick = () => setPanelOpen(!panelOpen);
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !panel.hidden) {
+        if (event.key === 'Escape' && panelOpen) {
           event.preventDefault();
           setPanelOpen(false);
         }
