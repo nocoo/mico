@@ -458,16 +458,25 @@ export class MossLiveSession {
 			case 'response.function_call_arguments.done':
 				this.runTool(data)
 				break
-			case 'response.ended':
-				if (data.status === 'failed')
+			case 'response.ended': {
+				if (data.status === 'failed') {
+					const ids = [
+						['run', data.run_id],
+						['turn', data.turn_id],
+					]
+						.filter((entry) => typeof entry[1] === 'string' && /^[\w.-]{1,120}$/.test(entry[1]))
+						.map(([name, value]) => `${name}: ${value}`)
+					const message = this.errorMessage(
+						data.error ?? data.status_details,
+						'This response failed; you can keep speaking and retry.',
+					)
 					this.emit({
 						type: 'warning',
-						message: this.errorMessage(
-							data.error,
-							'This response failed; you can keep speaking and retry.',
-						),
+						message: `${message}${ids.length ? ` (${ids.join(', ')})` : ''}`,
 					})
+				}
 				break
+			}
 			case 'proxy.error':
 				this.fail(this.string(event.message) || 'MOSS proxy connection failed.')
 				break

@@ -279,9 +279,17 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 
 		socket.dispatchJson({
 			action: 'response.ended',
-			data: { status: 'failed', error: { message: 'Turn retryable failure' } },
+			data: {
+				status: 'failed',
+				status_details: { error: { message: 'Turn retryable failure' } },
+				run_id: 'run-1',
+				turn_id: 'turn-1',
+			},
 		})
-		assert.deepEqual(events.at(-1), { type: 'warning', message: 'Turn retryable failure' })
+		assert.deepEqual(events.at(-1), {
+			type: 'warning',
+			message: 'Turn retryable failure (run: run-1, turn: turn-1)',
+		})
 		assert.equal(socket.closeCalls, 0)
 
 		session.stop()
