@@ -525,7 +525,7 @@ test('typographic text keeps its font settings', async ({ page, request }) => {
 	await choose(page, 'Font family', 'Hand')
 	await choose(page, 'Font size', '48')
 	await choose(page, 'Font weight', '700')
-	await page.waitForTimeout(250)
+	await expect(page.locator('.select-content')).toHaveCount(0)
 	await page.mouse.click(700, 500)
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'text'))
