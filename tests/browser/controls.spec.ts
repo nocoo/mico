@@ -188,6 +188,37 @@ test('toolbar text selectors keep plain values and preview only in the menu', as
 	}
 })
 
+test('tool focus follows keyboard mode changes without stealing unrelated focus', async ({
+	page,
+}) => {
+	const select = page.getByRole('button', { name: 'Select', exact: true })
+	const pan = page.getByRole('button', { name: 'Pan', exact: true })
+	const canvases = page.getByRole('button', { name: 'Canvases', exact: true })
+
+	await select.focus()
+	await page.keyboard.press('h')
+	await expect(pan).toHaveAttribute('aria-pressed', 'true')
+	await expect(pan).toBeFocused()
+	await expect(select).not.toBeFocused()
+	await expect(pan).toHaveCSS('outline-style', 'solid')
+
+	await page.keyboard.press('v')
+	await expect(select).toHaveAttribute('aria-pressed', 'true')
+	await expect(select).toBeFocused()
+	await expect(pan).not.toBeFocused()
+
+	await page.keyboard.press('ArrowRight')
+	await expect(pan).toBeFocused()
+	await expect(select).toHaveAttribute('aria-pressed', 'true')
+	await page.keyboard.press('v')
+	await expect(select).toBeFocused()
+
+	await canvases.focus()
+	await page.keyboard.press('h')
+	await expect(pan).toHaveAttribute('aria-pressed', 'true')
+	await expect(canvases).toBeFocused()
+})
+
 test('keyboard shortcuts switch tools and control delete, zoom and fit', async ({
 	page,
 	request,

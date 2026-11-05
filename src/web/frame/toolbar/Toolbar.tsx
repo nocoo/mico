@@ -58,11 +58,27 @@ const toolIcons = {
 	connector: ArrowUpRight,
 } satisfies Record<Tool, typeof MousePointer2>
 
+function focusToolInToolbar(dock: HTMLElement | null, tool: Tool): void {
+	const focused = document.activeElement
+	if (
+		!(focused instanceof HTMLElement) ||
+		!dock?.contains(focused) ||
+		!focused.closest('.tool-slot')
+	) {
+		return
+	}
+	dock.querySelector<HTMLButtonElement>(`.tool-slot[data-tool-id="${tool}"] .icon-button`)?.focus()
+}
+
 export function Toolbar({ state, actions }: ToolbarProps) {
 	const dockRef = useRef<HTMLDivElement>(null)
 	const toolOptionsWrapRef = useRef<HTMLDivElement>(null)
 	const viewModel = deriveToolbarViewModel(state)
 	const { reportLayout } = actions
+
+	useLayoutEffect(() => {
+		focusToolInToolbar(dockRef.current, state.tool)
+	}, [state.tool])
 
 	useLayoutEffect(() => {
 		const dock = dockRef.current
@@ -134,6 +150,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 			if (!command) return
 			if (command.type === 'delete-selection') event.preventDefault()
 			executeToolbarCommand(command, state, actions)
+			if (command.type === 'select-tool') focusToolInToolbar(dockRef.current, command.tool)
 		}
 		window.addEventListener('keydown', onKeyDown)
 		return () => window.removeEventListener('keydown', onKeyDown)
