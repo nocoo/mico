@@ -148,7 +148,7 @@ export class MossLivePlayback {
 
 	stop(data: MossPlaybackContext = {}, acknowledge = true): void {
 		const turn = this.turn(data)
-		if (turn.stopped) return
+		if (turn.stopped || turn.completed) return
 		turn.stopped = true
 		const current = [...turn.chunks].find((chunk) => this.context.currentTime >= chunk.start)
 		const played = current
@@ -185,13 +185,13 @@ export class MossLivePlayback {
 
 	stopAll(acknowledge = true): void {
 		for (const turn of [...this.turns.values()]) {
-			if (!turn.stopped) this.stopForTurn(turn, acknowledge)
+			if (!turn.stopped && !turn.completed) this.stopForTurn(turn, acknowledge)
 		}
 		this.nextTime = this.context.currentTime
 	}
 
 	private stopForTurn(turn: PlaybackTurn, acknowledge: boolean): void {
-		if (turn.stopped) return
+		if (turn.stopped || turn.completed) return
 		turn.stopped = true
 		const current = [...turn.chunks].find((chunk) => this.context.currentTime >= chunk.start)
 		const played = current

@@ -97,6 +97,21 @@ test('interruption stops queued audio and does not complete the turn', () => {
 	assert.equal(sent.length, 1)
 })
 
+test('interruption never stops a completed turn again', () => {
+	const { player, sources, sent } = setup()
+	player.enqueue(chunk, pcm())
+	player.done(chunk)
+	sources[0].onended?.()
+	player.enqueue({ run_id: 'r2', turn_id: 't2', chunk_id: 'c2' }, pcm())
+	player.stopAll()
+	player.stop(chunk)
+	assert.deepEqual(sent, [
+		{ action: 'playback.chunk.completed', chunk_id: 'c1', run_id: 'r', turn_id: 't' },
+		{ action: 'playback.completed', run_id: 'r', turn_id: 't' },
+		{ action: 'playback.stopped', run_id: 'r2', turn_id: 't2', played_audio_ms: 0 },
+	])
+})
+
 test('bounded playback rejects oversize and malformed PCM', () => {
 	const { player, errors } = setup()
 	player.enqueue(chunk, new ArrayBuffer(3))
