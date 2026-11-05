@@ -142,8 +142,8 @@ export async function streamAiChat({
 			request.mode === 'lecture'
 				? [
 						(options) =>
-							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 6,
-						isStepCount(12),
+							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 8,
+						isStepCount(16),
 					]
 				: isStepCount(40),
 		maxRetries: 1,

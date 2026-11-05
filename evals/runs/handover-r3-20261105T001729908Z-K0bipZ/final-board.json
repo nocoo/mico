@@ -1,0 +1,503 @@
+{
+  "canvas": {
+    "id": "5d92bee8-2e71-442e-8717-96f32c7c93a8",
+    "name": "急诊交接 · 第3轮 · 20261105T001729908Z",
+    "revision": 41,
+    "createdAt": "2026-11-05T00:17:29.923Z",
+    "updatedAt": "2026-11-05T00:22:13.152Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjYwLjExMDM0NDgyNzU4NjIwNCIgeT0iMTIuNjM0NDgyNzU4NjIwNjg4IiB3aWR0aD0iNy43MjQxMzc5MzEwMzQ0ODIiIGhlaWdodD0iMy40NzU4NjIwNjg5NjU1MTciIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNjMuMTEwMzQ0ODI3NTg2MjA0IiB5PSIyMC42MzQ0ODI3NTg2MjA2OSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+6IOM5pmv772c5oCl6K+K56eR5oqk5aOr5Lqk5o6l54+tCuacrOasoeWGheWuueWdh+S4ujwvdGV4dD48cmVjdCB4PSI2OC42MDY4OTY1NTE3MjQxMyIgeT0iMTIuNjM0NDgyNzU4NjIwNjg4IiB3aWR0aD0iNy43MjQxMzc5MzEwMzQ0ODIiIGhlaWdodD0iMy44NjIwNjg5NjU1MTcyNDEiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNzEuNjA2ODk2NTUxNzI0MTMiIHk9IjIwLjYzNDQ4Mjc1ODYyMDY5IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7ojIPlm7TkuI7pobrluo8K5oqi5pWR5Yy644CB55WZ6KeCQeWMuuOAgeeVmeingkI8L3RleHQ+PHJlY3QgeD0iNjAuMTEwMzQ0ODI3NTg2MjA0IiB5PSIxNy44NDgyNzU4NjIwNjg5NjMiIHdpZHRoPSI3LjcyNDEzNzkzMTAzNDQ4MiIgaGVpZ2h0PSI0LjI0ODI3NTg2MjA2ODk2NSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI2My4xMTAzNDQ4Mjc1ODYyMDQiIHk9IjI1Ljg0ODI3NTg2MjA2ODk2MyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+6IOM5pmv772c5oqi5pWR5Yy6MeW6igrlm6DlkbzlkLjlm7Dpmr7nlZnop4LjgIIKPC90ZXh0PjxyZWN0IHg9IjY4LjYwNjg5NjU1MTcyNDEzIiB5PSIxNy44NDgyNzU4NjIwNjg5NjMiIHdpZHRoPSI3LjcyNDEzNzkzMTAzNDQ4MiIgaGVpZ2h0PSI0LjI0ODI3NTg2MjA2ODk2NSIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSI3MS42MDY4OTY1NTE3MjQxMyIgeT0iMjUuODQ4Mjc1ODYyMDY4OTYzIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7lvoXlip7vvZzmiqLmlZHljLox5bqKCuiDuOmDqOW9seWDj+e7k+aenOWwmuacquWbnjwvdGV4dD48cmVjdCB4PSI2MC4xMTAzNDQ4Mjc1ODYyMDQiIHk9IjIzLjY0MTM3OTMxMDM0NDgyNCIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjQuMjQ4Mjc1ODYyMDY4OTY1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjYzLjExMDM0NDgyNzU4NjIwNCIgeT0iMzEuNjQxMzc5MzEwMzQ0ODI0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7og4zmma/vvZzmiqLmlZHljLoy5bqKCuWboOiDuOeXm+eVmeinguOAggrnm67liY08L3RleHQ+PHJlY3QgeD0iNjguNjA2ODk2NTUxNzI0MTMiIHk9IjIzLjY0MTM3OTMxMDM0NDgyNCIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjQuMjQ4Mjc1ODYyMDY4OTY1IiByeD0iMyIgZmlsbD0iI2YxZmFkYyIvPjx0ZXh0IHg9IjcxLjYwNjg5NjU1MTcyNDEzIiB5PSIzMS42NDEzNzkzMTAzNDQ4MjQiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuW3suWujOaIkO+9nOaKouaVkeWMujLluooK56ys5LqM5qyh5b+D55S15Zu+5bey5a6MPC90ZXh0PjxyZWN0IHg9IjY4LjYwNjg5NjU1MTcyNDEzIiB5PSIyOS40MzQ0ODI3NTg2MjA2OSIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjMuODYyMDY4OTY1NTE3MjQxIiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjcxLjYwNjg5NjU1MTcyNDEzIiB5PSIzNy40MzQ0ODI3NTg2MjA2OSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5oyB57ut5YWz5rOo772c5oqi5pWR5Yy6MuW6igrlrrblsZ7lt7Lnu4/ogZTns7vkuIo8L3RleHQ+PHJlY3QgeD0iNjAuMTEwMzQ0ODI3NTg2MjA0IiB5PSIzNC44NDEzNzkzMTAzNDQ4MyIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjQuMjQ4Mjc1ODYyMDY4OTY1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjYzLjExMDM0NDgyNzU4NjIwNCIgeT0iNDIuODQxMzc5MzEwMzQ0ODMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuiDjOaZr++9nOeVmeingkHljLoz5bqKCuWboOiFueeXm+eVmeinguOAggrnlrw8L3RleHQ+PHJlY3QgeD0iNjguNjA2ODk2NTUxNzI0MTMiIHk9IjM0Ljg0MTM3OTMxMDM0NDgzIiB3aWR0aD0iNy43MjQxMzc5MzEwMzQ0ODIiIGhlaWdodD0iMy40NzU4NjIwNjg5NjU1MTciIHJ4PSIzIiBmaWxsPSIjYTZkOTRmIi8+PHRleHQgeD0iNzEuNjA2ODk2NTUxNzI0MTMiIHk9IjQyLjg0MTM3OTMxMDM0NDgzIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7lt7Llm57miqXvvZznlZnop4JB5Yy6M+W6igrmo4Dpqoznu5Pmnpzlt7Lnu4/lm548L3RleHQ+PHJlY3QgeD0iNjAuMTEwMzQ0ODI3NTg2MjA0IiB5PSI0MC42MzQ0ODI3NTg2MjA2ODUiIHdpZHRoPSI3LjcyNDEzNzkzMTAzNDQ4MiIgaGVpZ2h0PSIzLjg2MjA2ODk2NTUxNzI0MSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI2My4xMTAzNDQ4Mjc1ODYyMDQiIHk9IjQ4LjYzNDQ4Mjc1ODYyMDY4NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+6IOM5pmv772c55WZ6KeCQeWMujTluooK6LeM5YCS5ZCO55WZ6KeC44CCCuebrjwvdGV4dD48cmVjdCB4PSI2OC42MDY4OTY1NTE3MjQxMyIgeT0iNDAuNjM0NDgyNzU4NjIwNjg1IiB3aWR0aD0iNy43MjQxMzc5MzEwMzQ0ODIiIGhlaWdodD0iNC4yNDgyNzU4NjIwNjg5NjUiIHJ4PSIzIiBmaWxsPSIjZmZlOWYwIi8+PHRleHQgeD0iNzEuNjA2ODk2NTUxNzI0MTMiIHk9IjQ4LjYzNDQ4Mjc1ODYyMDY4NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+6aOO6Zmp5LiO5o6q5pa9772c55WZ6KeCQeWMujTluooK6LW36Lqr5LiN56iz44CCPC90ZXh0PjxyZWN0IHg9IjY4LjYwNjg5NjU1MTcyNDEzIiB5PSI0Ni40Mjc1ODYyMDY4OTY1NSIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjMuNDc1ODYyMDY4OTY1NTE3IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjcxLjYwNjg5NjU1MTcyNDEzIiB5PSI1NC40Mjc1ODYyMDY4OTY1NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5b6F57uT5p6c772c55WZ6KeCQeWMujTluooK5b2x5YOP5qOA5p+l5bey5a6M5oiQPC90ZXh0PjxyZWN0IHg9IjYwLjExMDM0NDgyNzU4NjIwNCIgeT0iNTEuNDQ4Mjc1ODYyMDY4OTYiIHdpZHRoPSI3LjcyNDEzNzkzMTAzNDQ4MiIgaGVpZ2h0PSIzLjg2MjA2ODk2NTUxNzI0MSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI2My4xMTAzNDQ4Mjc1ODYyMDQiIHk9IjU5LjQ0ODI3NTg2MjA2ODk2IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7og4zmma/vvZznlZnop4JC5Yy6NeW6igrlm6Dlj5Hng63nlZnop4LjgIIK5L2TPC90ZXh0PjxyZWN0IHg9IjY4LjYwNjg5NjU1MTcyNDEzIiB5PSI1MS40NDgyNzU4NjIwNjg5NiIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjMuNDc1ODYyMDY4OTY1NTE3IiByeD0iMyIgZmlsbD0iI2Y3ZGU0YiIvPjx0ZXh0IHg9IjcxLjYwNjg5NjU1MTcyNDEzIiB5PSI1OS40NDgyNzU4NjIwNjg5NiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5b6F57uT5p6c772c55WZ6KeCQuWMujXluooK6YeH5qC35bey57uP6YCB5qOA44CCPC90ZXh0PjxyZWN0IHg9IjYwLjExMDM0NDgyNzU4NjIwNCIgeT0iNTYuODU1MTcyNDEzNzkzMSIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjMuODYyMDY4OTY1NTE3MjQxIiByeD0iMyIgZmlsbD0iI2YxZmFkYyIvPjx0ZXh0IHg9IjYzLjExMDM0NDgyNzU4NjIwNCIgeT0iNjQuODU1MTcyNDEzNzkzMSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5bey5a6M5oiQ772c55WZ6KeCQuWMujbluooK6ISx5rC06K+E5Lyw5Lit44CCCjwvdGV4dD48cmVjdCB4PSI2OC42MDY4OTY1NTE3MjQxMyIgeT0iNTYuODU1MTcyNDEzNzkzMSIgd2lkdGg9IjcuNzI0MTM3OTMxMDM0NDgyIiBoZWlnaHQ9IjMuODYyMDY4OTY1NTE3MjQxIiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjcxLjYwNjg5NjU1MTcyNDEzIiB5PSI2NC44NTUxNzI0MTM3OTMxIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7lvoXlip7vvZznlZnop4JC5Yy6NuW6igrmjIHnu63lhbPms6jlpI3or4TjgIIKPC90ZXh0PjxyZWN0IHg9IjYwLjExMDM0NDgyNzU4NjIwNCIgeT0iNjIuMjYyMDY4OTY1NTE3MjQiIHdpZHRoPSI3LjcyNDEzNzkzMTAzNDQ4MiIgaGVpZ2h0PSIzLjQ3NTg2MjA2ODk2NTUxNyIgcng9IjMiIGZpbGw9IiNmMWZhZGMiLz48dGV4dCB4PSI2My4xMTAzNDQ4Mjc1ODYyMDQiIHk9IjcwLjI2MjA2ODk2NTUxNzI0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7lt7LliLDovr7vvZznlZnop4JC5Yy6NuW6iuWutuWxngrlj6/ku6XljY/liqnmsp88L3RleHQ+PHRleHQgeD0iNjAuMTEwMzQ0ODI3NTg2MjA0IiB5PSIxMS45OTk5OTk5OTk5OTk5OTgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiPuaApeiviuaKpOeQhuS6pOaOpe+9nOaooeaLn+eXheS+izwvdGV4dD48dGV4dCB4PSI2MC4xMTAzNDQ4Mjc1ODYyMDQiIHk9IjE0LjUxMDM0NDgyNzU4NjIwNiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCI+Qe+9nOWunuaXtuS6pOaOpeiusOW9lTwvdGV4dD48dGV4dCB4PSI3OS40MjA2ODk2NTUxNzI0MSIgeT0iMTQuNTEwMzQ0ODI3NTg2MjA2IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4Ij5C772c5Yy65Z+f5LiO5bqK5L2N5YWz57O7PC90ZXh0PjxyZWN0IHg9Ijc5LjQyMDY4OTY1NTE3MjQxIiB5PSIxMi42MzQ0ODI3NTg2MjA2ODgiIHdpZHRoPSI1Ljc5MzEwMzQ0ODI3NTg2MiIgaGVpZ2h0PSIyLjEyNDEzNzkzMTAzNDQ4MjYiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI4Mi4zMTcyNDEzNzkzMTAzNSIgeT0iMTMuNjk2NTUxNzI0MTM3OTMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPuaKouaVkeWMujwvdGV4dD48cmVjdCB4PSI4Ni43NTg2MjA2ODk2NTUxNyIgeT0iMTIuNjM0NDgyNzU4NjIwNjg4IiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMi4xMjQxMzc5MzEwMzQ0ODI2IiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iODkuNjU1MTcyNDEzNzkzMTEiIHk9IjEzLjY5NjU1MTcyNDEzNzkzIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7nlZnop4JB5Yy6PC90ZXh0PjxyZWN0IHg9Ijk0LjA5NjU1MTcyNDEzNzkyIiB5PSIxMi42MzQ0ODI3NTg2MjA2ODgiIHdpZHRoPSI1Ljc5MzEwMzQ0ODI3NTg2MiIgaGVpZ2h0PSIyLjEyNDEzNzkzMTAzNDQ4MjYiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI5Ni45OTMxMDM0NDgyNzU4NiIgeT0iMTMuNjk2NTUxNzI0MTM3OTMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPueVmeingkLljLo8L3RleHQ+PHJlY3QgeD0iNzkuNDIwNjg5NjU1MTcyNDEiIHk9IjE3Ljg0ODI3NTg2MjA2ODk2MyIgd2lkdGg9IjUuNzkzMTAzNDQ4Mjc1ODYyIiBoZWlnaHQ9IjIuODk2NTUxNzI0MTM3OTMxIiByeD0iMyIgZmlsbD0iIzJiMzAzOCIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMyYjMwMzgiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iODIuMzE3MjQxMzc5MzEwMzUiIHk9IjE5LjI5NjU1MTcyNDEzNzkyNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+MeW6iu+9nOWRvOWQuOWbsOmavgpTcE/igoIgOTMlIOKGkiA5NiUK5oyBPC90ZXh0PjxyZWN0IHg9Ijc5LjQyMDY4OTY1NTE3MjQxIiB5PSIyMy4yNTUxNzI0MTM3OTMxIiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMi43MDM0NDgyNzU4NjIwNjkiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI4Mi4zMTcyNDEzNzkzMTAzNSIgeT0iMjQuNjA2ODk2NTUxNzI0MTM0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7og7jpg6jlvbHlg4/lvoXlm57miqUK5LiL5LiA54+t6Lef6L+b57uT5p6cCuW5tumAmuefpei0o+S7u+WMu+eUnzwvdGV4dD48cmVjdCB4PSI4Ni43NTg2MjA2ODk2NTUxNyIgeT0iMTcuODQ4Mjc1ODYyMDY4OTYzIiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMi44OTY1NTE3MjQxMzc5MzEiIHJ4PSIzIiBmaWxsPSIjMmIzMDM4IiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzJiMzAzOCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI4OS42NTUxNzI0MTM3OTMxMSIgeT0iMTkuMjk2NTUxNzI0MTM3OTI3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4y5bqK772c6IO455ebCueUn+WRveS9k+W+geW5s+eoszwvdGV4dD48cmVjdCB4PSI4Ni43NTg2MjA2ODk2NTUxNyIgeT0iMjMuMjU1MTcyNDEzNzkzMSIgd2lkdGg9IjUuNzkzMTAzNDQ4Mjc1ODYyIiBoZWlnaHQ9IjIuNzAzNDQ4Mjc1ODYyMDY5IiByeD0iMyIgZmlsbD0iI2E2ZDk0ZiIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNhNmQ5NGYiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iODkuNjU1MTcyNDEzNzkzMTEiIHk9IjI0LjYwNjg5NjU1MTcyNDEzNCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+56ys5LqM5qyh5b+D55S15Zu+5bey5a6M5oiQCuWMu+eUn+ato+WcqOafpeecizwvdGV4dD48cmVjdCB4PSI5NC4wOTY1NTE3MjQxMzc5MiIgeT0iMTcuODQ4Mjc1ODYyMDY4OTYzIiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMy4yODI3NTg2MjA2ODk2NTUiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI5Ni45OTMxMDM0NDgyNzU4NiIgeT0iMTkuNDg5NjU1MTcyNDEzNzkiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPjLluorlrrblsZ7lt7LogZTns7vkuIoK6aKE6K6h56iN5ZCO5Yiw6L6+CuaMgee7reWFs+azqOWIsOi+vuaDheWGtTwvdGV4dD48cmVjdCB4PSI4Ni43NTg2MjA2ODk2NTUxNyIgeT0iMjkuNDM0NDgyNzU4NjIwNjkiIHdpZHRoPSI1Ljc5MzEwMzQ0ODI3NTg2MiIgaGVpZ2h0PSIyLjg5NjU1MTcyNDEzNzkzMSIgcng9IjMiIGZpbGw9IiMyYjMwMzgiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjMmIzMDM4IiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijg5LjY1NTE3MjQxMzc5MzExIiB5PSIzMC44ODI3NTg2MjA2ODk2NTMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkHljLoz5bqK772c6IW555ebCueWvOeXm+ivhOWIhiA35YiGIOKGkiA05YiGPC90ZXh0PjxyZWN0IHg9Ijk0LjA5NjU1MTcyNDEzNzkyIiB5PSIyOS40MzQ0ODI3NTg2MjA2OSIgd2lkdGg9IjUuNzkzMTAzNDQ4Mjc1ODYyIiBoZWlnaHQ9IjIuNTEwMzQ0ODI3NTg2MjA3IiByeD0iMyIgZmlsbD0iI2E2ZDk0ZiIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNhNmQ5NGYiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iOTYuOTkzMTAzNDQ4Mjc1ODYiIHk9IjMwLjY4OTY1NTE3MjQxMzc5NCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+M+W6iuajgOmqjOe7k+aenOW3suWbnuaKpQrotKPku7vljLvnlJ/mraPlnKjor4TkvLA8L3RleHQ+PHJlY3QgeD0iODYuNzU4NjIwNjg5NjU1MTciIHk9IjM1LjQyMDY4OTY1NTE3MjQxIiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMi44OTY1NTE3MjQxMzc5MzEiIHJ4PSIzIiBmaWxsPSIjMmIzMDM4IiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzJiMzAzOCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI4OS42NTUxNzI0MTM3OTMxMSIgeT0iMzYuODY4OTY1NTE3MjQxMzgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkHljLo05bqK772c6LeM5YCS5ZCO55WZ6KeCCuaEj+ivhua4healmjwvdGV4dD48cmVjdCB4PSI5NC4wOTY1NTE3MjQxMzc5MiIgeT0iMzUuNDIwNjg5NjU1MTcyNDEiIHdpZHRoPSI1Ljc5MzEwMzQ0ODI3NTg2MiIgaGVpZ2h0PSIyLjg5NjU1MTcyNDEzNzkzMSIgcng9IjMiIGZpbGw9IiNmZjdmYTMiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZmY3ZmEzIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijk2Ljk5MzEwMzQ0ODI3NTg2IiB5PSIzNi44Njg5NjU1MTcyNDEzOCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+6LW36Lqr5LiN56izCuWNj+WKqea0u+WKqArokL3lrp7pmLLot4zlgJLmjqrmlr08L3RleHQ+PHJlY3QgeD0iODYuNzU4NjIwNjg5NjU1MTciIHk9IjQwLjgyNzU4NjIwNjg5NjU1IiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMi41MTAzNDQ4Mjc1ODYyMDciIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI4OS42NTUxNzI0MTM3OTMxMSIgeT0iNDIuMDgyNzU4NjIwNjg5NjUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPjTluorlvbHlg4/mo4Dmn6Xlt7LlrozmiJAK5oql5ZGK5bCa5pyq6L+U5ZuePC90ZXh0PjxyZWN0IHg9Ijg2Ljc1ODYyMDY4OTY1NTE3IiB5PSI0Ni40Mjc1ODYyMDY4OTY1NSIgd2lkdGg9IjUuNzkzMTAzNDQ4Mjc1ODYyIiBoZWlnaHQ9IjIuODk2NTUxNzI0MTM3OTMxIiByeD0iMyIgZmlsbD0iIzJiMzAzOCIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMyYjMwMzgiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iODkuNjU1MTcyNDEzNzkzMTEiIHk9IjQ3Ljg3NTg2MjA2ODk2NTUyIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5C5Yy6NeW6iu+9nOWPkeeDrQozOC4y4oSDIOKGkiAzNy424oSDPC90ZXh0PjxyZWN0IHg9Ijk0LjA5NjU1MTcyNDEzNzkyIiB5PSI0Ni40Mjc1ODYyMDY4OTY1NSIgd2lkdGg9IjUuNzkzMTAzNDQ4Mjc1ODYyIiBoZWlnaHQ9IjIuNTEwMzQ0ODI3NTg2MjA3IiByeD0iMyIgZmlsbD0iI2Y3ZGU0YiIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNmN2RlNGIiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iOTYuOTkzMTAzNDQ4Mjc1ODYiIHk9IjQ3LjY4Mjc1ODYyMDY4OTY1NCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+NeW6iumHh+agt+W3sumAgeajgArnu5Pmnpzku43mnKrlm57miqU8L3RleHQ+PHJlY3QgeD0iODYuNzU4NjIwNjg5NjU1MTciIHk9IjUyLjAyNzU4NjIwNjg5NjU1IiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMy40NzU4NjIwNjg5NjU1MTciIHJ4PSIzIiBmaWxsPSIjMmIzMDM4IiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzJiMzAzOCIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI4OS42NTUxNzI0MTM3OTMxMSIgeT0iNTMuNzY1NTE3MjQxMzc5MzEiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkLljLo25bqK772c6ISx5rC06K+E5Lyw5LitCuihpea2suW3sue7k+adnwrlrrblsZ7lt7LliLDvvIzlj6/ljY88L3RleHQ+PHJlY3QgeD0iOTQuMDk2NTUxNzI0MTM3OTIiIHk9IjUyLjAyNzU4NjIwNjg5NjU1IiB3aWR0aD0iNS43OTMxMDM0NDgyNzU4NjIiIGhlaWdodD0iMi41MTAzNDQ4Mjc1ODYyMDciIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI5Ni45OTMxMDM0NDgyNzU4NiIgeT0iNTMuMjgyNzU4NjIwNjg5NjU2IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7mjIHnu63lhbPms6jlpI3or4QK5LiL5LiA54+t6K6w5b2V5aSN6K+E57uT5p6cPC90ZXh0PjxyZWN0IHg9IjYwLjExMDM0NDgyNzU4NjIwNCIgeT0iNjguODI3NTg2MjA2ODk2NTQiIHdpZHRoPSIzOC42MjA2ODk2NTUxNzI0MSIgaGVpZ2h0PSIyMy4xNzI0MTM3OTMxMDM0NSIgcng9IjQiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS1vcGFjaXR5PSIwLjQ1Ii8+PGxpbmUgeDE9IjgyLjMxNzI0MTM3OTMxMDM1IiB5MT0iMTMuNjk2NTUxNzI0MTM3OTMiIHgyPSI4Mi4zMTcyNDEzNzkzMTAzNSIgeTI9IjE5LjI5NjU1MTcyNDEzNzkyNyIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODIuMzE3MjQxMzc5MzEwMzUiIHkxPSIxOS4yOTY1NTE3MjQxMzc5MjciIHgyPSI4Mi4zMTcyNDEzNzkzMTAzNSIgeTI9IjI0LjYwNjg5NjU1MTcyNDEzNyIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODIuMzE3MjQxMzc5MzEwMzUiIHkxPSIxMy42OTY1NTE3MjQxMzc5MyIgeDI9Ijg5LjY1NTE3MjQxMzc5MzEiIHkyPSIxOS4yOTY1NTE3MjQxMzc5MjciIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9Ijg5LjY1NTE3MjQxMzc5MzEiIHkxPSIxOS4yOTY1NTE3MjQxMzc5MjciIHgyPSI4OS42NTUxNzI0MTM3OTMxIiB5Mj0iMjQuNjA2ODk2NTUxNzI0MTM3IiBzdHJva2U9IiNhNmQ5NGYiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI4OS42NTUxNzI0MTM3OTMxIiB5MT0iMTkuMjk2NTUxNzI0MTM3OTI3IiB4Mj0iOTYuOTkzMTAzNDQ4Mjc1ODYiIHkyPSIxOS40ODk2NTUxNzI0MTM3OSIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODkuNjU1MTcyNDEzNzkzMSIgeTE9IjEzLjY5NjU1MTcyNDEzNzkzIiB4Mj0iODkuNjU1MTcyNDEzNzkzMSIgeTI9IjMwLjg4Mjc1ODYyMDY4OTY1MyIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODkuNjU1MTcyNDEzNzkzMSIgeTE9IjMwLjg4Mjc1ODYyMDY4OTY1MyIgeDI9Ijk2Ljk5MzEwMzQ0ODI3NTg2IiB5Mj0iMzAuNjg5NjU1MTcyNDEzNzkiIHN0cm9rZT0iI2E2ZDk0ZiIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9Ijg5LjY1NTE3MjQxMzc5MzEiIHkxPSIxMy42OTY1NTE3MjQxMzc5MyIgeDI9Ijg5LjY1NTE3MjQxMzc5MzEiIHkyPSIzNi44Njg5NjU1MTcyNDEzOCIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODkuNjU1MTcyNDEzNzkzMSIgeTE9IjM2Ljg2ODk2NTUxNzI0MTM4IiB4Mj0iOTYuOTkzMTAzNDQ4Mjc1ODYiIHkyPSIzNi44Njg5NjU1MTcyNDEzOCIgc3Ryb2tlPSIjZmY3ZmEzIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODkuNjU1MTcyNDEzNzkzMSIgeTE9IjM2Ljg2ODk2NTUxNzI0MTM4IiB4Mj0iODkuNjU1MTcyNDEzNzkzMSIgeTI9IjQyLjA4Mjc1ODYyMDY4OTY1IiBzdHJva2U9IiNmN2RlNGIiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI5Ni45OTMxMDM0NDgyNzU4NiIgeTE9IjEzLjY5NjU1MTcyNDEzNzkzIiB4Mj0iODkuNjU1MTcyNDEzNzkzMSIgeTI9IjQ3Ljg3NTg2MjA2ODk2NTUyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI4OS42NTUxNzI0MTM3OTMxIiB5MT0iNDcuODc1ODYyMDY4OTY1NTIiIHgyPSI5Ni45OTMxMDM0NDgyNzU4NiIgeTI9IjQ3LjY4Mjc1ODYyMDY4OTY1NCIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iOTYuOTkzMTAzNDQ4Mjc1ODYiIHkxPSIxMy42OTY1NTE3MjQxMzc5MyIgeDI9Ijg5LjY1NTE3MjQxMzc5MzEiIHkyPSI1My43NjU1MTcyNDEzNzkzMSIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iODkuNjU1MTcyNDEzNzkzMSIgeTE9IjUzLjc2NTUxNzI0MTM3OTMxIiB4Mj0iOTYuOTkzMTAzNDQ4Mjc1ODYiIHkyPSI1My4yODI3NTg2MjA2ODk2NTYiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+"
+  },
+  "board": {
+    "revision": 41,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 144,
+        "w": 1000,
+        "h": 64,
+        "text": "急诊护理交接｜模拟病例",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "a-heading",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 248,
+        "w": 672,
+        "h": 48,
+        "text": "A｜实时交接记录",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "b-heading",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 880,
+        "y": 248,
+        "w": 560,
+        "h": 48,
+        "text": "B｜区域与床位关系",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 336,
+        "w": 320,
+        "h": 144,
+        "text": "背景｜急诊科护士交接班\n本次内容均为模拟病例。"
+      },
+      {
+        "id": "agenda",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 336,
+        "w": 320,
+        "h": 160,
+        "text": "范围与顺序\n抢救区、留观A区、留观B区\n先逐床交接，再汇总下一班重点。"
+      },
+      {
+        "id": "rescue",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 880,
+        "y": 336,
+        "w": 240,
+        "h": 88,
+        "text": "抢救区"
+      },
+      {
+        "id": "obs-a",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 336,
+        "w": 240,
+        "h": 88,
+        "text": "留观A区"
+      },
+      {
+        "id": "obs-b",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1488,
+        "y": 336,
+        "w": 240,
+        "h": 88,
+        "text": "留观B区"
+      },
+      {
+        "id": "rescue1-context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 552,
+        "w": 320,
+        "h": 176,
+        "text": "背景｜抢救区1床\n因呼吸困难留观。\n血氧饱和度：93% → 复测96%。\n正在持续监测。"
+      },
+      {
+        "id": "rescue1",
+        "color": "#2b3038",
+        "type": "rectangle",
+        "x": 880,
+        "y": 552,
+        "w": 240,
+        "h": 120,
+        "text": "1床｜呼吸困难\nSpO₂ 93% → 96%\n持续监测中"
+      },
+      {
+        "id": "rescue-to-1",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "rescue",
+        "to": "rescue1"
+      },
+      {
+        "id": "rescue1-pending",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 552,
+        "w": 320,
+        "h": 176,
+        "text": "待办｜抢救区1床\n胸部影像结果尚未回报。\n下一班：跟进结果，\n并通知责任医生。"
+      },
+      {
+        "id": "rescue1-imaging",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 880,
+        "y": 776,
+        "w": 240,
+        "h": 112,
+        "text": "胸部影像待回报\n下一班跟进结果\n并通知责任医生"
+      },
+      {
+        "id": "rescue1-imaging-link",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "rescue1",
+        "to": "rescue1-imaging"
+      },
+      {
+        "id": "rescue2-context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 792,
+        "w": 320,
+        "h": 176,
+        "text": "背景｜抢救区2床\n因胸痛留观。\n目前生命体征平稳。"
+      },
+      {
+        "id": "rescue2-ecg",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 432,
+        "y": 792,
+        "w": 320,
+        "h": 176,
+        "text": "已完成｜抢救区2床\n第二次心电图已完成。\n医生正在查看。"
+      },
+      {
+        "id": "rescue2",
+        "color": "#2b3038",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 552,
+        "w": 240,
+        "h": 120,
+        "text": "2床｜胸痛\n生命体征平稳"
+      },
+      {
+        "id": "rescue2-ecg-status",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 776,
+        "w": 240,
+        "h": 112,
+        "text": "第二次心电图已完成\n医生正在查看"
+      },
+      {
+        "id": "rescue-to-2",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "rescue",
+        "to": "rescue2"
+      },
+      {
+        "id": "rescue2-ecg-link",
+        "color": "#a6d94f",
+        "type": "connector",
+        "from": "rescue2",
+        "to": "rescue2-ecg-status"
+      },
+      {
+        "id": "rescue2-family-note",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 1032,
+        "w": 320,
+        "h": 160,
+        "text": "持续关注｜抢救区2床\n家属已经联系上，预计稍后到达。\n下一班持续关注家属到达情况。"
+      },
+      {
+        "id": "rescue2-family",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1488,
+        "y": 552,
+        "w": 240,
+        "h": 136,
+        "text": "2床家属已联系上\n预计稍后到达\n持续关注到达情况"
+      },
+      {
+        "id": "rescue2-family-link",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "rescue2",
+        "to": "rescue2-family"
+      },
+      {
+        "id": "a3-context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1256,
+        "w": 320,
+        "h": 176,
+        "text": "背景｜留观A区3床\n因腹痛留观。\n疼痛评分：入院7分 → 目前4分。"
+      },
+      {
+        "id": "a3-pending",
+        "color": "#a6d94f",
+        "type": "note",
+        "x": 432,
+        "y": 1256,
+        "w": 320,
+        "h": 144,
+        "text": "已回报｜留观A区3床\n检验结果已经回报。\n责任医生正在评估。"
+      },
+      {
+        "id": "a3",
+        "color": "#2b3038",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 1032,
+        "w": 240,
+        "h": 120,
+        "text": "A区3床｜腹痛\n疼痛评分 7分 → 4分"
+      },
+      {
+        "id": "a3-labs",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 1488,
+        "y": 1032,
+        "w": 240,
+        "h": 104,
+        "text": "3床检验结果已回报\n责任医生正在评估"
+      },
+      {
+        "id": "a-to-3",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "obs-a",
+        "to": "a3"
+      },
+      {
+        "id": "a3-labs-link",
+        "color": "#a6d94f",
+        "type": "connector",
+        "from": "a3",
+        "to": "a3-labs"
+      },
+      {
+        "id": "a4-context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1496,
+        "w": 320,
+        "h": 160,
+        "text": "背景｜留观A区4床\n跌倒后留观。\n目前意识清楚。"
+      },
+      {
+        "id": "a4-risk",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 432,
+        "y": 1496,
+        "w": 320,
+        "h": 176,
+        "text": "风险与措施｜留观A区4床\n起身不稳。\n需协助活动，\n落实防跌倒措施。"
+      },
+      {
+        "id": "a4",
+        "color": "#2b3038",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 1280,
+        "w": 240,
+        "h": 120,
+        "text": "A区4床｜跌倒后留观\n意识清楚"
+      },
+      {
+        "id": "a4-safety",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1488,
+        "y": 1280,
+        "w": 240,
+        "h": 120,
+        "text": "起身不稳\n协助活动\n落实防跌倒措施"
+      },
+      {
+        "id": "a-to-4",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "obs-a",
+        "to": "a4"
+      },
+      {
+        "id": "a4-safety-link",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "a4",
+        "to": "a4-safety"
+      },
+      {
+        "id": "a4-imaging-note",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 1736,
+        "w": 320,
+        "h": 144,
+        "text": "待结果｜留观A区4床\n影像检查已完成。\n报告尚未返回。"
+      },
+      {
+        "id": "a4-imaging",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 1504,
+        "w": 240,
+        "h": 104,
+        "text": "4床影像检查已完成\n报告尚未返回"
+      },
+      {
+        "id": "a4-imaging-link",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "a4",
+        "to": "a4-imaging"
+      },
+      {
+        "id": "b5-context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1944,
+        "w": 320,
+        "h": 160,
+        "text": "背景｜留观B区5床\n因发热留观。\n体温：38.2℃ → 复测37.6℃。"
+      },
+      {
+        "id": "b5-sample-note",
+        "color": "#f7de4b",
+        "type": "note",
+        "x": 432,
+        "y": 1944,
+        "w": 320,
+        "h": 144,
+        "text": "待结果｜留观B区5床\n采样已经送检。\n结果仍未回报。"
+      },
+      {
+        "id": "b5",
+        "color": "#2b3038",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 1736,
+        "w": 240,
+        "h": 120,
+        "text": "B区5床｜发热\n38.2℃ → 37.6℃"
+      },
+      {
+        "id": "b5-sample",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1488,
+        "y": 1736,
+        "w": 240,
+        "h": 104,
+        "text": "5床采样已送检\n结果仍未回报"
+      },
+      {
+        "id": "b-to-5",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "obs-b",
+        "to": "b5"
+      },
+      {
+        "id": "b5-sample-link",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "b5",
+        "to": "b5-sample"
+      },
+      {
+        "id": "b6-done",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 2168,
+        "w": 320,
+        "h": 160,
+        "text": "已完成｜留观B区6床\n脱水评估中。\n补液已经结束。"
+      },
+      {
+        "id": "b6-pending",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 2168,
+        "w": 320,
+        "h": 160,
+        "text": "待办｜留观B区6床\n持续关注复评。\n下一班需要记录复评结果。"
+      },
+      {
+        "id": "b6",
+        "color": "#2b3038",
+        "type": "rectangle",
+        "x": 1184,
+        "y": 1968,
+        "w": 240,
+        "h": 144,
+        "text": "B区6床｜脱水评估中\n补液已结束\n家属已到，可协助沟通"
+      },
+      {
+        "id": "b6-review",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1488,
+        "y": 1968,
+        "w": 240,
+        "h": 104,
+        "text": "持续关注复评\n下一班记录复评结果"
+      },
+      {
+        "id": "b-to-6",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "obs-b",
+        "to": "b6"
+      },
+      {
+        "id": "b6-review-link",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "b6",
+        "to": "b6-review"
+      },
+      {
+        "id": "b6-family-note",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 2392,
+        "w": 320,
+        "h": 144,
+        "text": "已到达｜留观B区6床家属\n可以协助沟通。"
+      },
+      {
+        "id": "handover-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 2664,
+        "w": 1600,
+        "h": 960,
+        "title": "C｜下一班交接重点",
+        "html": "<style>body{margin:0;color:#243746;font-family:system-ui,-apple-system,'Segoe UI',sans-serif}*{box-sizing:border-box}.dashboard{padding:32px 38px;background:#f3f7fa;min-height:960px}.top{display:flex;justify-content:space-between;align-items:center}.eyebrow{color:#466778;font-size:17px;font-weight:650;letter-spacing:1px}h1{font-size:34px;font-weight:750;margin:8px 0 0}.sim{background:#e2edf1;color:#345a6a;border-radius:20px;padding:8px 16px;font-size:17px}h2{font-size:21px;font-weight:700;margin:22px 0 12px}.priorities,.watch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.priority{background:#fff7e7;border:1px solid #e8d5aa;border-top:4px solid #b37a22;border-radius:10px;padding:16px 18px;font-size:19px;line-height:1.55}.bed{font-size:21px;font-weight:750;margin-bottom:4px}.sub{color:#627581;font-size:17px}.watch-grid>div{background:white;border:1px solid #d5e0e7;border-radius:10px;padding:14px 18px;font-size:18px;line-height:1.55}.watch-grid .risk{background:#fff0f1;border-color:#e4bbc2}.watch-grid strong{display:block;color:#264f63;margin-bottom:4px}.watch-grid .risk strong{color:#9e394e}table{width:100%;border-collapse:separate;border-spacing:0;font-size:18px;line-height:1.5;background:white;border:1px solid #d5e0e7;border-radius:10px;overflow:hidden}th{background:#e4edf2;color:#355568;font-size:16px;padding:11px 16px;text-align:left}td{padding:12px 16px;border-top:1px solid #e4ebef;vertical-align:middle}td:first-child{font-weight:700;white-space:nowrap}.metric{font-weight:750;color:#16586a}.pending{color:#94641b}.done{color:#287263}footer{margin-top:20px;padding:14px 18px;background:#e4edf2;border-radius:8px;font-size:18px;font-weight:650}i,svg{width:20px;height:20px;vertical-align:-3px;margin-right:6px}</style><main class='dashboard'><header class='top'><div><div class='eyebrow'>C｜急诊护理交接 · 下一班工作总览</div><h1>三项结果优先跟进，三项事项持续关注</h1></div><span class='sim'>模拟病例 · 交接结束</span></header><h2><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-clipboard-list\" aria-hidden=\"true\"><rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\"></rect><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"></path><path d=\"M12 11h4\"></path><path d=\"M12 16h4\"></path><path d=\"M8 11h.01\"></path><path d=\"M8 16h.01\"></path></svg>优先跟进｜尚未回报的结果</h2><section class='priorities'><article class='priority'><div class='bed'>抢救区 · 1床</div>胸部影像结果待回报<div class='sub'>下一班跟进结果，并通知责任医生</div></article><article class='priority'><div class='bed'>留观A区 · 4床</div>影像报告尚未返回<div class='sub'>影像检查已完成；下一班优先跟进</div></article><article class='priority'><div class='bed'>留观B区 · 5床</div>采样结果仍未回报<div class='sub'>采样已送检；下一班优先跟进</div></article></section><h2><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-list-checks\" aria-hidden=\"true\"><path d=\"M13 5h8\"></path><path d=\"M13 12h8\"></path><path d=\"M13 19h8\"></path><path d=\"m3 17 2 2 4-4\"></path><path d=\"m3 7 2 2 4-4\"></path></svg>持续关注｜安全、复评与沟通</h2><section class='watch-grid'><div class='risk'><strong><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-triangle-alert lucide-alert-triangle\" aria-hidden=\"true\"><path d=\"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3\"></path><path d=\"M12 9v4\"></path><path d=\"M12 17h.01\"></path></svg>A区4床 · 防跌倒</strong>起身不稳；协助活动，落实防跌倒措施。</div><div><strong><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-activity\" aria-hidden=\"true\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"></path></svg>B区6床 · 复评</strong>补液已结束；关注复评，下一班记录复评结果。</div><div><strong><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-users\" aria-hidden=\"true\"><path d=\"M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2\"></path><path d=\"M16 3.128a4 4 0 0 1 0 7.744\"></path><path d=\"M22 21v-2a4 4 0 0 0-3-3.87\"></path><circle cx=\"9\" cy=\"7\" r=\"4\"></circle></svg>抢救区2床 · 家属到达</strong>已联系上，预计稍后到达；持续关注到达情况。</div></section><h2><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-bed-double\" aria-hidden=\"true\"><path d=\"M2 20v-8a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v8\"></path><path d=\"M4 10V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v4\"></path><path d=\"M12 4v6\"></path><path d=\"M2 18h20\"></path></svg>六床最新状态｜按区域定位</h2><table><thead><tr><th style='width:17%'>区域 / 床位</th><th style='width:17%'>留观背景</th><th style='width:29%'>最新测量与状态</th><th>检查进展 / 沟通状态</th></tr></thead><tbody><tr><td>抢救区 · 1床</td><td>呼吸困难</td><td><span class='metric'>SpO₂ 93% → 复测96%</span><br>持续监测中</td><td class='pending'>胸部影像结果仍待回报</td></tr><tr><td>抢救区 · 2床</td><td>胸痛</td><td>生命体征平稳</td><td>第二次心电图已完成，医生正在查看<br><span class='sub'>家属已联系上，预计稍后到达</span></td></tr><tr><td>留观A区 · 3床</td><td>腹痛</td><td><span class='metric'>疼痛评分 7分 → 4分</span><br>最新仍为4分</td><td class='done'>检验结果已回报，责任医生正在评估</td></tr><tr><td>留观A区 · 4床</td><td>跌倒后留观</td><td>意识清楚；起身不稳</td><td>影像检查已完成，<span class='pending'>报告尚未返回</span></td></tr><tr><td>留观B区 · 5床</td><td>发热</td><td><span class='metric'>38.2℃ → 复测37.6℃</span></td><td>采样已送检，<span class='pending'>结果仍未回报</span></td></tr><tr><td>留观B区 · 6床</td><td>脱水评估中</td><td>补液已结束；持续关注复评</td><td>下一班记录复评结果<br><span class='sub'>家属已到达，可以协助沟通</span></td></tr></tbody></table><footer><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check\" aria-hidden=\"true\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg>处置原则｜具体处置以责任医生的判断和医嘱为准。</footer></main>"
+      }
+    ]
+  }
+}

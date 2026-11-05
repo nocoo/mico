@@ -1,3 +1,5 @@
+import bootstrapCss from 'bootstrap/dist/css/bootstrap.min.css?raw'
+import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
 import { CodeXml, Frame } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -1157,7 +1159,7 @@ export default function App() {
 						y={shape.y}
 						width={shape.w}
 						height={shape.h}
-						pointerEvents="none"
+						pointerEvents={active ? 'auto' : 'none'}
 					>
 						<div className="html-card">
 							{shape.html ? (
@@ -1166,7 +1168,7 @@ export default function App() {
 									title={shape.title ?? 'HTML card'}
 									sandbox={HTML_CARD_SANDBOX}
 									referrerPolicy="no-referrer"
-									srcDoc={htmlCardDocument(shape.html)}
+									srcDoc={htmlCardDocument(shape.html, bootstrapCss, bootstrapJs)}
 								/>
 							) : (
 								<div className="html-card-empty">HTML content is generated through the API</div>

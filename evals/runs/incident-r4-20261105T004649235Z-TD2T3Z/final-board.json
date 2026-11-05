@@ -1,0 +1,485 @@
+{
+  "canvas": {
+    "id": "e8854c97-0236-4950-bc06-b26770f93da9",
+    "name": "服务故障复盘 · 第4轮 · 20261105T004649235Z",
+    "revision": 42,
+    "createdAt": "2026-11-05T00:46:49.251Z",
+    "updatedAt": "2026-11-05T00:51:20.580Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjM3LjUyMjcyNzI3MjcyNzI2NiIgeT0iMTMuNzI3MjcyNzI3MjcyNzI3IiB3aWR0aD0iOS41NDU0NTQ1NDU0NTQ1NDciIGhlaWdodD0iNS4yNSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI0MC41MjI3MjcyNzI3MjcyNjYiIHk9IjIxLjcyNzI3MjcyNzI3MjcyNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+6IOM5pmv772c6Jma5p6E5qGI5L6LCuW5s+WPsO+8muWMl+WFieS6keWVhgrmlYXpmpw8L3RleHQ+PHJlY3QgeD0iNDguMDIyNzI3MjcyNzI3MjY2IiB5PSIxMy43MjcyNzI3MjcyNzI3MjciIHdpZHRoPSI5LjU0NTQ1NDU0NTQ1NDU0NyIgaGVpZ2h0PSI3LjE1OTA5MDkwOTA5MDkwOSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI1MS4wMjI3MjcyNzI3MjcyNjYiIHk9IjIxLjcyNzI3MjcyNzI3MjcyNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+6KeC5rWL772cMDk6NDLlvIDlp4sKOOWIhumSn+WGhee7k+eul+aIkDwvdGV4dD48cmVjdCB4PSIzNy41MjI3MjcyNzI3MjcyNjYiIHk9IjIwLjg4NjM2MzYzNjM2MzYzNyIgd2lkdGg9IjkuNTQ1NDU0NTQ1NDU0NTQ3IiBoZWlnaHQ9IjYuMjA0NTQ1NDU0NTQ1NDU1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjQwLjUyMjcyNzI3MjcyNzI2NiIgeT0iMjguODg2MzYzNjM2MzYzNjM3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7mm7TmraPvvZznprvnur/ml6Xlv5fnoa7orqTojIPlm7QK5LuF5Lqs44CB6bKB5Zyw5Yy6PC90ZXh0PjxyZWN0IHg9IjQ4LjAyMjcyNzI3MjcyNzI2NiIgeT0iMjEuODQwOTA5MDkwOTA5MDkiIHdpZHRoPSI5LjU0NTQ1NDU0NTQ1NDU0NyIgaGVpZ2h0PSI1LjI1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjUxLjAyMjcyNzI3MjcyNzI2NiIgeT0iMjkuODQwOTA5MDkwOTA5MDkiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuingua1i++9nDA5OjQ4CuebkeaOp+mmluWFiOeci+WIsOe7k+eul+e9kTwvdGV4dD48cmVjdCB4PSIzNy41MjI3MjcyNzI3MjcyNjYiIHk9IjI4LjI4NDA5MDkwOTA5MDkxIiB3aWR0aD0iOS41NDU0NTQ1NDU0NTQ1NDciIGhlaWdodD0iNi4yMDQ1NDU0NTQ1NDU0NTUiIHJ4PSIzIiBmaWxsPSIjYTZkOTRmIi8+PHRleHQgeD0iNDAuNTIyNzI3MjcyNzI3MjY2IiB5PSIzNi4yODQwOTA5MDkwOTA5MSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5pu05q2j772c5ZGK6K2m5p2l5rqQ5bey5r6E5riFCuatpOWJjeagh+iusOS4uuWtmOWCqDwvdGV4dD48cmVjdCB4PSI0OC4wMjI3MjcyNzI3MjcyNjYiIHk9IjI4LjI4NDA5MDkwOTA5MDkxIiB3aWR0aD0iOS41NDU0NTQ1NDU0NTQ1NDciIGhlaWdodD0iNi42ODE4MTgxODE4MTgxODIiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNTEuMDIyNzI3MjcyNzI3MjY2IiB5PSIzNi4yODQwOTA5MDkwOTA5MSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5a6h6K6h56Gu6K6k772cMDk6NTXlm57mu5rkuI3lrozmlbQK5LuF5oGiPC90ZXh0PjxyZWN0IHg9IjQ4LjAyMjcyNzI3MjcyNzI2NiIgeT0iMzYuMTU5MDkwOTA5MDkwOTEiIHdpZHRoPSI5LjU0NTQ1NDU0NTQ1NDU0NyIgaGVpZ2h0PSI1LjQ4ODYzNjM2MzYzNjM2NCIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI1MS4wMjI3MjcyNzI3MjcyNjYiIHk9IjQ0LjE1OTA5MDkwOTA5MDkxIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7ov73ouKror4Hmja7vvZzpk77ot6/lrprkvY0K6K6i5Y2V5pyN5YqhIOKGkiDnu5M8L3RleHQ+PHJlY3QgeD0iMzcuNTIyNzI3MjcyNzI3MjY2IiB5PSI0My4zMTgxODE4MTgxODE4MiIgd2lkdGg9IjkuNTQ1NDU0NTQ1NDU0NTQ3IiBoZWlnaHQ9IjUuOTY1OTA5MDkwOTA5MDkxIiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjQwLjUyMjcyNzI3MjcyNzI2NiIgeT0iNTEuMzE4MTgxODE4MTgxODIiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuWuoeiuoeivgeaNru+9nDA5OjQy6YWN572u5Y+Y5pu0Cui/nuaOpeaxoDwvdGV4dD48cmVjdCB4PSI0OC4wMjI3MjcyNzI3MjcyNjYiIHk9IjQzLjMxODE4MTgxODE4MTgyIiB3aWR0aD0iOS41NDU0NTQ1NDU0NTQ1NDciIGhlaWdodD0iNi42ODE4MTgxODE4MTgxODIiIHJ4PSIzIiBmaWxsPSIjZmZmOGQ0Ii8+PHRleHQgeD0iNTEuMDIyNzI3MjcyNzI3MjY2IiB5PSI1MS4zMTgxODE4MTgxODE4MiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+5pyq6K+B5a6e772c5a2Y5YKo6L2v5Lu257y66Zm3CueOsOacieivgeaNruS4jei2s++8jDwvdGV4dD48cmVjdCB4PSIzNy41MjI3MjcyNzI3MjcyNjYiIHk9IjUxLjQzMTgxODE4MTgxODE4IiB3aWR0aD0iOS41NDU0NTQ1NDU0NTQ1NDciIGhlaWdodD0iNS45NjU5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNDAuNTIyNzI3MjcyNzI3MjY2IiB5PSI1OS40MzE4MTgxODE4MTgxOCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+57yT6Kej5o6q5pa9772cMTA6MDPlvIDlp4sK5omn6KGM77ya5bmz5Y+wPC90ZXh0PjxyZWN0IHg9IjQ4LjAyMjcyNzI3MjcyNzI2NiIgeT0iNTEuNDMxODE4MTgxODE4MTgiIHdpZHRoPSI5LjU0NTQ1NDU0NTQ1NDU0NyIgaGVpZ2h0PSI2LjY4MTgxODE4MTgxODE4MiIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSI1MS4wMjI3MjcyNzI3MjcyNjYiIHk9IjU5LjQzMTgxODE4MTgxODE4IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij7lvoXlip7vvZzlkI7nu63ooYzliqgK57uT566X572R5YWz6YOo572y6YWN572u5LiA6Ie0PC90ZXh0PjxyZWN0IHg9IjM3LjUyMjcyNzI3MjcyNzI2NiIgeT0iNjAuMDIyNzI3MjcyNzI3MjciIHdpZHRoPSI5LjU0NTQ1NDU0NTQ1NDU0NyIgaGVpZ2h0PSI1LjI1IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjQwLjUyMjcyNzI3MjcyNzI2NiIgeT0iNjguMDIyNzI3MjcyNzI3MjgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPuW+heWKnu+9nOebkeaOp+ihpeW8ugrlpIfnlKjlnLDljLrmiJDlip/njofkuI7ph43or5U8L3RleHQ+PHRleHQgeD0iMzcuNTIyNzI3MjcyNzI3MjY2IiB5PSIxMiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCI+5YyX5YWJ5LqR5ZWG772c57q/5LiK57uT566X5pWF6Zqc5aSN55uYPC90ZXh0Pjx0ZXh0IHg9IjM3LjUyMjcyNzI3MjcyNzI2NiIgeT0iMTUuMzQwOTA5MDkwOTA5MDkiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiPuW3suefpeiDjOaZrzwvdGV4dD48dGV4dCB4PSI2My4yOTU0NTQ1NDU0NTQ1NSIgeT0iMTUuMzQwOTA5MDkwOTA5MDkiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiPuaVhemanOacuuWItuS4juaVtOaUuTwvdGV4dD48cmVjdCB4PSI2My4yOTU0NTQ1NDU0NTQ1NSIgeT0iMTMuNzI3MjcyNzI3MjcyNzI3IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjE1LjM5NzcyNzI3MjcyNzI3MiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+57uT566X572R5YWz772cMDk6NDgK5bC+6YOo5bu26L+fIDEuOOenkjwvdGV4dD48cmVjdCB4PSI3Mi4zNjM2MzYzNjM2MzYzNiIgeT0iMTMuNzI3MjcyNzI3MjcyNzI3IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMi44NjM2MzYzNjM2MzYzNjM4IiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNzUuOTQzMTgxODE4MTgxODEiIHk9IjE1LjE1OTA5MDkwOTA5MDkwOCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+6K6i5Y2V5pyN5YqhPC90ZXh0PjxyZWN0IHg9IjYzLjI5NTQ1NDU0NTQ1NDU1IiB5PSIxOC41IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjIwLjE3MDQ1NDU0NTQ1NDU0NyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+5pSv5LuY5Yet6K+B5a2Y5YKoCui9r+S7tue8uumZt+acquivgeWunjwvdGV4dD48cmVjdCB4PSI2My4yOTU0NTQ1NDU0NTQ1NSIgeT0iMjMuOTg4NjM2MzYzNjM2MzYzIiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4xMDIyNzI3MjcyNzI3Mjc1IiByeD0iMyIgZmlsbD0iI2ZmN2ZhMyIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNmZjdmYTMiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNjYuODc1IiB5PSIyNS41Mzk3NzI3MjcyNzI3MjciIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPue7k+eul+aIkOWKn+eOh+S4i+mZjQo5OS42JSDihpIgODIlPC90ZXh0PjxyZWN0IHg9IjcyLjM2MzYzNjM2MzYzNjM2IiB5PSIyMy45ODg2MzYzNjM2MzYzNjMiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIzLjEwMjI3MjcyNzI3MjcyNzUiIHJ4PSIzIiBmaWxsPSIjZmY3ZmEzIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3NS45NDMxODE4MTgxODE4MSIgeT0iMjUuNTM5NzcyNzI3MjcyNzI3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7pppbopoHlvbHlk40K5paw6K6i5Y2V5peg5rOV56Gu6K6kPC90ZXh0PjxyZWN0IHg9IjcyLjM2MzYzNjM2MzYzNjM2IiB5PSIyOSIgd2lkdGg9IjcuMTU5MDkwOTA5MDkwOTA5IiBoZWlnaHQ9IjMuMTAyMjcyNzI3MjcyNzI3NSIgcng9IjMiIGZpbGw9IiNhNmQ5NGYiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjYTZkOTRmIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5PSIzMC41NTExMzYzNjM2MzYzNjMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPjEwOjEyIOaVhemanOino+mZpArlm5vlnLDljLrmiJDlip/njoflnYfiiaU5OS41JTwvdGV4dD48cmVjdCB4PSI2My4yOTU0NTQ1NDU0NTQ1NSIgeT0iMzYuMTU5MDkwOTA5MDkwOTEiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIzLjEwMjI3MjcyNzI3MjcyNzUiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjM3LjcxMDIyNzI3MjcyNzI3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj4wOTo1NSDlm57mu5oK5LuF5oGi5aSN5Li75Zyw5Yy65Y+C5pWwPC90ZXh0PjxyZWN0IHg9IjcyLjM2MzYzNjM2MzYzNjM2IiB5PSIzNi4xNTkwOTA5MDkwOTA5MSIgd2lkdGg9IjcuMTU5MDkwOTA5MDkwOTA5IiBoZWlnaHQ9IjMuMTAyMjcyNzI3MjcyNzI3NSIgcng9IjMiIGZpbGw9IiNmZjdmYTMiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZmY3ZmEzIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5PSIzNy43MTAyMjcyNzI3MjcyNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+MTA6MDEg5oiQ5Yqf546HODQlCuS7jeacquaBouWkjTwvdGV4dD48cmVjdCB4PSI3Mi4zNjM2MzYzNjM2MzYzNiIgeT0iNDEuMTcwNDU0NTQ1NDU0NTUiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiNmZjdmYTMiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZmY3ZmEzIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5PSI0Mi44NDA5MDkwOTA5MDkwOSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+5a6h6K6h56Gu6K6k772c5aSH55So5Zyw5Yy6CuW8guW4uOmFjee9ruacqumaj+Wbnua7muaBouWkjTwvdGV4dD48cmVjdCB4PSI2My4yOTU0NTQ1NDU0NTQ1NSIgeT0iNDguMDkwOTA5MDkwOTA5MDkiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIyLjg2MzYzNjM2MzYzNjM2MzgiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjQ5LjUyMjcyNzI3MjcyNzI3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7nvZHlhbPmjIHnu63ph43or5U8L3RleHQ+PHJlY3QgeD0iNzIuMzYzNjM2MzYzNjM2MzYiIHk9IjQ4LjA5MDkwOTA5MDkwOTA5IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZmY3ZmEzIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3NS45NDMxODE4MTgxODE4MSIgeT0iNDkuNzYxMzYzNjM2MzYzNjQiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPui2heaXtuaUvuWkpwrmraTliY3or6/moIfkuLrlrZjlgqjmlYXpmpzlkYroraY8L3RleHQ+PHJlY3QgeD0iNjMuMjk1NDU0NTQ1NDU0NTUiIHk9IjU1LjI1IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMi44NjM2MzYzNjM2MzYzNjM4IiByeD0iMyIgZmlsbD0iI2E2ZDk0ZiIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNhNmQ5NGYiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNjYuODc1IiB5PSI1Ni42ODE4MTgxODE4MTgxOCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+6K6i5Y2V5pyN5YqhCuWPkeW+gOe9keWFs+ivt+axguato+W4uDwvdGV4dD48cmVjdCB4PSI3Mi4zNjM2MzYzNjM2MzYzNiIgeT0iNTUuMjUiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIyLjg2MzYzNjM2MzYzNjM2MzgiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3NS45NDMxODE4MTgxODE4MSIgeT0iNTYuNjgxODE4MTgxODE4MTgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPue7k+eul+e9keWFszwvdGV4dD48cmVjdCB4PSI3Mi4zNjM2MzYzNjM2MzYzNiIgeT0iNjAuNSIgd2lkdGg9IjcuMTU5MDkwOTA5MDkwOTA5IiBoZWlnaHQ9IjMuMTAyMjcyNzI3MjcyNzI3NSIgcng9IjMiIGZpbGw9IiNmZjdmYTMiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZmY3ZmEzIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5PSI2Mi4wNTExMzYzNjM2MzYzNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+5Yet6K+B5a2Y5YKo5pa55ZCRCuWQjuWNiuautemTvui3r+aJuemHj+i2heaXtjwvdGV4dD48cmVjdCB4PSI2My4yOTU0NTQ1NDU0NTQ1NSIgeT0iNjcuMTgxODE4MTgxODE4MTkiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9IjY2Ljg3NSIgeT0iNjguODUyMjcyNzI3MjcyNzMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPjA5OjQyIOi/nuaOpeaxoOWPmOabtArnvKnnn63otoXml7bvvI/mj5Dpq5jph43or5XkuIrpmZA8L3RleHQ+PHJlY3QgeD0iNzIuMzYzNjM2MzYzNjM2MzYiIHk9IjY3LjE4MTgxODE4MTgxODE5IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZmY3ZmEzIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3NS45NDMxODE4MTgxODE4MSIgeT0iNjguODUyMjcyNzI3MjcyNzMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPuS7heS6rOOAgemygeWPl+W9seWTjQrpppbova7ph43or5XkuI7otoXml7Y8L3RleHQ+PHJlY3QgeD0iNjMuMjk1NDU0NTQ1NDU0NTUiIHk9IjQxLjE3MDQ1NDU0NTQ1NDU1IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZmY3ZmEzIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjQyLjg0MDkwOTA5MDkwOTA5IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7ph43or5Xpo47mmrTmjIHnu60K55u06IezMTA6MTI8L3RleHQ+PHJlY3QgeD0iNjMuMjk1NDU0NTQ1NDU0NTUiIHk9Ijc0LjM0MDkwOTA5MDkwOTEiIHdpZHRoPSI3LjE1OTA5MDkwOTA5MDkwOSIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiNhNmQ5NGYiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjYTZkOTRmIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9IjY2Ljg3NSIgeT0iNzYuMDExMzYzNjM2MzYzNjQiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPuW3suWujOaIkO+9nOW5s+WPsOe7hDEwOjAz6LW3CuWFiOaJqeWuuee7k+eul+e9keWFszwvdGV4dD48cmVjdCB4PSI3Mi4zNjM2MzYzNjM2MzYzNiIgeT0iNzQuMzQwOTA5MDkwOTA5MSIgd2lkdGg9IjcuMTU5MDkwOTA5MDkwOTA5IiBoZWlnaHQ9IjMuMzQwOTA5MDkwOTA5MDkxIiByeD0iMyIgZmlsbD0iI2E2ZDk0ZiIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNhNmQ5NGYiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNzUuOTQzMTgxODE4MTgxODEiIHk9Ijc2LjAxMTM2MzYzNjM2MzY0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7lt7LlrozmiJDvvZzlpIfnlKjlnLDljLrmtYHph48K5YiH5Zue5bey6aqM6K+B6YWN572u54mI5pysPC90ZXh0PjxyZWN0IHg9IjYzLjI5NTQ1NDU0NTQ1NDU1IiB5PSI4MS41IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjgzLjE3MDQ1NDU0NTQ1NDU1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7lvoXlip7vvZznvZHlhbPkuIDoh7TmgKfmoKHpqowK5Zue5rua5ZCM5pe26KaG55uW5YWo6YOo5Zyw5Yy6PC90ZXh0PjxyZWN0IHg9IjcyLjM2MzYzNjM2MzYzNjM2IiB5PSI4MS41IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3NS45NDMxODE4MTgxODE4MSIgeT0iODMuMTcwNDU0NTQ1NDU0NTUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPuW+heWKnu+9nOeBsOW6puaBouWkjea8lOe7gwrlubPlj7Dnu4Qgwrcg5Lik5ZGo5YaFPC90ZXh0PjxyZWN0IHg9IjYzLjI5NTQ1NDU0NTQ1NDU1IiB5PSI4OC42NTkwOTA5MDkwOTA5IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ni44NzUiIHk9IjkwLjMyOTU0NTQ1NDU0NTQ1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj7lvoXlip7vvZzmiJDlip/njofDl+mHjeivleWRiuitpgrnm5Hmjqfnu4Qgwrcg5LiA5ZGo5YaFPC90ZXh0PjxyZWN0IHg9IjcyLjM2MzYzNjM2MzYzNjM2IiB5PSI4OC42NTkwOTA5MDkwOTA5IiB3aWR0aD0iNy4xNTkwOTA5MDkwOTA5MDkiIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3NS45NDMxODE4MTgxODE4MSIgeT0iOTAuMzI5NTQ1NDU0NTQ1NDUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPuW+hemqjOivge+9nOWHreivgeWtmOWCqOWOi+a1iwrorrDlvZXkurogwrcg5pyf6ZmQ5pyq6K+05piOPC90ZXh0PjxyZWN0IHg9Ijg0LjI5NTQ1NDU0NTQ1NDU1IiB5PSIxMS4zNDA5MDkwOTA5MDkwOSIgd2lkdGg9IjM4LjE4MTgxODE4MTgxODE5IiBoZWlnaHQ9IjI5LjgyOTU0NTQ1NDU0NTQ1NyIgcng9IjQiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS1vcGFjaXR5PSIwLjQ1Ii8+PGxpbmUgeDE9IjY2Ljg3NSIgeTE9IjI1LjUzOTc3MjcyNzI3MjcyNyIgeDI9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5Mj0iMjUuNTM5NzcyNzI3MjcyNzI3IiBzdHJva2U9IiNmZjdmYTMiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI3NS45NDMxODE4MTgxODE4MSIgeTE9IjI1LjUzOTc3MjcyNzI3MjcyNyIgeDI9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5Mj0iMzAuNTUxMTM2MzYzNjM2MzYzIiBzdHJva2U9IiNhNmQ5NGYiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI2Ni44NzUiIHkxPSIzNy43MTAyMjcyNzI3MjcyNyIgeDI9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5Mj0iMzcuNzEwMjI3MjcyNzI3MjciIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5MT0iNDIuODQwOTA5MDkwOTA5MDkiIHgyPSI3NS45NDMxODE4MTgxODE4MSIgeTI9IjM3LjcxMDIyNzI3MjcyNzI3IiBzdHJva2U9IiNmZjdmYTMiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI2Ni44NzUiIHkxPSI0OS41MjI3MjcyNzI3MjcyNyIgeDI9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5Mj0iNDkuNzYxMzYzNjM2MzYzNjQiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9IjY2Ljg3NSIgeTE9IjU2LjY4MTgxODE4MTgxODE4IiB4Mj0iNzUuOTQzMTgxODE4MTgxODEiIHkyPSI1Ni42ODE4MTgxODE4MTgxOCIgc3Ryb2tlPSIjYTZkOTRmIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iNzUuOTQzMTgxODE4MTgxODEiIHkxPSI1Ni42ODE4MTgxODE4MTgxOCIgeDI9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5Mj0iNjIuMDUxMTM2MzYzNjM2MzciIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9IjY2Ljg3NSIgeTE9IjY4Ljg1MjI3MjcyNzI3MjczIiB4Mj0iNzUuOTQzMTgxODE4MTgxODEiIHkyPSI2OC44NTIyNzI3MjcyNzI3MyIgc3Ryb2tlPSIjZmY3ZmEzIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iNzUuOTQzMTgxODE4MTgxODEiIHkxPSI0Mi44NDA5MDkwOTA5MDkwOSIgeDI9IjY2Ljg3NSIgeTI9IjQyLjg0MDkwOTA5MDkwOTA5IiBzdHJva2U9IiNmZjdmYTMiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjxsaW5lIHgxPSI2Ni44NzUiIHkxPSI3Ni4wMTEzNjM2MzYzNjM2NCIgeDI9Ijc1Ljk0MzE4MTgxODE4MTgxIiB5Mj0iNzYuMDExMzYzNjM2MzYzNjQiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+"
+  },
+  "board": {
+    "revision": 42,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 144,
+        "w": 850,
+        "h": 72,
+        "text": "北光云商｜线上结算故障复盘",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "evidence-heading",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 256,
+        "w": 320,
+        "h": 48,
+        "text": "已知背景",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "logic-heading",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 944,
+        "y": 256,
+        "w": 320,
+        "h": 48,
+        "text": "故障机制与整改",
+        "font": "sans",
+        "fontSize": 28,
+        "fontWeight": 700
+      },
+      {
+        "id": "context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 336,
+        "w": 320,
+        "h": 176,
+        "text": "背景｜虚构案例\n平台：北光云商\n故障日期：2026年10月18日\n主题：线上结算故障复盘"
+      },
+      {
+        "id": "gateway",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 336,
+        "w": 240,
+        "h": 112,
+        "text": "结算网关｜09:48\n尾部延迟 1.8秒"
+      },
+      {
+        "id": "order",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 336,
+        "w": 240,
+        "h": 96,
+        "text": "订单服务"
+      },
+      {
+        "id": "storage",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 944,
+        "y": 496,
+        "w": 240,
+        "h": 112,
+        "text": "支付凭证存储\n软件缺陷未证实"
+      },
+      {
+        "id": "incident-metrics",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 336,
+        "w": 320,
+        "h": 240,
+        "text": "观测｜09:42开始\n8分钟内结算成功率\n99.6% → 82%\n首要影响：新订单无法确认\n10:12四地区均≥99.5%，故障解除\n可见异常约30分钟"
+      },
+      {
+        "id": "region-status",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 576,
+        "w": 320,
+        "h": 208,
+        "text": "更正｜离线日志确认范围\n仅京、鲁地区受影响\n沪、浙地区始终正常\n初始状态页“所有地区”记录错误\n10:12京鲁恢复，四地区均≥99.5%"
+      },
+      {
+        "id": "success-drop",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 944,
+        "y": 680,
+        "w": 240,
+        "h": 104,
+        "text": "结算成功率下降\n99.6% → 82%"
+      },
+      {
+        "id": "order-impact",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 680,
+        "w": 240,
+        "h": 104,
+        "text": "首要影响\n新订单无法确认"
+      },
+      {
+        "id": "impact-link",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "success-drop",
+        "to": "order-impact"
+      },
+      {
+        "id": "recovery",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 848,
+        "w": 240,
+        "h": 104,
+        "text": "10:12 故障解除\n四地区成功率均≥99.5%"
+      },
+      {
+        "id": "recovery-sequence",
+        "color": "#a6d94f",
+        "type": "connector",
+        "from": "order-impact",
+        "to": "recovery"
+      },
+      {
+        "id": "gateway-observation",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 608,
+        "w": 320,
+        "h": 176,
+        "text": "观测｜09:48\n监控首先看到结算网关\n尾部延迟升至1.8秒\n同时收到三处日志告警"
+      },
+      {
+        "id": "storage-hypothesis",
+        "color": "#a6d94f",
+        "type": "note",
+        "x": 80,
+        "y": 824,
+        "w": 320,
+        "h": 208,
+        "text": "更正｜告警来源已澄清\n此前标记为存储故障的告警\n实际来自网关持续重试\n导致的超时放大\n原存储归因缺乏关联查询证据"
+      },
+      {
+        "id": "rollback-evidence",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 824,
+        "w": 320,
+        "h": 224,
+        "text": "审计确认｜09:55回滚不完整\n仅恢复主地区参数\n备用地区仍保留异常配置\n10:01成功率仍为84%\n重试风暴因此持续至10:12"
+      },
+      {
+        "id": "rollback",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1088,
+        "w": 240,
+        "h": 104,
+        "text": "09:55 回滚\n仅恢复主地区参数"
+      },
+      {
+        "id": "rollback-result",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 1088,
+        "w": 240,
+        "h": 104,
+        "text": "10:01 成功率84%\n仍未恢复"
+      },
+      {
+        "id": "hypothesis-limit",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 1256,
+        "w": 240,
+        "h": 112,
+        "text": "审计确认｜备用地区\n异常配置未随回滚恢复"
+      },
+      {
+        "id": "connector-3add8aec",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "rollback",
+        "to": "rollback-result"
+      },
+      {
+        "id": "connector-87a3e865",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "hypothesis-limit",
+        "to": "rollback-result"
+      },
+      {
+        "id": "gateway-retries",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1488,
+        "w": 240,
+        "h": 96,
+        "text": "网关持续重试"
+      },
+      {
+        "id": "timeout-amplification",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 1488,
+        "w": 240,
+        "h": 112,
+        "text": "超时放大\n此前误标为存储故障告警"
+      },
+      {
+        "id": "connector-8bc7567b",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "gateway-retries",
+        "to": "timeout-amplification"
+      },
+      {
+        "id": "trace-evidence",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 1088,
+        "w": 320,
+        "h": 184,
+        "text": "追踪证据｜链路定位\n订单服务 → 结算网关：请求均正常\n结算网关 → 凭证存储：批量超时\n异常集中于后半段链路"
+      },
+      {
+        "id": "trace-order",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1728,
+        "w": 240,
+        "h": 96,
+        "text": "订单服务\n发往网关请求正常"
+      },
+      {
+        "id": "trace-gateway",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 1728,
+        "w": 240,
+        "h": 96,
+        "text": "结算网关"
+      },
+      {
+        "id": "trace-storage",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 1904,
+        "w": 240,
+        "h": 104,
+        "text": "凭证存储方向\n后半段链路批量超时"
+      },
+      {
+        "id": "connector-d0a14664",
+        "color": "#a6d94f",
+        "type": "connector",
+        "from": "trace-order",
+        "to": "trace-gateway"
+      },
+      {
+        "id": "connector-67b1cbed",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "trace-gateway",
+        "to": "trace-storage"
+      },
+      {
+        "id": "config-audit",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1328,
+        "w": 320,
+        "h": 200,
+        "text": "审计证据｜09:42配置变更\n连接池超时缩短\n重试上限提高\n京、鲁地区由此出现\n首轮重试与超时"
+      },
+      {
+        "id": "pool-change",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2128,
+        "w": 240,
+        "h": 112,
+        "text": "09:42 连接池变更\n缩短超时／提高重试上限"
+      },
+      {
+        "id": "regional-first-retries",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 2128,
+        "w": 240,
+        "h": 112,
+        "text": "仅京、鲁受影响\n首轮重试与超时"
+      },
+      {
+        "id": "connector-2d9bf6ea",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "pool-change",
+        "to": "regional-first-retries"
+      },
+      {
+        "id": "retry-storm-duration",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1256,
+        "w": 240,
+        "h": 112,
+        "text": "重试风暴持续\n直至10:12"
+      },
+      {
+        "id": "connector-77aea150",
+        "color": "#ff7fa3",
+        "type": "connector",
+        "from": "hypothesis-limit",
+        "to": "retry-storm-duration"
+      },
+      {
+        "id": "storage-defect-open",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 1328,
+        "w": 320,
+        "h": 224,
+        "text": "未证实｜存储软件缺陷\n现有证据不足，不能认定\n验证待办：补充凭证存储压测\n负责人：记录人\n期限未说明；结果尚未提供"
+      },
+      {
+        "id": "mitigation-evidence",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 1600,
+        "w": 320,
+        "h": 200,
+        "text": "缓解措施｜10:03开始\n执行：平台组\n先扩容结算网关\n再将备用地区流量切回\n已验证的配置版本"
+      },
+      {
+        "id": "mitigation-scale",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2368,
+        "w": 240,
+        "h": 112,
+        "text": "已完成｜平台组10:03起\n先扩容结算网关"
+      },
+      {
+        "id": "mitigation-switch",
+        "color": "#a6d94f",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 2368,
+        "w": 240,
+        "h": 112,
+        "text": "已完成｜备用地区流量\n切回已验证配置版本"
+      },
+      {
+        "id": "connector-783c2a4d",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "mitigation-scale",
+        "to": "mitigation-switch"
+      },
+      {
+        "id": "followup-actions",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 1600,
+        "w": 320,
+        "h": 224,
+        "text": "待办｜后续行动\n结算网关部署配置一致性校验\n任一回滚须同时覆盖全部地区\n平台组：两周内完成\n灰度恢复演练\n校验部署负责人及期限未说明"
+      },
+      {
+        "id": "config-consistency-action",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2608,
+        "w": 240,
+        "h": 112,
+        "text": "待办｜网关一致性校验\n回滚同时覆盖全部地区"
+      },
+      {
+        "id": "recovery-drill-action",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 2608,
+        "w": 240,
+        "h": 112,
+        "text": "待办｜灰度恢复演练\n平台组 · 两周内"
+      },
+      {
+        "id": "monitor-action-evidence",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1888,
+        "w": 320,
+        "h": 176,
+        "text": "待办｜监控补强\n备用地区成功率与重试次数\n增加联动告警\n负责人：监控组\n期限：一周内"
+      },
+      {
+        "id": "monitor-alert-action",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2848,
+        "w": 240,
+        "h": 112,
+        "text": "待办｜成功率×重试告警\n监控组 · 一周内"
+      },
+      {
+        "id": "storage-loadtest-action",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1248,
+        "y": 2848,
+        "w": 240,
+        "h": 112,
+        "text": "待验证｜凭证存储压测\n记录人 · 期限未说明"
+      },
+      {
+        "id": "incident-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 1648,
+        "y": 256,
+        "w": 1280,
+        "h": 1000,
+        "title": "北光云商结算故障｜根因与整改",
+        "html": "<style>body{margin:0;background:#f1f5f9;color:#203247;font-family:Arial,'Microsoft YaHei',sans-serif}*{box-sizing:border-box}.dashboard{padding:32px}.hero{padding:24px 28px;background:#142d46;color:#fff;border-radius:16px}.eyebrow{font-size:15px;letter-spacing:1px;color:#b9cbdd}h1{font-size:32px;font-weight:700;margin:10px 0 12px}.status{display:inline-block;background:#d9f4e8;color:#146348;padding:6px 12px;border-radius:30px;font-size:16px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:18px 0}.metric,.panel{background:#fff;border:1px solid #dfe7ef;border-radius:12px}.metric{padding:16px 18px}.label{font-size:15px;color:#617389}.value{font-size:27px;font-weight:700;margin:6px 0}.detail{font-size:16px}.panel{padding:20px 24px;margin-bottom:16px}h2{font-size:21px;font-weight:700;margin:0 0 14px}.flow{display:grid;grid-template-columns:1fr 30px 1fr 30px 1fr;align-items:center}.step{padding:15px;background:#edf3f9;border-radius:10px;font-size:17px;line-height:1.55}.step b{color:#193d61}.arrow{text-align:center;font-size:24px;color:#7a8da1}.recovery{margin-top:14px;background:#e8f6ef;color:#226347;border-radius:8px;padding:12px 16px;font-size:17px}.trace{font-size:16px;color:#586e83;margin-top:12px}.actions{width:100%;border-collapse:collapse;font-size:16px;line-height:1.4}.actions th{background:#f1f5f9;color:#50657b}.actions td,.actions th{padding:11px 12px;text-align:left;border-bottom:1px solid #e5ebf1}.actions th:first-child{width:55%}.pending{color:#9a651b;font-weight:700}.bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px}.callout{border-radius:10px;padding:16px 18px;font-size:16px;line-height:1.6;background:#fff3dc}.callout b{display:block;font-size:18px;margin-bottom:4px}.correction{background:#e8eef6}.footer{margin-top:12px;color:#65798c;font-size:14px}</style><main class='dashboard'><header class='hero'><div class='eyebrow'>北光云商 · 2026年10月18日 · 虚构案例</div><h1>结算故障：配置触发，回滚遗漏延长影响</h1><span class='status'>服务已恢复 · 流量缓解已完成</span><span style='margin-left:16px;font-size:16px;color:#d4dfeb'>整改与缺陷验证尚待完成</span></header><section class='metrics'><div class='metric'><div class='label'>可见异常窗口</div><div class='value'>09:42—10:12</div><div class='detail'>约30分钟</div></div><div class='metric'><div class='label'>8分钟内结算成功率</div><div class='value'>99.6% → 82%</div><div class='detail'>新订单无法确认</div></div><div class='metric'><div class='label'>实际影响范围</div><div class='value'>仅京、鲁</div><div class='detail'>沪、浙始终正常</div></div><div class='metric'><div class='label'>10:12解除标准</div><div class='value'>四地区 ≥99.5%</div><div class='detail'>京、鲁恢复正常</div></div></section><section class='panel'><h2>已确认｜配置变更引发重试放大，回滚不完整使故障持续</h2><div class='flow'><div class='step'><b>触发 · 09:42</b><br>连接池超时缩短<br>重试上限提高</div><div class='arrow'>→</div><div class='step'><b>放大 · 网关持续重试</b><br>网关至存储批量超时<br>告警曾误归因为存储故障</div><div class='arrow'>→</div><div class='step'><b>延长 · 09:55回滚遗漏</b><br>仅恢复主地区参数<br>备用地区仍为异常配置</div></div><div class='trace'>链路证据：订单服务 → 网关请求正常；异常集中在网关 → 凭证存储。10:01成功率仍为84%。</div><div class='recovery'><b>恢复路径：</b>平台组10:03起先扩容网关，再将备用地区流量切回已验证配置；10:12故障解除。</div></section><section class='panel'><h2>整改闭环｜配置一致性、检测与恢复能力</h2><table class='actions'><thead><tr><th>下一步行动</th><th>负责人</th><th>期限</th><th>状态</th></tr></thead><tbody><tr><td>网关部署配置一致性校验，任一回滚覆盖全部地区</td><td>未说明</td><td>未说明</td><td class='pending'>待办</td></tr><tr><td>备用地区成功率与重试次数联动告警</td><td>监控组</td><td>一周内</td><td class='pending'>待办</td></tr><tr><td>灰度恢复演练</td><td>平台组</td><td>两周内</td><td class='pending'>待办</td></tr><tr><td>补充凭证存储压测，验证软件缺陷怀疑</td><td>记录人</td><td>未说明</td><td class='pending'>待验证</td></tr></tbody></table></section><div class='bottom'><div class='callout'><b>未证实｜存储软件缺陷</b>现有证据不足，压测结果尚未提供；链路超时不能直接证明存储软件存在缺陷。</div><div class='callout correction'><b>已更正｜初始状态页影响范围</b>离线日志确认仅京、鲁受影响；“所有地区受影响”的初始记录不成立。</div></div><div class='footer'>闭环重点：补齐全地区回滚与备用地区检测缺口；校验部署负责人、期限仍需明确。相对期限保留会议原述。</div></main>"
+      }
+    ]
+  }
+}

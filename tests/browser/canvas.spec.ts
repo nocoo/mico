@@ -853,7 +853,7 @@ test('html cards render generated markup and expose only their title', async ({
 						h: 300,
 						color: '#22c55e',
 						title: 'Stats',
-						html: '<!doctype html><html><body style="margin:0"><h1 id="value">42</h1><script>document.getElementById("value").textContent = "hacked"</script></body></html>',
+						html: '<!doctype html><html><head><style>#value { color: rgb(255, 0, 0) }</style></head><body style="margin:0"><h1 id="value">42</h1><button id="bootstrap-button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#bootstrap-panel" aria-expanded="false">Bootstrap</button><div id="bootstrap-panel" class="collapse"><div class="card card-body" id="bootstrap-panel-body">Bootstrap state</div></div><img id="blocked-image" src="https://example.invalid/pixel.png"><script src="https://example.invalid/script.js"></script><script>document.getElementById("value").textContent = "hacked"; window.bootstrapProbe = !!window.bootstrap; window.externalProbe = "blocked"; window.parentProbe = (() => { try { return window.parent.document.title } catch (error) { return error.name } })(); </script></body></html>',
 						frameId: 'html-frame',
 					},
 				},
@@ -861,13 +861,84 @@ test('html cards render generated markup and expose only their title', async ({
 		},
 	})
 	expect(created.ok()).toBe(true)
+	let externalRouteRequests = 0
+	await page.route('https://example.invalid/**', async (route) => {
+		externalRouteRequests++
+		await route.abort()
+	})
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
-	await expect(page.locator('[data-shape-id="html-card"] iframe')).toHaveAttribute('sandbox', '')
+	await expect(page.locator('[data-shape-id="html-card"] iframe')).toHaveAttribute(
+		'sandbox',
+		'allow-scripts',
+	)
 	const frame = page.frameLocator('[data-shape-id="html-card"] iframe')
-	await expect(frame.locator('#value')).toHaveText('42')
+	await expect(frame.locator('#value')).toHaveText('hacked')
+	await expect(frame.locator('#value')).toHaveCSS('color', 'rgb(255, 0, 0)')
+	await expect(frame.locator('#bootstrap-button')).toHaveCSS(
+		'background-color',
+		'rgb(13, 110, 253)',
+	)
+	await expect
+		.poll(() =>
+			frame.locator('html').evaluate(() => ({
+				bootstrap: (window as Window & { bootstrapProbe?: boolean }).bootstrapProbe,
+				external: (window as Window & { externalProbe?: string }).externalProbe,
+				parent: (window as Window & { parentProbe?: string }).parentProbe,
+			})),
+		)
+		.toEqual({ bootstrap: true, external: 'blocked', parent: 'SecurityError' })
+	const csp = await frame
+		.locator('meta[http-equiv="Content-Security-Policy"]')
+		.getAttribute('content')
+	expect(csp).toContain("default-src 'none'")
+	expect(csp).toContain("script-src 'unsafe-inline'")
+	expect(csp).toContain("style-src 'unsafe-inline'")
+	expect(csp).toContain('img-src data:')
+	expect(csp).toContain('font-src data:')
+	expect(externalRouteRequests).toBe(0)
+
+	const headerBox = await pillBox(page, 'html-card')
+	await page.mouse.click(headerBox.x + headerBox.width / 2, headerBox.y + headerBox.height / 2)
+	await expect(page.locator('[data-shape-id="html-card"] foreignObject').first()).toHaveAttribute(
+		'pointer-events',
+		'auto',
+	)
+	await expect(frame.locator('#bootstrap-button')).toBeVisible()
+	await expect
+		.poll(() => frame.locator('html').evaluate(() => document.readyState))
+		.toBe('complete')
+	await expect
+		.poll(() =>
+			frame.locator('#bootstrap-button').evaluate((button) => {
+				const view = button.ownerDocument.defaultView as unknown as {
+					bootstrap?: { Collapse?: unknown }
+				}
+				return typeof view.bootstrap?.Collapse === 'function'
+			}),
+		)
+		.toBe(true)
+	await expect(frame.locator('#bootstrap-panel')).not.toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await frame.locator('#bootstrap-button').click()
+	await expect(frame.locator('#bootstrap-panel')).toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await expect(frame.locator('#bootstrap-button')).toHaveAttribute('aria-expanded', 'true')
+
+	const dragStart = await pillBox(page, 'html-card')
+	await page.mouse.move(dragStart.x + dragStart.width / 2, dragStart.y + dragStart.height / 2)
+	await page.mouse.down()
+	await page.mouse.move(
+		dragStart.x + dragStart.width / 2 + 40,
+		dragStart.y + dragStart.height / 2 + 20,
+		{
+			steps: 8,
+		},
+	)
+	await page.mouse.up()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'html-card'))
+		.toMatchObject({ x: 320, y: 336 })
 
 	const updated = await request.post('/api/operations', {
 		data: {
@@ -907,6 +978,34 @@ test('html cards render generated markup and expose only their title', async ({
 	await expect(properties).toBeVisible()
 	await expect(properties.getByLabel('Card title')).toHaveValue('Revenue')
 	await expect(properties.getByLabel('Text', { exact: true })).toHaveCount(0)
+
+	const variants = [
+		[
+			'<html><body><p id="variant">html</p><script>document.getElementById("variant").textContent = "html-script"</script></body></html>',
+			'html-script',
+		],
+		[
+			'<head><title>x</title></head><body><p id="variant">head</p><script>document.getElementById("variant").textContent = "head-script"</script></body>',
+			'head-script',
+		],
+		[
+			'<!doctype html><body><p id="variant">doctype</p><script>document.getElementById("variant").textContent = "doctype-script"</script></body>',
+			'doctype-script',
+		],
+		[
+			'<p id="variant">fragment</p><script>document.getElementById("variant").textContent = "fragment-script"</script>',
+			'fragment-script',
+		],
+	]
+	for (const [html, expected] of variants) {
+		const variantUpdate = await request.post('/api/operations', {
+			data: {
+				operations: [{ type: 'update', id: 'html-card', patch: { html } }],
+			},
+		})
+		expect(variantUpdate.ok()).toBe(true)
+		await expect(frame.locator('#variant')).toHaveText(expected)
+	}
 })
 
 test('freehand brush draws a persisted tapered path and API sketches render', async ({
