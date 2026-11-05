@@ -171,8 +171,19 @@
       border-radius: 12px;
       background: var(--surface);
       box-shadow: 0 8px 32px rgba(43, 48, 56, .12);
+      transform-origin: left bottom;
     }
     .select-menu[hidden] { display: none; }
+    .select-menu[data-state="open"] { animation: menu-open 180ms cubic-bezier(.2, .7, .2, 1) both; }
+    .select-menu[data-state="closed"] { animation: menu-close 140ms ease-in both; pointer-events: none; }
+    @keyframes menu-open {
+      from { opacity: 0; transform: translateY(4px) scale(.98); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes menu-close {
+      from { opacity: 1; transform: none; }
+      to { opacity: 0; transform: translateY(4px) scale(.98); }
+    }
     .select-menu button {
       display: block;
       width: 100%;
@@ -185,6 +196,7 @@
       line-height: 1.25;
       text-align: left;
     }
+    .select-menu button + button { margin-top: 4px; }
     .select-menu button:hover, .select-menu button:focus-visible { outline: none; background: var(--surface-hover); }
     .select-menu button[aria-selected="true"] { background: var(--blue-tint); color: var(--blue-ink); }
     .segmented-control { display: flex; align-items: center; --choice-color: var(--pink); --choice-tint: var(--pink-tint); --choice-ink: var(--pink-ink); }
@@ -226,6 +238,7 @@
     }
     @media (prefers-reduced-motion: reduce) {
       .icon-button, .zoom-value, .options-wrap { transition: none; }
+      .select-menu[data-state] { animation-duration: 1ms; }
     }
   </style>
 </head>
@@ -329,7 +342,8 @@
       if (!openFontSelect) return;
       const trigger = openFontSelect;
       trigger.setAttribute('aria-expanded', 'false');
-      fontMenu.hidden = true;
+      fontMenu.dataset.state = 'closed';
+      fontMenu.setAttribute('aria-hidden', 'true');
       openFontSelect = null;
       if (restoreFocus) trigger.focus();
     }
@@ -348,11 +362,13 @@
         option.dataset.value = value;
         option.textContent = trigger.dataset.fontSelect === 'family' ? value[0].toUpperCase() + value.slice(1) : value;
         option.style.fontFamily = fontFamilies[trigger.dataset.fontSelect === 'family' ? value : fontSelects.family.dataset.value];
-        option.style.fontSize = `${trigger.dataset.fontSelect === 'size' ? value : fontSelects.size.dataset.value}px`;
+        option.style.fontSize = `${trigger.dataset.fontSelect === 'size' ? value : 16}px`;
         option.style.fontWeight = trigger.dataset.fontSelect === 'weight' ? value : fontSelects.weight.dataset.value;
         return option;
       }));
       fontMenu.hidden = false;
+      fontMenu.removeAttribute('aria-hidden');
+      fontMenu.dataset.state = 'open';
       const rect = trigger.getBoundingClientRect();
       fontMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - fontMenu.offsetWidth - 8))}px`;
       fontMenu.style.top = `${Math.max(8, rect.top - fontMenu.offsetHeight - 6)}px`;
@@ -391,6 +407,10 @@
       if (button === zoomValue || button.getAttribute('aria-label') === 'Fit board') setZoom(1);
     });
 
+    fontMenu.addEventListener('animationend', (event) => {
+      if (event.target === fontMenu && fontMenu.dataset.state === 'closed') fontMenu.hidden = true;
+    });
+
     fontMenu.addEventListener('click', (event) => {
       const option = event.target.closest('[role="option"]');
       if (!option || !openFontSelect) return;
@@ -424,7 +444,7 @@
     });
 
     document.addEventListener('keydown', (event) => {
-      if (!fontMenu.hidden || event.target.closest('[data-font-select]') || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (openFontSelect || event.target.closest('[data-font-select]') || event.metaKey || event.ctrlKey || event.altKey) return;
       const shortcuts = { v: 'select', h: 'hand', r: 'rectangle', o: 'ellipse', t: 'text', l: 'line', p: 'path', n: 'note', w: 'html', c: 'connector' };
       const tool = shortcuts[event.key.toLowerCase()];
       if (tool) selectTool(tool);
