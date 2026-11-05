@@ -3,6 +3,7 @@
 ## MOSS Live verification
 
 - A fake audio file began playing as soon as the microphone opened, before MOSS finished connecting. The client discards pre-ready frames, so only the end of the synthetic request reached the provider and no tool call was observed. Future probes must start synthetic speech only after the session is ready; distinguish a validated connection from an unverified tool-call path.
+- A 177-second synthetic geography lesson on a user-authorized new canvas confirmed all 11 tools, audio output, and one acknowledged `add_texts` call, but the call arrived near the end and produced only a title and subtitle. Several speech segments were badly misrecognized. A separate local 20-second capture produced 20.07 seconds of PCM with strong waveform correlation, so the cause of the long-session recognition and response failures remains unproven. Future long-form checks should record frame timing and transcript quality, not merely connection and tool registration.
 
 ## Tool usage
 
