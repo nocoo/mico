@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { once } from 'node:events'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { request } from 'node:http'
 import { connect } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -47,7 +47,11 @@ async function withLiveDaemon(run: (context: LiveContext) => Promise<void>): Pro
 	const directory = mkdtempSync(join(tmpdir(), 'mico-live-'))
 	let daemon: Daemon | undefined
 	try {
-		daemon = createDaemon({ port: 0, dbPath: join(directory, 'board.sqlite') })
+		daemon = createDaemon({
+			port: 0,
+			dbPath: join(directory, 'board.sqlite'),
+			settingsPath: join(directory, 'ai-settings', 'settings.json'),
+		})
 		daemon.server.listen(0, '127.0.0.1')
 		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
 		const address = daemon.server.address()
@@ -128,6 +132,98 @@ test('HTTPS-origin subscribers receive API writes and reconnect to the latest bo
 			socket.terminate()
 			reconnected?.terminate()
 		}
+	})
+})
+
+test('AI settings expose only public fields and preserve the existing key contract', async () => {
+	await withLiveDaemon(async ({ url, port, directory }) => {
+		const headers = { origin: DEV_ORIGIN }
+		const get = await fetch(`${url}/api/ai/settings`, { headers })
+		assert.equal(get.status, 200)
+		assert.deepEqual(await get.json(), {
+			baseURL: 'http://127.0.0.1:3425/v1',
+			model: 'auto/gpt-6-luna',
+			hasApiKey: true,
+		})
+
+		const secret = 'test-api-secret'
+		const put = await fetch(`${url}/api/ai/settings`, {
+			method: 'PUT',
+			headers: { ...headers, 'content-type': 'application/json' },
+			body: JSON.stringify({
+				baseURL: 'https://example.test/v1/',
+				model: 'group/test',
+				apiKey: secret,
+			}),
+		})
+		assert.equal(put.status, 200)
+		const publicSettings = await put.json()
+		assert.deepEqual(publicSettings, {
+			baseURL: 'https://example.test/v1',
+			model: 'group/test',
+			hasApiKey: true,
+		})
+		assert.equal(JSON.stringify(publicSettings).includes(secret), false)
+
+		const settingsPath = join(directory, 'ai-settings', 'settings.json')
+		assert.equal(statSync(settingsPath).mode & 0o777, 0o600)
+		assert.equal(statSync(join(directory, 'ai-settings')).mode & 0o777, 0o700)
+		const saved = JSON.parse(readFileSync(settingsPath, 'utf8')) as Record<string, unknown>
+		assert.equal(saved.apiKey, secret)
+
+		const preserve = await fetch(`${url}/api/ai/settings`, {
+			method: 'PUT',
+			headers: { ...headers, 'content-type': 'application/json' },
+			body: JSON.stringify({ baseURL: 'https://example.test/v2/', model: 'group/test-2' }),
+		})
+		assert.equal(preserve.status, 200)
+		assert.deepEqual(JSON.parse(readFileSync(settingsPath, 'utf8')).apiKey, secret)
+
+		const clear = await fetch(`${url}/api/ai/settings`, {
+			method: 'PUT',
+			headers: { ...headers, 'content-type': 'application/json' },
+			body: JSON.stringify({
+				baseURL: 'https://example.test/v2',
+				model: 'group/test-2',
+				apiKey: '',
+			}),
+		})
+		assert.equal(clear.status, 200)
+		assert.deepEqual(await clear.json(), {
+			baseURL: 'https://example.test/v2',
+			model: 'group/test-2',
+			hasApiKey: false,
+		})
+
+		const invalid = await fetch(`${url}/api/ai/settings`, {
+			method: 'PUT',
+			headers: { ...headers, 'content-type': 'application/json' },
+			body: JSON.stringify({ baseURL: 'relative', model: 'group/test' }),
+		})
+		assert.equal(invalid.status, 400)
+
+		const wrongOrigin = await fetch(`${url}/api/ai/settings`, {
+			headers: { origin: 'http://malicious.example' },
+		})
+		assert.equal(wrongOrigin.status, 403)
+
+		const blockedHost = await new Promise<number>((resolve, reject) => {
+			const req = request(
+				{
+					host: '127.0.0.1',
+					port,
+					path: '/api/ai/settings',
+					headers: { host: 'evil.example', origin: DEV_ORIGIN },
+				},
+				(res) => {
+					res.resume()
+					res.on('end', () => resolve(res.statusCode ?? 0))
+				},
+			)
+			req.on('error', reject)
+			req.end()
+		})
+		assert.equal(blockedHost, 403)
 	})
 })
 

@@ -140,7 +140,11 @@ export async function startEvalServer(dbPathValue: string | undefined, identityV
 	const identity = resolveEvalIdentity(identityValue)
 
 	const cacheDirectory = mkdtempSync(join(realpathSync('/tmp'), 'mico-eval-vite-'))
-	const daemon = createDaemon({ port: EVAL_DAEMON_PORT, dbPath })
+	const daemon = createDaemon({
+		port: EVAL_DAEMON_PORT,
+		dbPath,
+		settingsPath: join(cacheDirectory, 'ai-settings', 'settings.json'),
+	})
 	let vite: Awaited<ReturnType<typeof createViteServer>>
 	const base = micoViteConfig()
 	try {

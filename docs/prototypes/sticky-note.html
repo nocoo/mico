@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mico — Sticky note prototype</title>
+  <style>
+    :root {
+      --canvas: #f5fafc;
+      --grid: #dceaf1;
+      --paper: #fff8d4;
+      --ink: #2b3038;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font: 14px/1.5 system-ui, sans-serif;
+      background-color: var(--canvas);
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 64px 64px;
+    }
+
+    main {
+      min-width: 1120px;
+      min-height: max(100vh, 1120px);
+      display: grid;
+      place-items: center;
+    }
+
+    .note {
+      width: 960px;
+      height: 960px;
+      overflow: visible;
+      transform-origin: 50% 20%;
+      animation: stick 2.4s both;
+    }
+
+    .outline {
+      animation: curl 2.4s both;
+    }
+
+    .paper {
+      fill: var(--paper);
+      filter: drop-shadow(0 1px 1.5px rgba(43, 48, 56, .1));
+    }
+
+    .corner-light {
+      fill: url(#corner-light);
+      opacity: 0;
+      animation: curl 2.4s both, light 2.4s both;
+    }
+
+    .corner-shadow {
+      fill: var(--ink);
+      opacity: 0;
+      filter: blur(2px);
+      transform-origin: 139px 157px;
+      animation: shadow 2.4s both;
+    }
+
+    .replay {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      padding: 8px 14px;
+      border: 1px solid #dce4e9;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .replay:focus-visible { outline: 2px solid #00a2e1; outline-offset: 3px; }
+
+    @keyframes stick {
+      0% {
+        opacity: 0;
+        transform: perspective(4200px) translate3d(0, -42px, 84px) rotateX(4deg) rotateZ(-.4deg);
+        animation-timing-function: cubic-bezier(.25, .65, .35, 1);
+      }
+      32%, 100% {
+        opacity: 1;
+        transform: perspective(4200px) translate3d(0, 0, 0) rotateX(0) rotateZ(0);
+      }
+    }
+
+    @keyframes curl {
+      0%, 28% {
+        d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
+        animation-timing-function: cubic-bezier(.22, 1, .36, 1);
+      }
+      53% {
+        d: path("M0 0 H160 V98.88 C160 120 160 141 156 152 C148 154 121 160 98.88 160 H0 Z");
+        animation-timing-function: cubic-bezier(.45, 0, .3, 1);
+      }
+      100% { d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"); }
+    }
+
+    @keyframes light {
+      0%, 28% { opacity: 0; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+      53% { opacity: .55; animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
+      100% { opacity: 0; }
+    }
+
+    @keyframes shadow {
+      0%, 28% { opacity: 0; transform: none; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
+      53% { opacity: .2; transform: translateY(3px) scale(1.15, 1.5); animation-timing-function: cubic-bezier(.45, 0, .3, 1); }
+      100% { opacity: 0; transform: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .note, .outline, .corner-light, .corner-shadow { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <svg class="note" viewBox="0 0 160 160" role="img" aria-label="A little space for good ideas">
+      <defs>
+        <radialGradient id="corner-light" cx="150" cy="155" r="52" gradientUnits="userSpaceOnUse" gradientTransform="translate(0 77.5) scale(1 .5)">
+          <stop stop-color="#fff" stop-opacity=".8"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+      <ellipse class="corner-shadow" cx="139" cy="157" rx="22" ry="2.5"/>
+      <path class="paper outline" d="M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"/>
+      <path class="corner-light" d="M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z"/>
+      <text x="12" y="26" fill="var(--ink)" font-size="14" font-family="system-ui, sans-serif">
+        <tspan x="12">A little space</tspan>
+        <tspan x="12" dy="21">for good ideas.</tspan>
+      </text>
+    </svg>
+  </main>
+  <button class="replay" type="button" onclick="location.reload()">Replay animation</button>
+</body>
+</html>

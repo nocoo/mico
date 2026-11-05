@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mico — Canvas manager prototype</title>
+  <style>
+    :root {
+      --canvas: #f5fafc;
+      --grid: #dceaf1;
+      --surface: #fff;
+      --surface-muted: #f3f5f4;
+      --surface-hover: #ecf1f4;
+      --border: #dce4e9;
+      --ink: #2b3038;
+      --ink-secondary: #5e6a73;
+      --ink-muted: #7a858d;
+      --accent: #00a2e1;
+      --accent-tint: #e2f5fc;
+      --accent-ink: #0b7ba8;
+      --success: #4fae3f;
+      --danger: #c13a5c;
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --type-caption: 12px;
+      --type-body: 14px;
+      --inset: var(--space-6);
+      --motion-fast: 160ms;
+      --motion-panel: 240ms;
+      --radius-panel: 20px;
+      --radius-control: 8px;
+      --radius-tool: 12px;
+      --panel-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43, 48, 56, .06), 0 2px 12px rgba(43, 48, 56, .08);
+      font: 14px/24px Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--canvas);
+      -webkit-font-smoothing: antialiased;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; overflow: hidden; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: default; opacity: .35; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+    svg { display: block; }
+    .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
+    .panel { background: var(--surface); border-radius: var(--radius-panel); box-shadow: var(--panel-shadow); }
+    .identity {
+      position: fixed;
+      top: var(--inset);
+      left: var(--inset);
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      min-height: 56px;
+      padding: var(--space-2);
+    }
+    .brand { display: flex; align-items: center; gap: var(--space-1); width: 92px; white-space: nowrap; }
+    .brand-mark { position: relative; flex: 0 0 40px; width: 40px; height: 40px; }
+    .brand-mark > svg { width: 40px; height: 40px; padding: var(--space-2); color: var(--accent); }
+    .brand strong { width: 48px; font-size: 20px; font-weight: 700; line-height: 32px; letter-spacing: -.04em; }
+    .icon-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      width: 40px;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: var(--radius-tool);
+      background: transparent;
+      color: var(--ink-secondary);
+      transition: background var(--motion-fast), color var(--motion-fast), box-shadow var(--motion-fast);
+    }
+    .icon-button svg { width: 20px; height: 20px; }
+    .icon-button:hover:not(:disabled) { background: var(--surface-hover); color: var(--ink); }
+    .icon-button[aria-expanded="true"], .icon-button[aria-expanded="true"]:hover {
+      background: var(--accent-tint);
+      color: var(--accent-ink);
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+    .icon-button.compact { width: 32px; height: 32px; border-radius: var(--radius-control); }
+    .icon-button.compact svg { width: 16px; height: 16px; }
+    .icon { fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .status { position: absolute; top: 7px; left: 7px; display: grid; place-items: center; width: 6px; height: 6px; }
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--success) 55%, var(--surface)), var(--success) 75%);
+      box-shadow: 0 0 4px color-mix(in srgb, var(--success) 40%, transparent), 0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+      animation: breathe 2800ms infinite;
+    }
+    @keyframes breathe {
+      0%, 100% {
+        opacity: .7;
+        transform: scale(.94);
+        box-shadow: 0 0 4px color-mix(in srgb, var(--success) 40%, transparent), 0 0 10px color-mix(in srgb, var(--success) 20%, transparent);
+        animation-timing-function: cubic-bezier(.45, 0, .2, 1);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.04);
+        box-shadow: 0 0 6px color-mix(in srgb, var(--success) 65%, transparent), 0 0 12px color-mix(in srgb, var(--success) 38%, transparent);
+        animation-timing-function: cubic-bezier(.45, 0, .2, 1);
+      }
+    }
+    .canvas-panel {
+      position: fixed;
+      top: calc(var(--inset) + 68px);
+      left: var(--inset);
+      display: flex;
+      flex-direction: column;
+      width: min(340px, calc(100vw - var(--inset) * 2));
+      max-height: calc(100dvh - var(--inset) * 2 - 68px);
+      overflow: hidden;
+      transform-origin: top left;
+    }
+    .canvas-panel[hidden] { display: none; }
+    .canvas-panel[data-state="open"] { animation: panel-open var(--motion-panel) cubic-bezier(.2, .7, .2, 1) both; }
+    .canvas-panel[data-state="closed"] { animation: panel-close 160ms ease-in both; pointer-events: none; }
+    @keyframes panel-open {
+      from { opacity: 0; transform: translateY(-4px) scale(.99); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes panel-close {
+      from { opacity: 1; transform: none; }
+      to { opacity: 0; transform: translateY(-4px) scale(.99); }
+    }
+    .panel-header { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); padding: var(--space-3) var(--space-3) var(--space-2); border-bottom: 1px solid var(--border); }
+    .panel-heading { display: flex; align-items: baseline; gap: var(--space-2); }
+    .panel-title { font-size: var(--type-body); font-weight: 600; line-height: 20px; }
+    .panel-count { color: var(--ink-muted); font-size: var(--type-caption); line-height: 16px; }
+    .canvas-list { display: flex; flex-direction: column; gap: var(--space-1); min-height: 0; margin: 0; padding: var(--space-2); overflow-y: auto; list-style: none; }
+    .canvas-item { display: flex; align-items: center; gap: var(--space-1); padding: var(--space-1); border-radius: var(--radius-control); }
+    .canvas-item.active { background: var(--accent-tint); box-shadow: inset 0 0 0 2px var(--accent); }
+    .canvas-switch { display: flex; align-items: center; flex: 1; gap: var(--space-2); min-width: 0; padding: 0; border: 0; border-radius: var(--radius-control); background: transparent; color: var(--ink); text-align: left; }
+    .canvas-preview { flex: 0 0 64px; width: 64px; height: 40px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-muted); }
+    .canvas-copy { display: flex; flex: 1; flex-direction: column; min-width: 0; gap: var(--space-1); }
+    .canvas-name { overflow: hidden; color: var(--ink); font-size: var(--type-body); font-weight: 500; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
+    .canvas-time { color: var(--ink-muted); font-size: var(--type-caption); line-height: 16px; }
+    .canvas-name-input { width: 100%; height: 24px; padding: 0 8px; border: 1px solid var(--accent); border-radius: 6px; background: var(--surface); color: var(--ink); outline: none; }
+    .canvas-actions { display: flex; flex: 0 0 auto; gap: var(--space-1); opacity: 0; transition: opacity var(--motion-fast); }
+    .canvas-item:hover .canvas-actions, .canvas-item:focus-within .canvas-actions { opacity: 1; }
+    .canvas-actions .danger { color: var(--danger); }
+    .canvas-active { display: grid; place-items: center; flex: 0 0 32px; width: 32px; height: 32px; color: var(--accent); }
+    .canvas-active svg { width: 16px; height: 16px; stroke-width: 2; }
+    @media (max-width: 768px) { :root { --inset: var(--space-4); } }
+    @media (hover: none) { .canvas-actions { opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) {
+      .status-dot { animation: none; }
+      .icon-button, .canvas-actions { transition: none; }
+      .canvas-panel[data-state] { animation-duration: 1ms; }
+    }
+  </style>
+</head>
+<body>
+  <svg class="canvas-grid" aria-hidden="true">
+    <defs><pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M0 0V64 M64 0V64 M0 0H64 M0 64H64" fill="none" stroke="#dceaf1"/><path d="M16 0V64 M0 16H64 M32 0V64 M0 32H64 M48 0V64 M0 48H64" fill="none" stroke="#dceaf1" stroke-dasharray="4 4"/></pattern></defs>
+    <rect width="100%" height="100%" fill="url(#grid)"/>
+  </svg>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <symbol id="pen" viewBox="0 0 24 24"><path d="m18 13-.654-4.736a4 4 0 00-2.756-3.266l-9.163-2.9a2 2 0 00-2.017.493l-.82.819a2 2 0 00-.492 2.017l2.9 9.163a4 4 0 003.266 2.756L13 18"/><path d="M18.648 12.352a1.205 1.205 0 011.704 0l1.296 1.296a1.205 1.205 0 010 1.704l-6.296 6.296a1.205 1.205 0 01-1.704 0l-1.296-1.296a1.205 1.205 0 010-1.704z"/><path d="m3 3 6.586 6.586"/><circle cx="11" cy="11" r="2"/></symbol>
+    <symbol id="layers" viewBox="0 0 24 24"><path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14 M12 5v14"/></symbol>
+    <symbol id="pencil" viewBox="0 0 24 24"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></symbol>
+    <symbol id="trash" viewBox="0 0 24 24"><path d="M10 11v6 M14 11v6 M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6 M3 6h18 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
+
+  <header class="identity panel">
+    <div class="brand"><span class="brand-mark"><svg class="icon" viewBox="0 0 24 24" style="stroke-width:2.25" aria-hidden="true"><use href="#pen"/></svg><span class="status" role="status" aria-label="Live"><span class="status-dot" aria-hidden="true"></span></span></span><strong>mico</strong></div>
+    <button class="icon-button" id="canvas-toggle" type="button" aria-label="Canvases" aria-controls="canvas-panel" aria-pressed="true" aria-expanded="true" title="Canvases"><svg class="icon" aria-hidden="true"><use href="#layers"/></svg></button>
+  </header>
+  <section class="canvas-panel panel" id="canvas-panel" aria-label="Canvases" data-state="open">
+    <header class="panel-header">
+      <div class="panel-heading"><span class="panel-title">Canvases</span><span class="panel-count"></span></div>
+      <button class="icon-button compact" id="new-canvas" type="button" aria-label="New canvas" title="New canvas"><svg class="icon" aria-hidden="true"><use href="#plus"/></svg></button>
+    </header>
+    <ul class="canvas-list"></ul>
+  </section>
+
+  <script>
+    const panel = document.querySelector('#canvas-panel');
+    const toggle = document.querySelector('#canvas-toggle');
+    const list = document.querySelector('.canvas-list');
+    const count = document.querySelector('.panel-count');
+    const canvases = [
+      { id: 1, name: 'Project planning', time: 'just now', preview: 1 },
+      { id: 2, name: 'Ideas & notes', time: '2 hours ago', preview: 2 },
+      { id: 3, name: 'Workshop', time: 'yesterday', preview: 3 },
+    ];
+    let activeId = 1;
+    let nextId = 4;
+    let confirmId = null;
+    let confirmTimer;
+
+    function icon(name) {
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      svg.classList.add('icon');
+      svg.setAttribute('aria-hidden', 'true');
+      use.setAttribute('href', `#${name}`);
+      svg.append(use);
+      return svg;
+    }
+
+    function action(name, label, onClick) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'icon-button compact';
+      button.setAttribute('aria-label', label);
+      button.title = label;
+      button.append(icon(name));
+      button.addEventListener('click', onClick);
+      return button;
+    }
+
+    function render() {
+      count.textContent = canvases.length;
+      list.replaceChildren(...canvases.map((canvas) => {
+        const active = canvas.id === activeId;
+        const item = document.createElement('li');
+        item.className = `canvas-item${active ? ' active' : ''}`;
+        const switcher = document.createElement('button');
+        switcher.type = 'button';
+        switcher.className = 'canvas-switch';
+        switcher.setAttribute('aria-label', `Open canvas ${canvas.name}`);
+        if (active) switcher.setAttribute('aria-current', 'true');
+        switcher.addEventListener('click', () => { activeId = canvas.id; render(); });
+        const preview = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        preview.classList.add('canvas-preview');
+        preview.setAttribute('viewBox', '0 0 160 100');
+        preview.setAttribute('aria-hidden', 'true');
+        const art = [
+          '',
+          '<rect width="160" height="100" fill="#f5fafc"/><rect x="14" y="18" width="51" height="58" rx="4" fill="#fff8d4"/><rect x="86" y="20" width="57" height="22" rx="4" fill="#e2f5fc" stroke="#00a2e1"/><rect x="86" y="55" width="57" height="22" rx="4" fill="#f1fadc" stroke="#a6d94f"/>',
+          '<rect width="160" height="100" fill="#f5fafc"/><rect x="18" y="14" width="48" height="35" rx="3" fill="#ffe9f0"/><rect x="82" y="15" width="48" height="35" rx="3" fill="#fff8d4"/><rect x="48" y="58" width="48" height="28" rx="3" fill="#e2f5fc"/>',
+          '<rect width="160" height="100" fill="#f5fafc"/><rect x="17" y="20" width="45" height="23" rx="4" fill="#e2f5fc" stroke="#00a2e1"/><rect x="98" y="20" width="45" height="23" rx="4" fill="#ffe9f0" stroke="#ff7fa3"/><path d="M62 31h36" stroke="#00a2e1"/><rect x="43" y="59" width="74" height="22" rx="4" fill="#f1fadc" stroke="#a6d94f"/>',
+        ];
+        preview.innerHTML = art[canvas.preview] || '';
+        const copy = document.createElement('span');
+        copy.className = 'canvas-copy';
+        const name = document.createElement('span');
+        name.className = 'canvas-name';
+        name.textContent = canvas.name;
+        const time = document.createElement('span');
+        time.className = 'canvas-time';
+        time.textContent = canvas.time;
+        copy.append(name, time);
+        switcher.append(preview, copy);
+        const actions = document.createElement('div');
+        actions.className = 'canvas-actions';
+        const rename = action('pencil', `Rename ${canvas.name}`, () => {
+          confirmId = null;
+          const editing = document.createElement('div');
+          editing.className = 'canvas-switch';
+          const input = document.createElement('input');
+          input.className = 'canvas-name-input';
+          input.setAttribute('aria-label', 'Canvas name');
+          input.value = canvas.name;
+          name.replaceWith(input);
+          editing.append(preview, copy);
+          switcher.replaceWith(editing);
+          let cancelled = false;
+          input.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+            if (event.key === 'Escape') { cancelled = true; render(); toggle.focus(); }
+          });
+          input.addEventListener('blur', () => {
+            if (!cancelled && input.value.trim()) canvas.name = input.value.trim();
+            if (!cancelled) render();
+          });
+          input.focus();
+          input.select();
+        });
+        const deleting = confirmId === canvas.id;
+        const remove = action('trash', `${deleting ? 'Confirm delete' : 'Delete'} ${canvas.name}`, () => {
+          if (confirmId === canvas.id) {
+            const index = canvases.findIndex((entry) => entry.id === canvas.id);
+            canvases.splice(index, 1);
+            if (active) activeId = canvases[0].id;
+            confirmId = null;
+          } else {
+            confirmId = canvas.id;
+            clearTimeout(confirmTimer);
+            confirmTimer = setTimeout(() => { confirmId = null; render(); }, 4000);
+          }
+          render();
+        });
+        remove.disabled = canvases.length <= 1;
+        if (deleting) remove.classList.add('danger');
+        actions.append(rename, remove);
+        item.append(switcher, actions);
+        if (active) {
+          const marker = document.createElement('span');
+          marker.className = 'canvas-active';
+          marker.append(icon('check'));
+          item.append(marker);
+        }
+        return item;
+      }));
+    }
+
+    function setPanelOpen(open) {
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-pressed', String(open));
+      panel.inert = !open;
+      if (open) {
+        panel.hidden = false;
+        panel.removeAttribute('aria-hidden');
+      } else {
+        panel.setAttribute('aria-hidden', 'true');
+      }
+      panel.dataset.state = open ? 'open' : 'closed';
+    }
+    panel.addEventListener('animationend', (event) => {
+      if (event.target === panel && panel.dataset.state === 'closed') panel.hidden = true;
+    });
+    toggle.addEventListener('click', () => setPanelOpen(toggle.getAttribute('aria-expanded') !== 'true'));
+    document.querySelector('#new-canvas').addEventListener('click', () => {
+      const canvas = { id: nextId++, name: `Canvas ${canvases.length + 1}`, time: 'just now', preview: 0 };
+      canvases.unshift(canvas);
+      activeId = canvas.id;
+      confirmId = null;
+      render();
+    });
+    document.addEventListener('pointerdown', (event) => {
+      if (toggle.getAttribute('aria-expanded') === 'true' && !panel.contains(event.target) && !toggle.contains(event.target)) {
+        setPanelOpen(false);
+      }
+    });
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && toggle.getAttribute('aria-expanded') === 'true' && !event.target.matches('input')) {
+        setPanelOpen(false);
+        toggle.focus();
+      }
+    });
+    render();
+  </script>
+</body>
+</html>

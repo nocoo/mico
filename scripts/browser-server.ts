@@ -2,7 +2,7 @@ import { once } from 'node:events'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createServer, loadEnv } from 'vite'
+import { createServer } from 'vite'
 import { createMockAiModel } from '../src/server/aiMock.ts'
 import { createDaemon } from '../src/server/index.ts'
 import { maiRealtimeProxy } from '../src/server/maiProxy.ts'
@@ -14,16 +14,16 @@ const port = BROWSER_PORT + 30000
 const daemon = createDaemon({
 	port,
 	dbPath: join(directory, 'board.sqlite'),
+	settingsPath: join(directory, 'ai-settings', 'settings.json'),
 	aiModel: process.env.MICO_AI_MOCK === '1' ? createMockAiModel() : undefined,
 })
 const base = micoViteConfig()
-const env = loadEnv('development', process.cwd(), '')
 const plugins = [
 	...base.plugins,
 	maiRealtimeProxy({
-		host: env.AZURE_MAI_HOST ?? '',
-		apiKey: env.AZURE_OPENAI_API_KEY ?? '',
-		deployment: env.AZURE_OPENAI_DEPLOYMENT ?? '',
+		host: 'browser-mock.test',
+		apiKey: '',
+		deployment: 'browser-mock',
 	}),
 ]
 const vite = await createServer({

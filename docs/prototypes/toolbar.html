@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mico — Toolbar prototype</title>
+  <style>
+    :root {
+      --canvas: #f5fafc;
+      --grid: #dceaf1;
+      --surface: #fff;
+      --surface-hover: #ecf1f4;
+      --border: #dce4e9;
+      --ink: #2b3038;
+      --ink-secondary: #5e6a73;
+      --accent: #00a2e1;
+      --blue-tint: #e2f5fc;
+      --blue-ink: #0b7ba8;
+      --green: #a6d94f;
+      --green-tint: #f1fadc;
+      --green-ink: #5c8c1e;
+      --yellow: #f7de4b;
+      --yellow-tint: #fff8d4;
+      --yellow-ink: #8c7300;
+      --pink: #ff7fa3;
+      --pink-tint: #ffe9f0;
+      --pink-ink: #b23f63;
+      --border-strong: #a9b6be;
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--canvas);
+      font-size: 14px;
+      line-height: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; overflow: hidden; }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: default; opacity: .35; }
+    button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    .canvas-grid { position: fixed; inset: 0; width: 100%; height: 100%; }
+
+    .toolbar {
+      position: fixed;
+      left: 50%;
+      bottom: 24px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      padding: 8px;
+      min-height: 56px;
+      width: max-content;
+      max-width: calc(100vw - 16px);
+      border-radius: 20px;
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--border), 0 1px 2px rgba(43, 48, 56, .06), 0 2px 12px rgba(43, 48, 56, .08);
+    }
+
+    .dock-main {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      width: max-content;
+      max-width: 100%;
+    }
+
+    .drawing-tools, .view-controls, .zoom-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .tool-options, .segmented-control, .view-controls {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .divider {
+      flex: 0 0 8px;
+      width: 8px;
+      height: 24px;
+      background: linear-gradient(var(--border), var(--border)) center / 1px 100% no-repeat;
+    }
+
+    .icon-button, .zoom-value {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      height: 40px;
+      padding: 0;
+      border: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--ink-secondary);
+      transition: background 160ms, color 160ms, box-shadow 160ms;
+    }
+
+    .icon-button { width: 40px; }
+    .icon-button svg {
+      display: block;
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .icon-button:hover:not(:disabled), .zoom-value:hover { background: var(--surface-hover); color: var(--ink); }
+    .drawing-tools .icon-button[aria-pressed="true"] {
+      background: var(--tool-tint, var(--blue-tint));
+      color: var(--tool-ink, var(--blue-ink));
+      box-shadow: inset 0 0 0 2px var(--tool-accent, var(--accent));
+    }
+    [data-tool="ellipse"], [data-tool="connector"] { --tool-accent: var(--green); --tool-tint: var(--green-tint); --tool-ink: var(--green-ink); }
+    [data-tool="line"], [data-tool="note"] { --tool-accent: var(--yellow); --tool-tint: var(--yellow-tint); --tool-ink: var(--yellow-ink); }
+    [data-tool="path"] { --tool-accent: var(--pink); --tool-tint: var(--pink-tint); --tool-ink: var(--pink-ink); }
+    .zoom-value { width: 64px; color: var(--ink); font-size: 13px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+    .options-wrap {
+      display: flex;
+      align-items: center;
+      flex: 0 0 auto;
+      width: 0;
+      max-width: 100%;
+      overflow: hidden;
+      transition: width 320ms cubic-bezier(.2, .7, .2, 1);
+    }
+    .tool-options { display: flex; align-items: center; flex: 0 0 auto; width: max-content; gap: 4px; }
+    .tool-options[hidden] { display: none; }
+    .select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+      flex: 0 0 88px;
+      width: 88px;
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border-strong);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--ink);
+      font-size: 12px;
+    }
+    .select-trigger:focus-visible, .select-trigger[aria-expanded="true"] {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: inset 0 0 0 1px var(--accent);
+    }
+    .select-trigger svg {
+      flex: 0 0 16px;
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: var(--ink-secondary);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .select-menu {
+      position: fixed;
+      z-index: 30;
+      min-width: 200px;
+      max-width: calc(100vw - 16px);
+      max-height: min(65vh, 480px);
+      overflow-y: auto;
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      box-shadow: 0 8px 32px rgba(43, 48, 56, .12);
+      transform-origin: left bottom;
+    }
+    .select-menu[hidden] { display: none; }
+    .select-menu[data-state="open"] { animation: menu-open 180ms cubic-bezier(.2, .7, .2, 1) both; }
+    .select-menu[data-state="closed"] { animation: menu-close 140ms ease-in both; pointer-events: none; }
+    @keyframes menu-open {
+      from { opacity: 0; transform: translateY(4px) scale(.98); }
+      to { opacity: 1; transform: none; }
+    }
+    @keyframes menu-close {
+      from { opacity: 1; transform: none; }
+      to { opacity: 0; transform: translateY(4px) scale(.98); }
+    }
+    .select-menu button {
+      display: block;
+      width: 100%;
+      min-height: 32px;
+      padding: 4px 8px;
+      border: 0;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--ink);
+      line-height: 1.25;
+      text-align: left;
+    }
+    .select-menu button + button { margin-top: 4px; }
+    .select-menu button:hover, .select-menu button:focus-visible { outline: none; background: var(--surface-hover); }
+    .select-menu button[aria-selected="true"] { background: var(--blue-tint); color: var(--blue-ink); }
+    .segmented-control { display: flex; align-items: center; --choice-color: var(--pink); --choice-tint: var(--pink-tint); --choice-ink: var(--pink-ink); }
+    .segmented-control button {
+      height: 32px;
+      padding: 0 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--ink-secondary);
+      font-size: 12px;
+    }
+    .segmented-control button + button { margin-left: -1px; }
+    .segmented-control button:first-child { border-radius: 8px 0 0 8px; }
+    .segmented-control button:last-child { border-radius: 0 8px 8px 0; }
+    .segmented-control button[aria-pressed="true"] {
+      position: relative;
+      border-color: var(--choice-color);
+      background: var(--choice-tint);
+      color: var(--choice-ink);
+      box-shadow: inset 0 0 0 1px var(--choice-color);
+    }
+    .note-colors button { width: 32px; }
+    .note-colors button:nth-child(1) { --choice-color: var(--yellow); }
+    .note-colors button:nth-child(2) { --choice-color: var(--pink); }
+    .note-colors button:nth-child(3) { --choice-color: var(--green); }
+    .note-colors button:nth-child(4), .note-colors button:nth-child(5) { --choice-color: var(--accent); }
+
+    @media (max-width: 768px) {
+      .toolbar { bottom: 16px; }
+      .dock-main { flex-direction: column; gap: 0; }
+      .dock-divider, .option-divider { display: none; }
+      .options-wrap { height: 0; transition: width 320ms cubic-bezier(.2, .7, .2, 1), height 320ms cubic-bezier(.2, .7, .2, 1), margin 320ms cubic-bezier(.2, .7, .2, 1); }
+      .options-wrap.open { height: 40px; margin-top: 8px; }
+      .view-controls { justify-content: flex-end; width: 100%; margin-top: 8px; }
+    }
+    @media (max-width: 480px) {
+      .divider { display: none; }
+      .drawing-tools { display: grid; grid-template-columns: repeat(4, 40px); row-gap: 8px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .icon-button, .zoom-value, .options-wrap { transition: none; }
+      .select-menu[data-state] { animation-duration: 1ms; }
+    }
+  </style>
+</head>
+<body>
+  <svg class="canvas-grid" aria-hidden="true">
+    <defs>
+      <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+        <path d="M0 0V64 M64 0V64 M0 0H64 M0 64H64" fill="none" stroke="#dceaf1"/>
+        <path d="M16 0V64 M0 16H64 M32 0V64 M0 32H64 M48 0V64 M0 48H64" fill="none" stroke="#dceaf1" stroke-dasharray="4 4"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#grid)"/>
+  </svg>
+
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute">
+    <symbol id="select" viewBox="0 0 24 24"><path d="M4.037 4.688a.495.495 0 0 1 .651-.651l16 6.5a.5.5 0 0 1-.063.947l-6.124 1.58a2 2 0 0 0-1.438 1.435l-1.579 6.126a.5.5 0 0 1-.947.063z"/></symbol>
+    <symbol id="hand" viewBox="0 0 24 24"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/></symbol>
+    <symbol id="rectangle" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/></symbol>
+    <symbol id="ellipse" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></symbol>
+    <symbol id="text" viewBox="0 0 24 24"><path d="M12 4v16"/><path d="M4 7V5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v2"/><path d="M9 20h6"/></symbol>
+    <symbol id="line" viewBox="0 0 24 24"><path d="M22 2 2 22"/></symbol>
+    <symbol id="brush" viewBox="0 0 24 24"><path d="m11 10 3 3"/><path d="M6.5 21A3.5 3.5 0 1 0 3 17.5a2.62 2.62 0 0 1-.708 1.792A1 1 0 0 0 3 21z"/><path d="M9.969 17.031 21.378 5.624a1 1 0 0 0-3.002-3.002L6.967 14.031"/></symbol>
+    <symbol id="note" viewBox="0 0 24 24"><path d="M21 9a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/><path d="M15 3v5a1 1 0 0 0 1 1h5"/></symbol>
+    <symbol id="html" viewBox="0 0 24 24"><path d="m18 16 4-4-4-4"/><path d="m6 8-4 4 4 4"/><path d="m14.5 4-5 16"/></symbol>
+    <symbol id="connector" viewBox="0 0 24 24"><path d="M7 7h10v10"/><path d="M7 17 17 7"/></symbol>
+    <symbol id="delete" viewBox="0 0 24 24"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+    <symbol id="frame" viewBox="0 0 24 24"><path d="M22 6H2 M22 18H2 M6 2v20 M18 2v20"/></symbol>
+    <symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+    <symbol id="plus" viewBox="0 0 24 24"><path d="M5 12h14 M12 5v14"/></symbol>
+    <symbol id="fit" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3 M21 8V5a2 2 0 0 0-2-2h-3 M3 16v3a2 2 0 0 0 2 2h3 M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  </svg>
+
+  <div class="toolbar" role="toolbar" aria-label="Canvas tools">
+    <div class="dock-main">
+      <div class="drawing-tools">
+        <button class="icon-button" data-tool="select" type="button" aria-label="Select" aria-pressed="true" title="Select (V)"><svg aria-hidden="true"><use href="#select"/></svg></button>
+        <button class="icon-button" data-tool="hand" type="button" aria-label="Pan" aria-pressed="false" title="Pan (H)"><svg aria-hidden="true"><use href="#hand"/></svg></button>
+        <span class="divider"></span>
+        <button class="icon-button" data-tool="rectangle" type="button" aria-label="Rectangle" aria-pressed="false" title="Rectangle (R)"><svg aria-hidden="true"><use href="#rectangle"/></svg></button>
+        <button class="icon-button" data-tool="ellipse" type="button" aria-label="Ellipse" aria-pressed="false" title="Ellipse (O)"><svg aria-hidden="true"><use href="#ellipse"/></svg></button>
+        <button class="icon-button" data-tool="text" type="button" aria-label="Text" aria-pressed="false" title="Text (T)"><svg aria-hidden="true"><use href="#text"/></svg></button>
+        <span class="divider"></span>
+        <button class="icon-button" data-tool="line" type="button" aria-label="Line" aria-pressed="false" title="Line (L)"><svg aria-hidden="true"><use href="#line"/></svg></button>
+        <button class="icon-button" data-tool="path" type="button" aria-label="Brush" aria-pressed="false" title="Brush (P)"><svg aria-hidden="true"><use href="#brush"/></svg></button>
+        <button class="icon-button" data-tool="note" type="button" aria-label="Sticky note" aria-pressed="false" title="Sticky note (N)"><svg aria-hidden="true"><use href="#note"/></svg></button>
+        <button class="icon-button" data-tool="html" type="button" aria-label="HTML card" aria-pressed="false" title="HTML card (W)"><svg aria-hidden="true"><use href="#html"/></svg></button>
+        <button class="icon-button" data-tool="connector" type="button" aria-label="Connector" aria-pressed="false" title="Connector (C)"><svg aria-hidden="true"><use href="#connector"/></svg></button>
+        <span class="divider"></span>
+        <button class="icon-button" type="button" aria-label="Delete selected" title="Delete selected" disabled><svg aria-hidden="true"><use href="#delete"/></svg></button>
+        <button class="icon-button" type="button" aria-label="Frame selection" title="Frame selection" disabled><svg aria-hidden="true"><use href="#frame"/></svg></button>
+      </div>
+      <div class="options-wrap">
+      <span class="divider option-divider"></span>
+      <fieldset class="tool-options text-options" data-options="text" aria-label="Text options" hidden>
+        <button class="select-trigger" type="button" data-font-select="family" data-value="sans" aria-label="Font family" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>Sans</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="select-trigger" type="button" data-font-select="size" data-value="32" aria-label="Font size" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>32</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+        <button class="select-trigger" type="button" data-font-select="weight" data-value="500" aria-label="Font weight" aria-haspopup="listbox" aria-expanded="false" aria-controls="font-menu"><span>500</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+      </fieldset>
+      <fieldset class="tool-options" data-options="path" aria-label="Brush options" hidden>
+        <fieldset class="segmented-control" aria-label="Brush style">
+          <button type="button" aria-pressed="false">Pencil</button><button type="button" aria-pressed="false">Marker</button><button type="button" aria-pressed="true">Brush</button>
+        </fieldset>
+        <fieldset class="segmented-control" aria-label="Brush width">
+          <button type="button" aria-pressed="false">2</button><button type="button" aria-pressed="true">4</button><button type="button" aria-pressed="false">8</button>
+        </fieldset>
+      </fieldset>
+      <fieldset class="tool-options" data-options="note" aria-label="Sticky colors" hidden>
+        <fieldset class="segmented-control note-colors" aria-label="Sticky color">
+          <button type="button" aria-label="Yellow sticky" aria-pressed="true" style="background:#fff8d4"></button><button type="button" aria-label="Pink sticky" aria-pressed="false" style="background:#ffe9f0"></button><button type="button" aria-label="Green sticky" aria-pressed="false" style="background:#f1fadc"></button><button type="button" aria-label="Blue sticky" aria-pressed="false" style="background:#e2f5fc"></button><button type="button" aria-label="Neutral sticky" aria-pressed="false" style="background:#f3f5f4"></button>
+        </fieldset>
+      </fieldset>
+      </div>
+      <span class="divider dock-divider"></span>
+      <fieldset class="view-controls" aria-label="View controls">
+        <div class="zoom-controls">
+          <button class="icon-button" type="button" aria-label="Zoom out" title="Zoom out (−)"><svg aria-hidden="true"><use href="#minus"/></svg></button>
+          <button class="zoom-value" type="button" aria-label="Reset view" title="Reset view (0)">100%</button>
+          <button class="icon-button" type="button" aria-label="Zoom in" title="Zoom in (+)"><svg aria-hidden="true"><use href="#plus"/></svg></button>
+        </div>
+        <span class="divider"></span>
+        <button class="icon-button" type="button" aria-label="Fit board" title="Fit board (F)"><svg aria-hidden="true"><use href="#fit"/></svg></button>
+      </fieldset>
+    </div>
+  </div>
+  <div id="font-menu" class="select-menu" role="listbox" hidden></div>
+  <script>
+    const toolbar = document.querySelector('.toolbar');
+    const tools = [...toolbar.querySelectorAll('[data-tool]')];
+    const options = [...toolbar.querySelectorAll('[data-options]')];
+    const optionsWrap = toolbar.querySelector('.options-wrap');
+    const optionDivider = toolbar.querySelector('.option-divider');
+    const zoomValue = toolbar.querySelector('.zoom-value');
+    const fontMenu = document.querySelector('#font-menu');
+    const fontSelects = Object.fromEntries([...toolbar.querySelectorAll('[data-font-select]')].map((button) => [button.dataset.fontSelect, button]));
+    const fontFamilies = { hand: '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive', serif: 'Georgia, "Times New Roman", serif', sans: 'Inter, ui-sans-serif, system-ui, sans-serif', mono: 'ui-monospace, SFMono-Regular, monospace' };
+    const fontChoices = { family: ['hand', 'serif', 'sans', 'mono'], size: ['16', '24', '32', '48'], weight: ['300', '400', '500', '700'] };
+    let openFontSelect = null;
+    let zoom = 1;
+
+    function closeFontMenu(restoreFocus = false) {
+      if (!openFontSelect) return;
+      const trigger = openFontSelect;
+      trigger.setAttribute('aria-expanded', 'false');
+      fontMenu.dataset.state = 'closed';
+      fontMenu.setAttribute('aria-hidden', 'true');
+      openFontSelect = null;
+      if (restoreFocus) trigger.focus();
+    }
+
+    function openFontMenu(trigger) {
+      if (openFontSelect === trigger) { closeFontMenu(); return; }
+      closeFontMenu();
+      openFontSelect = trigger;
+      trigger.setAttribute('aria-expanded', 'true');
+      fontMenu.setAttribute('aria-label', trigger.getAttribute('aria-label'));
+      fontMenu.replaceChildren(...fontChoices[trigger.dataset.fontSelect].map((value) => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', String(value === trigger.dataset.value));
+        option.dataset.value = value;
+        option.textContent = trigger.dataset.fontSelect === 'family' ? value[0].toUpperCase() + value.slice(1) : value;
+        option.style.fontFamily = fontFamilies[trigger.dataset.fontSelect === 'family' ? value : fontSelects.family.dataset.value];
+        option.style.fontSize = `${trigger.dataset.fontSelect === 'size' ? value : 16}px`;
+        option.style.fontWeight = trigger.dataset.fontSelect === 'weight' ? value : fontSelects.weight.dataset.value;
+        return option;
+      }));
+      fontMenu.hidden = false;
+      fontMenu.removeAttribute('aria-hidden');
+      fontMenu.dataset.state = 'open';
+      const rect = trigger.getBoundingClientRect();
+      fontMenu.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - fontMenu.offsetWidth - 8))}px`;
+      fontMenu.style.top = `${Math.max(8, rect.top - fontMenu.offsetHeight - 6)}px`;
+      fontMenu.querySelector('[aria-selected="true"]').focus();
+    }
+
+    function updateOptionsWidth() {
+      const activeOptions = options.find((group) => !group.hidden);
+      optionsWrap.classList.toggle('open', Boolean(activeOptions));
+      optionsWrap.style.width = `${activeOptions ? activeOptions.scrollWidth + optionDivider.offsetWidth : 0}px`;
+    }
+
+    function selectTool(id) {
+      tools.forEach((button) => { button.setAttribute('aria-pressed', String(button.dataset.tool === id)); });
+      options.forEach((group) => { group.hidden = group.dataset.options !== id; });
+      updateOptionsWidth();
+    }
+
+    window.addEventListener('resize', updateOptionsWidth);
+
+    function setZoom(value) {
+      zoom = Math.min(3, Math.max(.05, value));
+      zoomValue.textContent = `${Math.round(zoom * 100)}%`;
+    }
+
+    toolbar.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.dataset.fontSelect) { openFontMenu(button); return; }
+      closeFontMenu();
+      if (button.dataset.tool) selectTool(button.dataset.tool);
+      const group = button.closest('.segmented-control');
+      if (group) group.querySelectorAll('button').forEach((item) => { item.setAttribute('aria-pressed', String(item === button)); });
+      if (button.getAttribute('aria-label') === 'Zoom out') setZoom(zoom / 1.2);
+      if (button.getAttribute('aria-label') === 'Zoom in') setZoom(zoom * 1.2);
+      if (button === zoomValue || button.getAttribute('aria-label') === 'Fit board') setZoom(1);
+    });
+
+    fontMenu.addEventListener('animationend', (event) => {
+      if (event.target === fontMenu && fontMenu.dataset.state === 'closed') fontMenu.hidden = true;
+    });
+
+    fontMenu.addEventListener('click', (event) => {
+      const option = event.target.closest('[role="option"]');
+      if (!option || !openFontSelect) return;
+      openFontSelect.dataset.value = option.dataset.value;
+      openFontSelect.querySelector('span').textContent = option.textContent;
+      closeFontMenu(true);
+    });
+
+    fontMenu.addEventListener('keydown', (event) => {
+      event.stopPropagation();
+      if (event.key === 'Escape') { event.preventDefault(); closeFontMenu(true); return; }
+      if (event.key === 'Tab') { closeFontMenu(); return; }
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+      event.preventDefault();
+      const items = [...fontMenu.querySelectorAll('[role="option"]')];
+      const index = items.indexOf(document.activeElement);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+      items[next].focus();
+    });
+
+    toolbar.addEventListener('keydown', (event) => {
+      const trigger = event.target.closest('[data-font-select]');
+      if (trigger && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        event.preventDefault();
+        openFontMenu(trigger);
+      }
+    });
+
+    document.addEventListener('pointerdown', (event) => {
+      if (!fontMenu.contains(event.target) && !event.target.closest('[data-font-select]')) closeFontMenu();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (openFontSelect || event.target.closest('[data-font-select]') || event.metaKey || event.ctrlKey || event.altKey) return;
+      const shortcuts = { v: 'select', h: 'hand', r: 'rectangle', o: 'ellipse', t: 'text', l: 'line', p: 'path', n: 'note', w: 'html', c: 'connector' };
+      const tool = shortcuts[event.key.toLowerCase()];
+      if (tool) selectTool(tool);
+      if (event.key === 'Escape') selectTool('select');
+      if (event.key === '+' || event.key === '=') setZoom(zoom * 1.2);
+      if (event.key === '-') setZoom(zoom / 1.2);
+      if (event.key === '0' || event.key.toLowerCase() === 'f') setZoom(1);
+    });
+  </script>
+</body>
+</html>

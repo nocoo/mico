@@ -27,7 +27,7 @@ export function formatClock(seconds: number): string {
 }
 
 export function lectureSegmentText(
-	clip: LessonClip,
+	clip: Pick<LessonClip, 'subject' | 'title'>,
 	index: number,
 	start: number,
 	end: number,

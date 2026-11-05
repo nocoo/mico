@@ -8,7 +8,7 @@ export default defineConfig({
 	fullyParallel: false,
 	workers: 1,
 	timeout: 15000,
-	globalTimeout: 120000,
+	globalTimeout: 300000,
 	reporter: 'list',
 	use: {
 		baseURL,

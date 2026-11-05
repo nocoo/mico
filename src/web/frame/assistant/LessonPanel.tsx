@@ -1,11 +1,11 @@
 import { FileText, LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { CANDY_COLORS } from '../shared/palette'
-import { SelectField } from './SelectField'
-import { type LectureAudio, loadLecture, Player, TARGET_RATE } from './stt/audioSource'
-import { MaiClient, type MaiConfig } from './stt/maiClient'
-import { dedupeHypothesis, formatClock, type LessonClip } from './stt/transcript'
-import { SilenceSegmenter } from './stt/vad'
+import { SelectField } from '../../SelectField'
+import { type LectureAudio, loadLecture, Player, TARGET_RATE } from '../../stt/audioSource'
+import { MaiClient, type MaiConfig } from '../../stt/maiClient'
+import { dedupeHypothesis, formatClock, type LessonClip } from '../../stt/transcript'
+import { SilenceSegmenter } from '../../stt/vad'
+import { drawWave } from '../../waveform.ts'
 
 export interface LessonSegment {
 	id: number
@@ -16,6 +16,7 @@ export interface LessonSegment {
 
 interface LessonPanelProps {
 	active: boolean
+	suspend: boolean
 	initialClipId?: string
 	onClipChange?: (id: string) => void
 	aiBusy: boolean
@@ -67,13 +68,13 @@ interface Runtime {
 
 const PHASE_LABEL: Record<Phase, string> = {
 	idle: 'Ready',
-	loading: 'Loading audio…',
+	loading: 'Loading recording…',
 	connecting: 'Connecting…',
 	ready: 'Session ready',
 	streaming: 'Live transcription',
 	paused: 'Paused',
 	stopping: 'Finishing transcript…',
-	done: 'Lecture complete',
+	done: 'Recording complete',
 	closed: 'Disconnected',
 	error: 'Error',
 }
@@ -117,54 +118,9 @@ function newRuntime(): Runtime {
 	}
 }
 
-function drawWave(
-	canvas: HTMLCanvasElement,
-	peaks: Float32Array | null,
-	progress: number,
-	segments: LessonSegment[],
-	duration: number,
-): void {
-	const dpr = window.devicePixelRatio || 1
-	const width = canvas.clientWidth
-	const height = canvas.clientHeight
-	if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
-		canvas.width = Math.round(width * dpr)
-		canvas.height = Math.round(height * dpr)
-	}
-	const ctx = canvas.getContext('2d')
-	if (!ctx) return
-	ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-	ctx.clearRect(0, 0, width, height)
-	if (!peaks) {
-		ctx.fillStyle = 'rgba(122,133,141,0.25)'
-		ctx.fillRect(0, height / 2, width, 1)
-		return
-	}
-	const buckets = peaks.length / 2
-	const mid = height / 2
-	const step = width / buckets
-	const played = duration > 0 ? Math.min(1, progress / duration) * width : 0
-	for (let bucket = 0; bucket < buckets; bucket++) {
-		const x = bucket * step
-		const min = peaks[bucket * 2]
-		const max = peaks[bucket * 2 + 1]
-		const bar = Math.max(1, (max - min) * mid * 0.9)
-		ctx.fillStyle = x <= played ? CANDY_COLORS.blue : 'rgba(122,133,141,0.28)'
-		ctx.fillRect(x, mid - bar / 2, Math.max(step - 0.6, 0.8), bar)
-	}
-	for (const segment of segments) {
-		if (!duration) continue
-		const x = (segment.end / duration) * width
-		ctx.fillStyle = 'rgba(255,127,163,0.8)'
-		ctx.fillRect(x, 0, 1, 5)
-		ctx.fillRect(x, height - 5, 1, 5)
-	}
-	ctx.fillStyle = CANDY_COLORS.ink
-	ctx.fillRect(played, 0, 1.5, height)
-}
-
 export function LessonPanel({
 	active,
+	suspend,
 	initialClipId,
 	onClipChange,
 	aiBusy,
@@ -234,9 +190,45 @@ export function LessonPanel({
 	}, [])
 
 	useEffect(() => {
+		if (!suspend) return
+		const rt = runtime.current
+		if (rt.starting) {
+			rt.generation++
+			rt.starting = false
+			rt.client?.close()
+			rt.client = null
+			setPhase('paused')
+		}
+		if (rt.player?.playing) {
+			rt.player.pause()
+			if (rt.timer !== null) window.clearTimeout(rt.timer)
+			rt.timer = null
+			setPhase('paused')
+			setVad({ db: -90, speaking: false })
+		}
+	}, [suspend])
+
+	const waveDataRef = useRef({ peaks, progress, segments, duration })
+	waveDataRef.current = { peaks, progress, segments, duration }
+
+	useEffect(() => {
 		if (!active || !waveRef.current) return
 		drawWave(waveRef.current, peaks, progress, segments, duration)
 	}, [active, peaks, progress, segments, duration])
+
+	useEffect(() => {
+		const canvas = waveRef.current
+		const observedElement = canvas?.parentElement
+		if (!active || !canvas || !observedElement) return
+		const redraw = () => {
+			const data = waveDataRef.current
+			drawWave(canvas, data.peaks, data.progress, data.segments, data.duration)
+		}
+		const observer = new ResizeObserver(redraw)
+		observer.observe(observedElement)
+		redraw()
+		return () => observer.disconnect()
+	}, [active])
 
 	useEffect(() => {
 		const rt = runtime.current
@@ -587,7 +579,7 @@ export function LessonPanel({
 		if (rt.timer !== null) window.clearTimeout(rt.timer)
 		rt.timer = null
 		resetSession()
-		onCreateCanvas(selected?.title ?? 'Lecture')
+		onCreateCanvas(selected?.title ?? 'Recording')
 	}
 
 	const playing = runtime.current.player?.playing === true
@@ -603,8 +595,9 @@ export function LessonPanel({
 	return (
 		<div className="lesson">
 			<div className="lesson-clip">
+				<span className="select-label">Recording</span>
 				<SelectField
-					label="Lecture"
+					label="Recording"
 					value={selected?.id ?? ''}
 					options={clips.map((clip) => ({
 						value: clip.id,
@@ -614,7 +607,9 @@ export function LessonPanel({
 					disabled={clips.length === 0}
 				/>
 				<div className="lesson-meta">
-					<span>{selected ? `${selected.subject} · ${selected.voice}` : 'Loading lectures…'}</span>
+					<span>
+						{selected ? `${selected.subject} · ${selected.voice}` : 'Loading recordings…'}
+					</span>
 					<span>{formatClock(duration)}</span>
 				</div>
 			</div>
@@ -657,7 +652,7 @@ export function LessonPanel({
 					) : (
 						<Play size={16} strokeWidth={2} aria-hidden="true" />
 					)}
-					{playing ? 'Pause' : phase === 'streaming' ? 'Resume' : 'Play lecture'}
+					{playing ? 'Pause' : phase === 'streaming' ? 'Resume' : 'Play recording'}
 				</button>
 				<button type="button" className="lesson-button" onClick={() => void resetAndStart()}>
 					<RotateCcw size={15} strokeWidth={2} aria-hidden="true" />
@@ -766,7 +761,7 @@ export function LessonPanel({
 					{segments.length === 0 && (
 						<li className="lesson-seg-empty">
 							<LoaderCircle size={14} strokeWidth={2} aria-hidden="true" />
-							Play a lecture to transcribe it sentence by sentence.
+							Play a recording to transcribe it sentence by sentence.
 						</li>
 					)}
 				</ol>

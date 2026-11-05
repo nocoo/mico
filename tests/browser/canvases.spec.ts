@@ -71,6 +71,11 @@ test('canvas panel lists names, times and previews and closes cleanly', async ({
 		'aria-current',
 		'true',
 	)
+	await panel.evaluate(async (element) => {
+		await Promise.all(
+			element.getAnimations().map((animation) => animation.finished.catch(() => undefined)),
+		)
+	})
 	const addBox = await page.getByRole('button', { name: 'New canvas', exact: true }).boundingBox()
 	const activeBox = await item.locator('.canvas-active').boundingBox()
 	if (!addBox || !activeBox) throw new Error('Expected the add and active controls')

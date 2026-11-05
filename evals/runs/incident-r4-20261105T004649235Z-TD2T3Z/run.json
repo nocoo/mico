@@ -1,0 +1,15 @@
+{
+  "caseId": "incident",
+  "subject": "服务故障复盘",
+  "title": "线上结算故障复盘",
+  "round": 4,
+  "startedAt": "2026-11-05T00:46:49.235Z",
+  "canvasName": "服务故障复盘 · 第4轮 · 20261105T004649235Z",
+  "fixedText": "evals/cases/c12-service-incident.zh.txt",
+  "segments": 17,
+  "summaryRequested": true,
+  "turns": 18,
+  "status": "success",
+  "canvasId": "e8854c97-0236-4950-bc06-b26770f93da9",
+  "finalBoardRevision": 42
+}

@@ -1,9 +1,10 @@
 import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
+import { FRAME_LAYOUT } from './frame/layout.ts'
 
 export { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
 
-export const CONTROL_SIZE = 40
-export const ICON_SIZE = 20
+export const CONTROL_SIZE = FRAME_LAYOUT.controlSize
+export const ICON_SIZE = FRAME_LAYOUT.iconSize
 export const TEXT_SIZE = 14
 export type DrawTool = 'rectangle' | 'ellipse' | 'text' | 'line' | 'path' | 'note' | 'html'
 export type Tool = 'select' | 'hand' | 'connector' | DrawTool

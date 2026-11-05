@@ -36,7 +36,7 @@ export interface ShapeDigest {
 }
 
 const MAX_TEXT = 180
-const MAX_HTML = 6000
+const MAX_HTML = 200000
 const MAX_SHAPES = 150
 
 export function clip(value: string, limit: number): string {
@@ -91,7 +91,7 @@ export function digestShape(shape: Shape, includeHtml = false, detailed = false)
 	Object.assign(digest, rectOf(shape), { color: shape.color })
 	for (const key of ['text', 'title'] as const) {
 		const value = shape[key]
-		if (value !== undefined) digest[key] = clip(value, MAX_TEXT)
+		if (value !== undefined) digest[key] = clip(value, detailed ? 6000 : MAX_TEXT)
 	}
 	if (shape.frameId !== undefined) digest.frameId = shape.frameId
 	if (shape.type === 'text') {
@@ -200,12 +200,6 @@ function layoutWarnings(shapes: Shape[]): string[] {
 			}
 		}
 	}
-	const bounds = boardBounds(shapes)
-	if (bounds && (bounds.h > 2200 || bounds.w > 2800)) {
-		warnings.push(
-			`Board is very large (${bounds.w}×${bounds.h}); use a 2–3 column layout and compact instead of extending further`,
-		)
-	}
 	return warnings.slice(0, 20)
 }
 
@@ -224,13 +218,10 @@ export function boardDigest(
 		count: board.shapes.length,
 		bounds: boardBounds(board.shapes),
 		selection: liveSelection,
-		shapes: shapes.map((shape) =>
-			digestShape(
-				shape,
-				options.includeHtml === true && liveSelection.includes(shape.id),
-				liveSelection.includes(shape.id),
-			),
-		),
+		shapes: shapes.map((shape) => {
+			const detailed = liveSelection.includes(shape.id) || Boolean(wanted?.has(shape.id))
+			return digestShape(shape, options.includeHtml === true && detailed, detailed)
+		}),
 		omitted,
 		warnings: layoutWarnings(board.shapes),
 	}

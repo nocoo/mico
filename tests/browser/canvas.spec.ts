@@ -152,11 +152,16 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel')).toHaveText('mico')
-	await expect(page.locator('.identity-panel .brand-mark.lucide')).toHaveCount(1)
-	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'status-breathe')
+	await expect(page.locator('.identity-panel .brand-mark-icon.lucide')).toHaveCount(1)
+	await expect(page.locator('.status-dot')).toHaveCSS(
+		'animation-name',
+		'frame-identity-status-breathe',
+	)
 	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(15)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
-	await expect(page.locator('.topbar .view-controls')).toHaveCount(0)
+	for (const topbar of await page.locator('.topbar').all()) {
+		await expect(topbar.locator('.view-controls')).toHaveCount(0)
+	}
 	await expect(toolbar.getByRole('group', { name: 'View controls', exact: true })).toBeVisible()
 	const select = page.getByRole('button', { name: 'Select', exact: true })
 	await expect(page.getByRole('tooltip')).toHaveCount(0)
@@ -210,7 +215,9 @@ test('frame controls align to four-pixel layout slots even on fractional viewpor
 }) => {
 	await page.setViewportSize({ width: 1453, height: 969 })
 	const controls = await page
-		.locator('.topbar .icon-button, .toolbar .icon-button, .zoom-value')
+		.locator(
+			'.topbar.frame-identity .icon-button, .topbar.ai-topbar .icon-button, .toolbar .icon-button, .zoom-value',
+		)
 		.evaluateAll((buttons) =>
 			buttons.map((button) => {
 				const { x, y, width, height } = button.getBoundingClientRect()
@@ -260,7 +267,9 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 		})
 	const verify = async (initial: Awaited<ReturnType<typeof snapshot>>) => {
 		expect(await snapshot()).toEqual(initial)
-		await expect(page.locator('.topbar')).toHaveCSS('position', 'fixed')
+		for (const topbar of await page.locator('.topbar').all()) {
+			await expect(topbar).toHaveCSS('position', 'fixed')
+		}
 		await expect(page.locator('.toolbar')).toHaveCSS('position', 'fixed')
 		for (const button of await page.getByRole('toolbar').getByRole('button').all())
 			await expect(button).toBeVisible()
@@ -383,6 +392,7 @@ test('sticky note text edits inline and in the properties panel', async ({ page,
 		| undefined
 	if (!note || note.type !== 'note') throw new Error('Expected a note')
 	expect(note).toMatchObject({ color: CANDY_TINTS.pink, text: 'Note' })
+	await expect(page.locator(`[data-shape-id="${note.id}"]`).first()).toBeVisible()
 
 	const center = await worldPoint(page, note.x + note.w / 2, note.y + note.h / 2)
 	await page.mouse.dblclick(center.x, center.y)
@@ -515,7 +525,7 @@ test('typographic text keeps its font settings', async ({ page, request }) => {
 	await choose(page, 'Font family', 'Hand')
 	await choose(page, 'Font size', '48')
 	await choose(page, 'Font weight', '700')
-	await page.waitForTimeout(250)
+	await expect(page.locator('.select-content')).toHaveCount(0)
 	await page.mouse.click(700, 500)
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'text'))
@@ -843,7 +853,7 @@ test('html cards render generated markup and expose only their title', async ({
 						h: 300,
 						color: '#22c55e',
 						title: 'Stats',
-						html: '<!doctype html><html><body style="margin:0"><h1 id="value">42</h1><script>document.getElementById("value").textContent = "hacked"</script></body></html>',
+						html: '<!doctype html><html><head><style>#value { color: rgb(255, 0, 0) }</style></head><body style="margin:0"><h1 id="value">42</h1><button id="bootstrap-button" class="btn btn-primary" data-bs-toggle="collapse" data-bs-target="#bootstrap-panel" aria-expanded="false">Bootstrap</button><div id="bootstrap-panel" class="collapse"><div class="card card-body" id="bootstrap-panel-body">Bootstrap state</div></div><img id="blocked-image" src="https://example.invalid/pixel.png"><script src="https://example.invalid/script.js"></script><script>document.getElementById("value").textContent = "hacked"; window.bootstrapProbe = !!window.bootstrap; window.externalProbe = "blocked"; window.parentProbe = (() => { try { return window.parent.document.title } catch (error) { return error.name } })(); </script></body></html>',
 						frameId: 'html-frame',
 					},
 				},
@@ -851,13 +861,84 @@ test('html cards render generated markup and expose only their title', async ({
 		},
 	})
 	expect(created.ok()).toBe(true)
+	let externalRouteRequests = 0
+	await page.route('https://example.invalid/**', async (route) => {
+		externalRouteRequests++
+		await route.abort()
+	})
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
-	await expect(page.locator('[data-shape-id="html-card"] iframe')).toHaveAttribute('sandbox', '')
+	await expect(page.locator('[data-shape-id="html-card"] iframe')).toHaveAttribute(
+		'sandbox',
+		'allow-scripts',
+	)
 	const frame = page.frameLocator('[data-shape-id="html-card"] iframe')
-	await expect(frame.locator('#value')).toHaveText('42')
+	await expect(frame.locator('#value')).toHaveText('hacked')
+	await expect(frame.locator('#value')).toHaveCSS('color', 'rgb(255, 0, 0)')
+	await expect(frame.locator('#bootstrap-button')).toHaveCSS(
+		'background-color',
+		'rgb(13, 110, 253)',
+	)
+	await expect
+		.poll(() =>
+			frame.locator('html').evaluate(() => ({
+				bootstrap: (window as Window & { bootstrapProbe?: boolean }).bootstrapProbe,
+				external: (window as Window & { externalProbe?: string }).externalProbe,
+				parent: (window as Window & { parentProbe?: string }).parentProbe,
+			})),
+		)
+		.toEqual({ bootstrap: true, external: 'blocked', parent: 'SecurityError' })
+	const csp = await frame
+		.locator('meta[http-equiv="Content-Security-Policy"]')
+		.getAttribute('content')
+	expect(csp).toContain("default-src 'none'")
+	expect(csp).toContain("script-src 'unsafe-inline'")
+	expect(csp).toContain("style-src 'unsafe-inline'")
+	expect(csp).toContain('img-src data:')
+	expect(csp).toContain('font-src data:')
+	expect(externalRouteRequests).toBe(0)
+
+	const headerBox = await pillBox(page, 'html-card')
+	await page.mouse.click(headerBox.x + headerBox.width / 2, headerBox.y + headerBox.height / 2)
+	await expect(page.locator('[data-shape-id="html-card"] foreignObject').first()).toHaveAttribute(
+		'pointer-events',
+		'auto',
+	)
+	await expect(frame.locator('#bootstrap-button')).toBeVisible()
+	await expect
+		.poll(() => frame.locator('html').evaluate(() => document.readyState))
+		.toBe('complete')
+	await expect
+		.poll(() =>
+			frame.locator('#bootstrap-button').evaluate((button) => {
+				const view = button.ownerDocument.defaultView as unknown as {
+					bootstrap?: { Collapse?: unknown }
+				}
+				return typeof view.bootstrap?.Collapse === 'function'
+			}),
+		)
+		.toBe(true)
+	await expect(frame.locator('#bootstrap-panel')).not.toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await frame.locator('#bootstrap-button').click()
+	await expect(frame.locator('#bootstrap-panel')).toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await expect(frame.locator('#bootstrap-button')).toHaveAttribute('aria-expanded', 'true')
+
+	const dragStart = await pillBox(page, 'html-card')
+	await page.mouse.move(dragStart.x + dragStart.width / 2, dragStart.y + dragStart.height / 2)
+	await page.mouse.down()
+	await page.mouse.move(
+		dragStart.x + dragStart.width / 2 + 40,
+		dragStart.y + dragStart.height / 2 + 20,
+		{
+			steps: 8,
+		},
+	)
+	await page.mouse.up()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'html-card'))
+		.toMatchObject({ x: 320, y: 336 })
 
 	const updated = await request.post('/api/operations', {
 		data: {
@@ -897,6 +978,34 @@ test('html cards render generated markup and expose only their title', async ({
 	await expect(properties).toBeVisible()
 	await expect(properties.getByLabel('Card title')).toHaveValue('Revenue')
 	await expect(properties.getByLabel('Text', { exact: true })).toHaveCount(0)
+
+	const variants = [
+		[
+			'<html><body><p id="variant">html</p><script>document.getElementById("variant").textContent = "html-script"</script></body></html>',
+			'html-script',
+		],
+		[
+			'<head><title>x</title></head><body><p id="variant">head</p><script>document.getElementById("variant").textContent = "head-script"</script></body>',
+			'head-script',
+		],
+		[
+			'<!doctype html><body><p id="variant">doctype</p><script>document.getElementById("variant").textContent = "doctype-script"</script></body>',
+			'doctype-script',
+		],
+		[
+			'<p id="variant">fragment</p><script>document.getElementById("variant").textContent = "fragment-script"</script>',
+			'fragment-script',
+		],
+	]
+	for (const [html, expected] of variants) {
+		const variantUpdate = await request.post('/api/operations', {
+			data: {
+				operations: [{ type: 'update', id: 'html-card', patch: { html } }],
+			},
+		})
+		expect(variantUpdate.ok()).toBe(true)
+		await expect(frame.locator('#variant')).toHaveText(expected)
+	}
 })
 
 test('freehand brush draws a persisted tapered path and API sketches render', async ({
@@ -1057,7 +1166,7 @@ test('concurrent API edits are not overwritten by an in-flight endpoint drag', a
 	const updated = (await response.json()) as Board
 	await expect(page.locator('.status')).toHaveAttribute(
 		'title',
-		`Revision ${updated.revision} · 5 objects`,
+		`Revision ${updated.revision} · 5 objects · Live`,
 	)
 	await page.mouse.up()
 	await expect(page.locator('.notice')).toContainText('Object changed during drag')

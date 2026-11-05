@@ -1,0 +1,106 @@
+.sticky-paper {
+	filter: drop-shadow(0 1px 1.5px color-mix(in srgb, var(--ink) 10%, transparent));
+}
+
+.sticky-entry {
+	transform-box: fill-box;
+	transform-origin: 50% 20%;
+	animation: sticky-attach 2.4s both;
+}
+
+.sticky-corner-shadow {
+	fill: var(--ink);
+	opacity: 0;
+	filter: blur(2px);
+	transform-origin: 139px 157px;
+	pointer-events: none;
+}
+
+.sticky-corner-light {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.sticky-entry .sticky-outline {
+	animation: sticky-curl 2.4s both;
+}
+
+.sticky-entry .sticky-corner-light {
+	animation:
+		sticky-curl 2.4s both,
+		sticky-light 2.4s both;
+}
+
+.sticky-entry .sticky-corner-shadow {
+	animation: sticky-shadow 2.4s both;
+}
+
+@keyframes sticky-attach {
+	0% {
+		opacity: 0;
+		transform: perspective(700px) translate3d(0, -7px, 14px) rotateX(4deg) rotateZ(-0.4deg);
+		animation-timing-function: cubic-bezier(0.25, 0.65, 0.35, 1);
+	}
+	32%,
+	100% {
+		opacity: 1;
+		transform: perspective(700px) translate3d(0, 0, 0) rotateX(0) rotateZ(0);
+	}
+}
+
+@keyframes sticky-curl {
+	0%,
+	28% {
+		d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	53% {
+		d: path("M0 0 H160 V98.88 C160 120 160 141 156 152 C148 154 121 160 98.88 160 H0 Z");
+		animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+	}
+	100% {
+		d: path("M0 0 H160 V98.88 C160 120 160 140 160 160 C140 160 120 160 98.88 160 H0 Z");
+	}
+}
+
+@keyframes sticky-light {
+	0%,
+	28% {
+		opacity: 0;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	53% {
+		opacity: 0.55;
+		animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+	}
+	100% {
+		opacity: 0;
+	}
+}
+
+@keyframes sticky-shadow {
+	0%,
+	28% {
+		opacity: 0;
+		transform: none;
+		animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+	}
+	53% {
+		opacity: 0.2;
+		transform: translateY(3px) scale(1.15, 1.5);
+		animation-timing-function: cubic-bezier(0.45, 0, 0.3, 1);
+	}
+	100% {
+		opacity: 0;
+		transform: none;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.sticky-entry,
+	.sticky-entry .sticky-outline,
+	.sticky-entry .sticky-corner-light,
+	.sticky-entry .sticky-corner-shadow {
+		animation: none;
+	}
+}

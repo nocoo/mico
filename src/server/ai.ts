@@ -137,16 +137,13 @@ export async function streamAiChat({
 			selection: request.selection,
 			canvasId,
 			revision: board.revision,
-			layoutLimit: request.mode === 'lecture' ? 1600 : undefined,
-			layoutLimitX: request.mode === 'lecture' ? 2000 : undefined,
-			layoutMaxWidth: request.mode === 'lecture' ? 940 : undefined,
 		}),
 		stopWhen:
 			request.mode === 'lecture'
 				? [
 						(options) =>
-							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 3,
-						isStepCount(12),
+							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 8,
+						isStepCount(16),
 					]
 				: isStepCount(40),
 		maxRetries: 1,
@@ -159,9 +156,9 @@ export async function streamAiChat({
 			request.mode === 'lecture'
 				? undefined
 				: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
-		onError: ({ error }) => {
-			console.error('AI request failed:', error)
-			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and MAGPIE_BASE_URL.'
+		onError: () => {
+			console.error('AI request failed')
+			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and AI settings.'
 		},
 	})
 	await result.pipeUIMessageStreamToResponse(res, { headers })

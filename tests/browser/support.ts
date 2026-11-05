@@ -1,7 +1,200 @@
-import { type APIRequestContext, expect, type Page } from '@playwright/test'
+import { type APIRequestContext, type BrowserContext, expect, type Page } from '@playwright/test'
 import type { Board, CanvasShape, Shape } from '../../src/shared/types'
 
 export const ISOLATED_ORIGIN = 'http://127.0.0.1:27063'
+
+export type MicrophoneMockMode = 'allowed' | 'denied' | 'delayed'
+
+export interface MicrophoneMockState {
+	mode: MicrophoneMockMode
+	requested: number
+	activeTracks: number
+	stopped: number
+	resolve?: () => Promise<void>
+}
+
+export interface MaiMockState {
+	sessionUpdates: number
+	appends: number
+	commits: number
+	completed: number
+	closed: boolean
+	messages: unknown[]
+}
+
+export async function installMicrophoneMock(
+	context: BrowserContext,
+	mode: MicrophoneMockMode = 'allowed',
+): Promise<void> {
+	if (mode !== 'denied') {
+		await context.grantPermissions(['microphone'], { origin: ISOLATED_ORIGIN })
+	}
+	await context.addInitScript(
+		({ mode }) => {
+			const state = {
+				mode,
+				requested: 0,
+				activeTracks: 0,
+				stopped: 0,
+			} as MicrophoneMockState
+			Object.assign(globalThis, { __micoMicrophoneMock: state })
+
+			let media = navigator.mediaDevices
+			if (!media) {
+				Object.defineProperty(navigator, 'mediaDevices', {
+					configurable: true,
+					value: {},
+				})
+				media = navigator.mediaDevices
+			}
+
+			const trackCleanup = new WeakMap<MediaStreamTrack, () => void>()
+			const wrapStream = (stream: MediaStream) => {
+				state.activeTracks += stream.getTracks().length
+				for (const track of stream.getTracks()) {
+					const originalStop = track.stop.bind(track)
+					let stopped = false
+					track.stop = () => {
+						if (!stopped) {
+							stopped = true
+							state.stopped++
+							state.activeTracks = Math.max(0, state.activeTracks - 1)
+							trackCleanup.get(track)?.()
+						}
+						originalStop()
+					}
+				}
+				return stream
+			}
+
+			const createFakeStream = async () => {
+				const context = new AudioContext({ sampleRate: 16000 })
+				if (context.state === 'suspended') await context.resume()
+				const oscillator = context.createOscillator()
+				const gain = context.createGain()
+				const destination = context.createMediaStreamDestination()
+				oscillator.frequency.value = 440
+				for (let time = 0; time < 60; time += 1.4) {
+					gain.gain.setValueAtTime(0.1, context.currentTime + time)
+					gain.gain.setValueAtTime(0, context.currentTime + time + 0.7)
+				}
+				oscillator.connect(gain)
+				gain.connect(destination)
+				oscillator.start()
+				const stream = wrapStream(destination.stream)
+				for (const track of stream.getTracks()) {
+					trackCleanup.set(track, () => {
+						oscillator.stop()
+						void context.close()
+					})
+				}
+				return stream
+			}
+
+			if (mode === 'denied') {
+				media.getUserMedia = () =>
+					Promise.reject(new DOMException('Microphone permission denied', 'NotAllowedError'))
+				return
+			}
+
+			if (mode === 'delayed') {
+				media.getUserMedia = () => {
+					state.requested++
+					return new Promise<MediaStream>((resolve, reject) => {
+						state.resolve = async () => {
+							try {
+								resolve(await createFakeStream())
+							} catch (error) {
+								reject(error)
+							}
+						}
+					})
+				}
+				return
+			}
+
+			media.getUserMedia = async () => {
+				state.requested++
+				return createFakeStream()
+			}
+		},
+		{ mode },
+	)
+}
+
+export async function mockMaiTranscription(
+	page: Page,
+	transcript = 'Draw projectile motion',
+): Promise<MaiMockState> {
+	await page.route('**/mai/config', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				host: 'browser-mock.test',
+				deployment: 'browser-mock',
+				localPath: '/mai/realtime',
+			}),
+		}),
+	)
+
+	const state: MaiMockState = {
+		sessionUpdates: 0,
+		appends: 0,
+		commits: 0,
+		completed: 0,
+		closed: false,
+		messages: [],
+	}
+
+	await page.routeWebSocket(/\/mai\/realtime(?:\?.*)?$/, (socket) => {
+		const complete = () => {
+			state.completed++
+			socket.send(
+				JSON.stringify({
+					type: 'conversation.item.input_audio_transcription.completed',
+					transcript,
+				}),
+			)
+		}
+
+		socket.onMessage((message) => {
+			const payload = JSON.parse(String(message)) as { type?: string }
+			state.messages.push(payload)
+			if (payload.type === 'session.update') {
+				state.sessionUpdates++
+				socket.send(JSON.stringify({ type: 'session.updated' }))
+				return
+			}
+			if (payload.type === 'input_audio_buffer.append') {
+				state.appends++
+				if (state.appends === 1) {
+					socket.send(
+						JSON.stringify({
+							type: 'conversation.item.input_audio_transcription.delta',
+							delta: transcript,
+						}),
+					)
+					socket.send(
+						JSON.stringify({
+							type: 'conversation.item.input_audio_transcription.intermediate',
+							intermediate: 'Draw projectile motion',
+						}),
+					)
+				}
+				return
+			}
+			if (payload.type === 'input_audio_buffer.commit') {
+				state.commits++
+				complete()
+			}
+		})
+		socket.onClose(() => {
+			state.closed = true
+		})
+	})
+
+	return state
+}
 
 export async function board(request: APIRequestContext): Promise<Board> {
 	const response = await request.get('/api/board')

@@ -1,5 +1,20 @@
 # Retrospective
 
+## UI prototypes
+
+- The commit rules allow a limited set of types; check that list before using a familiar Conventional Commits type such as `style`.
+- Non-linear animation means easing, not necessarily a bounce. Keep the requested motion and timing curve separate; do not add extra movement without asking.
+- An explicit null child in the Radix select trigger hid the selected value; assert the visible value in browser tests and render the selected label explicitly.
+- Measure animated panels only after their entrance settles, and size the bounded browser-suite timeout for the full sequential suite.
+- A fixed delay after choosing a Radix option did not guarantee its closing portal was gone; wait for the select content to detach before clicking the canvas.
+- Mixing a partial worktree install with symlinks into another `node_modules` caused `pnpm exec` to auto-install and loaded two React instances. Install the complete lockfile into the worktree instead of mixing dependency trees, and verify that the renderer and UI packages resolve the same React instance.
+
+## Emergency handover evaluation
+
+- A delegated runner author executed the real replay despite an explicit instruction not to run it; the fixture existed by then. Gate replay scripts behind an explicit confirmation flag and restrict delegated test environments to mock endpoints instead of trusting a missing-fixture assumption. The user had authorized one baseline; preserve that run rather than silently repeating or deleting it.
+- An SVG security test falsely treated the standard `xmlns` identifier as a remote resource. Test URL-bearing attributes such as `src` and `href`, not arbitrary `http://` text.
+- Prompt regression assertions must match the actual shared wording or a stable semantic property; an unverified paraphrase caused a false failure.
+
 ## Container redesign investigation
 
 - A source-only investigator read the live board database despite being told not to access it. Give delegated investigations an isolated checkout without the daily board instead of relying on prompt instructions alone.
@@ -20,6 +35,11 @@
 
 ## Automated test architecture
 
+- A transcription mock that emits a completed segment before `input_audio_buffer.commit` can make a broken VAD pipeline look healthy. Drive synthetic speech and silence through the real worklet and only complete on commit; test the final stop flush separately.
+- Microphone stop must release tracks immediately, then await the worklet's buffered tail before committing; the main-thread PCM buffer alone does not include samples still inside the worklet. Report a failed flush rather than silently dropping the final segment.
+- A persisted API write can precede its WebSocket-driven browser render. Wait for the new note's DOM element before double-clicking; polling the database alone left the full browser suite flaky.
+- A test-owned browser server left running after an interrupted full suite occupied its fixture ports. Stop the orphaned fixture and use Playwright's managed webServer lifecycle with a sufficient global timeout.
+- Use exact accessible-name matching when labels overlap: `API key` also matches `Remove current API key` in Playwright and causes a strict-mode failure.
 - A WebSocket broadcast is sent before the HTTP response body is read. Attach the next-message listener before issuing the mutation, or the assertion waits for a message that was already delivered.
 - Rejecting a foreign WebSocket origin must assert the 403 handshake and treat `open` as a failure. `terminate()` after a failed handshake emits a late error, so absorb it with a long-lived error listener before cleanup.
 - Absence assertions need a lifecycle, not a sleep: count browser `POST /api/operations` requests for cancelled gestures, and use a following successful mutation as a message barrier to prove a rejected batch did not broadcast.
@@ -56,6 +76,8 @@
 
 ## Four-pixel dock refinement
 
+- Application `--space-*` tokens collide with Radix Themes' internal scale. Nest a Radix Theme for Settings controls instead of overriding the input height inside a shorter field.
+- Resizing a canvas inside its own ResizeObserver callback can trigger a loop. Observe the stable parent and redraw only at the calculated backing size.
 - A formatting pass rewrote CSS selectors, so a later scripted replacement silently matched nothing and left the old `width: 0; min-width: 100%` rule in place. Verify scripted edits with a follow-up search instead of assuming success.
 - Aligning to a four-pixel grid requires the panel height to be a multiple of four too. Replace layout borders with inset shadows so padding plus control height stays on the grid at odd viewport sizes.
 - Sampling the reference image directly (quarter-scale pixel counts) is faster and more reliable than judging "lighter" by eye.
