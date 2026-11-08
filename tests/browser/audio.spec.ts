@@ -116,9 +116,19 @@ async function openAudio(page: Page, state: AudioMockState) {
 			}
 			if (payload.type === 'input_audio_buffer.commit') {
 				state.commits++
+				const itemId = `item-${state.commits}`
+				socket.send(
+					JSON.stringify({
+						type: 'input_audio_buffer.committed',
+						event_id: `event-ack-${state.commits}`,
+						item_id: itemId,
+					}),
+				)
 				socket.send(
 					JSON.stringify({
 						type: 'conversation.item.input_audio_transcription.completed',
+						event_id: `event-complete-${state.commits}`,
+						item_id: itemId,
 						transcript: 'Final real speech',
 					}),
 				)
@@ -280,10 +290,19 @@ test('Audio pads a sub-100ms final voiced tail instead of dropping real speech',
 			}
 			if (payload.type === 'input_audio_buffer.commit') {
 				mock.commits++
+				const itemId = `item-${mock.commits}`
+				socket.send(
+					JSON.stringify({
+						type: 'input_audio_buffer.committed',
+						event_id: `event-ack-${mock.commits}`,
+						item_id: itemId,
+					}),
+				)
 				socket.send(
 					JSON.stringify({
 						type: 'conversation.item.input_audio_transcription.completed',
-						event_id: payload.event_id,
+						event_id: `event-complete-${mock.commits}`,
+						item_id: itemId,
 						transcript: 'Sub-100ms real speech',
 					}),
 				)
@@ -359,12 +378,22 @@ test('Audio correlates an empty final commit and preserves an earlier outstandin
 			}
 			if (payload.type === 'input_audio_buffer.commit') {
 				mock.commits++
-				if (mock.commits === 1) return
+				if (mock.commits === 1) {
+					socket.send(
+						JSON.stringify({
+							type: 'input_audio_buffer.committed',
+							event_id: 'event-ack-1',
+							item_id: 'item-1',
+						}),
+					)
+					return
+				}
 				socket.send(
 					JSON.stringify({
 						type: 'error',
-						event_id: payload.event_id,
+						event_id: 'event-server-error-2',
 						error: {
+							event_id: payload.event_id,
 							code: 'input_audio_buffer_commit_empty',
 							message: 'Input audio buffer is empty.',
 						},
@@ -373,7 +402,8 @@ test('Audio correlates an empty final commit and preserves an earlier outstandin
 				socket.send(
 					JSON.stringify({
 						type: 'conversation.item.input_audio_transcription.completed',
-						event_id: 'commit-1-1',
+						event_id: 'event-complete-1',
+						item_id: 'item-1',
 						transcript: 'Earlier real speech',
 					}),
 				)
@@ -393,6 +423,233 @@ test('Audio correlates an empty final commit and preserves an earlier outstandin
 	).not.toBeVisible()
 	await expect.poll(() => mock.commits).toBe(2)
 })
+
+test('Audio correlates acknowledged items and releases out-of-order completions in order', async ({
+	page,
+}) => {
+	const mock = state()
+	await page.route('**/mai/config', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				host: 'browser-mock.test',
+				deployment: 'browser-mock',
+				localPath: '/mai/realtime',
+			}),
+		}),
+	)
+	await page.route('**/evals/manifest.json', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				evals: [
+					{
+						id: 'audio-out-of-order',
+						lang: 'en',
+						subject: 'Test',
+						title: 'Out-of-order completion',
+						voice: 'mock',
+						audio: 'audio-out-of-order.wav',
+						duration: 1.8,
+					},
+				],
+			}),
+		}),
+	)
+	await page.route('**/evals/audio-out-of-order.wav', (route) =>
+		route.fulfill({
+			contentType: 'audio/wav',
+			body: mixedWaveBytes(1.8, [
+				[0, 0.5],
+				[1.7, 1.8],
+			]),
+		}),
+	)
+	await page.routeWebSocket(/\/mai\/realtime(?:\?.*)?$/, (socket) => {
+		socket.onMessage((message) => {
+			const payload = JSON.parse(String(message)) as { type?: string; event_id?: string }
+			mock.messages.push(payload)
+			if (payload.type === 'session.update')
+				socket.send(JSON.stringify({ type: 'session.updated' }))
+			if (payload.type !== 'input_audio_buffer.commit') return
+
+			mock.commits++
+			const itemId = `item-${mock.commits}`
+			socket.send(
+				JSON.stringify({
+					type: 'input_audio_buffer.committed',
+					event_id: `event-ack-${mock.commits}`,
+					item_id: itemId,
+				}),
+			)
+			if (mock.commits === 1) return
+
+			socket.send(
+				JSON.stringify({
+					type: 'conversation.item.input_audio_transcription.completed',
+					event_id: 'event-complete-2',
+					item_id: 'item-2',
+					transcript: 'Later audio',
+				}),
+			)
+			setTimeout(() => {
+				socket.send(
+					JSON.stringify({
+						type: 'conversation.item.input_audio_transcription.completed',
+						event_id: 'event-complete-1',
+						item_id: 'item-1',
+						transcript: 'Earlier audio',
+					}),
+				)
+			}, 25)
+		})
+	})
+	await page.goto('/')
+	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+	const panel = page.getByRole('region', { name: AI_BUTTON })
+	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
+	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
+
+	const segments = prerecorded.locator('.lesson-segments li')
+	await expect(segments).toHaveCount(2)
+	await expect(segments.nth(0)).toContainText('Earlier audio')
+	await expect(segments.nth(1)).toContainText('Later audio')
+	const firstRange = await segments.nth(0).locator('.lesson-seg-time').textContent()
+	const secondRange = await segments.nth(1).locator('.lesson-seg-time').textContent()
+	const parseRange = (text: string | null) => {
+		const match = text?.match(/([\d.]+)–([\d.]+)s/)
+		return match ? [Number(match[1]), Number(match[2])] : [Number.NaN, Number.NaN]
+	}
+	const [firstStart, firstEnd] = parseRange(firstRange)
+	const [secondStart, secondEnd] = parseRange(secondRange)
+	expect(firstStart).toBe(0)
+	expect(firstEnd).toBeGreaterThanOrEqual(0.5)
+	expect(firstEnd).toBeLessThan(0.8)
+	expect(secondStart).toBeGreaterThanOrEqual(firstEnd)
+	expect(secondStart).toBeGreaterThan(0)
+	expect(secondEnd).toBeGreaterThanOrEqual(secondStart)
+	expect(secondEnd).toBeLessThanOrEqual(1.8)
+	await expect(prerecorded.getByText('Recording complete', { exact: true })).toBeVisible()
+	await expect.poll(() => mock.commits).toBe(2)
+})
+
+for (const fatal of ['error', 'close'] as const) {
+	test(`Audio preserves a completed later item before fatal ${fatal}`, async ({ page }) => {
+		const mock = state()
+		await page.route('**/mai/config', (route) =>
+			route.fulfill({
+				contentType: 'application/json',
+				body: JSON.stringify({
+					host: 'browser-mock.test',
+					deployment: 'browser-mock',
+					localPath: '/mai/realtime',
+				}),
+			}),
+		)
+		await page.route('**/evals/manifest.json', (route) =>
+			route.fulfill({
+				contentType: 'application/json',
+				body: JSON.stringify({
+					evals: [
+						{
+							id: `audio-fatal-${fatal}`,
+							lang: 'en',
+							subject: 'Test',
+							title: `Completed item before ${fatal}`,
+							voice: 'mock',
+							audio: `audio-fatal-${fatal}.wav`,
+							duration: 1.85,
+						},
+					],
+				}),
+			}),
+		)
+		await page.route(`**/evals/audio-fatal-${fatal}.wav`, (route) =>
+			route.fulfill({
+				contentType: 'audio/wav',
+				body: mixedWaveBytes(1.85, [
+					[0, 0.5],
+					[1.8, 1.85],
+				]),
+			}),
+		)
+		let summaryRequests = 0
+		page.on('request', (request) => {
+			if (request.method() !== 'POST' || !request.url().endsWith('/api/ai/chat')) return
+			const body = request.postDataJSON() as { mode?: string }
+			if (body.mode === 'chat') summaryRequests++
+		})
+		await page.routeWebSocket(/\/mai\/realtime(?:\?.*)?$/, (socket) => {
+			socket.onMessage((message) => {
+				const payload = JSON.parse(String(message)) as { type?: string }
+				mock.messages.push(payload)
+				if (payload.type === 'session.update')
+					socket.send(JSON.stringify({ type: 'session.updated' }))
+				if (payload.type !== 'input_audio_buffer.commit') return
+
+				mock.commits++
+				socket.send(
+					JSON.stringify({
+						type: 'input_audio_buffer.committed',
+						event_id: `event-ack-${mock.commits}`,
+						item_id: `item-${mock.commits}`,
+					}),
+				)
+				if (mock.commits === 1) return
+
+				socket.send(
+					JSON.stringify({
+						type: 'conversation.item.input_audio_transcription.completed',
+						event_id: 'event-complete-2',
+						item_id: 'item-2',
+						transcript: 'Completed later audio',
+					}),
+				)
+				if (fatal === 'error') {
+					socket.send(
+						JSON.stringify({
+							type: 'conversation.item.input_audio_transcription.failed',
+							event_id: 'event-fatal',
+							item_id: 'item-1',
+							error: {
+								code: 'server_error',
+								message: 'The transcription stream failed.',
+							},
+						}),
+					)
+				} else {
+					void socket.close({ code: 1011, reason: 'test disconnect' })
+				}
+			})
+		})
+		await page.goto('/')
+		await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+		const panel = page.getByRole('region', { name: AI_BUTTON })
+		await panel.getByRole('tab', { name: 'Audio' }).click()
+		const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
+		await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
+
+		await expect(prerecorded.getByText('Completed later audio', { exact: true })).toBeVisible()
+		await expect(prerecorded.locator('.lesson-segments li')).toHaveCount(1)
+		await expect(prerecorded.getByText('Recording complete', { exact: true })).not.toBeVisible()
+		await expect(prerecorded.getByText('Mico is listening', { exact: true })).toBeVisible()
+		await page.evaluate(
+			() =>
+				new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+				),
+		)
+		await expect.poll(() => summaryRequests).toBe(0)
+		await expect(
+			prerecorded.getByText(
+				fatal === 'error' ? 'The transcription stream failed.' : 'Connection closed 1011',
+				{ exact: true },
+			),
+		).toBeVisible()
+		await expect.poll(() => mock.commits).toBe(2)
+	})
+}
 
 test('Audio shows exact nested provider errors instead of a generic model error', async ({
 	page,

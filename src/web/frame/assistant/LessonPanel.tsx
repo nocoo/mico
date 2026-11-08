@@ -7,6 +7,7 @@ import {
 	type MaiConfig,
 	maiEmptyAudioBufferError,
 	maiErrorMessage,
+	maiEventItemId,
 	maiEventRequestId,
 } from '../../stt/maiClient'
 import { dedupeHypothesis, formatClock, type LessonClip } from '../../stt/transcript'
@@ -36,6 +37,15 @@ interface LessonPanelProps {
 	canSummarize: boolean
 }
 
+interface PendingCommit {
+	at: number
+	start: number
+	end: number
+	requestId: string
+	itemId?: string
+	transcript?: string
+}
+
 type Phase =
 	| 'idle'
 	| 'loading'
@@ -57,7 +67,7 @@ interface Runtime {
 	segmenter: SilenceSegmenter
 	sentSamples: number
 	sentAtLastCommit: number
-	pendingCommits: { at: number; start: number; end: number; eventId: string }[]
+	pendingCommits: PendingCommit[]
 	deltas: string[]
 	intermediate: string
 	frames: number
@@ -362,20 +372,47 @@ export function LessonPanel({
 		rt.client = client
 		rt.closing = false
 		const current = () => rt.client === client && rt.generation === generation
+		const publishCompleted = (pending: PendingCommit) => {
+			const segment: LessonSegment = {
+				id: rt.nextSegmentId++,
+				text: pending.transcript ?? '',
+				start: pending.start,
+				end: pending.end,
+			}
+			if (segment.text.trim()) {
+				setSegments((currentSegments) => [...currentSegments, segment])
+				onSegmentRef.current(segment, clip)
+			}
+		}
+		const flushCompleted = () => {
+			while (rt.pendingCommits[0]?.transcript !== undefined) {
+				const pending = rt.pendingCommits.shift()
+				if (pending) publishCompleted(pending)
+			}
+			refreshStats()
+			if (rt.stopping && rt.pendingCommits.length === 0) finish()
+		}
+		const preserveCompletedBeforeFailure = () => {
+			for (const pending of rt.pendingCommits) {
+				if (pending.transcript !== undefined) publishCompleted(pending)
+			}
+			refreshStats()
+		}
 
 		client.on('error', (event) => {
 			if (!current()) return
 			if (rt.stopping && maiEmptyAudioBufferError(event)) {
-				const eventId = maiEventRequestId(event)
-				const pendingIndex = eventId
-					? rt.pendingCommits.findIndex((pending) => pending.eventId === eventId)
+				const requestId = maiEventRequestId(event)
+				const pendingIndex = requestId
+					? rt.pendingCommits.findIndex((pending) => pending.requestId === requestId)
 					: -1
-				if (eventId && pendingIndex >= 0) {
+				if (requestId && pendingIndex >= 0) {
 					rt.pendingCommits.splice(pendingIndex, 1)
-					if (rt.pendingCommits.length === 0) finish()
+					flushCompleted()
 					return
 				}
 			}
+			preserveCompletedBeforeFailure()
 			failSession(maiErrorMessage(event))
 		})
 		client.on('closed', (event) => {
@@ -384,6 +421,7 @@ export function LessonPanel({
 				rt.client = null
 				return
 			}
+			preserveCompletedBeforeFailure()
 			rt.client = null
 			failSession(`Connection closed ${String(event.code ?? '')}`)
 		})
@@ -398,32 +436,33 @@ export function LessonPanel({
 			rt.partials++
 			refreshLive()
 		})
+		client.on('committed', (event) => {
+			if (!current()) return
+			const itemId = maiEventItemId(event)
+			const pending = rt.pendingCommits.find((commit) => !commit.itemId)
+			if (!itemId || !pending) {
+				failSession('Transcription commit acknowledgement could not be matched.')
+				return
+			}
+			pending.itemId = itemId
+		})
 		client.on('completed', (event) => {
 			if (!current()) return
-			const eventId = maiEventRequestId(event)
-			const pendingIndex = eventId
-				? rt.pendingCommits.findIndex((pending) => pending.eventId === eventId)
-				: rt.pendingCommits.length
-					? 0
-					: -1
-			const pending = pendingIndex >= 0 ? rt.pendingCommits.splice(pendingIndex, 1)[0] : undefined
-			if (pending) rt.latencies.push(performance.now() - pending.at)
-			const text = typeof event.transcript === 'string' ? event.transcript : rt.deltas.join('')
-			const segment: LessonSegment = {
-				id: rt.nextSegmentId++,
-				text,
-				start: pending?.start ?? 0,
-				end: pending?.end ?? rt.sentSamples / TARGET_RATE,
+			const itemId = maiEventItemId(event)
+			const pending = itemId
+				? rt.pendingCommits.find((commit) => commit.itemId === itemId)
+				: undefined
+			if (!pending) {
+				failSession('Transcription completion could not be matched to a commit.')
+				return
 			}
+			pending.transcript =
+				typeof event.transcript === 'string' ? event.transcript : rt.deltas.join('')
+			rt.latencies.push(performance.now() - pending.at)
 			rt.deltas = []
 			rt.intermediate = ''
 			refreshLive()
-			if (text.trim()) {
-				setSegments((current) => [...current, segment])
-				onSegmentRef.current(segment, clip)
-			}
-			refreshStats()
-			if (rt.stopping && rt.pendingCommits.length === 0) finish()
+			flushCompleted()
 		})
 
 		setPhase('connecting')
@@ -445,15 +484,15 @@ export function LessonPanel({
 			rt.client.append(padding, 0, padding.length)
 		}
 		rt.commits++
-		const eventId = `commit-${rt.generation}-${rt.commits}`
+		const requestId = `commit-${rt.generation}-${rt.commits}`
 		const start = rt.sentAtLastCommit / TARGET_RATE
 		const end = Math.max(
 			start,
 			rt.sentSamples / TARGET_RATE - rt.segmenter.lastTrailingMsValue / 1000,
 		)
-		rt.pendingCommits.push({ at: performance.now(), start, end, eventId })
+		rt.pendingCommits.push({ at: performance.now(), start, end, requestId })
 		rt.sentAtLastCommit = rt.sentSamples
-		rt.client.commit(eventId)
+		rt.client.commit(requestId)
 		refreshStats()
 	}
 

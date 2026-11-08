@@ -4,6 +4,7 @@ import {
 	maiEmptyAudioBufferError,
 	maiErrorCode,
 	maiErrorMessage,
+	maiEventItemId,
 	maiEventRequestId,
 } from './maiClient.ts'
 
@@ -28,6 +29,18 @@ test('MAI nested error shape remains distinguishable from the generic fallback',
 	assert.equal(maiErrorCode(event), 'server_error')
 	assert.equal(maiErrorMessage(event), 'The transcription provider rejected the audio.')
 	assert.equal(maiEmptyAudioBufferError(event), false)
+})
+
+test('MAI item_id identifies acknowledged transcription items', () => {
+	assert.equal(
+		maiEventItemId({
+			type: 'input_audio_buffer.committed',
+			event_id: 'event_server_ack',
+			item_id: 'item_first',
+		}),
+		'item_first',
+	)
+	assert.equal(maiEventItemId({ event_id: 'event_server_only' }), null)
 })
 
 test('MAI request event_id is preserved for correlated terminal errors', () => {

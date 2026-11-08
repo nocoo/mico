@@ -22,6 +22,10 @@ function record(value: unknown): MaiEvent | null {
 	return value !== null && typeof value === 'object' ? (value as MaiEvent) : null
 }
 
+export function maiEventItemId(event: MaiEvent): string | null {
+	return typeof event.item_id === 'string' && event.item_id.trim() ? event.item_id : null
+}
+
 export function maiEventRequestId(event: MaiEvent): string | null {
 	const nested = record(event.error)
 	for (const candidate of [nested?.event_id, event.event_id]) {
