@@ -7,6 +7,7 @@
 
 ## Tool usage
 
+- An audio demo sync marker intercepted `OfflineAudioContext` resampling rather than audible playback, shifting the muxed voice. Mark the live `AudioContext` source and verify alignment against playback progress before delivery.
 - A delegated investigator mistook itself for the coordinator and sent instructions to the audio worker. State the subordinate role and prohibition on cross-pane prompts explicitly in every delegation.
 - An Audio replay probe matched both the Audio and Live status elements and stopped immediately after playback was clicked. Scope locators to the Audio tabpanel and preserve failed probe evidence separately from valid rounds.
 - Passed exclusions to `fd` as positional paths; use `-E` for exclusions when discovering files. Wildcard filename patterns also need `-g` rather than regex mode.
