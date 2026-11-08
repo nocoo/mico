@@ -12,6 +12,7 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_SYSTEM_PROMPT, /Consolidate closely related facts of the same category/)
 	assert.match(AI_SYSTEM_PROMPT, /preserving values, units, time periods and qualifiers/)
 	assert.match(AI_SYSTEM_PROMPT, /Prioritize a few meaningful relationships/)
+	assert.match(AI_SYSTEM_PROMPT, /Never use the saturated outline colors as note fills/)
 	assert.match(AI_SYSTEM_PROMPT, /memberIds/)
 	assert.match(
 		AI_SYSTEM_PROMPT,
@@ -45,6 +46,8 @@ test('live and post-session summaries share the same instructions', () => {
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /data-lucide/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /update that same card in place/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /Bootstrap 5 CSS and JavaScript/)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /preserve both the question and its supported answer/)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /Hiding overflow does not make content fit/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /beyond the right edge/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /rather than adding a large empty gap/)
 	assert.doesNotMatch(SUMMARY_CARD_INSTRUCTIONS, /below the lowest/)
