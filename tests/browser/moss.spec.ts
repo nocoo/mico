@@ -27,6 +27,10 @@ interface MossMockState {
 	closed: boolean
 	messages: Record<string, unknown>[]
 	outputs: MossOutput[]
+	firstAckSent: boolean
+	firstContinuations: number
+	protocolErrors: string[]
+	releaseFirstToolAck: () => void
 	disconnectAfterSessionUpdate: boolean
 	socket: WebSocketRoute | null
 	triggerTool: () => void
@@ -61,6 +65,10 @@ async function mockMoss(page: Page, options: { disconnectAfterSessionUpdate?: bo
 		closed: false,
 		messages: [],
 		outputs: [],
+		firstAckSent: false,
+		firstContinuations: 0,
+		protocolErrors: [],
+		releaseFirstToolAck: () => {},
 		disconnectAfterSessionUpdate: options.disconnectAfterSessionUpdate ?? false,
 		socket: null,
 		triggerTool: () => {},
@@ -128,18 +136,20 @@ async function mockMoss(page: Page, options: { disconnectAfterSessionUpdate?: bo
 
 			const payload = JSON.parse(message) as {
 				action?: string
+				delegation?: unknown
 				session?: { tools?: unknown[] }
 				item?: { type?: string; call_id?: string; output?: unknown }
+				response?: { call_ids?: string[] }
 			}
 			state.messages.push(payload)
 
 			if (payload.action === 'attach_session') {
 				state.attachSession++
-				state.delegation++
+				if (Object.hasOwn(payload, 'delegation')) state.delegation++
 				socket.send(
 					JSON.stringify({
 						action: 'session_attached',
-						data: { delegation: 'client' },
+						data: { delegation: 'none' },
 					}),
 				)
 				return
@@ -169,7 +179,43 @@ async function mockMoss(page: Page, options: { disconnectAfterSessionUpdate?: bo
 				const item = payload.item
 				if (item?.type === 'function_call_output' && item.call_id) {
 					state.outputs.push({ callId: item.call_id, output: item.output })
+					const acknowledge = () =>
+						socket.send(
+							JSON.stringify({
+								action: 'conversation.item.created',
+								data: { item: { type: 'function_call_output', call_id: item.call_id } },
+							}),
+						)
+					if (item.call_id === 'call-moss-browser-note') {
+						state.releaseFirstToolAck = () => {
+							state.firstAckSent = true
+							acknowledge()
+						}
+					} else acknowledge()
 				}
+			}
+
+			if (
+				payload.action === 'response.create' &&
+				payload.response?.call_ids?.includes('call-moss-browser-note')
+			) {
+				state.firstContinuations++
+				if (!state.firstAckSent || state.firstContinuations !== 1) {
+					state.protocolErrors.push('First tool continuation was premature or repeated')
+					return
+				}
+				socket.send(
+					JSON.stringify({
+						action: 'response.function_call_arguments.done',
+						data: {
+							call_id: 'call-moss-browser-next',
+							name: 'add_notes',
+							arguments: JSON.stringify({
+								notes: [{ id: 'moss-note-next', x: 550, y: 180, text: 'Next drawing step' }],
+							}),
+						},
+					}),
+				)
 			}
 
 			if (payload.action === 'mic_state') {
@@ -229,6 +275,7 @@ test.describe('MOSS Live browser integration', () => {
 		await waitForLive(panel)
 		await expect.poll(() => moss.connections).toBe(1)
 		await expect.poll(() => moss.attachSession).toBe(1)
+		expect(moss.delegation).toBe(0)
 		await expect.poll(() => moss.sessionUpdates).toBe(1)
 		await expect.poll(() => moss.binaryPackets).toBeGreaterThan(0)
 		await expect.poll(() => sessionRequests.length).toBeGreaterThan(0)
@@ -238,14 +285,18 @@ test.describe('MOSS Live browser integration', () => {
 		const packetsWhileToolPending = moss.binaryPackets
 		await expect.poll(() => moss.binaryPackets).toBeGreaterThan(packetsWhileToolPending)
 
-		await expect.poll(() => toolRequests.length).toBe(1)
+		await expect.poll(() => toolRequests.length).toBeGreaterThanOrEqual(1)
 		await expect
 			.poll(async () => {
 				const current = await board(request)
 				return current.shapes.find((shape) => shape.id === 'moss-note-browser')
 			})
 			.toBeTruthy()
-		await expect.poll(() => moss.outputs.length).toBe(1)
+		await expect
+			.poll(() => moss.outputs.some((item) => item.callId === 'call-moss-browser-note'))
+			.toBe(true)
+		expect(moss.messages.some((message) => message.action === 'response.create')).toBe(false)
+		moss.releaseFirstToolAck()
 		const output = moss.outputs.find((item) => item.callId === 'call-moss-browser-note')
 		expect(output).toBeTruthy()
 		const toolResult = output?.output as string
@@ -255,6 +306,35 @@ test.describe('MOSS Live browser integration', () => {
 		}
 		expect(parsedResult.ok).toBe(true)
 		expect(parsedResult.created).toContainEqual({ id: 'moss-note-browser', type: 'note' })
+		await expect
+			.poll(() =>
+				moss.messages.some(
+					(message) =>
+						message.action === 'response.create' &&
+						JSON.stringify(message.response) ===
+							JSON.stringify({ call_ids: ['call-moss-browser-note'] }),
+				),
+			)
+			.toBe(true)
+		await expect.poll(() => toolRequests.length).toBe(2)
+		await expect
+			.poll(async () =>
+				(await board(request)).shapes.some((shape) => shape.id === 'moss-note-next'),
+			)
+			.toBe(true)
+		await expect.poll(() => moss.outputs.length).toBe(2)
+		await expect
+			.poll(() =>
+				moss.messages.some(
+					(message) =>
+						message.action === 'response.create' &&
+						JSON.stringify(message.response) ===
+							JSON.stringify({ call_ids: ['call-moss-browser-next'] }),
+				),
+			)
+			.toBe(true)
+		expect(moss.firstContinuations).toBe(1)
+		expect(moss.protocolErrors).toEqual([])
 
 		moss.sendPlayback()
 		await expect

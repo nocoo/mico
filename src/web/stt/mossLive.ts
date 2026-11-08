@@ -39,6 +39,13 @@ interface CaptureHandle {
 	stop(): Promise<void>
 }
 
+interface MossToolResponseGroup {
+	generation: number
+	callIds: Set<string>
+	confirmedCallIds: Set<string>
+	scheduled: boolean
+}
+
 type CaptureFactory = (
 	onPcm: (pcm: Int16Array) => void,
 	onEnded: (error?: Error) => void,
@@ -73,6 +80,9 @@ export class MossLiveSession {
 	private sessionTools: MossLiveMossTool[] = []
 	private registeredTools = new Set<string>()
 	private calls = new Set<string>()
+	private pendingToolOutputs = new Set<string>()
+	private callResponseIds = new Map<string, string>()
+	private toolResponseGroups = new Map<string, MossToolResponseGroup>()
 	private toolChain: Promise<void> = Promise.resolve()
 	private audioContexts: Record<string, unknown>[] = []
 	private stoppedCaptures = new WeakSet<object>()
@@ -137,6 +147,9 @@ export class MossLiveSession {
 		this.sessionTools = []
 		this.registeredTools = new Set()
 		this.calls = new Set()
+		this.pendingToolOutputs = new Set()
+		this.callResponseIds = new Map()
+		this.toolResponseGroups = new Map()
 		this.toolChain = Promise.resolve()
 		this.audioContexts = []
 		this.sessionAbort = new AbortController()
@@ -304,10 +317,12 @@ export class MossLiveSession {
 		}
 	}
 
-	private send(event: Record<string, unknown>): void {
+	private send(event: Record<string, unknown>): boolean {
 		if (this.socket && this.socket.readyState === (globalThis.WebSocket?.OPEN ?? 1)) {
 			this.socket.send(JSON.stringify(event))
+			return true
 		}
+		return false
 	}
 
 	private handlePcm(generation: number, pcm: Int16Array): void {
@@ -363,11 +378,11 @@ export class MossLiveSession {
 		const data = event.data ?? {}
 		switch (event.action) {
 			case 'proxy.ready':
-				this.send({ action: 'attach_session', delegation: 'client' })
+				this.send({ action: 'attach_session' })
 				break
 			case 'session_attached':
-				if (data.delegation !== 'client') {
-					this.fail('Server did not enable client tool delegation.')
+				if (data.delegation !== 'none') {
+					this.fail('Server did not disable background delegation.')
 					return
 				}
 				this.send({
@@ -456,7 +471,13 @@ export class MossLiveSession {
 				this.playback?.stopAll()
 				break
 			case 'response.function_call_arguments.done':
-				this.runTool(data)
+				this.runTool(data, this.optionalString(data.response_id))
+				break
+			case 'response.done':
+				this.handleResponseDone(data)
+				break
+			case 'conversation.item.created':
+				this.acknowledgeToolOutput(data)
 				break
 			case 'response.ended': {
 				if (data.status === 'failed') {
@@ -503,36 +524,43 @@ export class MossLiveSession {
 		}
 	}
 
-	private runTool(data: Record<string, unknown>): void {
+	private runTool(data: Record<string, unknown>, responseId?: string): void {
 		const callId = this.optionalString(data.call_id)
 		const name = this.optionalString(data.name)
-		if (!callId || !name || this.calls.has(callId) || this.closed) return
+		if (!callId) return
+		if (this.calls.has(callId)) {
+			if (this.callResponseIds.has(callId)) this.associateToolResponse(callId, responseId)
+			return
+		}
+		if (!name || this.closed) return
+		this.associateToolResponse(callId, responseId)
+		const generation = this.generation
 		this.calls.add(callId)
 		this.emit({ type: 'tool', name, phase: 'started' })
 
 		this.toolChain = this.toolChain
 			.catch(() => {})
 			.then(async () => {
-				if (!this.isActive()) return
+				if (!this.isActive(generation)) return
 				let input: unknown
 				if (typeof data.arguments === 'string') {
 					try {
 						input = JSON.parse(data.arguments)
 					} catch {
-						await this.toolFailure(callId, name, 'Tool arguments were not valid JSON')
+						await this.toolFailure(generation, callId, name, 'Tool arguments were not valid JSON')
 						return
 					}
 				} else {
 					input = data.arguments ?? {}
 				}
 				if (!this.registeredTools.has(name)) {
-					await this.toolFailure(callId, name, `Unknown tool: ${name}`)
+					await this.toolFailure(generation, callId, name, `Unknown tool: ${name}`)
 					return
 				}
 
 				const toolRevision = this.revision
 				if (toolRevision === null) {
-					await this.toolFailure(callId, name, 'MOSS session revision is unavailable')
+					await this.toolFailure(generation, callId, name, 'MOSS session revision is unavailable')
 					return
 				}
 
@@ -555,6 +583,7 @@ export class MossLiveSession {
 					} catch {
 						body = null
 					}
+					if (!this.isActive(generation)) return
 					this.updateRevision(body)
 					if (!response.ok) {
 						const message = this.errorMessage(
@@ -564,6 +593,7 @@ export class MossLiveSession {
 						const record =
 							body && typeof body === 'object' ? (body as Record<string, unknown>) : null
 						await this.toolFailure(
+							generation,
 							callId,
 							name,
 							message,
@@ -573,51 +603,144 @@ export class MossLiveSession {
 					}
 					const record = body && typeof body === 'object' ? (body as Record<string, unknown>) : null
 					if (!record || !Object.hasOwn(record, 'result')) {
-						await this.toolFailure(callId, name, 'Canvas tool response did not contain a result')
+						await this.toolFailure(
+							generation,
+							callId,
+							name,
+							'Canvas tool response did not contain a result',
+						)
 						return
 					}
 					const result = record.result
-					const failed = this.isToolFailure(result)
-					if (failed) {
-						this.emit({ type: 'tool', name, phase: 'error' })
-						const output = JSON.stringify(result)
-						this.send({
-							action: 'conversation.item.create',
-							item: {
-								type: 'function_call_output',
-								call_id: callId,
-								output:
-									typeof output === 'string'
-										? output
-										: JSON.stringify({ ok: false, error: 'Canvas tool execution failed' }),
-							},
-						})
-						return
-					}
-					if (!this.isActive()) return
-					this.emit({ type: 'tool', name, phase: 'done' })
-					const output = JSON.stringify(result)
-					this.send({
-						action: 'conversation.item.create',
-						item: {
-							type: 'function_call_output',
-							call_id: callId,
-							output:
-								typeof output === 'string'
-									? output
-									: JSON.stringify({ success: false, error: 'Canvas tool returned no result' }),
-						},
+					if (!this.isActive(generation)) return
+					this.emit({
+						type: 'tool',
+						name,
+						phase: this.isToolFailure(result) ? 'error' : 'done',
 					})
+					this.submitToolOutput(generation, callId, result)
 				} catch (error) {
-					if (!this.isActive()) return
+					if (!this.isActive(generation)) return
 					if (error instanceof DOMException && error.name === 'AbortError') return
 					await this.toolFailure(
+						generation,
 						callId,
 						name,
 						error instanceof Error ? error.message : 'Canvas tool execution failed',
 					)
 				}
 			})
+	}
+
+	private handleResponseDone(data: Record<string, unknown>): void {
+		const response = data.response
+		if (!response || typeof response !== 'object') return
+		const record = response as Record<string, unknown>
+		const responseId = this.optionalString(record.id)
+		const output = record.output
+		if (Array.isArray(output)) {
+			for (const item of output) {
+				if (!item || typeof item !== 'object') continue
+				const call = item as Record<string, unknown>
+				if (call.type === 'function_call') this.runTool(call, responseId)
+			}
+		}
+		if (!responseId) return
+		this.continueToolResponse(responseId)
+	}
+
+	private associateToolResponse(callId: string, responseId?: string): string {
+		const key = responseId ?? `call:${callId}`
+		const current = this.callResponseIds.get(callId)
+		if (current === key) return key
+		let wasConfirmed = false
+		if (current?.startsWith('call:') && responseId) {
+			const oldGroup = this.toolResponseGroups.get(current)
+			wasConfirmed = oldGroup?.confirmedCallIds.has(callId) ?? false
+			oldGroup?.callIds.delete(callId)
+			if (oldGroup?.callIds.size === 0) this.toolResponseGroups.delete(current)
+		} else if (current) {
+			return current
+		}
+		let group = this.toolResponseGroups.get(key)
+		if (!group) {
+			group = {
+				generation: this.generation,
+				callIds: new Set(),
+				confirmedCallIds: new Set(),
+				scheduled: false,
+			}
+			this.toolResponseGroups.set(key, group)
+		}
+		group.callIds.add(callId)
+		if (wasConfirmed) group.confirmedCallIds.add(callId)
+		this.callResponseIds.set(callId, key)
+		return key
+	}
+
+	private submitToolOutput(generation: number, callId: string, result: unknown): void {
+		if (!this.isActive(generation)) return
+		const output = JSON.stringify(result)
+		this.pendingToolOutputs.add(callId)
+		const sent = this.send({
+			action: 'conversation.item.create',
+			item: {
+				type: 'function_call_output',
+				call_id: callId,
+				output:
+					typeof output === 'string'
+						? output
+						: JSON.stringify({ ok: false, error: 'Canvas tool returned no result' }),
+			},
+		})
+		if (!sent) this.pendingToolOutputs.delete(callId)
+	}
+
+	private acknowledgeToolOutput(data: Record<string, unknown>): void {
+		const item = data.item
+		if (!item || typeof item !== 'object') return
+		const record = item as Record<string, unknown>
+		const callId = this.optionalString(record.call_id)
+		if (
+			!callId ||
+			record.type !== 'function_call_output' ||
+			!this.pendingToolOutputs.delete(callId)
+		) {
+			return
+		}
+		this.continueToolResponse(this.callResponseIds.get(callId), (group) => {
+			group.confirmedCallIds.add(callId)
+		})
+	}
+
+	private continueToolResponse(
+		responseId: string | undefined,
+		confirm?: (group: MossToolResponseGroup) => void,
+	): void {
+		if (!responseId) return
+		const group = this.toolResponseGroups.get(responseId)
+		if (!group || !this.isActive(group.generation)) return
+		confirm?.(group)
+		if (
+			group.scheduled ||
+			group.confirmedCallIds.size !== group.callIds.size ||
+			group.callIds.size === 0
+		) {
+			return
+		}
+		group.scheduled = true
+		const generation = group.generation
+		queueMicrotask(() => {
+			if (!this.isActive(generation) || this.toolResponseGroups.get(responseId) !== group) {
+				return
+			}
+			group.scheduled = false
+			const callIds = [...group.callIds]
+			if (!callIds.every((id) => group.confirmedCallIds.has(id))) return
+			if (!this.send({ action: 'response.create', response: { call_ids: callIds } })) return
+			for (const callId of callIds) this.callResponseIds.delete(callId)
+			this.toolResponseGroups.delete(responseId)
+		})
 	}
 
 	private isToolFailure(result: unknown): boolean {
@@ -627,18 +750,16 @@ export class MossLiveSession {
 	}
 
 	private async toolFailure(
+		generation: number,
 		callId: string,
 		name: string,
 		message: string,
 		actualResult?: unknown,
 	): Promise<void> {
-		if (!this.isActive()) return
+		if (!this.isActive(generation)) return
 		const result = actualResult ?? { ok: false, error: message }
 		this.emit({ type: 'tool', name, phase: 'error' })
-		this.send({
-			action: 'conversation.item.create',
-			item: { type: 'function_call_output', call_id: callId, output: JSON.stringify(result) },
-		})
+		this.submitToolOutput(generation, callId, result)
 	}
 
 	private updateRevision(body: unknown): void {
@@ -697,6 +818,9 @@ export class MossLiveSession {
 		this.connectTimer = null
 		this.sessionAbort.abort()
 		this.toolAbort.abort()
+		this.pendingToolOutputs.clear()
+		this.callResponseIds.clear()
+		this.toolResponseGroups.clear()
 
 		if (this.socket) {
 			this.socket.onmessage = null

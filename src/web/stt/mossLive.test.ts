@@ -191,10 +191,9 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 		socket.dispatchJson({ action: 'proxy.ready' })
 		assert.deepEqual(JSON.parse(String(socket.sent.at(-1))), {
 			action: 'attach_session',
-			delegation: 'client',
 		})
 
-		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'client' } })
+		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
 		const update = JSON.parse(String(socket.sent.at(-1))) as Record<string, unknown>
 		assert.equal((update.session as Record<string, unknown>).instructions, 'Use the canvas tools.')
 
@@ -218,11 +217,38 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 
 		socket.dispatchJson({
 			action: 'response.function_call_arguments.done',
-			data: { call_id: 'call-1', name: 'set_title', arguments: '{"title":"A"}' },
+			data: {
+				response_id: 'response-1',
+				call_id: 'call-1',
+				name: 'set_title',
+				arguments: '{"title":"A"}',
+			},
 		})
 		socket.dispatchJson({
 			action: 'response.function_call_arguments.done',
-			data: { call_id: 'call-1', name: 'set_title', arguments: '{"title":"A"}' },
+			data: {
+				response_id: 'response-1',
+				call_id: 'call-1',
+				name: 'set_title',
+				arguments: '{"title":"A"}',
+			},
+		})
+		socket.dispatchJson({
+			action: 'response.done',
+			data: {
+				response: {
+					id: 'response-1',
+					status: 'completed',
+					output: [
+						{
+							type: 'function_call',
+							call_id: 'call-1',
+							name: 'set_title',
+							arguments: '{"title":"A"}',
+						},
+					],
+				},
+			},
 		})
 		await flush()
 
@@ -241,34 +267,115 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 			return parsed.action === 'conversation.item.create'
 		})
 		assert.ok(resultOutput)
+		const responseCreates = () =>
+			socket.sent
+				.filter((message): message is string => typeof message === 'string')
+				.map((message) => JSON.parse(message) as Record<string, unknown>)
+				.filter((message) => message.action === 'response.create')
+		assert.equal(responseCreates().length, 0)
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'unknown-call' } },
+		})
+		await flush()
+		assert.equal(responseCreates().length, 0)
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'call-1' } },
+		})
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'call-1' } },
+		})
+		await flush()
+		assert.equal(responseCreates().length, 1)
+		assert.deepEqual(responseCreates()[0].response, { call_ids: ['call-1'] })
 
 		socket.dispatchJson({
-			action: 'response.function_call_arguments.done',
-			data: { call_id: 'call-2', name: 'set_title', arguments: '{"title":"B"}' },
+			action: 'response.done',
+			data: {
+				response: {
+					id: 'response-2',
+					status: 'completed',
+					output: [
+						{
+							type: 'function_call',
+							call_id: 'call-2',
+							name: 'set_title',
+							arguments: '{"title":"B"}',
+						},
+						{
+							type: 'function_call',
+							call_id: 'call-2',
+							name: 'set_title',
+							arguments: '{"title":"B"}',
+						},
+					],
+				},
+			},
 		})
 		await flush()
 		assert.equal(toolRequests.length, 2)
 		assert.equal(toolRequests[1].revision, 2)
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'call-2' } },
+		})
+		await flush()
+		assert.equal(responseCreates().length, 2)
 
 		socket.dispatchJson({
 			action: 'response.function_call_arguments.done',
-			data: { call_id: 'call-3', name: 'set_title', arguments: '{"title":"C"}' },
+			data: {
+				response_id: 'response-3',
+				call_id: 'call-3',
+				name: 'set_title',
+				arguments: '{"title":"C"}',
+			},
+		})
+		socket.dispatchJson({
+			action: 'response.function_call_arguments.done',
+			data: {
+				response_id: 'response-3',
+				call_id: 'call-4',
+				name: 'set_title',
+				arguments: '{"title":"D"}',
+			},
 		})
 		await flush()
-		assert.equal(toolRequests.length, 3)
+		assert.equal(toolRequests.length, 4)
 		assert.equal(toolRequests[2].revision, 3)
+		assert.equal(toolRequests[3].revision, 4)
 		assert.ok(
 			events.some(
 				(event) => event.type === 'tool' && event.name === 'set_title' && event.phase === 'error',
 			),
 		)
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'call-3' } },
+		})
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'call-4' } },
+		})
+		await flush()
+		assert.equal(responseCreates().length, 3)
+		assert.deepEqual(responseCreates().at(-1)?.response, { call_ids: ['call-3', 'call-4'] })
+
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'call-3' } },
+		})
+		await flush()
+		assert.equal(responseCreates().length, 3)
 		const outputs = socket.sent
 			.filter((message): message is string => typeof message === 'string')
 			.map((message) => JSON.parse(message) as Record<string, unknown>)
 			.filter((message) => message.action === 'conversation.item.create')
 			.map((message) => (message.item as Record<string, unknown>).output)
 		assert.equal(
-			outputs.at(-1),
+			outputs.at(-2),
 			JSON.stringify({
 				ok: false,
 				error: 'TITLE_CONFLICT',
@@ -276,6 +383,7 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 				revision: 4,
 			}),
 		)
+		assert.equal(outputs.at(-1), JSON.stringify({ success: true, revision: 5 }))
 
 		socket.dispatchJson({
 			action: 'response.ended',
@@ -300,10 +408,115 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 	}
 })
 
+test('acknowledged response_id call continues without response.done', async () => {
+	let toolCalls = 0
+	setMossLiveCaptureFactoryForTests(async () => ({ stop: async () => {} }))
+	installGlobals(async (input) => {
+		const url = typeof input === 'string' ? input : input.toString()
+		if (url === '/api/moss/session') {
+			return jsonResponse({
+				canvasId: 'canvas-1',
+				revision: 1,
+				instructions: '',
+				tools: [{ name: 'set_title' }],
+			})
+		}
+		if (url === '/api/moss/tool') {
+			toolCalls++
+			return jsonResponse({ result: { success: true, revision: 2 } })
+		}
+		throw new Error(`Unexpected fetch: ${url}`)
+	})
+	const session = new MossLiveSession({ canvasId: 'canvas-1', selection: [], onEvent: () => {} })
+
+	try {
+		await session.start()
+		const socket = MockSocket.instances[0]
+		socket.dispatchJson({ action: 'proxy.ready' })
+		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
+		socket.dispatchJson({ action: 'session.updated', data: { tools: ['set_title'] } })
+		socket.dispatchJson({
+			action: 'response.function_call_arguments.done',
+			data: {
+				type: 'response.function_call_arguments.done',
+				response_id: 'response-without-done',
+				item_id: 'item-1',
+				call_id: 'call-without-done',
+				name: 'set_title',
+				output_index: 0,
+				arguments: '{"title":"No response.done"}',
+			},
+		})
+		await flush()
+		assert.equal(
+			socket.sent.some(
+				(message) => typeof message === 'string' && String(message).includes('response.create'),
+			),
+			false,
+		)
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: {
+				item: {
+					id: 'output-item-1',
+					type: 'function_call_output',
+					call_id: 'call-without-done',
+				},
+			},
+		})
+		await flush()
+		const continuation = socket.sent
+			.filter((message): message is string => typeof message === 'string')
+			.map((message) => JSON.parse(message) as Record<string, unknown>)
+			.find((message) => message.action === 'response.create')
+		assert.deepEqual(continuation, {
+			action: 'response.create',
+			response: { call_ids: ['call-without-done'] },
+		})
+
+		socket.dispatchJson({
+			action: 'response.done',
+			data: {
+				response: {
+					id: 'response-without-done',
+					output: [
+						{ type: 'function_call', call_id: 'call-without-done', name: 'set_title' },
+						{ type: 'function_call', call_id: 'late-call', name: 'set_title', arguments: '{}' },
+					],
+				},
+			},
+		})
+		await flush()
+		assert.equal(toolCalls, 2)
+		assert.equal(
+			socket.sent.filter(
+				(message) =>
+					typeof message === 'string' && JSON.parse(message).action === 'response.create',
+			).length,
+			1,
+		)
+		socket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'late-call' } },
+		})
+		await flush()
+		const continuations = socket.sent
+			.filter((message): message is string => typeof message === 'string')
+			.map((message) => JSON.parse(message) as Record<string, unknown>)
+			.filter((message) => message.action === 'response.create')
+		assert.deepEqual(
+			continuations.map((message) => message.response),
+			[{ call_ids: ['call-without-done'] }, { call_ids: ['late-call'] }],
+		)
+	} finally {
+		session.stop()
+		cleanupGlobals()
+	}
+})
+
 test('tool cancellation aborts the request and sends no late result', async () => {
-	let resolveTool: ((response: Response) => void) | null = null
 	let aborted = false
-	setMossLiveCaptureFactoryForTests(async (onPcm) => ({
+	setMossLiveCaptureFactoryForTests(async (_onPcm) => ({
 		stop: async () => {},
 	}))
 	const fetchImpl = async (
@@ -323,9 +536,7 @@ test('tool cancellation aborts the request and sends no late result', async () =
 			init?.signal?.addEventListener('abort', () => {
 				aborted = true
 			})
-			return await new Promise<Response>((resolve) => {
-				resolveTool = resolve
-			})
+			return await new Promise<Response>(() => {})
 		}
 		throw new Error(`Unexpected fetch: ${url}`)
 	}
@@ -341,7 +552,7 @@ test('tool cancellation aborts the request and sends no late result', async () =
 		await session.start()
 		const socket = MockSocket.instances[0]
 		socket.dispatchJson({ action: 'proxy.ready' })
-		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'client' } })
+		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
 		socket.dispatchJson({ action: 'session.updated', data: { tools: ['slow_tool'] } })
 		socket.dispatchJson({
 			action: 'response.function_call_arguments.done',
@@ -360,6 +571,166 @@ test('tool cancellation aborts the request and sends no late result', async () =
 		)
 		assert.equal(events.filter((event) => event.type === 'tool').length, 1)
 	} finally {
+		cleanupGlobals()
+	}
+})
+
+test('stop and restart isolate late tool results and pending acknowledgements', async () => {
+	let sessionCalls = 0
+	let toolCalls = 0
+	const revisions: unknown[] = []
+	const oldTool = { resolve: null as ((response: Response) => void) | null }
+	setMossLiveCaptureFactoryForTests(async () => ({ stop: async () => {} }))
+	const fetchImpl = async (
+		input: string | URL | Request,
+		init?: RequestInit,
+	): Promise<Response> => {
+		const url = typeof input === 'string' ? input : input.toString()
+		if (url === '/api/moss/session') {
+			sessionCalls++
+			return jsonResponse({
+				canvasId: 'canvas-1',
+				revision: sessionCalls === 1 ? 1 : 10,
+				instructions: '',
+				tools: [{ name: 'set_title' }],
+			})
+		}
+		if (url === '/api/moss/tool') {
+			toolCalls++
+			const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+			revisions.push(body.revision)
+			if (toolCalls === 1) {
+				return await new Promise<Response>((resolve) => {
+					oldTool.resolve = resolve
+				})
+			}
+			return jsonResponse({ result: { success: true, revision: 11 } })
+		}
+		throw new Error(`Unexpected fetch: ${url}`)
+	}
+	installGlobals(fetchImpl as typeof fetch)
+	const session = new MossLiveSession({ canvasId: 'canvas-1', selection: [], onEvent: () => {} })
+
+	try {
+		await session.start()
+		const oldSocket = MockSocket.instances[0]
+		oldSocket.dispatchJson({ action: 'proxy.ready' })
+		oldSocket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
+		oldSocket.dispatchJson({ action: 'session.updated', data: { tools: ['set_title'] } })
+		oldSocket.dispatchJson({
+			action: 'response.function_call_arguments.done',
+			data: { call_id: 'old-call', name: 'set_title', arguments: '{"title":"old"}' },
+		})
+		await flush()
+		assert.equal(toolCalls, 1)
+
+		session.stop()
+		await session.start()
+		const newSocket = MockSocket.instances[1]
+		newSocket.dispatchJson({ action: 'proxy.ready' })
+		newSocket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
+		newSocket.dispatchJson({ action: 'session.updated', data: { tools: ['set_title'] } })
+		oldTool.resolve?.(jsonResponse({ result: { success: true, revision: 99 } }))
+		await flush()
+		assert.equal(
+			oldSocket.sent.some(
+				(message) =>
+					typeof message === 'string' && String(message).includes('function_call_output'),
+			),
+			false,
+		)
+
+		newSocket.dispatchJson({
+			action: 'response.function_call_arguments.done',
+			data: { call_id: 'new-call', name: 'set_title', arguments: '{"title":"new"}' },
+		})
+		await flush()
+		assert.deepEqual(revisions, [1, 10])
+		newSocket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'new-call' } },
+		})
+		await flush()
+		const continuations = newSocket.sent
+			.filter((message): message is string => typeof message === 'string')
+			.map((message) => JSON.parse(message) as Record<string, unknown>)
+			.filter((message) => message.action === 'response.create')
+		assert.deepEqual(continuations, [
+			{ action: 'response.create', response: { call_ids: ['new-call'] } },
+		])
+	} finally {
+		session.stop()
+		cleanupGlobals()
+	}
+})
+
+test('restart drops a continuation already acknowledged by the old session', async () => {
+	setMossLiveCaptureFactoryForTests(async () => ({ stop: async () => {} }))
+	installGlobals(async (input) => {
+		const url = typeof input === 'string' ? input : input.toString()
+		if (url === '/api/moss/session') {
+			return jsonResponse({
+				canvasId: 'canvas-1',
+				revision: 1,
+				instructions: '',
+				tools: [{ name: 'set_title' }],
+			})
+		}
+		if (url === '/api/moss/tool') {
+			return jsonResponse({ result: { success: true, revision: 2 } })
+		}
+		throw new Error(`Unexpected fetch: ${url}`)
+	})
+	const session = new MossLiveSession({ canvasId: 'canvas-1', selection: [], onEvent: () => {} })
+
+	try {
+		await session.start()
+		const oldSocket = MockSocket.instances[0]
+		oldSocket.dispatchJson({ action: 'proxy.ready' })
+		oldSocket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
+		oldSocket.dispatchJson({ action: 'session.updated', data: { tools: ['set_title'] } })
+		oldSocket.dispatchJson({
+			action: 'response.function_call_arguments.done',
+			data: { call_id: 'old-ack', name: 'set_title', arguments: '{"title":"old"}' },
+		})
+		await flush()
+		oldSocket.dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'old-ack' } },
+		})
+		session.stop()
+		await flush()
+		assert.equal(
+			oldSocket.sent.some(
+				(message) => typeof message === 'string' && String(message).includes('response.create'),
+			),
+			false,
+		)
+
+		await session.start()
+		assert.equal(MockSocket.instances.length, 2)
+		MockSocket.instances[1].dispatchJson({ action: 'proxy.ready' })
+		MockSocket.instances[1].dispatchJson({
+			action: 'session_attached',
+			data: { delegation: 'none' },
+		})
+		MockSocket.instances[1].dispatchJson({
+			action: 'session.updated',
+			data: { tools: ['set_title'] },
+		})
+		MockSocket.instances[1].dispatchJson({
+			action: 'conversation.item.created',
+			data: { item: { type: 'function_call_output', call_id: 'old-ack' } },
+		})
+		await flush()
+		assert.equal(
+			MockSocket.instances[1].sent.some(
+				(message) => typeof message === 'string' && String(message).includes('response.create'),
+			),
+			false,
+		)
+	} finally {
+		session.stop()
 		cleanupGlobals()
 	}
 })
@@ -388,7 +759,7 @@ test('audio backpressure closes the session', async () => {
 		await session.start()
 		const socket = MockSocket.instances[0]
 		socket.dispatchJson({ action: 'proxy.ready' })
-		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'client' } })
+		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
 		socket.dispatchJson({ action: 'session.updated', data: { tools: [] } })
 		socket.bufferedAmount = 128001
 		;(pcm as ((pcm: Int16Array) => void) | null)?.(new Int16Array([1000, -1000]))
