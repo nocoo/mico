@@ -88,5 +88,14 @@
 		"voice": "ja-JP-NanamiNeural",
 		"rate": "+50%",
 		"script": "c10-disaster-drill.ja.txt"
+	},
+	{
+		"id": "c13-microsoft-outlook",
+		"lang": "en",
+		"subject": "Earnings outlook",
+		"title": "Microsoft FY27 Q1: cloud outlook and investor Q&A",
+		"voice": "en-US-GuyNeural",
+		"rate": "+5%",
+		"script": "c13-microsoft-outlook.en.txt"
 	}
 ]

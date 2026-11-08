@@ -1,0 +1,17 @@
+This Microsoft earnings outlook uses the company's October 28, 2026 investor call. Actual results cover the quarter ended September 30. Forecasts are guidance for fiscal 2027's December quarter.
+
+Start with what happened. Revenue was 92.3 billion dollars, up 19 percent year over year. Operating income was 45.9 billion dollars, up 21 percent, and the operating margin reached 50 percent. Microsoft Cloud revenue was 63.9 billion dollars, up 30 percent, while Azure grew 48 percent. Commercial remaining performance obligation reached 677 billion dollars, up 73 percent.
+
+The investment picture explains much of the story. Capital expenditures were 45.2 billion dollars, although some third-party deliveries slipped. Roughly three quarters went to short-lived assets, mainly C.P.U.s and G.P.U.s. Operating cash flow was 58 billion dollars, and free cash flow was 18.6 billion.
+
+Now, the guidance. For the December quarter, Microsoft expects total revenue of 96 to 97.1 billion dollars, or 18 to 19 percent growth. It expects Azure revenue to grow 49 to 50 percent in constant currency. Microsoft Cloud gross margin should be about 65 percent, and total company operating margin should be down slightly year over year. These are management expectations as of October 28, not completed results.
+
+The key tension is capacity. Demand still exceeds supply. Engineering gains monetized more of the existing fleet, while some third-party G.P.U. capacity moved to the second half. Microsoft expects second-quarter capital expenditures above 50 billion dollars and approximately 170 billion dollars for the calendar year. It also expects to remain free cash flow positive in fiscal 2027.
+
+Two questions from the real Q and A help frame the outlook.
+
+First, as AI capacity comes online, what matters more: Azure utilization and unit cost, or higher layers such as Fabric, Foundry, and Copilot? Satya Nadella answered, in effect, all of the above. He described one fungible pool, with returns from efficient operation, demand allocation, and reinforcement across the stack.
+
+Second, what supports the 49 to 50 percent Azure growth outlook? Amy Hood pointed to efficiencies across the application, model, G.P.U., C.P.U., storage, and memory stack. Those gains helped put more capacity toward Foundry in the reported quarter. The forecast also depends on further engineering progress, and it carries uncertainty around token pricing and delayed capacity.
+
+The takeaway is balanced. Actual growth was strong, and the guidance remains ambitious. But delivery depends on engineering efficiency, capacity timing, token economics, and demand conversion.

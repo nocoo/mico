@@ -229,6 +229,18 @@
 			"audio": "audio/c10-disaster-drill.mp3",
 			"duration": 293.6,
 			"chars": 2005
+		},
+		{
+			"id": "c13-microsoft-outlook",
+			"lang": "en",
+			"subject": "Earnings outlook",
+			"title": "Microsoft FY27 Q1: cloud outlook and investor Q&A",
+			"voice": "en-US-GuyNeural",
+			"script": "evals/cases/c13-microsoft-outlook.en.txt",
+			"rate": "+5%",
+			"audio": "audio/c13-microsoft-outlook.mp3",
+			"duration": 175.3,
+			"chars": 2635
 		}
 	]
 }

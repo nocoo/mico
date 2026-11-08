@@ -57,7 +57,7 @@ MOSS 接收麦克风音频和当前画布上下文，一边说话一边直接调
 - [`src/server/mossProxy.ts`](src/server/mossProxy.ts) 把 `/moss` 代理到 MOSS，并在服务端完成授权；[`src/server/mossApi.ts`](src/server/mossApi.ts) 通过本地守护进程暴露经过校验、绑定画布的原生工具。密钥不会发到浏览器。
 - [`src/server/maiProxy.ts`](src/server/maiProxy.ts) 是 Vite 的 WebSocket 代理，负责附加 Azure `api-key` 头；它提供 `/mai/config` 并代理 `/mai/realtime`。
 - `.env` 为 MOSS 提供 `MOSS_API_KEY`，为 MAI 提供 `AZURE_MAI_HOST`、`AZURE_OPENAI_API_KEY` 和 `AZURE_OPENAI_DEPLOYMENT`。把 [`.env.example`](.env.example) 复制成 `.env` 后填入这些值；`.env` 已被 Git 忽略。
-- [`public/evals/`](public/evals/) 有二十段生成的会话 MP3 和 `manifest.json`：十段课堂讲解，加十段会议/规划案例。新案例每段 3:46–4:59，包含中文、英文和日文语音；原始脚本和目录在 [`evals/cases/`](evals/cases/)。
+- [`public/evals/`](public/evals/) contains generated session MP3s and `manifest.json`: ten school lessons, ten meeting/planning cases, and a Microsoft earnings outlook briefing. Scripts, catalog, and the briefing's sources are in [`evals/cases/`](evals/cases/).
 - Live 面板包含带提交标记的波形、实时确认/假设文本、VAD 能量表、播放速度、静音阈值、每段延迟、`New canvas` 按钮和 `Create session summary` 操作。讲者进入收尾时，AI 可以生成可视化 HTML 摘要；会话结束、队列排空后会再次要求创建或更新同一张卡片。AI 生成的 HTML 可以内联支持的 Lucide 图标 SVG，沙箱策略不变。
 - AI 会把已有的相关对象分组进框，成员变大时扩展框边界，并拒绝与无关内容重叠的扩展。手动编辑框仍按原行为处理。实时内容可以延伸到画布之外，不受初始视口限制。
 - `New canvas` 创建并激活一个命名画布，让一堂课从空画板开始。AI 队列保持串行：一次只处理一个课堂请求，落后时最多合并三个待处理片段。片段不完整或没有新的可视化事实时可以只返回 `WAIT`；这类回复渲染成一个小的等待标记，不绘图。
