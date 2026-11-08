@@ -1,0 +1,101 @@
+{
+  "canvas": {
+    "id": "88d085f1-0672-4a07-83c1-aa8415c82a28",
+    "name": "MOSS meeting demo · 2026-11-08T23:32:59",
+    "revision": 5,
+    "createdAt": "2026-11-08T23:32:59.985Z",
+    "updatedAt": "2026-11-08T23:35:56.254Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjcuOTk5OTk5OTk5OTk5OTk1IiB5PSIzNC4wOTAzMjI1ODA2NDUxNjQiIHdpZHRoPSI0NC4xMjkwMzIyNTgwNjQ1MiIgaGVpZ2h0PSIxMy45MzU0ODM4NzA5Njc3NDIiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iMTAuOTk5OTk5OTk5OTk5OTk1IiB5PSI0Mi4wOTAzMjI1ODA2NDUxNjQiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPkNvbnRleHQK4oCiIENoZWNrb3V0PC90ZXh0PjxyZWN0IHg9IjU2Ljc3NDE5MzU0ODM4NzA5NiIgeT0iMzQuMDkwMzIyNTgwNjQ1MTY0IiB3aWR0aD0iNDQuMTI5MDMyMjU4MDY0NTIiIGhlaWdodD0iMTUuMDk2Nzc0MTkzNTQ4Mzg4IiByeD0iMyIgZmlsbD0iI2YxZmFkYyIvPjx0ZXh0IHg9IjU5Ljc3NDE5MzU0ODM4NzA5NiIgeT0iNDIuMDkwMzIyNTgwNjQ1MTY0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5NZXRyaWNzIChjb25maXJtZWQ8L3RleHQ+PHJlY3QgeD0iNTYuNzc0MTkzNTQ4Mzg3MDk2IiB5PSI1MS41MDk2Nzc0MTkzNTQ4NCIgd2lkdGg9IjQ0LjEyOTAzMjI1ODA2NDUyIiBoZWlnaHQ9IjEyLjc3NDE5MzU0ODM4NzA5OCIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI1OS43NzQxOTM1NDgzODcwOTYiIHk9IjU5LjUwOTY3NzQxOTM1NDg0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5PYnNlcnZhdGlvbgrigKIgU2hhcjwvdGV4dD48cmVjdCB4PSIxMDUuNTQ4Mzg3MDk2Nzc0MTkiIHk9IjM0LjA5MDMyMjU4MDY0NTE2NCIgd2lkdGg9IjQ2LjQ1MTYxMjkwMzIyNTgxIiBoZWlnaHQ9IjE3LjQxOTM1NDgzODcwOTY4IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjEwOC41NDgzODcwOTY3NzQxOSIgeT0iNDIuMDkwMzIyNTgwNjQ1MTY0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5EaWFnbm9zaXMgKE1heWEsIGM8L3RleHQ+PHJlY3QgeD0iMTA1LjU0ODM4NzA5Njc3NDE5IiB5PSI1My44MzIyNTgwNjQ1MTYxMyIgd2lkdGg9IjQ2LjQ1MTYxMjkwMzIyNTgxIiBoZWlnaHQ9IjEyLjc3NDE5MzU0ODM4NzA5OCIgcng9IjMiIGZpbGw9IiNmMWZhZGMiLz48dGV4dCB4PSIxMDguNTQ4Mzg3MDk2Nzc0MTkiIHk9IjYxLjgzMjI1ODA2NDUxNjEzIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5XaHkgdGhlIGh5cG90aGVzaXM8L3RleHQ+PHJlY3QgeD0iNy45OTk5OTk5OTk5OTk5OTUiIHk9IjU0Ljk5MzU0ODM4NzA5Njc3IiB3aWR0aD0iNDguNzc0MTkzNTQ4Mzg3MDk2IiBoZWlnaHQ9IjIyLjA2NDUxNjEyOTAzMjI2IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjEwLjk5OTk5OTk5OTk5OTk5NSIgeT0iNjIuOTkzNTQ4Mzg3MDk2NzciIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPk9wdGlvbnMgKHJhaXNlZCBieTwvdGV4dD48dGV4dCB4PSI3Ljk5OTk5OTk5OTk5OTk5NSIgeT0iMjYuOTQxOTM1NDgzODcwOTY3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4Ij5JbmNpZGVudDogQ2hlY2tvdXQgc2VydmljZSB0aW1lb3V0czwvdGV4dD48dGV4dCB4PSI3Ljk5OTk5OTk5OTk5OTk5NSIgeT0iMzIuMjgzODcwOTY3NzQxOTMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiPk93bmVyOiBNYXlhIChzdGFmZiBlbmdpbmVlcikgIMK3ICBTUkU6IERhbmllbDwvdGV4dD48L3N2Zz4="
+  },
+  "board": {
+    "revision": 5,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 144,
+        "w": 596,
+        "h": 42,
+        "text": "Incident: Checkout service timeouts",
+        "font": "sans",
+        "fontSize": 30,
+        "fontWeight": 700
+      },
+      {
+        "id": "owner",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 190,
+        "w": 287,
+        "h": 26,
+        "text": "Owner: Maya (staff engineer)  ·  SRE: Daniel",
+        "font": "sans",
+        "fontSize": 18,
+        "fontWeight": 500
+      },
+      {
+        "id": "context",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 240,
+        "w": 380,
+        "h": 120,
+        "text": "Context\n• Checkout service (fictional)\n• Symptom: request timeouts\n• Onset: 2:14 p.m.\n• Status: under investigation"
+      },
+      {
+        "id": "metrics",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 500,
+        "y": 240,
+        "w": 380,
+        "h": 130,
+        "text": "Metrics (confirmed)\n• P95 latency: 4.2 s\n• Payment failures: 6%\n• CPU: below 60%\n• DB connection pool: full\n• Orders entering OK, completing too slowly"
+      },
+      {
+        "id": "obs-retry",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 500,
+        "y": 390,
+        "w": 380,
+        "h": 110,
+        "text": "Observation\n• Sharp increase in retry attempts after the latest release"
+      },
+      {
+        "id": "diagnosis",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 920,
+        "y": 240,
+        "w": 400,
+        "h": 150,
+        "text": "Diagnosis (Maya, current hypothesis)\nRetry feedback loop:\n• Payment calls slow\n• Each retry holds or needs another connection\n• Transaction stays open while waiting"
+      },
+      {
+        "id": "consistency",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 920,
+        "y": 410,
+        "w": 400,
+        "h": 110,
+        "text": "Why the hypothesis fits\n• Adding compute did not help\n• Connection saturation matches the timeout spike"
+      },
+      {
+        "id": "options",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 420,
+        "w": 420,
+        "h": 190,
+        "text": "Options (raised by Daniel, none decided yet)\n1. Full rollback — should recover the process, but removes two unrelated checkout improvements\n2. Larger connection pool — may reduce immediate queuing, but pushes more pressure into the database\n3. Narrow retry rollback with a concurrency cap — targets the suspected loop"
+      }
+    ]
+  }
+}

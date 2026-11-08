@@ -2,6 +2,9 @@
 
 ## MOSS Live verification
 
+- Real two-speaker meetings confirmed acknowledged native tool continuations but not reliable meeting capture: later provider responses failed or were never generated, leaving decisions and owners uncaptured. A recorder completing without JavaScript errors is not a successful meeting evaluation; count provider failure events and inspect actual content before publishing.
+- MediaRecorder can omit silent audio packets while preserving timestamp gaps. Muxing must fill those gaps with asynchronous resampling; otherwise audio drifts ahead even when the opening sync marker matches. Verify speech alignment beyond the marker.
+- A delegated audio worker again used `find`; future worker prompts must explicitly require `fd` for discovery, even when working only in temporary directories.
 - The original tool-call tests stopped at the submitted result and missed the provider's acknowledgement and continuation steps. Model the complete published protocol, including duplicate summaries and multiple consecutive calls, before treating mock success as live reliability.
 - Repeated the previously recorded MOSS filename guess and ambiguous test edit. Discover the file first and anchor edits on the containing test name, even when revisiting familiar code. Recheck formatting after adding the regression assertion.
 - A fake audio file began playing as soon as the microphone opened, before MOSS finished connecting. The client discards pre-ready frames, so only the end of the synthetic request reached the provider and no tool call was observed. Future probes must start synthetic speech only after the session is ready; distinguish a validated connection from an unverified tool-call path.

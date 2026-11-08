@@ -1,0 +1,451 @@
+[
+  {
+    "attempt": 1,
+    "canvasId": "f5548a50-3b31-4571-a65f-4664b63c8181",
+    "name": "MOSS meeting demo · 2026-11-08T23:14:09",
+    "recordingDirectory": "/Users/nocoo/workspace/recordings/mico/moss-meeting-2026-11-08T23-14-09-272Z",
+    "toolExecutions": 3,
+    "toolResults": 3,
+    "acknowledgements": 3,
+    "continuedCalls": 3,
+    "toolHttpErrors": 0,
+    "providerFailures": [
+      {
+        "run_id": "run-7ba4bd5e-66a4-439c-905c-11214bc9ef49",
+        "status": "failed",
+        "turn_id": "asr-turn-28"
+      }
+    ],
+    "finalRevision": 3,
+    "shapes": 8,
+    "tools": [
+      {
+        "name": "add_notes",
+        "callTime": 1794179683890,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 1,
+          "created": [
+            {
+              "id": "symptoms",
+              "type": "note"
+            },
+            {
+              "id": "evidence",
+              "type": "note"
+            },
+            {
+              "id": "options",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794179688912,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 2,
+          "created": [
+            {
+              "id": "decision",
+              "type": "note"
+            },
+            {
+              "id": "owners",
+              "type": "note"
+            },
+            {
+              "id": "risks",
+              "type": "note"
+            },
+            {
+              "id": "followup",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_texts",
+        "callTime": 1794179693597,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 3,
+          "created": [
+            {
+              "id": "title",
+              "type": "text"
+            }
+          ],
+          "updated": []
+        }
+      }
+    ],
+    "assessment": "Partial meeting capture; no complete decision/owner/action summary."
+  },
+  {
+    "attempt": 2,
+    "canvasId": "0c3453a8-39f4-4e1d-8a40-ff394f390772",
+    "name": "MOSS meeting demo · 2026-11-08T23:20:03",
+    "recordingDirectory": "/Users/nocoo/workspace/recordings/mico/moss-meeting-2026-11-08T23-20-03-483Z",
+    "toolExecutions": 3,
+    "toolResults": 3,
+    "acknowledgements": 3,
+    "continuedCalls": 3,
+    "toolHttpErrors": 0,
+    "providerFailures": [],
+    "finalRevision": 3,
+    "shapes": 9,
+    "tools": [
+      {
+        "name": "add_texts",
+        "callTime": 1794180027783,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 1,
+          "created": [
+            {
+              "id": "title",
+              "type": "text"
+            },
+            {
+              "id": "subtitle",
+              "type": "text"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180036653,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 2,
+          "created": [
+            {
+              "id": "symptoms",
+              "type": "note"
+            },
+            {
+              "id": "evidence",
+              "type": "note"
+            },
+            {
+              "id": "options",
+              "type": "note"
+            },
+            {
+              "id": "decision",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180046329,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 3,
+          "created": [
+            {
+              "id": "risks",
+              "type": "note"
+            },
+            {
+              "id": "owners",
+              "type": "note"
+            },
+            {
+              "id": "followup",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      }
+    ],
+    "assessment": "Partial meeting capture; no complete decision/owner/action summary."
+  },
+  {
+    "attempt": 3,
+    "canvasId": "053f20a2-0b27-4255-89d4-c8644f200006",
+    "name": "MOSS meeting demo · 2026-11-08T23:26:54",
+    "recordingDirectory": "/Users/nocoo/workspace/recordings/mico/moss-meeting-2026-11-08T23-26-54-104Z",
+    "toolExecutions": 4,
+    "toolResults": 4,
+    "acknowledgements": 4,
+    "continuedCalls": 4,
+    "toolHttpErrors": 0,
+    "providerFailures": [
+      {
+        "run_id": "run-7d8780f6-aa64-4af2-af1d-e55d7a8dff9b",
+        "status": "failed",
+        "turn_id": "asr-turn-7"
+      },
+      {
+        "run_id": "run-3c8d0022-bc1a-4220-97cb-7ddd7578caac",
+        "status": "failed",
+        "turn_id": "asr-turn-22"
+      }
+    ],
+    "finalRevision": 4,
+    "shapes": 8,
+    "tools": [
+      {
+        "name": "add_notes",
+        "callTime": 1794180455057,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 1,
+          "created": [
+            {
+              "id": "obs-timeline",
+              "type": "note"
+            },
+            {
+              "id": "fact-metrics",
+              "type": "note"
+            },
+            {
+              "id": "people",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180532829,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 2,
+          "created": [
+            {
+              "id": "fact-db",
+              "type": "note"
+            },
+            {
+              "id": "fact-mechanism",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_html_cards",
+        "callTime": 1794180556881,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 3,
+          "created": [
+            {
+              "id": "card-2aa94e38",
+              "type": "html"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180561343,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 4,
+          "created": [
+            {
+              "id": "risk-tradeoffs",
+              "type": "note"
+            },
+            {
+              "id": "open-conditions",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      }
+    ],
+    "assessment": "Partial meeting capture; no complete decision/owner/action summary."
+  },
+  {
+    "attempt": 4,
+    "canvasId": "88d085f1-0672-4a07-83c1-aa8415c82a28",
+    "name": "MOSS meeting demo · 2026-11-08T23:32:59",
+    "recordingDirectory": "/Users/nocoo/workspace/recordings/mico/moss-meeting-2026-11-08T23-32-59-969Z",
+    "toolExecutions": 5,
+    "toolResults": 5,
+    "acknowledgements": 5,
+    "continuedCalls": 5,
+    "toolHttpErrors": 0,
+    "providerFailures": [
+      {
+        "run_id": "run-b19a5a0f-9aa1-4e66-a458-e6b9142d5a24",
+        "status": "failed",
+        "turn_id": "asr-turn-4"
+      },
+      {
+        "run_id": "run-eca7acd8-19f9-4a2a-acef-2422241d0aee",
+        "status": "failed",
+        "turn_id": "asr-turn-8"
+      },
+      {
+        "run_id": "run-8958352c-ccba-427a-b803-39d0455e6bdc",
+        "status": "failed",
+        "turn_id": "asr-turn-9"
+      },
+      {
+        "run_id": "run-3fb6dd41-4620-493c-a7c8-72fd7167f60b",
+        "status": "failed",
+        "turn_id": "asr-turn-18"
+      },
+      {
+        "run_id": "run-29042470-fc45-4b8f-a664-7f3875c212ae",
+        "status": "failed",
+        "turn_id": "asr-turn-19"
+      },
+      {
+        "run_id": "run-1bbebdbb-f715-4a92-abff-eb9ba36e4cff",
+        "status": "failed",
+        "turn_id": "asr-turn-20"
+      },
+      {
+        "run_id": "run-75ca4dab-85c6-4a5f-96fd-4cc6e532f050",
+        "status": "failed",
+        "turn_id": "asr-turn-21"
+      },
+      {
+        "run_id": "run-7aaabe25-60df-42f4-a3ce-6c1188d68ff0",
+        "status": "failed",
+        "turn_id": "asr-turn-22"
+      },
+      {
+        "run_id": "run-8f2d728d-bf6a-40b6-9bb1-50af3321fd01",
+        "status": "failed",
+        "turn_id": "asr-turn-26"
+      },
+      {
+        "run_id": "run-ccbf03bc-c453-4170-9cb5-8d5fcdd91db9",
+        "status": "failed",
+        "turn_id": "asr-turn-28"
+      }
+    ],
+    "finalRevision": 5,
+    "shapes": 8,
+    "tools": [
+      {
+        "name": "add_texts",
+        "callTime": 1794180801499,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 1,
+          "created": [
+            {
+              "id": "title",
+              "type": "text"
+            },
+            {
+              "id": "owner",
+              "type": "text"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180806428,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 2,
+          "created": [
+            {
+              "id": "context",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180882437,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 3,
+          "created": [
+            {
+              "id": "metrics",
+              "type": "note"
+            },
+            {
+              "id": "obs-retry",
+              "type": "note"
+            },
+            {
+              "id": "diagnosis",
+              "type": "note"
+            },
+            {
+              "id": "consistency",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      },
+      {
+        "name": "update_shapes",
+        "callTime": 1794180887260,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 4,
+          "created": [],
+          "updated": [
+            "owner"
+          ]
+        }
+      },
+      {
+        "name": "add_notes",
+        "callTime": 1794180956282,
+        "status": 200,
+        "result": {
+          "ok": true,
+          "revision": 5,
+          "created": [
+            {
+              "id": "options",
+              "type": "note"
+            }
+          ],
+          "updated": []
+        }
+      }
+    ],
+    "assessment": "Partial meeting capture; no complete decision/owner/action summary."
+  }
+]

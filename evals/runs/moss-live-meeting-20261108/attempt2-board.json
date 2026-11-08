@@ -1,0 +1,111 @@
+{
+  "canvas": {
+    "id": "0c3453a8-39f4-4e1d-8a40-ff394f390772",
+    "name": "MOSS meeting demo · 2026-11-08T23:20:03",
+    "revision": 3,
+    "createdAt": "2026-11-08T23:20:03.508Z",
+    "updatedAt": "2026-11-08T23:20:46.297Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjguMDAwMDAwMDAwMDAwMDA5IiB5PSIzNS4xNDAwNDkxNDAwNDkxNCIgd2lkdGg9IjI2LjUzNTYyNjUzNTYyNjUzNCIgaGVpZ2h0PSIxNy42OTA0MTc2OTA0MTc2OSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSIxMS4wMDAwMDAwMDAwMDAwMDkiIHk9IjQzLjE0MDA0OTE0MDA0OTE0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5TWU1QVE9NUwoobm90aGluZyA8L3RleHQ+PHJlY3QgeD0iMzcuMzY2MDkzMzY2MDkzMzc0IiB5PSIzNS4xNDAwNDkxNDAwNDkxNCIgd2lkdGg9IjI2LjUzNTYyNjUzNTYyNjUzNCIgaGVpZ2h0PSIxNy42OTA0MTc2OTA0MTc2OSIgcng9IjMiIGZpbGw9IiNmMWZhZGMiLz48dGV4dCB4PSI0MC4zNjYwOTMzNjYwOTMzNzQiIHk9IjQzLjE0MDA0OTE0MDA0OTE0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5FVklERU5DRQoobm90aGluZyA8L3RleHQ+PHJlY3QgeD0iNjYuNzMyMTg2NzMyMTg2NzMiIHk9IjM1LjE0MDA0OTE0MDA0OTE0IiB3aWR0aD0iMjYuNTM1NjI2NTM1NjI2NTM0IiBoZWlnaHQ9IjE3LjY5MDQxNzY5MDQxNzY5IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjY5LjczMjE4NjczMjE4NjczIiB5PSI0My4xNDAwNDkxNDAwNDkxNCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+T1BUSU9OUwoobm90aGluZyBjPC90ZXh0PjxyZWN0IHg9Ijk2LjA5ODI4MDA5ODI4MDEiIHk9IjM1LjE0MDA0OTE0MDA0OTE0IiB3aWR0aD0iMjYuNTM1NjI2NTM1NjI2NTM0IiBoZWlnaHQ9IjE3LjY5MDQxNzY5MDQxNzY5IiByeD0iMyIgZmlsbD0iI2YzZjVmNCIvPjx0ZXh0IHg9Ijk5LjA5ODI4MDA5ODI4MDEiIHk9IjQzLjE0MDA0OTE0MDA0OTE0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5ERUNJU0lPTgoobm8gZGVjaXM8L3RleHQ+PHJlY3QgeD0iMTI1LjQ2NDM3MzQ2NDM3MzQ3IiB5PSIzNS4xNDAwNDkxNDAwNDkxNCIgd2lkdGg9IjI2LjUzNTYyNjUzNTYyNjUzNCIgaGVpZ2h0PSIxNy42OTA0MTc2OTA0MTc2OSIgcng9IjMiIGZpbGw9IiNmZmU5ZjAiLz48dGV4dCB4PSIxMjguNDY0MzczNDY0MzczNDciIHk9IjQzLjE0MDA0OTE0MDA0OTE0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5SSVNLUwoobm90aGluZyBjYXA8L3RleHQ+PHJlY3QgeD0iOC4wMDAwMDAwMDAwMDAwMDkiIHk9IjU1LjY2MDkzMzY2MDkzMzY2IiB3aWR0aD0iMjYuNTM1NjI2NTM1NjI2NTM0IiBoZWlnaHQ9IjE3LjY5MDQxNzY5MDQxNzY5IiByeD0iMyIgZmlsbD0iI2YzZjVmNCIvPjx0ZXh0IHg9IjExLjAwMDAwMDAwMDAwMDAwOSIgeT0iNjMuNjYwOTMzNjYwOTMzNjYiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPk9XTkVSUwoobm9uZSBhc3NpZzwvdGV4dD48cmVjdCB4PSIzNy4zNjYwOTMzNjYwOTMzNzQiIHk9IjU1LjY2MDkzMzY2MDkzMzY2IiB3aWR0aD0iMjYuNTM1NjI2NTM1NjI2NTM0IiBoZWlnaHQ9IjE3LjY5MDQxNzY5MDQxNzY5IiByeD0iMyIgZmlsbD0iI2YzZjVmNCIvPjx0ZXh0IHg9IjQwLjM2NjA5MzM2NjA5MzM3NCIgeT0iNjMuNjYwOTMzNjYwOTMzNjYiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPkZPTExPVy1VUAoobm8gaXRlbTwvdGV4dD48dGV4dCB4PSI4LjAwMDAwMDAwMDAwMDAwOSIgeT0iMzAuNjQ4NjQ4NjQ4NjQ4NjUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiPk1lZXRpbmcgTm90ZXMg4oCUIGxpdmU8L3RleHQ+PHRleHQgeD0iOC4wMDAwMDAwMDAwMDAwMDkiIHk9IjM0LjM2MzYzNjM2MzYzNjM2IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4Ij5TdGFydGVkIDIwMjYtMTEtMDkgMDc6MjAgwrcgd2FpdGluZyBmb3IgZGlzY3Vzc2lvPC90ZXh0Pjwvc3ZnPg=="
+  },
+  "board": {
+    "revision": 3,
+    "shapes": [
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 144,
+        "w": 344,
+        "h": 42,
+        "text": "Meeting Notes — live",
+        "font": "sans",
+        "fontSize": 30,
+        "fontWeight": 700
+      },
+      {
+        "id": "subtitle",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 186,
+        "w": 388,
+        "h": 20,
+        "text": "Started 2026-11-09 07:20 · waiting for discussion",
+        "font": "sans",
+        "fontSize": 14,
+        "fontWeight": 500
+      },
+      {
+        "id": "symptoms",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 240,
+        "w": 300,
+        "h": 200,
+        "text": "SYMPTOMS\n(nothing captured yet)"
+      },
+      {
+        "id": "evidence",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 412,
+        "y": 240,
+        "w": 300,
+        "h": 200,
+        "text": "EVIDENCE\n(nothing captured yet)"
+      },
+      {
+        "id": "options",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 744,
+        "y": 240,
+        "w": 300,
+        "h": 200,
+        "text": "OPTIONS\n(nothing captured yet)"
+      },
+      {
+        "id": "decision",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 1076,
+        "y": 240,
+        "w": 300,
+        "h": 200,
+        "text": "DECISION\n(no decision yet)"
+      },
+      {
+        "id": "risks",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 1408,
+        "y": 240,
+        "w": 300,
+        "h": 200,
+        "text": "RISKS\n(nothing captured yet)"
+      },
+      {
+        "id": "owners",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 80,
+        "y": 472,
+        "w": 300,
+        "h": 200,
+        "text": "OWNERS\n(none assigned yet)"
+      },
+      {
+        "id": "followup",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 412,
+        "y": 472,
+        "w": 300,
+        "h": 200,
+        "text": "FOLLOW-UP\n(no items yet)"
+      }
+    ]
+  }
+}

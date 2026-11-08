@@ -1,0 +1,96 @@
+{
+  "canvas": {
+    "id": "053f20a2-0b27-4255-89d4-c8644f200006",
+    "name": "MOSS meeting demo · 2026-11-08T23:26:54",
+    "revision": 4,
+    "createdAt": "2026-11-08T23:26:54.126Z",
+    "updatedAt": "2026-11-08T23:29:21.313Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjE2LjEzNDAyMDYxODU1NjY5MyIgeT0iOCIgd2lkdGg9IjM2LjgwNDEyMzcxMTM0MDIxIiBoZWlnaHQ9IjE0LjI4ODY1OTc5MzgxNDQzNCIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSIxOS4xMzQwMjA2MTg1NTY2OTMiIHk9IjE2IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5PQlNFUlZBVElPTiDigJQgVGltZTwvdGV4dD48cmVjdCB4PSI1Ny4yNjgwNDEyMzcxMTMzOTQiIHk9IjgiIHdpZHRoPSIzNi44MDQxMjM3MTEzNDAyMSIgaGVpZ2h0PSIxNC4yODg2NTk3OTM4MTQ0MzQiIHJ4PSIzIiBmaWxsPSIjZjFmYWRjIi8+PHRleHQgeD0iNjAuMjY4MDQxMjM3MTEzMzk0IiB5PSIxNiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+Q09ORklSTUVEIEZBQ1RTIOKAlCA8L3RleHQ+PHJlY3QgeD0iOTguNDAyMDYxODU1NjcwMSIgeT0iOCIgd2lkdGg9IjMyLjQ3NDIyNjgwNDEyMzcxIiBoZWlnaHQ9IjEwLjM5MTc1MjU3NzMxOTU4OCIgcng9IjMiIGZpbGw9IiNmM2Y1ZjQiLz48dGV4dCB4PSIxMDEuNDAyMDYxODU1NjcwMSIgeT0iMTYiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPlJPTEVTCuKAoiBNYXlhIOKAlCBzdGE8L3RleHQ+PHJlY3QgeD0iMTYuMTM0MDIwNjE4NTU2NjkzIiB5PSIyNi42MTg1NTY3MDEwMzA5MjYiIHdpZHRoPSIzNi44MDQxMjM3MTEzNDAyMSIgaGVpZ2h0PSIxNC4yODg2NTk3OTM4MTQ0MzQiIHJ4PSIzIiBmaWxsPSIjZjFmYWRjIi8+PHRleHQgeD0iMTkuMTM0MDIwNjE4NTU2NjkzIiB5PSIzNC42MTg1NTY3MDEwMzA5MjYiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPkNPTkZJUk1FRCBGQUNUUyDigJQgPC90ZXh0PjxyZWN0IHg9IjU3LjI2ODA0MTIzNzExMzM5NCIgeT0iMjYuNjE4NTU2NzAxMDMwOTI2IiB3aWR0aD0iNDEuMTM0MDIwNjE4NTU2NzA0IiBoZWlnaHQ9IjE5LjA1MTU0NjM5MTc1MjU3NyIgcng9IjMiIGZpbGw9IiNmMWZhZGMiLz48dGV4dCB4PSI2MC4yNjgwNDEyMzcxMTMzOTQiIHk9IjM0LjYxODU1NjcwMTAzMDkyNiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+Q09ORklSTUVEIEZBQ1RTIOKAlCA8L3RleHQ+PHJlY3QgeD0iNjUuOTI3ODM1MDUxNTQ2NCIgeT0iNTAuODY1OTc5MzgxNDQzMyIgd2lkdGg9IjM2LjgwNDEyMzcxMTM0MDIxIiBoZWlnaHQ9IjE2LjIzNzExMzQwMjA2MTg1NSIgcng9IjMiIGZpbGw9IiNmZmU5ZjAiLz48dGV4dCB4PSI2OC45Mjc4MzUwNTE1NDY0IiB5PSI1OC44NjU5NzkzODE0NDMzIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5SSVNLUyAmYW1wOyBDT05ESVRJT05TPC90ZXh0PjxyZWN0IHg9IjEwNy4wNjE4NTU2NzAxMDMwOSIgeT0iNTAuODY1OTc5MzgxNDQzMyIgd2lkdGg9IjM2LjgwNDEyMzcxMTM0MDIxIiBoZWlnaHQ9IjE0LjI4ODY1OTc5MzgxNDQzNCIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSIxMTAuMDYxODU1NjcwMTAzMDkiIHk9IjU4Ljg2NTk3OTM4MTQ0MzMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPk9QRU4gUVVFU1RJT04K4oCiIFdoPC90ZXh0PjxyZWN0IHg9IjE2LjEzNDAyMDYxODU1NjY5MyIgeT0iNTAuODY1OTc5MzgxNDQzMyIgd2lkdGg9IjQ1LjQ2MzkxNzUyNTc3MzIiIGhlaWdodD0iNDEuMTM0MDIwNjE4NTU2NzA0IiByeD0iNCIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLW9wYWNpdHk9IjAuNDUiLz48L3N2Zz4="
+  },
+  "board": {
+    "revision": 4,
+    "shapes": [
+      {
+        "id": "obs-timeline",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 144,
+        "w": 340,
+        "h": 132,
+        "text": "OBSERVATION — Timeline\n• 2:14 p.m.: checkout service began timing out\n• Orders still entering the system\n• Many orders completing too slowly"
+      },
+      {
+        "id": "fact-metrics",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 460,
+        "y": 144,
+        "w": 340,
+        "h": 132,
+        "text": "CONFIRMED FACTS — Metrics (Maya)\n• P95 latency: 4.2 s\n• Payment failure rate: 6%\n• Service: checkout (fictional)"
+      },
+      {
+        "id": "people",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 840,
+        "y": 144,
+        "w": 300,
+        "h": 96,
+        "text": "ROLES\n• Maya — staff engineer (reporting)\n• Daniel — SRE on this incident"
+      },
+      {
+        "id": "fact-db",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 316,
+        "w": 340,
+        "h": 132,
+        "text": "CONFIRMED FACTS — DB signals (Daniel)\n• Connection pool: FULL\n• CPU: below 60%\n• Retry attempts: sharp increase after latest release"
+      },
+      {
+        "id": "fact-mechanism",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 460,
+        "y": 316,
+        "w": 380,
+        "h": 176,
+        "text": "CONFIRMED FACTS — Mechanism (Amit)\n• Payment calls are slow\n• Each retry holds or acquires another connection\n• Transaction stays open while waiting\n• Adding compute did not help\n• Connection saturation matches the timeout spike"
+      },
+      {
+        "id": "card-2aa94e38",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 80,
+        "y": 540,
+        "w": 420,
+        "h": 380,
+        "title": "OPTIONS COMPARED (raised by the team)",
+        "html": "<style>.opt{border:1px solid #d7dedb;border-radius:10px;padding:10px 12px;margin-bottom:10px}.opt h4{margin:0 0 6px;font-size:15px}.opt p{margin:2px 0;font-size:13px;line-height:1.35}.tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:#eef2f0;margin-left:6px}.best{border-color:#a6d94f}.fast{border-color:#00a2e1}.risk{border-color:#ff7fa3}</style><div class=\"opt fast\"><h4>1 · Full rollback <span class=\"tag\">fastest escape hatch</span></h4><p>Pro: recovers service fastest.</p><p>Con: removes two unrelated checkout improvements.</p></div><div class=\"opt risk\"><h4>2 · Larger connection pool <span class=\"tag\">treats symptom</span></h4><p>Pro: eases immediate pressure.</p><p>Con: only temporary relief; can push more load into the database.</p></div><div class=\"opt best\"><h4>3 · Narrow retry rollback + concurrency cap <span class=\"tag\">best balance</span></h4><p>Pro: targets the suspected retry feedback loop directly.</p><p>Con: needs strict conditions to hold.</p></div>"
+      },
+      {
+        "id": "risk-tradeoffs",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 540,
+        "y": 540,
+        "w": 340,
+        "h": 150,
+        "text": "RISKS & CONDITIONS\n• Full rollback: loses two unrelated checkout improvements\n• Larger pool: symptom relief only; may push more pressure into the DB\n• Narrow retry rollback: best balance ONLY if strict conditions are added"
+      },
+      {
+        "id": "open-conditions",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 920,
+        "y": 540,
+        "w": 340,
+        "h": 132,
+        "text": "OPEN QUESTION\n• What strict conditions must accompany the narrow retry rollback + concurrency cap before it is safe to ship?"
+      }
+    ]
+  }
+}

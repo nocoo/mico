@@ -1,0 +1,23 @@
+Turn 1 — Maya (en-US-AriaNeural)
+I'm Maya, the staff engineer on this incident. A fictional checkout service started timing out at 2:14 PM. We saw p95 latency climb to 4.2 seconds and payment failures reach six percent. Orders are still entering the system, but many are completing too slowly.
+
+Turn 2 — Daniel (en-US-GuyNeural)
+I'm Daniel, the SRE for this incident. The database connection pool is full while CPU is still below sixty percent. We also see a sharp increase in retry attempts after the latest release. Mico, capture these findings.
+
+Turn 3 — Maya (en-US-AriaNeural)
+My current diagnosis is a retry feedback loop. Payment calls are slow, each retry holds or acquires another connection, and the transaction stays open while we wait. That explains why adding compute did not help and why connection saturation matches the timeout spike.
+
+Turn 4 — Daniel (en-US-GuyNeural)
+We have three practical options. A full rollback should recover fastest, but it removes two unrelated checkout improvements. A larger connection pool may reduce immediate queueing, but can push more pressure into the database. A narrow retry rollback with a concurrency cap targets the suspected loop.
+
+Turn 5 — Maya (en-US-AriaNeural)
+The narrow change has the best balance if we add strict rollback conditions. The larger pool treats a symptom, and the full rollback is still our fastest escape hatch. Mico, compare those options.
+
+Turn 6 — Daniel (en-US-GuyNeural)
+Let's use one retry, cap concurrent database work, and keep the rest of the release. If p95 exceeds two seconds for five minutes, or payment timeouts exceed two percent, trigger a full rollback. Also give queued requests a two-second timeout and an explicit overload response.
+
+Turn 7 — Maya (en-US-AriaNeural)
+I'll own the runtime patch and rollout at ten percent, fifty percent, then all traffic, with five-minute pauses. Daniel will own dashboards and the rollback. Tomorrow I'll test moving payment work outside the transaction, while we watch connection waits, active connections, retries per order, latency, and timeouts.
+
+Turn 8 — Daniel (en-US-GuyNeural)
+The main remaining risk is queue buildup from the cap. Exit only when p95 is below one second, timeouts are below one percent, and no request queue persists for thirty minutes. We'll review a failed trace, the dashboard, and the load test tomorrow at eleven. Mico, update our decision and next steps on the board.

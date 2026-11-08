@@ -1,0 +1,98 @@
+{
+  "canvas": {
+    "id": "f5548a50-3b31-4571-a65f-4664b63c8181",
+    "name": "MOSS meeting demo · 2026-11-08T23:14:09",
+    "revision": 3,
+    "createdAt": "2026-11-08T23:14:09.294Z",
+    "updatedAt": "2026-11-08T23:14:53.563Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjguMDAwMDAwMDAwMDAwMDA3IiB5PSIzNy43OTUxMjE5NTEyMTk1MTQiIHdpZHRoPSIzMy4zNjU4NTM2NTg1MzY1OSIgaGVpZ2h0PSIxMy4xNzA3MzE3MDczMTcwNzIiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iMTEuMDAwMDAwMDAwMDAwMDA3IiB5PSI0NS43OTUxMjE5NTEyMTk1MTQiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPlNZTVBUT01TCuKAoiBDaGVja291PC90ZXh0PjxyZWN0IHg9IjQ0Ljg3ODA0ODc4MDQ4NzgxIiB5PSIzNy43OTUxMjE5NTEyMTk1MTQiIHdpZHRoPSIzMy4zNjU4NTM2NTg1MzY1OSIgaGVpZ2h0PSIxMy4xNzA3MzE3MDczMTcwNzIiIHJ4PSIzIiBmaWxsPSIjZjNmNWY0Ii8+PHRleHQgeD0iNDcuODc4MDQ4NzgwNDg3ODEiIHk9IjQ1Ljc5NTEyMTk1MTIxOTUxNCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+RVZJREVOQ0UK4oCiIFJlcG9ydGU8L3RleHQ+PHJlY3QgeD0iODEuNzU2MDk3NTYwOTc1NjIiIHk9IjM3Ljc5NTEyMTk1MTIxOTUxNCIgd2lkdGg9IjMzLjM2NTg1MzY1ODUzNjU5IiBoZWlnaHQ9IjEzLjE3MDczMTcwNzMxNzA3MiIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSI4NC43NTYwOTc1NjA5NzU2MiIgeT0iNDUuNzk1MTIxOTUxMjE5NTE0IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5PUFRJT05TCuKAoiBOb3QgeWV0IDwvdGV4dD48cmVjdCB4PSI4LjAwMDAwMDAwMDAwMDAwNyIgeT0iNTQuNDc4MDQ4NzgwNDg3OCIgd2lkdGg9IjMzLjM2NTg1MzY1ODUzNjU5IiBoZWlnaHQ9IjEzLjE3MDczMTcwNzMxNzA3MiIgcng9IjMiIGZpbGw9IiNmMWZhZGMiLz48dGV4dCB4PSIxMS4wMDAwMDAwMDAwMDAwMDciIHk9IjYyLjQ3ODA0ODc4MDQ4NzgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPkRFQ0lTSU9OCuKAoiBOb3QgeWV0PC90ZXh0PjxyZWN0IHg9IjQ0Ljg3ODA0ODc4MDQ4NzgxIiB5PSI1NC40NzgwNDg3ODA0ODc4IiB3aWR0aD0iMzMuMzY1ODUzNjU4NTM2NTkiIGhlaWdodD0iMTMuMTcwNzMxNzA3MzE3MDcyIiByeD0iMyIgZmlsbD0iI2YzZjVmNCIvPjx0ZXh0IHg9IjQ3Ljg3ODA0ODc4MDQ4NzgxIiB5PSI2Mi40NzgwNDg3ODA0ODc4IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5PV05FUlMK4oCiIE5vdCB5ZXQgYTwvdGV4dD48cmVjdCB4PSI4MS43NTYwOTc1NjA5NzU2MiIgeT0iNTQuNDc4MDQ4NzgwNDg3OCIgd2lkdGg9IjMzLjM2NTg1MzY1ODUzNjU5IiBoZWlnaHQ9IjEzLjE3MDczMTcwNzMxNzA3MiIgcng9IjMiIGZpbGw9IiNmZmU5ZjAiLz48dGV4dCB4PSI4NC43NTYwOTc1NjA5NzU2MiIgeT0iNjIuNDc4MDQ4NzgwNDg3OCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+UklTS1MK4oCiIE5vdCB5ZXQgcmE8L3RleHQ+PHJlY3QgeD0iMTE4LjYzNDE0NjM0MTQ2MzQyIiB5PSI1NC40NzgwNDg3ODA0ODc4IiB3aWR0aD0iMzMuMzY1ODUzNjU4NTM2NTkiIGhlaWdodD0iMTMuMTcwNzMxNzA3MzE3MDcyIiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjEyMS42MzQxNDYzNDE0NjM0MiIgeT0iNjIuNDc4MDQ4NzgwNDg3OCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+Rk9MTE9XLVVQCuKAoiBOb3QgeWU8L3RleHQ+PHRleHQgeD0iOC4wMDAwMDAwMDAwMDAwMDciIHk9IjM2LjM1MTIxOTUxMjE5NTEyIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4Ij5DaGVja291dCBBUEkgSW5jaWRlbnQg4oCUIExpdmUgTWVldGluZyBCb2FyZDwvdGV4dD48L3N2Zz4="
+  },
+  "board": {
+    "revision": 3,
+    "shapes": [
+      {
+        "id": "symptoms",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 150,
+        "w": 380,
+        "h": 150,
+        "text": "SYMPTOMS\n• Checkout API p95 latency: 4.2 s (at 2:14)\n• Payment timeouts: 6% (up from baseline)"
+      },
+      {
+        "id": "evidence",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 500,
+        "y": 150,
+        "w": 380,
+        "h": 150,
+        "text": "EVIDENCE\n• Reported at 2:14\n• Metric: p95 latency = 4.2 s\n• Metric: payment timeout rate = 6%\n• Source: fictional checkout API (scenario)"
+      },
+      {
+        "id": "options",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 920,
+        "y": 150,
+        "w": 380,
+        "h": 150,
+        "text": "OPTIONS\n• Not yet discussed\n• (to capture as raised)"
+      },
+      {
+        "id": "decision",
+        "color": "#f1fadc",
+        "type": "note",
+        "x": 80,
+        "y": 340,
+        "w": 380,
+        "h": 150,
+        "text": "DECISION\n• Not yet made\n• (to capture when agreed)"
+      },
+      {
+        "id": "owners",
+        "color": "#f3f5f4",
+        "type": "note",
+        "x": 500,
+        "y": 340,
+        "w": 380,
+        "h": 150,
+        "text": "OWNERS\n• Not yet assigned\n• (to capture when named)"
+      },
+      {
+        "id": "risks",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 920,
+        "y": 340,
+        "w": 380,
+        "h": 150,
+        "text": "RISKS\n• Not yet raised\n• (to capture as flagged)"
+      },
+      {
+        "id": "followup",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 1340,
+        "y": 340,
+        "w": 380,
+        "h": 150,
+        "text": "FOLLOW-UP\n• Not yet defined\n• (to capture actions + due dates)"
+      },
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 88,
+        "w": 809,
+        "h": 48,
+        "text": "Checkout API Incident — Live Meeting Board",
+        "font": "sans",
+        "fontSize": 34,
+        "fontWeight": 700
+      }
+    ]
+  }
+}
