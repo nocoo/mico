@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import { simulateReadableStream } from 'ai'
 import { MockLanguageModelV4 } from 'ai/test'
-import { CANDY_TINTS } from '../shared/palette.ts'
+import { CANDY_COLORS, CANDY_TINTS } from '../shared/palette.ts'
 import {
 	MAGPIE_DEFAULT_BASE_URL,
 	MAGPIE_DEFAULT_MODEL,
@@ -500,6 +500,73 @@ test('AI tools stay pinned to the canvas captured at request time', async () => 
 	})
 })
 
+test('update_shapes validates palette colors and normalizes notes only', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_notes, {
+			notes: [
+				{ id: 'pale-note', x: 10, y: 10, text: 'Pale' },
+				{ id: 'vivid-note', x: 300, y: 10, text: 'Vivid' },
+			],
+		})
+		await run(tools.add_boxes, {
+			boxes: [
+				{ id: 'vivid-box', x: 590, y: 10, w: 160, h: 100, text: 'Vivid box' },
+				{ id: 'pale-box', x: 780, y: 10, w: 160, h: 100, text: 'Pale box' },
+			],
+		})
+		const inputSchema = tools.update_shapes.inputSchema as { parse(input: unknown): unknown }
+		const input = inputSchema.parse({
+			updates: [
+				{ id: 'pale-note', patch: { color: CANDY_TINTS.blue } },
+				{ id: 'vivid-note', patch: { color: CANDY_COLORS.pink } },
+				{ id: 'vivid-box', patch: { color: CANDY_COLORS.green } },
+				{ id: 'pale-box', patch: { color: CANDY_TINTS.pink } },
+			],
+		})
+		const revision = store.getBoard().revision
+		const reply = (await run(tools.update_shapes, input)) as { ok: boolean; revision: number }
+		assert.equal(reply.ok, true)
+		assert.equal(reply.revision, revision + 1)
+		const shapes = store.getBoard().shapes
+		assert.equal(shapes.find((shape) => shape.id === 'pale-note')?.color, CANDY_TINTS.blue)
+		assert.equal(shapes.find((shape) => shape.id === 'vivid-note')?.color, CANDY_TINTS.pink)
+		assert.equal(shapes.find((shape) => shape.id === 'vivid-box')?.color, CANDY_COLORS.green)
+		assert.equal(shapes.find((shape) => shape.id === 'pale-box')?.color, CANDY_TINTS.pink)
+
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'external',
+						type: 'text',
+						x: 980,
+						y: 10,
+						w: 100,
+						h: 40,
+						text: 'External',
+						color: CANDY_COLORS.ink,
+						font: 'sans',
+						fontSize: 20,
+						fontWeight: 500,
+					},
+				},
+			],
+		})
+		const beforeConflict = JSON.stringify(store.getBoard())
+		const conflict = (await run(tools.update_shapes, input)) as { ok: boolean; error?: string }
+		assert.equal(conflict.ok, false)
+		assert.equal(conflict.error, 'REVISION_CONFLICT')
+		assert.equal(JSON.stringify(store.getBoard()), beforeConflict)
+	})
+})
+
 test('updates are rejected after a concurrent board change and recover after a re-read', async () => {
 	await withStore(async (store) => {
 		const tools = createCanvasTools({
@@ -628,26 +695,6 @@ test('line and path digests keep direction and sampled geometry', () => {
 	assert.equal(longPath.samples?.length, 8)
 	assert.deepEqual(longPath.samples?.[0], { x: 0, y: 0 })
 	assert.deepEqual(longPath.samples?.at(-1), { x: 199, y: 199 })
-})
-
-test('note tints are accepted when updating a note', async () => {
-	await withStore(async (store) => {
-		const tools = createCanvasTools({
-			store,
-			broadcast: () => {},
-			selection: [],
-			canvasId: store.getActiveCanvasId(),
-		})
-		await run(tools.add_notes, {
-			notes: [{ id: 'note', x: 10, y: 10, text: 'Remember' }],
-		})
-		const reply = (await run(tools.update_shapes, {
-			updates: [{ id: 'note', patch: { color: CANDY_TINTS.yellow } }],
-		})) as { ok: boolean }
-		assert.equal(reply.ok, true)
-		const note = store.getBoard().shapes.find((shape) => shape.id === 'note')
-		assert.equal(note?.color, CANDY_TINTS.yellow)
-	})
 })
 
 test('interrupted tool calls are dropped before the next turn', () => {

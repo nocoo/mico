@@ -976,7 +976,7 @@ export function createCanvasTools(
 									y: coord('Top edge.').optional(),
 									w: z.number().optional(),
 									h: z.number().optional(),
-									color: colorSchema.optional(),
+									color: anyColorSchema.optional(),
 									text: z.string().max(6000).optional(),
 									title: z.string().min(1).max(120).optional(),
 									html: z.string().min(1).max(200000).optional(),
@@ -999,14 +999,26 @@ export function createCanvasTools(
 					.max(24),
 			}),
 			execute: async ({ updates }) => {
-				const operations: Operation[] = updates.map((update) => ({
-					type: 'update',
-					id: update.id,
-					patch:
-						update.patch.html === undefined
-							? update.patch
-							: { ...update.patch, html: expandLucideIcons(update.patch.html) },
-				}))
+				const shapes = new Map(store.getBoard(canvasId).shapes.map((shape) => [shape.id, shape]))
+				const operations: Operation[] = updates.map((update) => {
+					const color =
+						update.patch.color === undefined
+							? undefined
+							: shapes.get(update.id)?.type === 'note'
+								? noteFill(update.patch.color)
+								: update.patch.color
+					return {
+						type: 'update',
+						id: update.id,
+						patch: {
+							...update.patch,
+							...(color === undefined ? {} : { color }),
+							...(update.patch.html === undefined
+								? {}
+								: { html: expandLucideIcons(update.patch.html) }),
+						},
+					}
+				})
 				return applyOperations(operations)
 			},
 		}),
