@@ -168,6 +168,17 @@ test('MOSS session serializes real native canvas tools and pinned instructions',
 		/continue calling the necessary tools after each successful result/,
 	)
 	assert.ok(instructionCodePoints(session.instructions) <= 16_000)
+	assert.match(session.instructions, /even when they do not address you directly/)
+	assert.match(session.instructions, /use tools without spoken progress reports/)
+	assert.match(
+		session.instructions,
+		/retain a standing meeting task across ordinary participant contributions/,
+	)
+	assert.match(session.instructions, /honor explicit stop, pause, or redirection immediately/)
+	assert.match(session.instructions, /only when silence has not been requested/)
+	assert.match(session.instructions, /progress updates only when speech is permitted/)
+	assert.doesNotMatch(session.instructions, /interruptions override the previous plan/)
+	assert.match(session.instructions, /not empty category placeholders/)
 	assert.doesNotMatch(session.instructions, /Three horizontal groups/)
 	assert.doesNotMatch(session.instructions, /Structuring meetings and lessons/)
 	const context = parseMossCanvasContext(session.instructions)
