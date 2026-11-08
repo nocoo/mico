@@ -1,0 +1,480 @@
+{
+  "canvas": {
+    "id": "5ec7b1fa-066f-46f3-ba40-ca6f8a1afee2",
+    "name": "Microsoft earnings · Audio R4 · 2026-11-08T07-15-23-540Z",
+    "revision": 38,
+    "createdAt": "2026-11-08T07:15:23.550Z",
+    "updatedAt": "2026-11-08T07:19:55.531Z",
+    "preview": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTYwIDEwMCI+PHJlY3Qgd2lkdGg9IjE2MCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNmNWZhZmMiLz48cmVjdCB4PSIwLjUiIHk9IjAuNSIgd2lkdGg9IjE1OSIgaGVpZ2h0PSI5OSIgcng9IjYiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2RjZTRlOSIvPjxyZWN0IHg9IjM4LjIzODYzNjM2MzYzNjM2IiB5PSIxMS44MTgxODE4MTgxODE4MTciIHdpZHRoPSI4Ljk0ODg2MzYzNjM2MzYzNyIgaGVpZ2h0PSI3LjE1OTA5MDkwOTA5MDkwOSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI0MS4yMzg2MzYzNjM2MzYzNiIgeT0iMTkuODE4MTgxODE4MTgxODE3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5Db250ZXh0IOKAoiBNaWNyb3NvZjwvdGV4dD48cmVjdCB4PSI0OC43Mzg2MzYzNjM2MzYzNiIgeT0iMTEuODE4MTgxODE4MTgxODE3IiB3aWR0aD0iOS43ODQwOTA5MDkwOTA5MSIgaGVpZ2h0PSI3LjE1OTA5MDkwOTA5MDkwOSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI1MS43Mzg2MzYzNjM2MzYzNiIgeT0iMTkuODE4MTgxODE4MTgxODE3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5SZXBvcnRlZCBhY3R1YWxzIOKAojwvdGV4dD48cmVjdCB4PSIzOC4yMzg2MzYzNjM2MzYzNiIgeT0iMjAuNDA5MDkwOTA5MDkwOTEiIHdpZHRoPSI4Ljk0ODg2MzYzNjM2MzYzNyIgaGVpZ2h0PSI2LjIwNDU0NTQ1NDU0NTQ1NSIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI0MS4yMzg2MzYzNjM2MzYzNiIgeT0iMjguNDA5MDkwOTA5MDkwOTEiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPlJlcG9ydGVkIGFjdHVhbHMg4oCiPC90ZXh0PjxyZWN0IHg9IjQ4LjczODYzNjM2MzYzNjM2IiB5PSIyMC40MDkwOTA5MDkwOTA5MSIgd2lkdGg9IjkuNzg0MDkwOTA5MDkwOTEiIGhlaWdodD0iNi4yMDQ1NDU0NTQ1NDU0NTUiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNTEuNzM4NjM2MzYzNjM2MzYiIHk9IjI4LjQwOTA5MDkwOTA5MDkxIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5SZXBvcnRlZCBhY3R1YWxzIOKAojwvdGV4dD48cmVjdCB4PSIzOC4yMzg2MzYzNjM2MzYzNiIgeT0iMjguMDQ1NDU0NTQ1NDU0NTQ3IiB3aWR0aD0iOC45NDg4NjM2MzYzNjM2MzciIGhlaWdodD0iNy4xNTkwOTA5MDkwOTA5MDkiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNDEuMjM4NjM2MzYzNjM2MzYiIHk9IjM2LjA0NTQ1NDU0NTQ1NDU1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5SZXBvcnRlZCBhY3R1YWxzIOKAojwvdGV4dD48cmVjdCB4PSI0OC43Mzg2MzYzNjM2MzYzNiIgeT0iMjguMDQ1NDU0NTQ1NDU0NTQ3IiB3aWR0aD0iOS43ODQwOTA5MDkwOTA5MSIgaGVpZ2h0PSI1LjI1IiByeD0iMyIgZmlsbD0iI2ZmZTlmMCIvPjx0ZXh0IHg9IjUxLjczODYzNjM2MzYzNjM2IiB5PSIzNi4wNDU0NTQ1NDU0NTQ1NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+UmlzayDigKIgRGVsaXZlcnkgdGk8L3RleHQ+PHJlY3QgeD0iNDguNzM4NjM2MzYzNjM2MzYiIHk9IjM2LjYzNjM2MzYzNjM2MzYzIiB3aWR0aD0iOS43ODQwOTA5MDkwOTA5MSIgaGVpZ2h0PSI1LjI1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjUxLjczODYzNjM2MzYzNjM2IiB5PSI0NC42MzYzNjM2MzYzNjM2MyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+UmVwb3J0ZWQgYWN0dWFscyDigKI8L3RleHQ+PHJlY3QgeD0iMzguMjM4NjM2MzYzNjM2MzYiIHk9IjQzLjc5NTQ1NDU0NTQ1NDU1IiB3aWR0aD0iOC45NDg4NjM2MzYzNjM2MzciIGhlaWdodD0iNi4yMDQ1NDU0NTQ1NDU0NTUiIHJ4PSIzIiBmaWxsPSIjZmZmOGQ0Ii8+PHRleHQgeD0iNDEuMjM4NjM2MzYzNjM2MzYiIHk9IjUxLjc5NTQ1NDU0NTQ1NDU1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5HdWlkYW5jZSDigKIgRGVjZW1iZTwvdGV4dD48cmVjdCB4PSI0OC43Mzg2MzYzNjM2MzYzNiIgeT0iNDMuNzk1NDU0NTQ1NDU0NTUiIHdpZHRoPSI5Ljc4NDA5MDkwOTA5MDkxIiBoZWlnaHQ9IjYuMjA0NTQ1NDU0NTQ1NDU1IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjUxLjczODYzNjM2MzYzNjM2IiB5PSI1MS43OTU0NTQ1NDU0NTQ1NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+R3VpZGFuY2Ug4oCiIERlY2VtYmU8L3RleHQ+PHJlY3QgeD0iMzguMjM4NjM2MzYzNjM2MzYiIHk9IjUxLjQzMTgxODE4MTgxODE4IiB3aWR0aD0iOC45NDg4NjM2MzYzNjM2MzciIGhlaWdodD0iNS43MjcyNzI3MjcyNzI3Mjc1IiByeD0iMyIgZmlsbD0iI2ZmZTlmMCIvPjx0ZXh0IHg9IjQxLjIzODYzNjM2MzYzNjM2IiB5PSI1OS40MzE4MTgxODE4MTgxOCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+UmlzayDigKIgQ2FwYWNpdHkKRGU8L3RleHQ+PHJlY3QgeD0iNDguNzM4NjM2MzYzNjM2MzYiIHk9IjUxLjQzMTgxODE4MTgxODE4IiB3aWR0aD0iOS43ODQwOTA5MDkwOTA5MSIgaGVpZ2h0PSI1LjI1IiByeD0iMyIgZmlsbD0iI2UyZjVmYyIvPjx0ZXh0IHg9IjUxLjczODYzNjM2MzYzNjM2IiB5PSI1OS40MzE4MTgxODE4MTgxOCIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+UmVwb3J0ZWQg4oCiIEZsZWV0IHU8L3RleHQ+PHJlY3QgeD0iMzguMjM4NjM2MzYzNjM2MzYiIHk9IjU4LjU5MDkwOTA5MDkwOTA5IiB3aWR0aD0iOC45NDg4NjM2MzYzNjM2MzciIGhlaWdodD0iNS43MjcyNzI3MjcyNzI3Mjc1IiByeD0iMyIgZmlsbD0iI2ZmZjhkNCIvPjx0ZXh0IHg9IjQxLjIzODYzNjM2MzYzNjM2IiB5PSI2Ni41OTA5MDkwOTA5MDkxIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5HdWlkYW5jZSDigKIgQ2FwaXRhbDwvdGV4dD48cmVjdCB4PSI0OC43Mzg2MzYzNjM2MzYzNiIgeT0iNTguNTkwOTA5MDkwOTA5MDkiIHdpZHRoPSI5Ljc4NDA5MDkwOTA5MDkxIiBoZWlnaHQ9IjUuNzI3MjcyNzI3MjcyNzI3NSIgcng9IjMiIGZpbGw9IiNmZmY4ZDQiLz48dGV4dCB4PSI1MS43Mzg2MzYzNjM2MzYzNiIgeT0iNjYuNTkwOTA5MDkwOTA5MSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+R3VpZGFuY2Ug4oCiIENhc2ggZmw8L3RleHQ+PHJlY3QgeD0iMzguMjM4NjM2MzYzNjM2MzYiIHk9IjY1Ljc1IiB3aWR0aD0iMjAuMjg0MDkwOTA5MDkwOTEiIGhlaWdodD0iOC41OTA5MDkwOTA5MDkwOTIiIHJ4PSIzIiBmaWxsPSIjZTJmNWZjIi8+PHRleHQgeD0iNDEuMjM4NjM2MzYzNjM2MzYiIHk9IjczLjc1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI1IiBmaWxsPSIjMmIzMDM4Ij5BbnN3ZXJlZCDigKIgQUkgY2FwYTwvdGV4dD48cmVjdCB4PSIzOC4yMzg2MzYzNjM2MzYzNiIgeT0iNzUuNzcyNzI3MjcyNzI3MjgiIHdpZHRoPSIyMC4yODQwOTA5MDkwOTA5MSIgaGVpZ2h0PSI4LjExMzYzNjM2MzYzNjM2MyIgcng9IjMiIGZpbGw9IiNlMmY1ZmMiLz48dGV4dCB4PSI0MS4yMzg2MzYzNjM2MzYzNiIgeT0iODMuNzcyNzI3MjcyNzI3MjgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjUiIGZpbGw9IiMyYjMwMzgiPkFuc3dlcmVkIOKAoiBBenVyZSBnPC90ZXh0PjxyZWN0IHg9IjM4LjIzODYzNjM2MzYzNjM2IiB5PSI4NS4zMTgxODE4MTgxODE4MyIgd2lkdGg9IjIwLjI4NDA5MDkwOTA5MDkxIiBoZWlnaHQ9IjYuNjgxODE4MTgxODE4MTgyIiByeD0iMyIgZmlsbD0iI2ZmZTlmMCIvPjx0ZXh0IHg9IjQxLjIzODYzNjM2MzYzNjM2IiB5PSI5My4zMTgxODE4MTgxODE4MyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNSIgZmlsbD0iIzJiMzAzOCI+UmlzayDigKIgRm9yZWNhc3QgZXg8L3RleHQ+PHRleHQgeD0iMzguMjM4NjM2MzYzNjM2MzYiIHk9IjEyIiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4Ij5NaWNyb3NvZnQgRlkyNyBRMSDCtyBFYXJuaW5ncyBvdXRsb29rPC90ZXh0Pjx0ZXh0IHg9IjM4LjIzODYzNjM2MzYzNjM2IiB5PSIxNC4zODYzNjM2MzYzNjM2MzUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiPkNhbGwgY29udGV4dCAmYW1wOyBldmlkZW5jZTwvdGV4dD48dGV4dCB4PSI2NC4wMTEzNjM2MzYzNjM2NCIgeT0iMTQuMzg2MzYzNjM2MzYzNjM1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4Ij5BY3R1YWxzIHZzLiBmb3J3YXJkIG91dGxvb2s8L3RleHQ+PHJlY3QgeD0iNjQuMDExMzYzNjM2MzYzNjQiIHk9IjEyLjc3MjcyNzI3MjcyNzI3MiIgd2lkdGg9IjcuNjM2MzYzNjM2MzYzNjM3IiBoZWlnaHQ9IjMuMzQwOTA5MDkwOTA5MDkxIiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNjcuODI5NTQ1NDU0NTQ1NDUiIHk9IjE0LjQ0MzE4MTgxODE4MTgxNyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+QWN0dWFsIHJlc3VsdHMKUXVhcnRlciBlPC90ZXh0PjxyZWN0IHg9IjczLjU1NjgxODE4MTgxODE5IiB5PSIxMi43NzI3MjcyNzI3MjcyNzIiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiNmN2RlNGIiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc3LjM3NSIgeT0iMTQuNDQzMTgxODE4MTgxODE3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5EZWNlbWJlci1xdWFydGVyIGd1aWRhbmM8L3RleHQ+PHJlY3QgeD0iNjQuMDExMzYzNjM2MzYzNjQiIHk9IjE4LjAyMjcyNzI3MjcyNzI3MyIgd2lkdGg9IjcuNjM2MzYzNjM2MzYzNjM3IiBoZWlnaHQ9IjQuMjk1NDU0NTQ1NDU0NTQ2IiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNjcuODI5NTQ1NDU0NTQ1NDUiIHk9IjIwLjE3MDQ1NDU0NTQ1NDU0NyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+UmV2ZW51ZSAkOTIuM0IgwrcgKzE5JQpPcDwvdGV4dD48cmVjdCB4PSI2NC4wMTEzNjM2MzYzNjM2NCIgeT0iMjQuMjI3MjcyNzI3MjcyNzI3IiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iMy41Nzk1NDU0NTQ1NDU0NTQ2IiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNjcuODI5NTQ1NDU0NTQ1NDUiIHk9IjI2LjAxNzA0NTQ1NDU0NTQ1MyIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2xvdWQgJDYzLjlCIMK3ICszMCUKQXp1cjwvdGV4dD48cmVjdCB4PSI2NC4wMTEzNjM2MzYzNjM2NCIgeT0iMjkuNzE1OTA5MDkwOTA5MDkiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9IjY3LjgyOTU0NTQ1NDU0NTQ1IiB5PSIzMS4zODYzNjM2MzYzNjM2MzciIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkNvbW1lcmNpYWwgUlBPCiQ2NzdCIMK3ICs8L3RleHQ+PHJlY3QgeD0iNjQuMDExMzYzNjM2MzYzNjQiIHk9IjM0LjcyNzI3MjcyNzI3MjczIiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iMy41Nzk1NDU0NTQ1NDU0NTQ2IiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNjcuODI5NTQ1NDU0NTQ1NDUiIHk9IjM2LjUxNzA0NTQ1NDU0NTQ1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5DYXBleCAkNDUuMkIK4omIwr4gc2hvcnQtbGk8L3RleHQ+PHJlY3QgeD0iNjQuMDExMzYzNjM2MzYzNjQiIHk9IjM5LjUiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIyLjg2MzYzNjM2MzYzNjM2MzgiIHJ4PSIzIiBmaWxsPSIjZmY3ZmEzIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ny44Mjk1NDU0NTQ1NDU0NSIgeT0iNDAuOTMxODE4MTgxODE4MTgiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPlNvbWUgdGhpcmQtcGFydHkKIGRlbGl2ZTwvdGV4dD48cmVjdCB4PSI2NC4wMTEzNjM2MzYzNjM2NCIgeT0iNDQuMjcyNzI3MjcyNzI3MjciIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9IjY3LjgyOTU0NTQ1NDU0NTQ1IiB5PSI0NS45NDMxODE4MTgxODE4MiIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+T3BlcmF0aW5nIGNhc2ggZmxvdyAkNThCPC90ZXh0PjxyZWN0IHg9IjczLjU1NjgxODE4MTgxODE5IiB5PSIxOC4wMjI3MjcyNzI3MjcyNzMiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSI0LjI5NTQ1NDU0NTQ1NDU0NiIgcng9IjMiIGZpbGw9IiNmN2RlNGIiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc3LjM3NSIgeT0iMjAuMTcwNDU0NTQ1NDU0NTQ3IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5SZXZlbnVlICQ5NuKAkzk3LjFCCkdyb3d0aDwvdGV4dD48cmVjdCB4PSI3My41NTY4MTgxODE4MTgxOSIgeT0iMjQuMjI3MjcyNzI3MjcyNzI3IiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iNC4yOTU0NTQ1NDU0NTQ1NDYiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3Ny4zNzUiIHk9IjI2LjM3NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+Q2xvdWQgZ3Jvc3MgbWFyZ2luIOKJiDY1JQo8L3RleHQ+PHJlY3QgeD0iNzMuNTU2ODE4MTgxODE4MTkiIHk9IjMwLjQzMTgxODE4MTgxODE4IiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iMi44NjM2MzYzNjM2MzYzNjM4IiByeD0iMyIgZmlsbD0iI2ZmN2ZhMyIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNmZjdmYTMiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNzcuMzc1IiB5PSIzMS44NjM2MzYzNjM2MzYzNjMiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkNhcGFjaXR5IHRlbnNpb24KRGVtYW5kIDwvdGV4dD48cmVjdCB4PSI3My41NTY4MTgxODE4MTgxOSIgeT0iMzUuMjA0NTQ1NDU0NTQ1NDUiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIzLjU3OTU0NTQ1NDU0NTQ1NDYiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3Ny4zNzUiIHk9IjM2Ljk5NDMxODE4MTgxODE4IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5FbmdpbmVlcmluZyBnYWlucwpNb3JlIGU8L3RleHQ+PHJlY3QgeD0iNzMuNTU2ODE4MTgxODE4MTkiIHk9IjQwLjY5MzE4MTgxODE4MTgyIiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iMi44NjM2MzYzNjM2MzYzNjM4IiByeD0iMyIgZmlsbD0iI2ZmN2ZhMyIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNmZjdmYTMiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNzcuMzc1IiB5PSI0Mi4xMjUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPlRoaXJkLXBhcnR5IEdQVSBjYXBhY2l0eTwvdGV4dD48cmVjdCB4PSI3My41NTY4MTgxODE4MTgxOSIgeT0iNDkuNTIyNzI3MjcyNzI3MjciIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIzLjU3OTU0NTQ1NDU0NTQ1NDYiIHJ4PSIzIiBmaWxsPSIjZjdkZTRiIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2Y3ZGU0YiIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3Ny4zNzUiIHk9IjUxLjMxMjUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkV4cGVjdGVkIGNhcGV4ClEyICZndDskNTBCCjwvdGV4dD48cmVjdCB4PSI3My41NTY4MTgxODE4MTgxOSIgeT0iNTUuMDExMzYzNjM2MzYzNjQiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSIzLjM0MDkwOTA5MDkwOTA5MSIgcng9IjMiIGZpbGw9IiNmN2RlNGIiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9Ijc3LjM3NSIgeT0iNTYuNjgxODE4MTgxODE4MTkiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkZZMjAyNyBleHBlY3RhdGlvbgpGcmVlIDwvdGV4dD48cmVjdCB4PSI2NC4wMTEzNjM2MzYzNjM2NCIgeT0iNjEuOTMxODE4MTgxODE4MTgiIHdpZHRoPSIxNy4xODE4MTgxODE4MTgxODMiIGhlaWdodD0iMy4xMDIyNzI3MjcyNzI3Mjc1IiByeD0iMyIgZmlsbD0iIzAwYTJlMSIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNzIuNjAyMjcyNzI3MjcyNzMiIHk9IjYzLjQ4Mjk1NDU0NTQ1NDU1IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5BSSBjYXBhY2l0eSB2YWx1ZSBkcml2ZXI8L3RleHQ+PHJlY3QgeD0iNjQuMDExMzYzNjM2MzYzNjQiIHk9IjY2Ljk0MzE4MTgxODE4MTgxIiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI2Ny44Mjk1NDU0NTQ1NDU0NSIgeT0iNjguNjEzNjM2MzYzNjM2MzYiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkF6dXJlIHV0aWxpemF0aW9uCiZhbXA7IHVuaXQ8L3RleHQ+PHJlY3QgeD0iNzMuNTU2ODE4MTgxODE4MTkiIHk9IjY2Ljk0MzE4MTgxODE4MTgxIiB3aWR0aD0iNy42MzYzNjM2MzYzNjM2MzciIGhlaWdodD0iMy4zNDA5MDkwOTA5MDkwOTEiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3Ny4zNzUiIHk9IjY4LjYxMzYzNjM2MzYzNjM2IiBmb250LWZhbWlseT0iSW50ZXIsIHN5c3RlbS11aSwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSI0IiBmaWxsPSIjMmIzMDM4IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIj5GYWJyaWMgwrcgRm91bmRyeQpDb3BpbG90PC90ZXh0PjxyZWN0IHg9IjY0LjAxMTM2MzYzNjM2MzY0IiB5PSI3Mi4xOTMxODE4MTgxODE4MSIgd2lkdGg9IjE3LjE4MTgxODE4MTgxODE4MyIgaGVpZ2h0PSIzLjU3OTU0NTQ1NDU0NTQ1NDYiIHJ4PSIzIiBmaWxsPSIjMDBhMmUxIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3Mi42MDIyNzI3MjcyNzI3MyIgeT0iNzMuOTgyOTU0NTQ1NDU0NTUiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPk9uZSBmdW5naWJsZSBwb29sCkVmZmljaTwvdGV4dD48cmVjdCB4PSI2NC4wMTEzNjM2MzYzNjM2NCIgeT0iNzcuNjgxODE4MTgxODE4MTkiIHdpZHRoPSI3LjYzNjM2MzYzNjM2MzYzNyIgaGVpZ2h0PSI0LjI5NTQ1NDU0NTQ1NDU0NiIgcng9IjMiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xMiIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utd2lkdGg9IjEuNSIvPjx0ZXh0IHg9IjY3LjgyOTU0NTQ1NDU0NTQ1IiB5PSI3OS44Mjk1NDU0NTQ1NDU0NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+U3RhY2sgZWZmaWNpZW5jaWVzCkFwcGxpPC90ZXh0PjxyZWN0IHg9IjczLjU1NjgxODE4MTgxODE5IiB5PSI3Ny42ODE4MTgxODE4MTgxOSIgd2lkdGg9IjcuNjM2MzYzNjM2MzYzNjM3IiBoZWlnaHQ9IjQuMjk1NDU0NTQ1NDU0NTQ2IiByeD0iMyIgZmlsbD0iI2Y3ZGU0YiIgZmlsbC1vcGFjaXR5PSIwLjEyIiBzdHJva2U9IiNmN2RlNGIiIHN0cm9rZS13aWR0aD0iMS41Ii8+PHRleHQgeD0iNzcuMzc1IiB5PSI3OS44Mjk1NDU0NTQ1NDU0NSIgZm9udC1mYW1pbHk9IkludGVyLCBzeXN0ZW0tdWksIHNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iNCIgZmlsbD0iIzJiMzAzOCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9Im1pZGRsZSI+U3VwcG9ydHMgQXp1cmUgb3V0bG9vawo0PC90ZXh0PjxyZWN0IHg9IjY0LjAxMTM2MzYzNjM2MzY0IiB5PSI4NS4zMTgxODE4MTgxODE4MyIgd2lkdGg9IjE3LjE4MTgxODE4MTgxODE4MyIgaGVpZ2h0PSIzLjU3OTU0NTQ1NDU0NTQ1NDYiIHJ4PSIzIiBmaWxsPSIjZmY3ZmEzIiBmaWxsLW9wYWNpdHk9IjAuMTIiIHN0cm9rZT0iI2ZmN2ZhMyIgc3Ryb2tlLXdpZHRoPSIxLjUiLz48dGV4dCB4PSI3Mi42MDIyNzI3MjcyNzI3MyIgeT0iODcuMTA3OTU0NTQ1NDU0NTYiIGZvbnQtZmFtaWx5PSJJbnRlciwgc3lzdGVtLXVpLCBzYW5zLXNlcmlmIiBmb250LXNpemU9IjQiIGZpbGw9IiMyYjMwMzgiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiPkRlbGl2ZXJ5IGRlcGVuZGVuY2llcwpFbjwvdGV4dD48cmVjdCB4PSI4NS45NjU5MDkwOTA5MDkxIiB5PSIxMS44MTgxODE4MTgxODE4MTciIHdpZHRoPSIzNS43OTU0NTQ1NDU0NTQ1NSIgaGVpZ2h0PSI3Ny41NTY4MTgxODE4MTgxOSIgcng9IjQiIGZpbGw9IiMwMGEyZTEiIGZpbGwtb3BhY2l0eT0iMC4xIiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS1vcGFjaXR5PSIwLjQ1Ii8+PGxpbmUgeDE9IjY3LjgyOTU0NTQ1NDU0NTQ1IiB5MT0iMTQuNDQzMTgxODE4MTgxODE3IiB4Mj0iNjcuODI5NTQ1NDU0NTQ1NDUiIHkyPSIyMC4xNzA0NTQ1NDU0NTQ1NDMiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9Ijc3LjM3NSIgeTE9IjE0LjQ0MzE4MTgxODE4MTgxNyIgeDI9Ijc3LjM3NSIgeTI9IjIwLjE3MDQ1NDU0NTQ1NDU0MyIgc3Ryb2tlPSIjZjdkZTRiIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iNzIuNjAyMjcyNzI3MjcyNzIiIHkxPSI2My40ODI5NTQ1NDU0NTQ1NSIgeDI9IjY3LjgyOTU0NTQ1NDU0NTQ1IiB5Mj0iNjguNjEzNjM2MzYzNjM2MzYiIHN0cm9rZT0iIzAwYTJlMSIgc3Ryb2tlLW9wYWNpdHk9IjAuOCIgc3Ryb2tlLXdpZHRoPSIxIi8+PGxpbmUgeDE9IjcyLjYwMjI3MjcyNzI3MjcyIiB5MT0iNjMuNDgyOTU0NTQ1NDU0NTUiIHgyPSI3Ny4zNzUiIHkyPSI2OC42MTM2MzYzNjM2MzYzNiIgc3Ryb2tlPSIjMDBhMmUxIiBzdHJva2Utb3BhY2l0eT0iMC44IiBzdHJva2Utd2lkdGg9IjEiLz48bGluZSB4MT0iNjcuODI5NTQ1NDU0NTQ1NDUiIHkxPSI3OS44Mjk1NDU0NTQ1NDU0NSIgeDI9Ijc3LjM3NSIgeTI9Ijc5LjgyOTU0NTQ1NDU0NTQ1IiBzdHJva2U9IiMwMGEyZTEiIHN0cm9rZS1vcGFjaXR5PSIwLjgiIHN0cm9rZS13aWR0aD0iMSIvPjwvc3ZnPg=="
+  },
+  "board": {
+    "revision": 38,
+    "shapes": [
+      {
+        "id": "source",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 272,
+        "w": 300,
+        "h": 240,
+        "text": "Context • Microsoft FY27 Q1\nSource: October 28, 2026 investor call.\nActuals: quarter ended September 30.\nGuidance: FY2027 December quarter."
+      },
+      {
+        "id": "title",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 144,
+        "w": 1000,
+        "h": 64,
+        "text": "Microsoft FY27 Q1 · Earnings outlook",
+        "font": "sans",
+        "fontSize": 44,
+        "fontWeight": 700
+      },
+      {
+        "id": "evidence-heading",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 80,
+        "y": 224,
+        "w": 400,
+        "h": 40,
+        "text": "Call context & evidence",
+        "font": "sans",
+        "fontSize": 26,
+        "fontWeight": 700
+      },
+      {
+        "id": "logic-heading",
+        "color": "#2b3038",
+        "type": "text",
+        "x": 944,
+        "y": 224,
+        "w": 520,
+        "h": 40,
+        "text": "Actuals vs. forward outlook",
+        "font": "sans",
+        "fontSize": 26,
+        "fontWeight": 700
+      },
+      {
+        "id": "actual-period",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 304,
+        "w": 256,
+        "h": 112,
+        "text": "Actual results\nQuarter ended September 30"
+      },
+      {
+        "id": "guidance-period",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 304,
+        "w": 256,
+        "h": 112,
+        "text": "December-quarter guidance\nAs of October 28\nNot completed results"
+      },
+      {
+        "id": "financial-actuals",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 272,
+        "w": 328,
+        "h": 240,
+        "text": "Reported actuals • September quarter\nRevenue: $92.3 billion\nGrowth: 19% year-over-year\nOperating income: $45.9 billion\nGrowth: 21% year-over-year\nOperating margin: 50%"
+      },
+      {
+        "id": "actual-metrics",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 480,
+        "w": 256,
+        "h": 144,
+        "text": "Revenue $92.3B · +19%\nOp. income $45.9B · +21%\nOperating margin 50%"
+      },
+      {
+        "id": "connector-176534b9",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "actual-period",
+        "to": "actual-metrics"
+      },
+      {
+        "id": "cloud-actuals",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 560,
+        "w": 300,
+        "h": 208,
+        "text": "Reported actuals • Cloud\nMicrosoft Cloud revenue: $63.9B\nGrowth: 30%\nAzure growth: 48%"
+      },
+      {
+        "id": "commercial-rpo",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 560,
+        "w": 328,
+        "h": 208,
+        "text": "Reported actuals • Commercial RPO\nRemaining performance obligation: $677B\nGrowth: 73%"
+      },
+      {
+        "id": "cloud-metrics",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 688,
+        "w": 256,
+        "h": 120,
+        "text": "Cloud $63.9B · +30%\nAzure +48%"
+      },
+      {
+        "id": "rpo-metrics",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 872,
+        "w": 256,
+        "h": 112,
+        "text": "Commercial RPO\n$677B · +73%"
+      },
+      {
+        "id": "capex-actuals",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 816,
+        "w": 300,
+        "h": 240,
+        "text": "Reported actuals • Investment\nCapital expenditures: $45.2B\nRoughly ¾ went to short-lived assets, mainly CPUs and GPUs."
+      },
+      {
+        "id": "delivery-risk",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 432,
+        "y": 816,
+        "w": 328,
+        "h": 176,
+        "text": "Risk • Delivery timing\nSome third-party deliveries slipped."
+      },
+      {
+        "id": "capex-metrics",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1040,
+        "w": 256,
+        "h": 120,
+        "text": "Capex $45.2B\n≈¾ short-lived assets\nMainly CPUs & GPUs"
+      },
+      {
+        "id": "delivery-slippage",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1200,
+        "w": 256,
+        "h": 96,
+        "text": "Some third-party\n deliveries slipped"
+      },
+      {
+        "id": "cashflow-actuals",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 1104,
+        "w": 328,
+        "h": 176,
+        "text": "Reported actuals • Cash flow\nOperating cash flow: $58B\nFree cash flow: $18.6B"
+      },
+      {
+        "id": "cashflow-metrics",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1360,
+        "w": 256,
+        "h": 112,
+        "text": "Operating cash flow $58B\nFree cash flow $18.6B"
+      },
+      {
+        "id": "revenue-guidance",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1344,
+        "w": 300,
+        "h": 208,
+        "text": "Guidance • December quarter\nTotal revenue: $96–97.1B\nExpected growth: 18–19%\nAzure revenue growth: 49–50% in constant currency."
+      },
+      {
+        "id": "guidance-metrics",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 480,
+        "w": 256,
+        "h": 144,
+        "text": "Revenue $96–97.1B\nGrowth 18–19%\nAzure +49–50% (CC)"
+      },
+      {
+        "id": "connector-54b23bf6",
+        "color": "#f7de4b",
+        "type": "connector",
+        "from": "guidance-period",
+        "to": "guidance-metrics"
+      },
+      {
+        "id": "margin-guidance",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 1344,
+        "w": 328,
+        "h": 208,
+        "text": "Guidance • December quarter\nMicrosoft Cloud gross margin: about 65%\nCompany operating margin: down slightly year-over-year.\nManagement expectations as of October 28; not completed results."
+      },
+      {
+        "id": "margin-outlook",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 688,
+        "w": 256,
+        "h": 144,
+        "text": "Cloud gross margin ≈65%\nCompany op. margin\nslightly down YoY"
+      },
+      {
+        "id": "capacity-risk",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 1600,
+        "w": 300,
+        "h": 192,
+        "text": "Risk • Capacity\nDemand still exceeds supply.\nSome third-party GPU capacity moved to the second half."
+      },
+      {
+        "id": "fleet-gains",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 432,
+        "y": 1600,
+        "w": 328,
+        "h": 176,
+        "text": "Reported • Fleet utilization\nEngineering gains monetized more of the existing fleet."
+      },
+      {
+        "id": "capex-guidance",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 80,
+        "y": 1840,
+        "w": 300,
+        "h": 192,
+        "text": "Guidance • Capital expenditures\nSecond quarter: above $50B\nCalendar year: approximately $170B"
+      },
+      {
+        "id": "capacity-gap",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 896,
+        "w": 256,
+        "h": 96,
+        "text": "Capacity tension\nDemand exceeds supply"
+      },
+      {
+        "id": "fleet-utilization",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 1056,
+        "w": 256,
+        "h": 120,
+        "text": "Engineering gains\nMore existing fleet\nmonetized"
+      },
+      {
+        "id": "gpu-delay",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 1240,
+        "w": 256,
+        "h": 96,
+        "text": "Third-party GPU capacity\nMoved to second half"
+      },
+      {
+        "id": "capex-outlook",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 1536,
+        "w": 256,
+        "h": 120,
+        "text": "Expected capex\nQ2 >$50B\nCalendar year ≈$170B"
+      },
+      {
+        "id": "fcf-guidance",
+        "color": "#fff8d4",
+        "type": "note",
+        "x": 432,
+        "y": 1840,
+        "w": 328,
+        "h": 192,
+        "text": "Guidance • Cash flow\nMicrosoft expects to remain free cash flow positive in fiscal 2027."
+      },
+      {
+        "id": "fcf-outlook",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 1720,
+        "w": 256,
+        "h": 112,
+        "text": "FY2027 expectation\nFree cash flow positive"
+      },
+      {
+        "id": "qa-value",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 2080,
+        "w": 680,
+        "h": 288,
+        "text": "Answered • AI capacity value drivers\nQ: Azure utilization/unit cost, or Fabric, Foundry and Copilot?\nA: Nadella: in effect, “all of the above.”\nOne fungible pool; returns from efficient operation, demand allocation and reinforcement across the stack."
+      },
+      {
+        "id": "ai-value",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 1952,
+        "w": 576,
+        "h": 104,
+        "text": "AI capacity value drivers\nBoth infrastructure and higher layers"
+      },
+      {
+        "id": "azure-efficiency",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2120,
+        "w": 256,
+        "h": 112,
+        "text": "Azure utilization\n& unit cost"
+      },
+      {
+        "id": "higher-layers",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 2120,
+        "w": 256,
+        "h": 112,
+        "text": "Fabric · Foundry\nCopilot"
+      },
+      {
+        "id": "connector-b35ccbf9",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "ai-value",
+        "to": "azure-efficiency"
+      },
+      {
+        "id": "connector-61c9e618",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "ai-value",
+        "to": "higher-layers"
+      },
+      {
+        "id": "qa-azure-growth",
+        "color": "#e2f5fc",
+        "type": "note",
+        "x": 80,
+        "y": 2416,
+        "w": 680,
+        "h": 272,
+        "text": "Answered • Azure growth support\nQ: What supports the 49–50% Azure growth outlook?\nA: Amy Hood cited application, model, GPU, CPU, storage and memory efficiencies.\nThose gains enabled more capacity for Foundry in the reported quarter."
+      },
+      {
+        "id": "fungible-pool",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2296,
+        "w": 576,
+        "h": 120,
+        "text": "One fungible pool\nEfficient operation · allocation\nStack reinforcement"
+      },
+      {
+        "id": "stack-efficiencies",
+        "color": "#00a2e1",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2480,
+        "w": 256,
+        "h": 144,
+        "text": "Stack efficiencies\nApplication · model\nGPU · CPU\nStorage · memory"
+      },
+      {
+        "id": "azure-growth-support",
+        "color": "#f7de4b",
+        "type": "rectangle",
+        "x": 1264,
+        "y": 2480,
+        "w": 256,
+        "h": 144,
+        "text": "Supports Azure outlook\n49–50% growth\nConstant currency"
+      },
+      {
+        "id": "connector-8c31d5da",
+        "color": "#00a2e1",
+        "type": "connector",
+        "from": "stack-efficiencies",
+        "to": "azure-growth-support"
+      },
+      {
+        "id": "forecast-risk",
+        "color": "#ffe9f0",
+        "type": "note",
+        "x": 80,
+        "y": 2736,
+        "w": 680,
+        "h": 224,
+        "text": "Risk • Forecast execution\nStrong actual growth; ambitious guidance.\nDelivery depends on engineering efficiency, capacity timing, token economics and demand conversion.\nUncertainty: token pricing and delayed capacity."
+      },
+      {
+        "id": "forecast-dependency",
+        "color": "#ff7fa3",
+        "type": "rectangle",
+        "x": 944,
+        "y": 2736,
+        "w": 576,
+        "h": 120,
+        "text": "Delivery dependencies\nEngineering · capacity timing\nToken economics · demand conversion"
+      },
+      {
+        "id": "outlook-summary",
+        "color": "#00a2e1",
+        "type": "html",
+        "x": 1680,
+        "y": 272,
+        "w": 1200,
+        "h": 2600,
+        "title": "Microsoft FY27 Q1 · Cloud growth & execution outlook",
+        "html": "<style>body{margin:0;background:#f4f7fb;color:#172b45;font-family:Arial,sans-serif}*{box-sizing:border-box}.wrap{padding:48px}header{background:#102b4e;color:white;padding:36px;border-radius:18px}h1{font-size:40px;font-weight:750;margin:12px 0 18px}h2{font-size:27px;font-weight:700;margin:0 0 20px}.eyebrow{font-size:16px;letter-spacing:1.5px;text-transform:uppercase}.lead{font-size:23px;line-height:1.5;margin:0}.panel{background:white;border:1px solid #dce4ee;border-radius:16px;padding:28px;margin-top:26px}.kpi{background:#edf4fc;border-radius:12px;padding:22px;height:100%}.value{font-size:34px;font-weight:750;color:#145ca4}.label{font-size:18px;margin-bottom:8px}.detail{font-size:18px;color:#53667a}.table{font-size:20px;margin:0}.table td,.table th{padding:13px 10px;color:#172b45}.qa{font-size:21px;line-height:1.5}.question{font-weight:700;margin:18px 0 8px}.answer{margin:0}.badge{font-size:14px}.watch{background:#fff7eb;border-color:#efd5ab}.watchgrid{font-size:20px;line-height:1.5}.foot{font-size:17px;color:#53667a;line-height:1.5;margin-top:24px}</style><div class='wrap'><header><div class='eyebrow'>Microsoft FY27 Q1 · Investor outlook</div><h1>Cloud growth &amp; execution outlook</h1><p class='lead'>Strong actual growth; ambitious guidance. Delivery hinges on engineering efficiency, capacity timing, token economics and demand conversion.</p><div style='margin-top:20px;font-size:17px'>Source stated in session: October 28, 2026 investor call</div></header><section class='panel'><h2>Reported results <span class='badge text-bg-primary'>Quarter ended September 30</span></h2><div class='row g-3'><div class='col-4'><div class='kpi'><div class='label'>Revenue</div><div class='value'>$92.3B</div><div class='detail'>+19% year-over-year</div></div></div><div class='col-4'><div class='kpi'><div class='label'>Microsoft Cloud</div><div class='value'>$63.9B</div><div class='detail'>+30%; Azure growth 48%</div></div></div><div class='col-4'><div class='kpi'><div class='label'>Commercial RPO</div><div class='value'>$677B</div><div class='detail'>+73%</div></div></div></div><table class='table mt-4'><tbody><tr><td>Operating income / margin</td><td><strong>$45.9B</strong> (+21% YoY) / <strong>50%</strong></td></tr><tr><td>Capital expenditures</td><td><strong>$45.2B</strong>; ≈¾ short-lived assets, mainly CPUs and GPUs</td></tr><tr><td>Operating / free cash flow</td><td><strong>$58B / $18.6B</strong></td></tr></tbody></table></section><section class='panel'><h2>Management guidance <span class='badge text-bg-warning'>Not completed results</span></h2><table class='table'><thead><tr><th>Period / metric</th><th>Expectation as of October 28</th></tr></thead><tbody><tr><td>December-quarter revenue</td><td><strong>$96–97.1B</strong> · 18–19% growth</td></tr><tr><td>December-quarter Azure</td><td><strong>49–50% growth in constant currency</strong></td></tr><tr><td>December-quarter margins</td><td>Cloud gross margin ≈65%; company operating margin slightly down YoY</td></tr><tr><td>Capital expenditures</td><td>Q2 above $50B; calendar year approximately $170B</td></tr><tr><td>Fiscal 2027 free cash flow</td><td>Expected to remain positive</td></tr></tbody></table><div class='foot'>Azure actual growth was stated without a currency qualifier; the guidance explicitly uses constant currency. Cloud gross margin and company operating margin are different measures.</div></section><section class='panel'><h2>AI capacity: the reconstructed logic</h2><div class='row g-3 qa'><div class='col-6'><div class='kpi'><strong>Make the existing fleet more productive</strong><p class='mb-0 mt-2'>Engineering gains monetized more existing capacity and enabled more capacity for Foundry in the reported quarter.</p></div></div><div class='col-6'><div class='kpi'><strong>Capture value across the stack</strong><p class='mb-0 mt-2'>A fungible pool combines efficient operation, demand allocation and reinforcement across infrastructure and higher-layer products.</p></div></div></div><p class='qa mt-3 mb-0'>Efficiency supports growth, but does not remove the capacity constraint: demand still exceeds supply.</p></section><section class='panel'><h2>Investor Q&amp;A <span class='badge text-bg-success'>Answered in session</span></h2><div class='qa'><div class='question'>Q1 · As AI capacity comes online, which matters more: Azure utilization and unit cost, or Fabric, Foundry and Copilot?</div><p class='answer'><strong>Satya Nadella:</strong> In effect, “all of the above.” One fungible pool produces returns from efficient operation, demand allocation and reinforcement across the stack.</p><hr><div class='question'>Q2 · What supports the 49–50% Azure growth outlook?</div><p class='answer'><strong>Amy Hood:</strong> Application, model, GPU, CPU, storage and memory efficiencies. These gains helped direct more capacity toward Foundry; the forecast also depends on further engineering progress.</p></div></section><section class='panel watch'><h2>Execution watchlist · unresolved uncertainties</h2><div class='row g-4 watchgrid'><div class='col-6'><strong>Engineering efficiency</strong><br>Further progress is needed to deliver the outlook.</div><div class='col-6'><strong>Capacity timing</strong><br>Some third-party deliveries slipped; some GPU capacity moved to the second half.</div><div class='col-6'><strong>Token economics</strong><br>Token pricing remains uncertain; impact was not quantified.</div><div class='col-6'><strong>Demand conversion</strong><br>A delivery dependency, with no quantified conversion assumption provided.</div></div><div class='foot'>No resolved forecast impacts, assigned actions or deadlines were stated. These are investor monitoring priorities, not commitments.</div></section><div class='foot'>Session synthesis, not independent verification. Reported actuals and forward expectations remain separated throughout.</div></div>"
+      }
+    ]
+  }
+}
