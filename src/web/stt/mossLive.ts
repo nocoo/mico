@@ -387,7 +387,11 @@ export class MossLiveSession {
 				}
 				this.send({
 					action: 'session.update',
-					session: { instructions: this.instructions(), tools: this.sessionTools },
+					session: {
+						persona: { name: 'Mico', aliases: ['Miko'] },
+						instructions: this.instructions(),
+						tools: this.sessionTools,
+					},
 				})
 				break
 			case 'session.updated': {

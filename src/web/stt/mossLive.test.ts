@@ -196,6 +196,10 @@ test('connects, emits real PCM waveform, registers tools, and serializes canvas 
 		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
 		const update = JSON.parse(String(socket.sent.at(-1))) as Record<string, unknown>
 		assert.equal((update.session as Record<string, unknown>).instructions, 'Use the canvas tools.')
+		assert.deepEqual((update.session as Record<string, unknown>).persona, {
+			name: 'Mico',
+			aliases: ['Miko'],
+		})
 
 		socket.dispatchJson({ action: 'session.updated', data: { tools: ['set_title'] } })
 		assert.deepEqual(events.at(-1), { type: 'status', phase: 'listening' })
