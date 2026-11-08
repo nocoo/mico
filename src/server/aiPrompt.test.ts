@@ -9,6 +9,9 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_SYSTEM_PROMPT, /never label the groups A, B, C/)
 	assert.match(AI_SYSTEM_PROMPT, /subject-specific headings/)
 	assert.match(AI_SYSTEM_PROMPT, /Revise it with update_shapes/i)
+	assert.match(AI_SYSTEM_PROMPT, /Consolidate closely related facts of the same category/)
+	assert.match(AI_SYSTEM_PROMPT, /preserving values, units, time periods and qualifiers/)
+	assert.match(AI_SYSTEM_PROMPT, /Prioritize a few meaningful relationships/)
 	assert.match(AI_SYSTEM_PROMPT, /memberIds/)
 	assert.match(
 		AI_SYSTEM_PROMPT,
@@ -18,6 +21,7 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_SYSTEM_PROMPT, /side-by-side frames, align their top edges/)
 	assert.match(AI_SYSTEM_PROMPT, /topmost member of each group at the same y/)
 	assert.doesNotMatch(AI_SYSTEM_PROMPT, /LAYOUT_LIMIT|exactly two columns|y=1600|Place C below/)
+	assert.match(AI_LECTURE_PROMPT, /a standalone fact can remain only in the evidence/)
 	assert.match(AI_LECTURE_PROMPT, /clearly enters a final summary/i)
 	assert.match(AI_LECTURE_PROMPT, /rightmost HTML summary/)
 })
