@@ -7,6 +7,8 @@
 
 ## Tool usage
 
+- A delegated investigator mistook itself for the coordinator and sent instructions to the audio worker. State the subordinate role and prohibition on cross-pane prompts explicitly in every delegation.
+- An Audio replay probe matched both the Audio and Live status elements and stopped immediately after playback was clicked. Scope locators to the Audio tabpanel and preserve failed probe evidence separately from valid rounds.
 - Passed exclusions to `fd` as positional paths; use `-E` for exclusions when discovering files. Wildcard filename patterns also need `-g` rather than regex mode.
 - Guessed a MOSS source filename and supplied an ambiguous edit match; discover the real file first and include a unique function header in targeted replacements.
 - CSS `inset(... round 10px)` scales both corner radii together on narrow shapes, unlike SVG rectangles. Clamp the horizontal and vertical radii separately and test both narrow orientations.
