@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+:root {
+  color-scheme: light;
+  --ink-2: light-dark(oklch(0.47 0.035 285), oklch(0.8 0.02 285));
+  --glass: light-dark(oklch(1 0 0 / .64), oklch(0.27 0.03 285 / .66));
+  --glass-edge: light-dark(oklch(1 0 0 / .85), oklch(1 0 0 / .11));
+  --gloss: light-dark(oklch(1 0 0 / .75), oklch(1 0 0 / .14));
+  --shadow: light-dark(oklch(0.45 0.13 285 / .2), oklch(0 0 0 / .55));
+  --accent: oklch(0.62 0.17 285);
+  --accent-ink: light-dark(oklch(0.48 0.19 283), oklch(0.82 0.11 288));
+  --spring: linear(0, 0.009, 0.035 2.1%, 0.141 4.4%, 0.723 12.9%, 0.938 16.7%, 1.017, 1.077, 1.121, 1.149 24.3%, 1.159, 1.163, 1.161, 1.154 29.9%, 1.129 32.8%, 1.051 39.6%, 1.017 43.1%, 0.991, 0.977 51%, 0.974 53.8%, 0.975 57.1%, 0.997 69.8%, 1.003 76.9%, 1.004 83.8%, 1);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; background: white; }
+[data-c="mint"] { --h: 166; --c: .095; }
+[data-c="pink"] { --h: 8; --c: .1; }
+[data-c="grape"] { --h: 296; --c: .1; }
+[data-c] {
+  --j-a: light-dark(oklch(0.968 calc(var(--c) * .5) var(--h) / .92), oklch(0.42 calc(var(--c) * .95) var(--h) / .82));
+  --j-b: light-dark(oklch(0.9 var(--c) var(--h) / .92), oklch(0.31 var(--c) var(--h) / .86));
+  --j-glow: light-dark(oklch(0.7 calc(var(--c) * 1.5) var(--h) / .45), oklch(0.62 calc(var(--c) * 1.5) var(--h) / .34));
+}
+.glass {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.7); backdrop-filter: blur(22px) saturate(1.7);
+  border-radius: 26px;
+  box-shadow: inset 0 0 0 1px var(--glass-edge), inset 0 1.5px 0 0 var(--gloss), 0 26px 50px -26px var(--shadow), 0 3px 8px -3px var(--shadow);
+}
+#surface { width: 233px; height: 56px; border-radius: 22px; }
+.jelly {
+  position: relative; background: linear-gradient(158deg, var(--j-a), var(--j-b)); border-radius: var(--r, 22px);
+  box-shadow: inset 0 1.5px 0 0 var(--gloss), inset 0 0 0 1px light-dark(oklch(1 0 0 / .45), oklch(1 0 0 / .07)), inset 0 -12px 20px -12px var(--j-glow), 0 16px 30px -16px var(--j-glow), 0 2px 5px -2px light-dark(oklch(0.3 0.05 285 / .12), oklch(0 0 0 / .4));
+}
+.jelly::before {
+  content: ""; position: absolute; inset: 2px; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, light-dark(oklch(1 0 0 / .5), oklch(1 0 0 / .1)), oklch(1 0 0 / 0) 44%);
+}
+.hero-orb { position: relative; width: 120px; height: 96px; margin-top: 100px; }
+.hero-orb i { --r: 44% 56% 52% 48% / 52% 46% 54% 48%; position: absolute; width: 66px; height: 66px; }
+.hero-orb i:nth-child(1) { left: 0; top: 22px; }
+.hero-orb i:nth-child(2) { left: 30px; top: 0; }
+.hero-orb i:nth-child(3) { left: 56px; top: 26px; }
+.ib {
+  position: relative; display: grid; place-items: center; flex: none; width: 40px; height: 40px; margin-top: 100px; padding: 0; border: 0; border-radius: 14px; color: var(--ink-2);
+}
+.ib.on {
+  color: var(--accent-ink);
+  background: linear-gradient(160deg, light-dark(oklch(0.97 0.03 290), oklch(0.42 0.1 288)), light-dark(oklch(0.9 0.07 288), oklch(0.34 0.12 285)));
+  box-shadow: inset 0 1.5px 0 var(--gloss), inset 0 0 0 1.5px color-mix(in oklch, var(--accent) 55%, transparent), inset 0 -8px 12px -8px oklch(0.62 0.17 285 / .5), 0 8px 16px -8px oklch(0.62 0.17 285 / .6);
+}
+</style>
+</head>
+<body>
+<div id="surface" class="glass"></div>
+<div class="hero-orb"><i class="jelly" data-c="grape"></i><i class="jelly" data-c="pink"></i><i class="jelly" data-c="mint"></i></div>
+<button class="ib on" aria-label="Reference active tool"></button>
+</body>
+</html>

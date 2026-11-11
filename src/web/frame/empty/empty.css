@@ -60,7 +60,7 @@
 	background: linear-gradient(
 		180deg,
 		light-dark(oklch(1 0 0 / 0.5), oklch(1 0 0 / 0.1)),
-		transparent 44%
+		oklch(1 0 0 / 0) 44%
 	);
 }
 .frame-empty-orb i:nth-child(1) {
