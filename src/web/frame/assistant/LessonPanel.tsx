@@ -60,16 +60,45 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 				<span>{formatClock(model.duration)}</span>
 			</div>
 
-			<div className="lesson-live" aria-live="polite">
-				<span className="lesson-live-label">Live transcript</span>
-				<p>
-					{!model.live.confirmed && !model.live.hypothesis && (
-						<span className="lesson-live-empty">Waiting for speech…</span>
-					)}
-					<span className="lesson-confirmed">{model.live.confirmed}</span>
-					<span className="lesson-hypothesis">{model.live.hypothesis}</span>
-					<span className="lesson-caret" aria-hidden="true" />
-				</p>
+			<div className="lesson-transcript">
+				<div className="lesson-segments-head">
+					<span>Live transcript</span>
+					<span>
+						{model.totalSegments} /{' '}
+						{model.segments.reduce((sum, segment) => sum + segment.text.length, 0)} chars
+					</span>
+				</div>
+				<div className="lesson-transcript-body">
+					<div className="lesson-live" aria-live="polite">
+						<p>
+							{!model.live.confirmed && !model.live.hypothesis && (
+								<span className="lesson-live-empty">Waiting for speech…</span>
+							)}
+							<span className="lesson-confirmed">{model.live.confirmed}</span>
+							<span className="lesson-hypothesis">{model.live.hypothesis}</span>
+							<span className="lesson-caret" aria-hidden="true" />
+						</p>
+					</div>
+					<div className="lesson-segments">
+						<span className="lesson-confirmed-label">Confirmed segments</span>
+						<ol>
+							{model.segments.map((segment) => (
+								<li key={segment.id}>
+									<span className="lesson-seg-time">
+										{segment.start.toFixed(1)}–{segment.end.toFixed(1)}s
+									</span>
+									<span>{segment.text}</span>
+								</li>
+							))}
+							{model.segments.length === 0 && (
+								<li className="lesson-seg-empty">
+									<LoaderCircle size={14} strokeWidth={2} aria-hidden="true" />
+									Play a recording to transcribe it sentence by sentence.
+								</li>
+							)}
+						</ol>
+					</div>
+				</div>
 			</div>
 
 			<div className="lesson-controls">
@@ -168,32 +197,6 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 							: `silence · ${model.vad.db.toFixed(0)}dB`
 						: 'idle'}
 				</span>
-			</div>
-
-			<div className="lesson-segments">
-				<div className="lesson-segments-head">
-					<span>Confirmed segments</span>
-					<span>
-						{model.totalSegments} /{' '}
-						{model.segments.reduce((sum, segment) => sum + segment.text.length, 0)} chars
-					</span>
-				</div>
-				<ol>
-					{model.segments.map((segment) => (
-						<li key={segment.id}>
-							<span className="lesson-seg-time">
-								{segment.start.toFixed(1)}–{segment.end.toFixed(1)}s
-							</span>
-							<span>{segment.text}</span>
-						</li>
-					))}
-					{model.segments.length === 0 && (
-						<li className="lesson-seg-empty">
-							<LoaderCircle size={14} strokeWidth={2} aria-hidden="true" />
-							Play a recording to transcribe it sentence by sentence.
-						</li>
-					)}
-				</ol>
 			</div>
 		</div>
 	)

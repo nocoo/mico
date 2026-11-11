@@ -999,32 +999,50 @@
 	font-variant-numeric: tabular-nums;
 }
 
-.ai-assistant .lesson-live {
+.ai-assistant .lesson-transcript {
 	order: 5;
 	display: flex;
-	flex: 0 0 auto;
+	flex: 1 0 230px;
 	flex-direction: column;
-	gap: 4px;
-	padding: 10px 12px;
+	min-height: 230px;
 	border-radius: 18px;
 	background: var(--ui-well);
 	box-shadow:
 		inset 0 1px 2px color-mix(in oklch, var(--ui-shadow) 34%, transparent),
 		inset 0 0 0 1px var(--ui-hair);
+	overflow: hidden;
 }
 
-.ai-assistant .lesson-live-label {
+.ai-assistant .lesson-segments-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	flex: 0 0 auto;
+	padding: 10px 13px 4px;
 	color: var(--ui-ink-2);
 	font-size: 12px;
-	font-weight: 700;
-	line-height: 16px;
+}
+
+.ai-assistant .lesson-transcript-body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	min-height: 0;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding-bottom: 6px;
+	scrollbar-width: thin;
+	scrollbar-color: var(--ui-well-2) transparent;
+}
+
+.ai-assistant .lesson-live {
+	flex: 0 0 auto;
+	padding: 4px 16px 8px;
 }
 
 .ai-assistant .lesson-live p {
-	min-height: 44px;
-	max-height: 68px;
+	min-height: 40px;
 	margin: 0;
-	overflow-y: auto;
 	color: var(--ui-ink);
 	font-size: 12.5px;
 	line-height: 1.5;
@@ -1053,34 +1071,23 @@
 }
 
 .ai-assistant .lesson-segments {
-	order: 6;
-	display: flex;
-	flex: 1 0 140px;
-	flex-direction: column;
-	min-height: 140px;
-	border-radius: 18px;
-	background: var(--ui-well);
-	box-shadow:
-		inset 0 1px 2px color-mix(in oklch, var(--ui-shadow) 34%, transparent),
-		inset 0 0 0 1px var(--ui-hair);
-	overflow: hidden;
+	flex: 0 0 auto;
+	padding-top: 2px;
+	border-top: 1px solid var(--ui-hair);
 }
 
-.ai-assistant .lesson-segments-head {
-	display: flex;
-	justify-content: space-between;
-	gap: 8px;
-	padding: 10px 13px 4px;
-	color: var(--ui-ink-2);
-	font-size: 12px;
+.ai-assistant .lesson-confirmed-label {
+	display: block;
+	padding: 8px 16px 2px;
+	color: var(--ui-ink-3);
+	font-size: 10.5px;
+	font-weight: 700;
+	letter-spacing: 0.03em;
 }
 
 .ai-assistant .lesson-segments ol {
-	flex: 1;
-	min-height: 0;
 	margin: 0;
-	padding: 4px 8px 10px;
-	overflow-y: auto;
+	padding: 0 8px 4px;
 	list-style: none;
 }
 
@@ -1773,14 +1780,13 @@
 		gap: 8px;
 	}
 
-	.ai-assistant .lesson-segments {
-		min-height: 108px;
-		flex-basis: 108px;
+	.ai-assistant .lesson-transcript {
+		min-height: 170px;
+		flex-basis: 170px;
 	}
 
 	.ai-assistant .lesson-live p {
 		min-height: 32px;
-		max-height: 52px;
 	}
 }
 
