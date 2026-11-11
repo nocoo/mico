@@ -1,0 +1,184 @@
+.frame-empty {
+	position: fixed;
+	z-index: 10;
+	top: 46%;
+	left: calc((100% - var(--frame-panel-reserved)) / 2);
+	translate: -50% -50%;
+	display: grid;
+	justify-items: center;
+	gap: 12px;
+	width: min(520px, 90vw);
+	color: var(--ui-ink);
+	font:
+		13px / 1.5 "Segoe UI Variable Text",
+		"Segoe UI",
+		system-ui,
+		-apple-system,
+		"PingFang SC",
+		"Microsoft YaHei UI",
+		"Microsoft YaHei",
+		"Noto Sans SC",
+		sans-serif;
+	text-align: center;
+	pointer-events: none;
+	transition: left 0.6s var(--ui-spring);
+}
+
+.frame-empty-orb {
+	position: relative;
+	width: 120px;
+	height: 96px;
+}
+.frame-empty-orb i {
+	--h: 296;
+	--c: 0.1;
+	position: absolute;
+	width: 66px;
+	height: 66px;
+	border-radius: 44% 56% 52% 48% / 52% 46% 54% 48%;
+	background: linear-gradient(
+		158deg,
+		light-dark(
+			oklch(0.968 calc(var(--c) * 0.5) var(--h) / 0.92),
+			oklch(0.42 calc(var(--c) * 0.95) var(--h) / 0.82)
+		),
+		light-dark(oklch(0.9 var(--c) var(--h) / 0.92), oklch(0.31 var(--c) var(--h) / 0.86))
+	);
+	box-shadow:
+		inset 0 1.5px 0 var(--ui-gloss),
+		inset 0 0 0 1px light-dark(oklch(1 0 0 / 0.45), oklch(1 0 0 / 0.07)),
+		inset 0 -12px 20px -12px oklch(0.7 calc(var(--c) * 1.5) var(--h) / 0.45),
+		0 16px 30px -16px oklch(0.7 calc(var(--c) * 1.5) var(--h) / 0.45),
+		0 2px 5px -2px oklch(0.3 0.05 285 / 0.12);
+	animation: frame-empty-wobble 5s ease-in-out infinite;
+}
+.frame-empty-orb i::before {
+	content: "";
+	position: absolute;
+	inset: 2px;
+	border-radius: inherit;
+	background: linear-gradient(
+		180deg,
+		light-dark(oklch(1 0 0 / 0.5), oklch(1 0 0 / 0.1)),
+		transparent 44%
+	);
+}
+.frame-empty-orb i:nth-child(1) {
+	left: 0;
+	top: 22px;
+}
+.frame-empty-orb i:nth-child(2) {
+	--h: 8;
+	left: 30px;
+	top: 0;
+	animation-delay: -1.6s;
+}
+.frame-empty-orb i:nth-child(3) {
+	--h: 166;
+	--c: 0.095;
+	left: 56px;
+	top: 26px;
+	animation-delay: -3.2s;
+}
+@keyframes frame-empty-wobble {
+	33% {
+		border-radius: 56% 44% 46% 54% / 46% 56% 44% 54%;
+		translate: 0 -5px;
+	}
+	66% {
+		border-radius: 48% 52% 58% 42% / 56% 44% 52% 48%;
+		translate: 2px 3px;
+	}
+}
+.frame-empty h1 {
+	margin: 8px 0 0;
+	font-size: clamp(26px, 3.2vw, 38px);
+	font-weight: 750;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+	background: linear-gradient(
+		100deg,
+		var(--ui-ink) 20%,
+		var(--ui-accent-ink) 60%,
+		oklch(0.68 0.16 350)
+	);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+.frame-empty p {
+	max-width: 440px;
+	margin: 0;
+	font-size: 14.5px;
+	color: var(--ui-ink-2);
+	text-wrap: balance;
+}
+.frame-empty-actions {
+	display: flex;
+	gap: 10px;
+	margin-top: 8px;
+	pointer-events: auto;
+}
+.frame-empty-actions button {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+	height: 50px;
+	padding-inline: 22px;
+	border: 0;
+	border-radius: 20px;
+	font: inherit;
+	font-size: 14.5px;
+	font-weight: 600;
+	color: var(--ui-ink);
+	background: var(--ui-glass-strong);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-hair),
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 6px 12px -8px var(--ui-shadow);
+	transition:
+		scale 0.45s var(--ui-spring),
+		translate 0.3s var(--ui-ease),
+		box-shadow 0.2s;
+}
+.frame-empty-actions button:hover {
+	translate: 0 -1px;
+}
+.frame-empty-actions button:active {
+	scale: 0.94;
+	translate: 0 0;
+}
+.frame-empty-actions .frame-empty-primary {
+	color: white;
+	background: linear-gradient(180deg, var(--ui-accent-hi), var(--ui-accent-lo));
+	box-shadow:
+		inset 0 1.5px 0 oklch(1 0 0 / 0.55),
+		inset 0 -8px 12px -5px oklch(0.4 0.2 280 / 0.65),
+		0 12px 22px -10px oklch(0.56 0.19 282 / 0.75);
+	text-shadow: 0 1px 1px oklch(0.4 0.2 280 / 0.5);
+}
+.frame-empty-primary::before {
+	content: "";
+	position: absolute;
+	inset-inline: 7px;
+	top: 3px;
+	height: 44%;
+	pointer-events: none;
+	border-radius: 12px 12px 50% 50% / 12px 12px 60% 60%;
+	background: linear-gradient(180deg, oklch(1 0 0 / 0.42), transparent);
+}
+.frame-empty-primary svg {
+	fill: currentColor;
+	stroke-width: 1.2;
+}
+.frame-empty-hint {
+	color: var(--ui-ink-3);
+	font-size: 11.5px;
+}
+@media (prefers-reduced-motion: reduce) {
+	.frame-empty-orb i {
+		animation: none;
+	}
+}

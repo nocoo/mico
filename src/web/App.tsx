@@ -39,6 +39,8 @@ import {
 } from './design'
 import { AssistantFrame } from './frame/assistant'
 import type { BrushWidth, DockLayout } from './frame/contracts'
+import { EmptyState } from './frame/empty/EmptyState'
+import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
 import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
 import { Toolbar } from './frame/toolbar'
@@ -122,7 +124,15 @@ export default function App() {
 	const [aiPrompt, setAiPrompt] = useState(
 		() => new URLSearchParams(window.location.search).get('ai')?.trim() ?? '',
 	)
-	const [aiPanelOpen, setAiPanelOpen] = useState(() => aiPrompt.length > 0)
+	const [aiPanelOpen, setAiPanelOpen] = useState(
+		() => aiPrompt.length > 0 || window.innerWidth >= 900,
+	)
+	const emptyState = useEmptyStateViewModel({
+		canvasId: activeCanvasId,
+		shapeCount: board.shapes.length,
+		initialPrompt: aiPrompt,
+		openAssistant: () => setAiPanelOpen(true),
+	})
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
@@ -1574,6 +1584,7 @@ export default function App() {
 					reportLayout: reportDockLayout,
 					selectTool: (next) => {
 						cancelInteraction()
+						if (next !== 'select') emptyState.dismiss()
 						if (next === 'image') {
 							setTool('select')
 							imageInputRef.current?.click()
@@ -1616,6 +1627,10 @@ export default function App() {
 					isGestureActive,
 				}}
 			/>
+
+			{emptyState.visible && (
+				<EmptyState onOpenAssistant={emptyState.openAssistant} onDismiss={emptyState.dismiss} />
+			)}
 
 			{tool === 'select' && (
 				<SelectionPanel
