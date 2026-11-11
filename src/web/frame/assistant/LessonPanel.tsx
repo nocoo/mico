@@ -1,4 +1,4 @@
-import { FileText, LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-react'
+import { AudioLines, FileText, LoaderCircle, Pause, Play, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { SelectField } from '../../SelectField'
 import { type LectureAudio, loadLecture, Player, TARGET_RATE } from '../../stt/audioSource'
@@ -668,23 +668,27 @@ export function LessonPanel({
 	return (
 		<div className="lesson">
 			<div className="lesson-clip">
-				<span className="select-label">Recording</span>
-				<SelectField
-					label="Recording"
-					value={selected?.id ?? ''}
-					options={clips.map((clip) => ({
-						value: clip.id,
-						label: `${clip.lang === 'zh' ? '中文' : clip.lang === 'ja' ? '日本語' : 'EN'} · ${clip.subject} · ${clip.title}`,
-					}))}
-					onChange={selectClip}
-					disabled={clips.length === 0}
-				/>
-				<div className="lesson-meta">
-					<span>
-						{selected ? `${selected.subject} · ${selected.voice}` : 'Loading recordings…'}
-					</span>
-					<span>{formatClock(duration)}</span>
+				<span className="lesson-rec-icon" aria-hidden="true">
+					<AudioLines size={18} strokeWidth={2} />
+				</span>
+				<div className="lesson-rec-main">
+					<SelectField
+						label="Recording"
+						value={selected?.id ?? ''}
+						options={clips.map((clip) => ({
+							value: clip.id,
+							label: `${clip.lang === 'zh' ? '中文' : clip.lang === 'ja' ? '日本語' : 'EN'} · ${clip.subject} · ${clip.title}`,
+						}))}
+						onChange={selectClip}
+						disabled={clips.length === 0}
+					/>
+					<div className="lesson-meta">
+						<span>
+							{selected ? `${selected.subject} · ${selected.voice}` : 'Loading recordings…'}
+						</span>
+					</div>
 				</div>
+				<span className="lesson-duration">{formatClock(duration)}</span>
 			</div>
 
 			<div className="lesson-status" data-kind={PHASE_KIND[phase]}>

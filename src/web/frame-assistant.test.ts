@@ -3,6 +3,8 @@ import { test } from 'node:test'
 import {
 	appendCompletedTranscript,
 	buildAssistantRequestBody,
+	DEFAULT_ASSISTANT_TAB,
+	deriveAssistantActivity,
 	nextAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
@@ -10,7 +12,8 @@ import {
 	takeLectureBatch,
 } from './frame/assistant/protocol.ts'
 
-test('assistant tab keyboard protocol wraps and reaches endpoints', () => {
+test('assistant tab keyboard protocol opens recordings and reaches endpoints', () => {
+	assert.equal(DEFAULT_ASSISTANT_TAB, 'audio')
 	assert.equal(nextAssistantTab('chat', 'ArrowLeft'), 'settings')
 	assert.equal(nextAssistantTab('settings', 'ArrowRight'), 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowRight'), 'audio')
@@ -63,6 +66,29 @@ test('Escape closes only from an assistant interaction context', () => {
 	assert.equal(shouldCloseAssistantEscape('Escape', true, true, true), false)
 	assert.equal(shouldCloseAssistantEscape('Enter', false, true, true), false)
 	assert.equal(shouldCloseAssistantEscape('Escape', false, false, false), false)
+})
+
+test('assistant status reports only real session and connection state', () => {
+	const base = {
+		error: false,
+		busy: false,
+		summaryRequesting: false,
+		lectureQueued: 0,
+		connectionStatus: 'live' as const,
+	}
+	assert.deepEqual(deriveAssistantActivity(base), { state: 'idle', text: 'Mico is ready' })
+	assert.deepEqual(deriveAssistantActivity({ ...base, busy: true }), {
+		state: 'work',
+		text: 'Mico is drawing…',
+	})
+	assert.deepEqual(deriveAssistantActivity({ ...base, lectureQueued: 2 }), {
+		state: 'work',
+		text: '2 segments queued',
+	})
+	assert.deepEqual(deriveAssistantActivity({ ...base, connectionStatus: 'offline' }), {
+		state: 'offline',
+		text: 'Mico is offline',
+	})
 })
 
 test('trigger focus and initial prompt consume only after real lifecycle transitions', () => {

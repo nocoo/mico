@@ -1,6 +1,34 @@
 export type AssistantTab = 'chat' | 'audio' | 'live' | 'settings'
 
 export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
+export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'audio'
+
+export function deriveAssistantActivity({
+	error,
+	busy,
+	summaryRequesting,
+	lectureQueued,
+	connectionStatus,
+}: {
+	error: boolean
+	busy: boolean
+	summaryRequesting: boolean
+	lectureQueued: number
+	connectionStatus: string
+}) {
+	if (error) return { state: 'attention', text: 'Mico needs attention' }
+	if (summaryRequesting) return { state: 'work', text: 'Mico is creating a session summary…' }
+	if (busy) return { state: 'work', text: 'Mico is drawing…' }
+	if (lectureQueued > 0) {
+		return {
+			state: 'work',
+			text: `${lectureQueued} segment${lectureQueued === 1 ? '' : 's'} queued`,
+		}
+	}
+	if (connectionStatus === 'offline') return { state: 'offline', text: 'Mico is offline' }
+	if (connectionStatus === 'reconnecting') return { state: 'work', text: 'Mico is reconnecting…' }
+	return { state: 'idle', text: 'Mico is ready' }
+}
 
 export function nextAssistantTab(
 	current: AssistantTab,

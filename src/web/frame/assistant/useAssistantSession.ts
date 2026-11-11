@@ -1,14 +1,18 @@
 import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
-import type { FormEvent } from 'react'
+import type { FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
 import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
+import { deriveConnectionStatus } from '../connection'
 import type { AssistantActions, AssistantState } from '../contracts'
 import type { LessonSegment } from './LessonPanel'
 import {
 	type AssistantTab,
 	buildAssistantRequestBody,
+	DEFAULT_ASSISTANT_TAB,
+	deriveAssistantActivity,
+	nextAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
@@ -20,9 +24,12 @@ export interface AssistantSessionProps {
 	actions: AssistantActions
 }
 
+export type LiveProvider = 'moss' | 'mai'
+
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
-	const [tab, setTab] = useState<AssistantTab>('chat')
+	const [tab, setTab] = useState<AssistantTab>(DEFAULT_ASSISTANT_TAB)
+	const [liveProvider, setLiveProvider] = useState<LiveProvider>('moss')
 	const [draft, setDraft] = useState('')
 	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
@@ -70,6 +77,14 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	})
 
 	const busy = status === 'submitted' || status === 'streaming'
+	const connection = deriveConnectionStatus(state.connection)
+	const activity = deriveAssistantActivity({
+		error: Boolean(error),
+		busy,
+		summaryRequesting,
+		lectureQueued,
+		connectionStatus: connection.status,
+	})
 
 	const resetLectureQueue = useCallback(() => {
 		lectureQueue.current = []
@@ -278,6 +293,21 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		return () => window.clearTimeout(timer)
 	}, [state.open, tab])
 
+	const focusTab = useCallback(
+		(event: KeyboardEvent<HTMLDivElement>) => {
+			if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+			event.preventDefault()
+			const next = nextAssistantTab(tab, event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End')
+			setTab(next)
+			document.getElementById(`ai-tab-${next}`)?.focus()
+		},
+		[tab],
+	)
+
+	const selectLiveProvider = useCallback((value: string) => {
+		if (value === 'moss' || value === 'mai') setLiveProvider(value)
+	}, [])
+
 	const continueChat = useCallback(() => {
 		if (requestLock.current) return
 		requestLock.current = true
@@ -296,6 +326,11 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	return {
 		tab,
 		setTab,
+		focusTab,
+		connection,
+		activity,
+		liveProvider,
+		selectLiveProvider,
 		draft,
 		setDraft,
 		panelRef,

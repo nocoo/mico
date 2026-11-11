@@ -16,17 +16,14 @@ import {
 	TriangleAlert,
 	X,
 } from 'lucide-react'
-import type { FormEvent, KeyboardEvent } from 'react'
-import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { IconButton } from '../../IconButton'
 import { isWaitReply } from '../../stt/transcript'
-import { deriveConnectionStatus } from '../connection'
 import type { AssistantActions, AssistantState } from '../contracts'
 import { AiSettings } from './AiSettings'
 import { LessonPanel, type LessonSegment } from './LessonPanel'
 import { MicrophonePanel } from './MicrophonePanel'
 import { MossPanel } from './MossPanel'
-import { nextAssistantTab } from './protocol'
 import type { AssistantViewModel } from './useAssistantSession'
 
 interface AssistantViewProps {
@@ -182,29 +179,12 @@ function UserMessage({ text }: { text: string }) {
 }
 
 export function AssistantView({ state, actions, model }: AssistantViewProps) {
-	const [liveMode, setLiveMode] = useState<'moss' | 'mai'>('moss')
-	const connection = deriveConnectionStatus(state.connection)
-	const focusTab = (event: KeyboardEvent<HTMLDivElement>) => {
-		if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
-		event.preventDefault()
-		const next = nextAssistantTab(
-			model.tab,
-			event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End',
-		)
-		model.setTab(next)
-		document.getElementById(`ai-tab-${next}`)?.focus()
-	}
-
 	const submit = (event?: FormEvent) => model.submit(event)
 
 	return (
 		<div className="ai-assistant">
 			<header className="topbar ai-topbar">
-				<div
-					className="ai-trigger floating-panel"
-					data-open={String(state.open)}
-					data-immersive={String(model.tab === 'live')}
-				>
+				<div className="ai-trigger floating-panel" data-open={String(state.open)}>
 					<button
 						type="button"
 						className="ai-trigger-button"
@@ -219,28 +199,37 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 						<X className="trigger-close" aria-hidden="true" />
 					</button>
 					<span
-						className={`status ${connection.status}`}
+						className={`status ${model.connection.status}`}
 						role="status"
-						aria-label={connection.label}
-						title={connection.title}
+						aria-label={model.connection.label}
+						title={model.connection.title}
 					>
 						<span className="status-dot" aria-hidden="true" />
 					</span>
 				</div>
 			</header>
 
+			<div
+				className="ai-status-pill floating-panel"
+				data-state={model.activity.state}
+				role="status"
+				aria-live="polite"
+			>
+				<span className="ai-status-orb" aria-hidden="true" />
+				<span className="ai-status-text">{model.activity.text}</span>
+			</div>
+
 			<section
 				id="ai-panel"
 				ref={model.panelRef}
 				className={`ai-panel floating-panel${state.open ? ' is-open' : ''}`}
 				data-tab={model.tab}
-				data-immersive={model.tab === 'live' ? 'true' : 'false'}
 				aria-label="AI assistant"
 				aria-hidden={!state.open}
 				inert={!state.open}
 			>
 				<header className="ai-panel-header">
-					<div className="ai-tabs" role="tablist" aria-label="AI modes" onKeyDown={focusTab}>
+					<div className="ai-tabs" role="tablist" aria-label="AI modes" onKeyDown={model.focusTab}>
 						{(
 							[
 								{ id: 'chat', label: 'Chat', icon: MessageSquare },
@@ -470,15 +459,13 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 						className="live-provider"
 						aria-label="Live provider"
 						size="1"
-						value={liveMode}
-						onValueChange={(value) => {
-							if (value === 'moss' || value === 'mai') setLiveMode(value)
-						}}
+						value={model.liveProvider}
+						onValueChange={model.selectLiveProvider}
 					>
 						<SegmentedControl.Item value="moss">MOSS Live</SegmentedControl.Item>
 						<SegmentedControl.Item value="mai">MAI Transcribe</SegmentedControl.Item>
 					</SegmentedControl.Root>
-					{liveMode === 'moss' ? (
+					{model.liveProvider === 'moss' ? (
 						<MossPanel
 							key={state.canvasId}
 							active={state.open && model.tab === 'live'}
