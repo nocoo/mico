@@ -70,8 +70,9 @@ export function calculateToolbarLeft(
 	toolbarWidth: number,
 	panelReserved: number,
 ): number {
-	const availableWidth = Math.max(0, viewportWidth - panelReserved)
-	return Math.max(0, Math.round((availableWidth - toolbarWidth) / 2 / 4) * 4)
+	const remainingWidth = Math.max(0, viewportWidth - panelReserved)
+	const centeringWidth = remainingWidth >= toolbarWidth ? remainingWidth : viewportWidth
+	return Math.max(0, Math.round((centeringWidth - toolbarWidth) / 2 / 4) * 4)
 }
 
 export type ToolbarCommand =

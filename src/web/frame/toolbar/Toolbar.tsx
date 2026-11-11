@@ -104,11 +104,15 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 			})
 		}
 		measure()
-		const observer = new ResizeObserver(measure)
-		observer.observe(dock)
+		const resizeObserver = new ResizeObserver(measure)
+		resizeObserver.observe(dock)
+		const app = dock.closest('.app')
+		const frameObserver = app ? new MutationObserver(measure) : null
+		if (app) frameObserver?.observe(app, { attributes: true, attributeFilter: ['class', 'style'] })
 		window.addEventListener('resize', measure)
 		return () => {
-			observer.disconnect()
+			resizeObserver.disconnect()
+			frameObserver?.disconnect()
 			window.removeEventListener('resize', measure)
 			reportLayout(null)
 		}

@@ -138,6 +138,8 @@ test('measured dock placement centers over the remaining frame space', () => {
 	assert.equal(calculateToolbarLeft(1000, 520, 376), 52)
 	assert.equal(calculateToolbarLeft(375, 320, 0), 28)
 	assert.equal(calculateToolbarLeft(384, 300, 0), 44)
+	assert.equal(calculateToolbarLeft(375, 347, 376), 16)
+	assert.equal(calculateToolbarLeft(500, 480, 376), 12)
 	assert.equal(calculateToolbarLeft(300, 320, 0), 0)
 
 	const calls = actions()
