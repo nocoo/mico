@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- A reference-fragment pixel comparison included the preceding surface's shadow and a fractional screenshot crop, producing false visual differences. Isolate visual fixtures from neighboring effects and align both crops to integer pixels before judging fidelity.
+- Changing the assistant's initial tab obscured `?ai=` results. When changing a default view, explicitly test alternate entry points and the view in which their results appear.
 - A frame screenshot probe waited for the live connection indicator to be visible even though the newly open panel intentionally hides it. Wait for the connection attribute or attached element when visibility is not the behavior under test.
 - Added `aria-label` to generic containers, then guessed `role="group"` without checking the semantic lint rule. Use supported semantic elements or visually hidden text for labels, and run accessibility lint before committing UI changes.
 - Running `pnpm dev` and `pnpm daemon` triggered pnpm's automatic dependency verification against the default registry. Before running pnpm scripts, check registry and auto-install settings; use the approved mirror or skip verification when reusing installed dependencies.
