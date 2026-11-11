@@ -674,10 +674,10 @@ svg {
 }
 
 .selection-panel {
-	--selection-panel-top: var(--frame-inset);
+	--selection-panel-top: 14px;
 	position: fixed;
 	top: var(--selection-panel-top);
-	right: calc(var(--frame-inset) + var(--control-standard) + var(--space-2) * 2);
+	right: 84px;
 	left: auto;
 	transform: none;
 	z-index: 30;
@@ -697,6 +697,19 @@ svg {
 	padding: 0;
 	overflow: hidden;
 	border: 0;
+	border-radius: 26px;
+	color: var(--ui-ink);
+	background: var(--ui-glass-strong);
+	-webkit-backdrop-filter: blur(22px) saturate(1.7);
+	backdrop-filter: blur(22px) saturate(1.7);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-glass-edge),
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 26px 50px -26px var(--ui-shadow),
+		0 3px 8px -3px var(--ui-shadow);
+}
+.app.ai-open .selection-panel {
+	right: calc(var(--frame-panel-reserved) + 14px);
 }
 .image-file-input {
 	display: none;
@@ -724,7 +737,7 @@ svg {
 	flex: 0 0 auto;
 	gap: var(--space-1);
 	padding: var(--space-15) var(--space-15) var(--space-1);
-	border-bottom: var(--hairline) solid var(--border);
+	border-bottom: 1px solid var(--ui-hair);
 }
 .selection-panel-heading {
 	display: flex;
@@ -747,7 +760,7 @@ svg {
 	gap: var(--space-1);
 }
 .panel-label {
-	color: var(--ink-secondary);
+	color: var(--ui-ink-2);
 	font-size: var(--type-caption);
 	line-height: var(--line-caption);
 	font-weight: var(--weight-medium);
@@ -795,7 +808,8 @@ svg {
 	min-height: 64px;
 }
 @media (max-width: 768px) {
-	.selection-panel {
+	.selection-panel,
+	.app.ai-open .selection-panel {
 		top: auto;
 		left: 50%;
 		right: auto;
