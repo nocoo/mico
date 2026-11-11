@@ -1,6 +1,7 @@
 import { Check, Layers, Pencil, Plus, Trash2 } from 'lucide-react'
 import { IconButton } from '../../IconButton'
 import type { IdentityActions, IdentityState } from '../contracts'
+import { MeetingFrame } from '../meeting/MeetingFrame'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
 import './identity.css'
@@ -22,6 +23,7 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 							<img className="brand-mark-icon" src="/logo.png" alt="" aria-hidden="true" />
 						</span>
 						<strong>mico</strong>
+						<span className="identity-ai-badge">AI</span>
 					</div>
 					<IconButton
 						icon={Layers}
@@ -33,6 +35,7 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 						data-canvas-toggle="true"
 					/>
 				</div>
+				<MeetingFrame />
 			</header>
 			{identity.mounted && (
 				<section

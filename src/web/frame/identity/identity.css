@@ -4,46 +4,75 @@
 }
 
 .frame-identity.topbar {
-	gap: var(--space-1);
+	inset: 14px auto auto 14px;
+	gap: 10px;
+	justify-content: flex-start;
 }
 
 .frame-identity .identity-panel {
 	display: flex;
 	align-items: center;
-	min-height: calc(var(--control-standard) + var(--space-2));
-	padding: var(--space-1);
-	gap: var(--space-15);
+	width: 233px;
+	height: 56px;
+	padding-inline: 10px;
+	gap: 10px;
+	border-radius: 22px;
+	color: var(--ui-ink);
+	background: var(--ui-glass);
+	-webkit-backdrop-filter: blur(22px) saturate(1.7);
+	backdrop-filter: blur(22px) saturate(1.7);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-glass-edge),
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 26px 50px -26px var(--ui-shadow),
+		0 3px 8px -3px var(--ui-shadow);
 	pointer-events: auto;
 }
 
 .frame-identity .brand {
 	display: flex;
 	align-items: center;
-	gap: var(--space-05);
-	width: calc(var(--control-standard) + var(--space-05) + var(--space-6));
+	flex: 1;
+	gap: 6px;
 	white-space: nowrap;
 }
 
 .frame-identity .brand-mark {
 	position: relative;
-	flex: 0 0 var(--control-standard);
-	width: var(--control-standard);
-	height: var(--control-standard);
+	flex: 0 0 36px;
+	width: 36px;
+	height: 36px;
+	animation: identity-bob 4s ease-in-out infinite;
 }
 
 .frame-identity .brand-mark-icon {
-	width: var(--control-standard);
-	height: var(--control-standard);
-	padding: var(--space-05);
+	width: 36px;
+	height: 36px;
 	object-fit: contain;
 }
 
 .frame-identity .brand strong {
-	width: var(--space-6);
-	font-size: 20px;
-	font-weight: var(--weight-bold);
-	line-height: var(--line-heading);
-	letter-spacing: -0.04em;
+	font-size: 16px;
+	font-weight: 750;
+	letter-spacing: -0.01em;
+}
+
+.frame-identity .identity-ai-badge {
+	padding: 0 7px;
+	border-radius: 8px;
+	font-size: 10.5px;
+	font-weight: 800;
+	letter-spacing: 0.04em;
+	color: white;
+	background: linear-gradient(120deg, oklch(0.7 0.16 300), oklch(0.74 0.15 350));
+	box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.5);
+}
+
+@keyframes identity-bob {
+	50% {
+		translate: 0 -2px;
+		rotate: -3deg;
+	}
 }
 
 .frame-identity .icon-button {
@@ -51,14 +80,14 @@
 	align-items: center;
 	justify-content: center;
 	flex: 0 0 auto;
-	width: var(--control-standard);
-	height: var(--control-standard);
+	width: 34px;
+	height: 34px;
 	margin: 0;
 	padding: 0;
 	border: 0;
-	border-radius: calc(var(--panel-radius) - var(--space-1));
+	border-radius: 12px;
 	background: transparent;
-	color: var(--ink-secondary);
+	color: var(--ui-ink-2);
 	font-size: var(--type-body);
 	line-height: var(--line-body);
 	transition:
@@ -68,22 +97,22 @@
 }
 
 .frame-identity .icon-button > svg {
-	width: var(--icon-standard);
-	height: var(--icon-standard);
+	width: 18px;
+	height: 18px;
 	flex-shrink: 0;
 	stroke-width: 1.5;
 }
 
 .frame-identity .icon-button:hover:not(:disabled) {
-	background: var(--surface-hover);
-	color: var(--ink);
+	background: var(--ui-well-2);
+	color: var(--ui-ink);
 }
 
 .frame-identity .icon-button[aria-expanded="true"],
 .frame-identity .icon-button[aria-expanded="true"]:hover {
-	background: var(--accent-tint);
-	color: var(--candy-blue-stroke);
-	box-shadow: inset 0 0 0 var(--stroke-strong) var(--accent);
+	background: var(--ui-accent-soft);
+	color: var(--ui-accent-ink);
+	box-shadow: inset 0 0 0 1.5px var(--ui-accent);
 }
 
 .frame-identity .icon-button[data-compact="true"],
@@ -101,8 +130,8 @@
 
 .frame-identity.canvas-panel {
 	position: fixed;
-	top: calc(var(--frame-inset) + var(--control-standard) + var(--space-2) + var(--space-15));
-	left: var(--frame-inset);
+	top: 78px;
+	left: 14px;
 	z-index: 40;
 	display: flex;
 	flex-direction: column;
@@ -117,6 +146,15 @@
 	);
 	padding: 0;
 	overflow: hidden;
+	border-radius: 22px;
+	background: var(--ui-glass-strong);
+	-webkit-backdrop-filter: blur(22px) saturate(1.7);
+	backdrop-filter: blur(22px) saturate(1.7);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-glass-edge),
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 26px 50px -26px var(--ui-shadow),
+		0 3px 8px -3px var(--ui-shadow);
 	transform-origin: top left;
 }
 
@@ -311,7 +349,15 @@
 	outline-offset: var(--hairline);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 760px) {
+	.frame-identity .identity-panel {
+		width: 100px;
+	}
+	.frame-identity .brand strong,
+	.frame-identity .identity-ai-badge {
+		display: none;
+	}
+
 	.frame-identity.canvas-panel {
 		width: min(340px, calc(100vw - var(--frame-inset) * 2));
 	}
@@ -324,6 +370,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.frame-identity .brand-mark {
+		animation: none;
+	}
+
 	.frame-identity .icon-button,
 	.frame-identity .canvas-actions {
 		transition: none;
