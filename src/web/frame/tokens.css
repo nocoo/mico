@@ -1,0 +1,64 @@
+.app {
+	--ui-glass: light-dark(oklch(1 0 0 / 0.64), oklch(0.27 0.03 285 / 0.66));
+	--ui-glass-strong: light-dark(oklch(1 0 0 / 0.86), oklch(0.33 0.035 285 / 0.86));
+	--ui-glass-edge: light-dark(oklch(1 0 0 / 0.85), oklch(1 0 0 / 0.11));
+	--ui-gloss: light-dark(oklch(1 0 0 / 0.75), oklch(1 0 0 / 0.14));
+	--ui-hair: light-dark(oklch(0.4 0.06 285 / 0.11), oklch(1 0 0 / 0.1));
+	--ui-well: light-dark(oklch(0.5 0.07 285 / 0.06), oklch(0 0 0 / 0.24));
+	--ui-well-2: light-dark(oklch(0.5 0.07 285 / 0.11), oklch(1 0 0 / 0.08));
+	--ui-shadow: light-dark(oklch(0.45 0.13 285 / 0.2), oklch(0 0 0 / 0.55));
+	--ui-ink: light-dark(oklch(0.27 0.04 285), oklch(0.955 0.01 285));
+	--ui-ink-2: light-dark(oklch(0.47 0.035 285), oklch(0.8 0.02 285));
+	--ui-ink-3: light-dark(oklch(0.63 0.03 285), oklch(0.63 0.025 285));
+	--ui-accent: oklch(0.62 0.17 285);
+	--ui-accent-hi: oklch(0.74 0.14 290);
+	--ui-accent-lo: oklch(0.54 0.2 280);
+	--ui-accent-ink: light-dark(oklch(0.48 0.19 283), oklch(0.82 0.11 288));
+	--ui-accent-soft: light-dark(oklch(0.62 0.17 285 / 0.13), oklch(0.7 0.15 285 / 0.24));
+	--ui-spring: linear(
+		0,
+		0.009,
+		0.035 2.1%,
+		0.141 4.4%,
+		0.723 12.9%,
+		0.938 16.7%,
+		1.017,
+		1.077,
+		1.121,
+		1.149 24.3%,
+		1.159,
+		1.163,
+		1.161,
+		1.154 29.9%,
+		1.129 32.8%,
+		1.051 39.6%,
+		1.017 43.1%,
+		0.991,
+		0.977 51%,
+		0.974 53.8%,
+		0.975 57.1%,
+		0.997 69.8%,
+		1.003 76.9%,
+		1.004 83.8%,
+		1
+	);
+	--ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+	--frame-panel-reserved: 0px;
+	color-scheme: light;
+}
+
+.app.ai-open {
+	--frame-panel-reserved: 376px;
+}
+
+.frame-identity,
+.toolbar-module,
+.ai-assistant,
+.meeting-frame {
+	font-family:
+		"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC",
+		"Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+	font-size: 13px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}

@@ -5,6 +5,7 @@ import App from './App'
 import { initializeCandyPalette } from './design'
 import '@radix-ui/themes/styles.css'
 import './styles.css'
+import './frame/tokens.css'
 
 const browserZoomKeys = new Set(['+', '=', '-', '_', '0'])
 window.addEventListener(
