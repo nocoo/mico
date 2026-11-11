@@ -12,19 +12,29 @@ export interface ToolbarViewModel {
 	optionsKind: ToolbarOptionsKind
 }
 
-export const TOOL_SHORTCUTS = [
-	{ id: 'select', label: 'Select', shortcut: 'V' },
-	{ id: 'hand', label: 'Pan', shortcut: 'H' },
-	{ id: 'rectangle', label: 'Rectangle', shortcut: 'R' },
-	{ id: 'ellipse', label: 'Ellipse', shortcut: 'O' },
-	{ id: 'text', label: 'Text', shortcut: 'T' },
-	{ id: 'line', label: 'Line', shortcut: 'L' },
-	{ id: 'path', label: 'Brush', shortcut: 'P' },
-	{ id: 'note', label: 'Sticky note', shortcut: 'N' },
-	{ id: 'html', label: 'HTML card', shortcut: 'W' },
-	{ id: 'image', label: 'Image', shortcut: 'I' },
-	{ id: 'connector', label: 'Connector', shortcut: 'C' },
-] as const satisfies readonly { id: Tool; label: string; shortcut: string }[]
+export const TOOL_GROUPS = [
+	[
+		{ id: 'select', label: 'Select', shortcut: 'V' },
+		{ id: 'hand', label: 'Pan', shortcut: 'H' },
+	],
+	[
+		{ id: 'note', label: 'Sticky note', shortcut: 'N' },
+		{ id: 'rectangle', label: 'Rectangle', shortcut: 'R' },
+		{ id: 'ellipse', label: 'Ellipse', shortcut: 'O' },
+		{ id: 'text', label: 'Text', shortcut: 'T' },
+	],
+	[
+		{ id: 'connector', label: 'Connector', shortcut: 'C' },
+		{ id: 'path', label: 'Brush', shortcut: 'P' },
+	],
+	[
+		{ id: 'line', label: 'Line', shortcut: 'L' },
+		{ id: 'html', label: 'HTML card', shortcut: 'W' },
+		{ id: 'image', label: 'Image', shortcut: 'I' },
+	],
+] as const satisfies readonly (readonly { id: Tool; label: string; shortcut: string }[])[]
+
+export const TOOL_SHORTCUTS = TOOL_GROUPS.flat()
 
 export function deriveToolbarViewModel(state: ToolbarState): ToolbarViewModel {
 	return {
@@ -53,6 +63,15 @@ export function calculateToolbarOptionsWidth(
 	horizontalPadding: number,
 ): number {
 	return optionsWidth + dividerWidth + horizontalPadding
+}
+
+export function calculateToolbarLeft(
+	viewportWidth: number,
+	toolbarWidth: number,
+	panelReserved: number,
+): number {
+	const availableWidth = Math.max(0, viewportWidth - panelReserved)
+	return Math.max(0, Math.round((availableWidth - toolbarWidth) / 2 / 4) * 4)
 }
 
 export type ToolbarCommand =

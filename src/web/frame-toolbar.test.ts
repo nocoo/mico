@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { DockLayout, ToolbarActions, ToolbarState } from './frame/contracts.ts'
-import { dockLeft } from './frame/layout.ts'
 import {
+	calculateToolbarLeft,
 	calculateToolbarOptionsWidth,
 	deriveToolbarViewModel,
 	executeToolbarCommand,
 	isToolbarArrowNavigationAllowed,
+	TOOL_GROUPS,
 	TOOL_SHORTCUTS,
 	toolbarCommandForKey,
 } from './frame/toolbar/viewmodel.ts'
@@ -58,21 +59,30 @@ test('toolbar view model derives zoom and tool options', () => {
 	assert.equal(deriveToolbarViewModel({ ...state, tool: 'select' }).optionsKind, null)
 })
 
-test('tool shortcuts cover every toolbar tool and keyboard protocol', () => {
+test('tool shortcuts cover every toolbar tool in prototype order', () => {
+	assert.deepEqual(
+		TOOL_GROUPS.map((group) => group.map(({ id }) => id)),
+		[
+			['select', 'hand'],
+			['note', 'rectangle', 'ellipse', 'text'],
+			['connector', 'path'],
+			['line', 'html', 'image'],
+		],
+	)
 	assert.deepEqual(
 		TOOL_SHORTCUTS.map(({ id, shortcut }) => [id, shortcut]),
 		[
 			['select', 'V'],
 			['hand', 'H'],
+			['note', 'N'],
 			['rectangle', 'R'],
 			['ellipse', 'O'],
 			['text', 'T'],
-			['line', 'L'],
+			['connector', 'C'],
 			['path', 'P'],
-			['note', 'N'],
+			['line', 'L'],
 			['html', 'W'],
 			['image', 'I'],
-			['connector', 'C'],
 		],
 	)
 	assert.deepEqual(toolbarCommandForKey('p'), { type: 'select-tool', tool: 'path' })
@@ -123,13 +133,15 @@ test('toolbar options width includes divider and horizontal padding', () => {
 	assert.equal(calculateToolbarOptionsWidth(0, 8, 0), 8)
 })
 
-test('measured dock placement uses the shared frame layout contract', () => {
-	assert.equal(dockLeft(1000, 520), 240)
-	assert.equal(dockLeft(375, 320), 28)
-	assert.equal(dockLeft(384, 300), 44)
+test('measured dock placement centers over the remaining frame space', () => {
+	assert.equal(calculateToolbarLeft(1000, 520, 0), 240)
+	assert.equal(calculateToolbarLeft(1000, 520, 376), 52)
+	assert.equal(calculateToolbarLeft(375, 320, 0), 28)
+	assert.equal(calculateToolbarLeft(384, 300, 0), 44)
+	assert.equal(calculateToolbarLeft(300, 320, 0), 0)
 
 	const calls = actions()
-	calls.reportLayout({ left: dockLeft(1000, 520), height: 56 })
+	calls.reportLayout({ left: calculateToolbarLeft(1000, 520, 376), height: 56 })
 	calls.reportLayout(null)
-	assert.deepEqual(calls.calls, ['layout:240:56', 'layout:null'])
+	assert.deepEqual(calls.calls, ['layout:52:56', 'layout:null'])
 })

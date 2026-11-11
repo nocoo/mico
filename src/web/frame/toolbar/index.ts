@@ -7,10 +7,12 @@ export type {
 	ToolbarViewModel,
 } from './viewmodel'
 export {
+	calculateToolbarLeft,
 	calculateToolbarOptionsWidth,
 	deriveToolbarViewModel,
 	executeToolbarCommand,
 	isToolbarArrowNavigationAllowed,
+	TOOL_GROUPS,
 	TOOL_SHORTCUTS,
 	toolbarCommandForKey,
 } from './viewmodel'

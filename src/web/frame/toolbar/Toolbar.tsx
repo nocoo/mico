@@ -16,7 +16,13 @@ import {
 	Trash2,
 	Type,
 } from 'lucide-react'
-import { type KeyboardEvent as ReactKeyboardEvent, useEffect, useLayoutEffect, useRef } from 'react'
+import {
+	Fragment,
+	type KeyboardEvent as ReactKeyboardEvent,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+} from 'react'
 import './toolbar.css'
 import {
 	BRUSH_STYLES,
@@ -31,13 +37,13 @@ import {
 import { IconButton } from '../../IconButton'
 import { SelectField } from '../../SelectField'
 import type { ToolbarActions, ToolbarState } from '../contracts'
-import { dockLeft } from '../layout'
 import {
+	calculateToolbarLeft,
 	calculateToolbarOptionsWidth,
 	deriveToolbarViewModel,
 	executeToolbarCommand,
 	isToolbarArrowNavigationAllowed,
-	TOOL_SHORTCUTS,
+	TOOL_GROUPS,
 	toolbarCommandForKey,
 } from './viewmodel'
 
@@ -90,8 +96,10 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		}
 		const measure = () => {
 			const rect = dock.getBoundingClientRect()
+			const panelReserved =
+				Number.parseFloat(getComputedStyle(dock).getPropertyValue('--frame-panel-reserved')) || 0
 			reportLayout({
-				left: dockLeft(window.innerWidth, rect.width),
+				left: calculateToolbarLeft(window.innerWidth, rect.width, panelReserved),
 				height: rect.height,
 			})
 		}
@@ -301,18 +309,22 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		>
 			<div className="dock-main">
 				<div className="drawing-tools">
-					{TOOL_SHORTCUTS.map(({ id, label, shortcut }) => (
-						<div className="tool-slot" key={id} data-tool-id={id}>
-							{(id === 'rectangle' || id === 'line') && <span className="panel-divider" />}
-							<IconButton
-								icon={toolIcons[id]}
-								label={label}
-								shortcut={shortcut}
-								aria-pressed={state.tool === id}
-								tabIndex={state.tool === id ? 0 : -1}
-								onClick={() => actions.selectTool(id)}
-							/>
-						</div>
+					{TOOL_GROUPS.map((group, groupIndex) => (
+						<Fragment key={group[0].id}>
+							{groupIndex > 0 && <span className="panel-divider" />}
+							{group.map(({ id, label, shortcut }) => (
+								<div className="tool-slot" key={id} data-tool-id={id}>
+									<IconButton
+										icon={toolIcons[id]}
+										label={label}
+										shortcut={shortcut}
+										aria-pressed={state.tool === id}
+										tabIndex={state.tool === id ? 0 : -1}
+										onClick={() => actions.selectTool(id)}
+									/>
+								</div>
+							))}
+						</Fragment>
 					))}
 					<span className="panel-divider" />
 					<IconButton
