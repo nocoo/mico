@@ -3,6 +3,10 @@ export type AssistantTab = 'chat' | 'audio' | 'live' | 'settings'
 export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
 export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'audio'
 
+export function initialAssistantTab(initialPrompt: string): AssistantTab {
+	return initialPrompt.trim() ? 'chat' : DEFAULT_ASSISTANT_TAB
+}
+
 export function deriveAssistantActivity({
 	error,
 	busy,

@@ -5,6 +5,7 @@ import {
 	buildAssistantRequestBody,
 	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
+	initialAssistantTab,
 	nextAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
@@ -14,6 +15,8 @@ import {
 
 test('assistant tab keyboard protocol opens recordings and reaches endpoints', () => {
 	assert.equal(DEFAULT_ASSISTANT_TAB, 'audio')
+	assert.equal(initialAssistantTab(''), 'audio')
+	assert.equal(initialAssistantTab('Draw a diagram'), 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowLeft'), 'settings')
 	assert.equal(nextAssistantTab('settings', 'ArrowRight'), 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowRight'), 'audio')

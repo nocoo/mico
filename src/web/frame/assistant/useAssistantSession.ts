@@ -10,8 +10,8 @@ import type { LessonSegment } from './LessonPanel'
 import {
 	type AssistantTab,
 	buildAssistantRequestBody,
-	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
+	initialAssistantTab,
 	nextAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
@@ -28,7 +28,7 @@ export type LiveProvider = 'moss' | 'mai'
 
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
-	const [tab, setTab] = useState<AssistantTab>(DEFAULT_ASSISTANT_TAB)
+	const [tab, setTab] = useState<AssistantTab>(() => initialAssistantTab(state.initialPrompt))
 	const [liveProvider, setLiveProvider] = useState<LiveProvider>('moss')
 	const [draft, setDraft] = useState('')
 	const panelRef = useRef<HTMLElement>(null)
