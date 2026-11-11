@@ -1,0 +1,102 @@
+# UI migration plan
+
+## Goal and scope
+
+Reproduce the visual design, interaction, motion, and responsive behavior of `/Users/nocoo/Downloads/teams-ai-whiteboard.html` in Mico, while retaining Mico's working canvas, persistence, CLI, HTTP API, Chat, recordings, MAI transcription, MOSS Live, and AI tools. The reference is an interaction prototype, not a production implementation or a source of real meeting data.
+
+This plan is analysis only. Implementation should proceed in independently usable increments, with a visual and behavioral gate at each step. No prototype script, hard-coded meeting transcript, fake participants, simulated tool response, or simulated latency should be presented as live product data.
+
+Reference analyzed: SHA-256 `a6eba63db41f3ef8078c3dc9afdbb5ca4cfa0e85e041a6a82e4b123ff4d25989`. Pin or archive the exact reference with the visual-test fixtures before implementation so that screenshots remain reproducible on other machines.
+
+## Reference inventory
+
+At 1440 × 960 and device scale factor 1, the initial reference has:
+
+- A 56 px identity surface at (14, 14), followed by a 56 px meeting surface.
+- A 348 px wide right panel inset 14 px on three edges; the panel reserves 376 px for the centered canvas HUD.
+- A 700 × 56 px toolbar 14 px above the bottom, centered in the remaining space; a 38 px AI status pill sits above it.
+- A 184 × 124 px minimap, an empty-state hero, and a 24 px world-space dot grid over an animated aurora and grain.
+- Glass surfaces, rounded jelly elements, OKLCH colors, inset highlights, shadows, spring transitions, and active/disabled/hover states. Light, dark, and system themes are specified in the HTML.
+
+The prototype also contains selected-object context controls, colored notes with tags and transcript provenance, flow nodes and curved arrows, a rich summary card, actionable checklist, source and outline navigation, AI cursor/follow, animated object creation, waveform, transcript, seek, settings, layers, and toast/dialog states. Its default desktop panel is open on Live; it starts closed below 900 px. At 1240 px it hides the meeting title, at 980 px it hides avatars and the minimap and allows horizontal toolbar scrolling, and at 760 px the panel becomes viewport-wide. The CSS has an additional minimap placement change at 1500 px. Capture actual behavior at those boundaries rather than approximating it from the nominal sizes.
+
+The initial hero, four speakers, meeting title, waveform, timings, transcript, outline, canvas operations, and responses are scripted. Mic/camera only toggle a visual state, leave only shows a toast, chat matches keywords, and timeline seeking rebuilds a simulated board. These are design examples, not evidence that real meeting functionality exists.
+
+## Current product and architectural findings
+
+- `src/shared/types.ts` and `src/server/store.ts` own typed shapes, operations, exact-key validation, canvas membership and atomic, revision-checked persistence. The browser, CLI, HTTP API and AI all edit the same boards. UI replacement must not bypass that model.
+- `src/web/App.tsx` (about 1,833 lines) combines board synchronization and operation queues, pointer/keyboard gestures, viewport, canvas CRUD, UI state, and SVG rendering. Existing pure geometry, snapping, selection, frame and connector modules are useful model logic, but the canvas is not yet a replaceable View/ViewModel boundary.
+- `src/web/frame/contracts.ts` provides state/actions boundaries. Identity has `useIdentityViewModel` plus reducer/derivations; toolbar has `deriveToolbarViewModel` and command logic. These are partial MVVM, not a reason to rebuild working contracts.
+- The assistant has `useAssistantSession`, but `AssistantView` still owns live-provider state and `LessonPanel`, `MicrophonePanel`, `MossPanel`, and `AiSettings` each mix runtime state, side effects, controls and rendering. Their transcription, audio and provider lifecycles must survive view replacement.
+- Existing `SelectionPanel`, `StickyNote`, `BlueprintGrid`, `ConnectionOverlay`, shape rendering in `App.tsx`, shared palette, and `src/server/preview.ts` are design-coupled. Frame geometry tests in `tests/browser/frame-contract.spec.ts` enforce the old approved prototype and must be replaced with new reference-based contracts, not merely deleted.
+- AI output also depends on design instructions: `src/server/aiPrompt.ts`, `src/server/aiTools.ts`, `src/server/mossApi.ts`, and `src/shared/summaryPrompt.ts` control palette and generated content. HTML summaries are sandboxed `srcDoc` iframes: parent CSS cannot style their contents, and saved/generated HTML may use independent styles. Preserve the sandbox and CSP; design future generated summaries deliberately rather than rewriting existing user content.
+- `docs/testing.md` documents isolated browser fixtures and explicitly says there are no visual regression baselines. All automated interaction and screenshots must use its temporary database and mock AI, never `.mico/board.sqlite` or daily ports.
+
+## 1. Whiteboard engine and elements
+
+| Reference | Mico today | Migration work and risks |
+| --- | --- | --- |
+| Aurora, grain, world-aligned adaptive dot grid | Blue blueprint grid in `BlueprintGrid` and `grid.ts` | Reproduce background layers and dot positioning/scaling, grid toggle and reduced motion. Keep world coordinates, fit and snapping correct; dot spacing and snap spacing are distinct decisions. |
+| Jelly note with tag, body and source chip | `note` has color/text/geometry and a paper-like `StickyNote` | Replace renderer without changing saved geometry or text; add real tag/provenance only with a real source model. Arbitrary persisted colors must remain representable. Existing manual note editing and AI-created notes must both work. |
+| Rounded flow node, two text levels | Rectangle/ellipse store one optional text string | Match existing single-text nodes visually; separate subtitle is new structured data, not something to infer or silently split from existing text. |
+| Jelly rectangle/ellipse and editable content | SVG rectangle/ellipse, single text; properties panel can edit values | Replace fill, border, selection, hover, motion and edit view; keep dimensions, labels, color editing, pointer hit areas and API behavior. Shape double-click editing in the prototype is not currently supported for these types. |
+| Curved colored arrows and endpoint interactions | Straight anchored connectors; separate standalone `line` shape; connector rebind and keyboard endpoint controls | Render prototype curves using existing endpoint/anchor semantics and preserve selection, compatible types, rebind, zoom and hit testing. Prototype also allows a free arrow; that is a separate capability because current connectors require two objects. |
+| Ink | Three brush styles, selectable width/color and path geometry | Match reference styling without reducing brush choices, deleting stored points or breaking path selection. |
+| Summary and action card | AI-generated sandboxed HTML card; no first-class persistent action list | Style the card shell and future summary generation. Interactive action completion and structured action lists require a model and persistence, not static HTML pretending to be product state. Existing iframe sandbox and generated cards remain usable. |
+| Text, titles and labels | Rich text presets, separate `text` shapes | Reproduce typographic hierarchy while retaining font family/size/weight, content, wrapping, keyboard editing and saved shape bounds. |
+| Selection outline, marquee, context bar, drag animation | Selection overlay and separate properties panel, snapping and guides | Position prototype context bar in screen space, handle off-screen/clamped placement and multi-selection. Keep all current type-specific properties accessible. Verify multi-object drag explicitly; current pointer code moves the clicked shape or frame group, not arbitrary selected objects. |
+| Minimap and click/drag navigation | No minimap | Derive bounds and viewport from the same authoritative board/viewport; do not persist a duplicate board. Test negative coordinates, extreme zoom, empty and large boards, and resize. |
+| AI cursor, focus/follow and source highlighting | No provenance-aware canvas cursor or follow | Add only from real AI operation/activity events. Attribution, target bounds and user-interruptible follow need explicit semantics; never fabricate movement or claim a source. |
+| Frame, image, HTML, standalone line | Existing Mico features absent from the reference | Design these within the same visual language, retaining frame membership/backgrounds, image assets, sandbox, editing and CLI/API access. Document these as designed extensions, not pixel-exact reference matches. |
+
+Do not change existing shape IDs, coordinates, text, frame memberships or asset references merely to reskin the UI. Handle existing literal and custom colors intentionally; do not bulk-recolor stored boards. If new provenance, tags or checklist state are required, specify the model, API/CLI/AI contract and storage together rather than hiding state in a view.
+
+## 2. Application frame
+
+| Reference | Current product | Migration work |
+| --- | --- | --- |
+| Brand, layers and meeting bar | Mico identity, canvas-manager toggle, no meeting bar | Reproduce brand geometry and artwork; retain canvas create/switch/rename/delete/preview under an accessible control. Add a distinct layer control; do not relabel canvas management as layers. Meeting identity/actions depend on the session source in section 3. |
+| Bottom toolbar and anchored status | Existing toolbar has 11 tools plus delete/frame/zoom, fixed to full viewport center | Reproduce prototype ordering, 40 px buttons, separators, active effects, tooltip and panel-aware centering; keep line, image, HTML, frame selection, brush options and text options discoverable as coherent extensions. Ensure narrow screens do not hide actions without an accessible scroll/overflow path. |
+| Context bar | Right-side `SelectionPanel` | Add prototype position/colors/duplicate/ask/delete; retain all current properties, image backgrounds and connector endpoint controls in a compatible properties view. Duplicate must be a real atomic board operation and preserve valid references/membership. |
+| Right panel: Live / Chat / Outline / Settings | Chat / Audio / Live / Settings | Reproduce shell, dimensions, tab and panel motion. Preserve both real recorded-audio and real MOSS/MAI live paths, their controls, errors, lifecycle and selection context; integrate them into the reference layout without conflating recording playback with live meeting input. Outline requires real structured data. |
+| Chat bubbles, suggestions and selected context | Streaming AI SDK chat, tool status, stop, errors, continue, initial URL prompt | Replace view, not transport or request queue. Preserve `?ai=`, streaming and tool results, stop/retry, accessibility, canvas switching and input composition. Suggested actions must send real prompts rather than prototype keyword replies. |
+| Waveform, transcript, controls, metrics | Recording playback, sampled waveform, transcript segments, VAD and real timing | Restyle real state. Prototype seeking/skip requires careful new playback/transcription/board consistency semantics: `Player.seekTo` alone cannot reconstruct AI state. Do not copy fabricated latency or silence values. |
+| Settings, theme, layer visibility | AI gateway settings and limited session controls; no theme/layers | Add reference controls where backed by real state. Retain endpoint/model/key management and secret handling. Layer filtering must keep rendering, hit testing, selection, minimap and accessibility consistent. |
+| Empty state and dialogs | Empty canvas; session summary is generated as HTML | Reproduce hero and feedback when applicable; map buttons to supported real actions and distinguish an explicitly labeled demo from a live session. Add a summary dialog/Markdown copy only from real structured session content, preserving existing HTML summary behavior. |
+
+Input differences require an explicit product decision: the reference uses A for its arrow and Ctrl/Meta + wheel for zoom while ordinary wheel pans; Mico uses C for connector, L for line and wheel zoom. Align visible interactions with the reference without making existing distinct tools unreachable. Keep keyboard navigation, focus restoration, Escape behavior, reduced motion and screen-reader labels at least as strong as today.
+
+## 3. New capabilities and data dependencies
+
+1. **Meeting participants and controls.** Current product is a local single-machine board, not a meeting client. MOSS exposes `user`/`assistant` transcript roles; MAI recording segments contain text and time, not participant identity or diarization. Real meeting title, participants, speaking state, mute, camera and leave need a specified meeting source/integration and permission/consent model. Until connected, use an honest unavailable/not-in-meeting state; do not show prototype people as live members. Actual camera or meeting controls must not be wired to unrelated local state.
+2. **Transcript provenance and outline.** A source-linked note and clickable outline need stable session/segment IDs, timestamps, optional speaker attribution, object links and lifecycle rules across edits, board switch, restart and deletion. Produce evidence-backed chapter/decision/risk/action entries and preserve uncertainty; missing speaker attribution must stay unknown. Decide persistence and API/CLI visibility before adding fields.
+3. **Seeking, skip and restart.** Prototype seeks by deleting/rebuilding simulated AI-created objects. Real generated board changes can include concurrent user/agent work; seeking must never delete or duplicate that work. Define a safe playback/session history model and explicit behavior before exposing these actions as equivalent.
+4. **Layers, duplicate, minimap, cursor/follow, theme and grid.** Implement independently against real board/session state. Define whether layer/theme/follow settings are per browser, per board or per session and test persistence and switches. Duplicate must define which selected connectors, frames and assets are copied and remain atomic.
+5. **Meeting summary and action checklist.** Current AI can generate/update an HTML card, not a guaranteed structured, source-linked meeting record. For the prototype dialog, outline and persistent checkboxes, define structured output, ownership, edits and failure states; do not derive authoritative decisions from arbitrary generated markup.
+6. **Performance and permissions.** Validate blur/grain and animated SVG/HTML on a populated board, multiple zoom levels, reduced motion, narrow screens and long sessions. Preserve microphone teardown on close, tab changes and canvas changes. Do not request microphone/camera permissions solely to render the reference.
+
+## MVVM target
+
+Keep one authoritative domain model and transport; React views are replaceable projections, not a second board engine.
+
+- **Model:** existing `Board`, operations, session/provider clients, persistence, synchronization and pure geometry rules. Board operations retain per-canvas ordering, revisions, conflict handling and WebSocket/poll convergence.
+- **ViewModel:** focused hooks and pure derivations expose immutable display state and explicit commands for canvas/viewport, selection/context, identity, toolbar, assistant/session and meeting data. Reuse existing contracts and pure functions. Extract lifecycle logic from the audio, microphone, MOSS and settings views only as each view is replaced; test commands and cleanup separately.
+- **View:** presentational React/SVG components render the reference and invoke commands. Separate canvas world rendering from screen-space frame; keep DOM measurement, focus, pointer capture and animation concerns close to their views where needed. No fetch, provider connection or persistence in individual visual components.
+- **Composition:** `App.tsx` becomes a small composition root as the existing board synchronization and interaction behavior are moved behind the canvas ViewModel. Avoid a new generic framework, duplicate stores or speculative adapters. Add integration boundaries only for real meeting data.
+
+## Execution order and acceptance gates
+
+0. **Freeze reference and tests.** Capture prototype baseline states at 1440 × 960 and responsive boundaries, light/dark, open/closed, empty/populated, selected/hover/focus, Live/Chat/Outline/Settings and animation end states. Seed an equivalent deterministic board in the isolated Mico fixture. Record fonts, Chrome version, device scale, viewport, theme, motion and fixture data. For matching reference regions, target at most 1 px geometry deviation and at most 0.1% differing pixels with a 2% per-pixel color threshold on the pinned Chrome/OS rendering environment. Record any narrowly scoped exceptions for font antialiasing or nondeterministic effects and review them visually. Data-dependent/animated areas need deterministic fixtures or explicitly excluded dynamic content, not a blanket claim of pixel equality.
+1. **Extract canvas boundary without changing appearance.** Isolate board synchronization/commands and canvas ViewModel; keep all existing gestures, concurrency and tests green. Then swap background, primitives and selection renderers by type, followed by existing-only shapes. Include representative saved boards with custom colors and all supported shapes.
+2. **Replace frame and existing assistant views.** Apply tokens, surfaces, responsive layout, toolbar, identity/canvas manager, selection UI and panel. Replace Chat, recording, MAI, MOSS and settings views incrementally with their existing real runtimes and behavior intact. Every increment remains usable.
+3. **Build missing reference interactions in vertical slices.** Start with purely local grid/theme/layers/minimap, then duplicate/context, followed by real AI status/follow/provenance and outline/summary once their contracts exist. Implement meeting membership and real media controls only after the meeting source is decided. Each visible control must work or clearly explain why unavailable.
+4. **Full visual and functional acceptance.** Side-by-side reference and product at fixed sizes and states, pixel diffs with documented thresholds, keyboard and screen-reader smoke tests, reduced-motion and narrow-screen checks, real user journeys and populated-board performance. Compare only equivalent content and state; inspect every accepted difference. Reference does not specify Mico-only screens, so approve those extensions separately.
+
+Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` per `docs/testing.md`, using the approved registry/auto-install settings. Update frame geometry contracts and add visual regression tests rather than weakening them. Cover all shape types, selection and connectors, canvas CRUD and cross-canvas races, CLI/API/store contracts, keyboard, scrolling, focus, theming, assistant queue/selection/errors, playback and microphone cleanup. Real MAI/MOSS and meeting integration need explicit manual end-to-end acceptance; mocks cannot prove provider behavior.
+
+## Decisions required before the dependent slices
+
+- Which real meeting/session source should supply participants, speaking state, camera, mute and leave? Is the first release a local recording/microphone experience or a Teams-connected meeting client?
+- Should the visible brand and Chinese copy exactly follow the prototype, or should Mico branding/localization remain? The prototype is visually authoritative; this decides product identity and copy, not visual fidelity.
+- For project-only tools and modes absent in the reference, approve their placement after presenting matching-design extensions.
+- Define the expected behavior and safety of seek/restart against an already edited real board before implementing it.
