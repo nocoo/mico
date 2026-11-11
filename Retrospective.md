@@ -12,6 +12,7 @@
 
 ## Tool usage
 
+- Added `aria-label` to generic containers, then guessed `role="group"` without checking the semantic lint rule. Use supported semantic elements or visually hidden text for labels, and run accessibility lint before committing UI changes.
 - Running `pnpm dev` and `pnpm daemon` triggered pnpm's automatic dependency verification against the default registry. Before running pnpm scripts, check registry and auto-install settings; use the approved mirror or skip verification when reusing installed dependencies.
 - An audio demo sync marker intercepted `OfflineAudioContext` resampling rather than audible playback, shifting the muxed voice. Mark the live `AudioContext` source and verify alignment against playback progress before delivery.
 - A delegated investigator mistook itself for the coordinator and sent instructions to the audio worker. State the subordinate role and prohibition on cross-pane prompts explicitly in every delegation.
