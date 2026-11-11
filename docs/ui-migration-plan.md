@@ -4,7 +4,7 @@
 
 Reproduce the visual design, interaction, motion, and responsive behavior of `/Users/nocoo/Downloads/teams-ai-whiteboard.html` in Mico, while retaining Mico's working canvas, persistence, CLI, HTTP API, Chat, recordings, MAI transcription, MOSS Live, and AI tools. The reference is an interaction prototype, not a production implementation or a source of real meeting data.
 
-This plan is analysis only. Implementation should proceed in independently usable increments, with a visual and behavioral gate at each step. No prototype script, hard-coded meeting transcript, fake participants, simulated tool response, or simulated latency should be presented as live product data.
+Implementation proceeds in independently usable increments, with a visual and behavioral gate at each step. The first milestone is the application frame; stop for owner acceptance before changing canvas elements. Retain Mico branding and logo. Meeting UI is an isolated ViewModel and view without a real meeting integration; any placeholder data must be explicitly identified as non-live. Do not present simulated tool responses or latency as live product data.
 
 Reference analyzed: SHA-256 `a6eba63db41f3ef8078c3dc9afdbb5ca4cfa0e85e041a6a82e4b123ff4d25989`. Pin or archive the exact reference with the visual-test fixtures before implementation so that screenshots remain reproducible on other machines.
 
@@ -87,8 +87,8 @@ Keep one authoritative domain model and transport; React views are replaceable p
 ## Execution order and acceptance gates
 
 0. **Freeze reference and tests.** Capture prototype baseline states at 1440 × 960 and responsive boundaries, light/dark, open/closed, empty/populated, selected/hover/focus, Live/Chat/Outline/Settings and animation end states. Seed an equivalent deterministic board in the isolated Mico fixture. Record fonts, Chrome version, device scale, viewport, theme, motion and fixture data. For matching reference regions, target at most 1 px geometry deviation and at most 0.1% differing pixels with a 2% per-pixel color threshold on the pinned Chrome/OS rendering environment. Record any narrowly scoped exceptions for font antialiasing or nondeterministic effects and review them visually. Data-dependent/animated areas need deterministic fixtures or explicitly excluded dynamic content, not a blanket claim of pixel equality.
-1. **Extract canvas boundary without changing appearance.** Isolate board synchronization/commands and canvas ViewModel; keep all existing gestures, concurrency and tests green. Then swap background, primitives and selection renderers by type, followed by existing-only shapes. Include representative saved boards with custom colors and all supported shapes.
-2. **Replace frame and existing assistant views.** Apply tokens, surfaces, responsive layout, toolbar, identity/canvas manager, selection UI and panel. Replace Chat, recording, MAI, MOSS and settings views incrementally with their existing real runtimes and behavior intact. Every increment remains usable.
+1. **Replace frame and existing assistant views.** Apply tokens, surfaces, responsive layout, toolbar, Mico identity/canvas manager, selection UI and panel. Replace Chat, recording, MAI, MOSS and settings views incrementally with their existing real runtimes and behavior intact. Meeting UI is isolated and not connected to a meeting. Every increment remains usable. Stop here for owner acceptance before proceeding.
+2. **Extract canvas boundary and replace elements after acceptance.** Isolate board synchronization/commands and canvas ViewModel; keep all existing gestures, concurrency and tests green. Then swap background, primitives and selection renderers by type, followed by existing-only shapes. Include representative saved boards with custom colors and all supported shapes.
 3. **Build missing reference interactions in vertical slices.** Start with purely local grid/theme/layers/minimap, then duplicate/context, followed by real AI status/follow/provenance and outline/summary once their contracts exist. Implement meeting membership and real media controls only after the meeting source is decided. Each visible control must work or clearly explain why unavailable.
 4. **Full visual and functional acceptance.** Side-by-side reference and product at fixed sizes and states, pixel diffs with documented thresholds, keyboard and screen-reader smoke tests, reduced-motion and narrow-screen checks, real user journeys and populated-board performance. Compare only equivalent content and state; inspect every accepted difference. Reference does not specify Mico-only screens, so approve those extensions separately.
 
@@ -96,7 +96,7 @@ Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` pe
 
 ## Decisions required before the dependent slices
 
-- Which real meeting/session source should supply participants, speaking state, camera, mute and leave? Is the first release a local recording/microphone experience or a Teams-connected meeting client?
-- Should the visible brand and Chinese copy exactly follow the prototype, or should Mico branding/localization remain? The prototype is visually authoritative; this decides product identity and copy, not visual fidelity.
+- Meeting integration is explicitly deferred. Keep the meeting view and its ViewModel isolated from real meeting data and media controls.
+- Mico branding and logo are retained; all other reference design details remain the visual target.
 - For project-only tools and modes absent in the reference, approve their placement after presenting matching-design extensions.
 - Define the expected behavior and safety of seek/restart against an already edited real board before implementing it.
