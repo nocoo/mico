@@ -290,9 +290,9 @@
 }
 
 .toolbar-module .text-options .select-trigger > .rt-SelectIcon {
-	flex-basis: 14px;
-	inline-size: 14px;
-	block-size: 14px;
+	flex-basis: 12px;
+	inline-size: 12px;
+	block-size: 12px;
 }
 
 .toolbar-module .text-options .select-trigger:focus-visible,
