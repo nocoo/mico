@@ -935,6 +935,8 @@
 .select-content.lesson-recording-menu .select-item[data-state="checked"] {
 	background: transparent;
 	box-shadow: inset 0 0 0 1.5px color-mix(in oklch, var(--ui-accent) 62%, transparent);
+	color: var(--ui-ink);
+	font-weight: var(--weight-medium);
 }
 
 @media (forced-colors: active) {

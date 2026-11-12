@@ -29,6 +29,14 @@ for (const viewport of [
 		await expect(selected.locator('.rt-SelectItemIndicator')).toBeHidden()
 		await expect(selected).toHaveCSS('background-image', 'none')
 		await expect(selected).not.toHaveCSS('box-shadow', 'none')
+		const optionStyle = (item: typeof selected) =>
+			item.evaluate((element) => ({
+				color: getComputedStyle(element).color,
+				weight: getComputedStyle(element).fontWeight,
+			}))
+		expect(await optionStyle(selected)).toEqual(
+			await optionStyle(menu.locator('.select-item[data-state="unchecked"]').first()),
+		)
 		await expect(menu).toHaveCSS('backdrop-filter', 'blur(22px) saturate(1.7)')
 		const box = await menu.boundingBox()
 		if (!box) throw new Error('Missing recording menu')
