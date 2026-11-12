@@ -287,16 +287,16 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 	const worldGrid = () =>
 		page.locator('[data-world-layer]').evaluate((element) => {
 			const matrix = (element as SVGGElement).transform.baseVal.consolidate()?.matrix
-			const pattern = document.querySelector<SVGPatternElement>('.blueprint-grid pattern')
-			const offset = pattern?.patternTransform.baseVal.consolidate()?.matrix
-			if (!matrix || !pattern || !offset) throw new Error('Missing world or grid transform')
+			const canvas = document.querySelector<SVGSVGElement>('svg.canvas')
+			if (!matrix || !canvas) throw new Error('Missing world or canvas')
+			const style = getComputedStyle(canvas)
 			return {
 				zoom: matrix.a,
 				x: matrix.e,
 				y: matrix.f,
-				tile: Number(pattern.getAttribute('width')),
-				offsetX: offset.e,
-				offsetY: offset.f,
+				tile: Number.parseFloat(style.getPropertyValue('--canvas-grid-size')),
+				offsetX: Number.parseFloat(style.getPropertyValue('--canvas-grid-x')),
+				offsetY: Number.parseFloat(style.getPropertyValue('--canvas-grid-y')),
 			}
 		})
 	const verify = async (initial: Awaited<ReturnType<typeof snapshot>>) => {
@@ -308,25 +308,26 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 		for (const button of await page.getByRole('toolbar').getByRole('button').all())
 			await expect(button).toBeVisible()
 		const grid = await worldGrid()
-		expect(grid.tile).toBeCloseTo(64 * grid.zoom)
-		expect(grid.offsetX).toBeCloseTo(((grid.x % grid.tile) + grid.tile) % grid.tile)
-		expect(grid.offsetY).toBeCloseTo(((grid.y % grid.tile) + grid.tile) % grid.tile)
+		let spacing = 24 * grid.zoom
+		while (spacing < 14) spacing *= 2
+		while (spacing > 56) spacing /= 2
+		expect(grid.tile).toBeCloseTo(spacing)
+		expect(grid.offsetX).toBeCloseTo(grid.x)
+		expect(grid.offsetY).toBeCloseTo(grid.y)
 	}
 
 	await page.getByRole('button', { name: 'Reset view' }).click()
 	const initial = await snapshot()
-	await expect(page.locator('[data-grid-level="minor"]')).toHaveAttribute('stroke-dasharray', '4 4')
-	await expect(page.locator('[data-grid-level="minor"]')).toHaveAttribute(
-		'd',
-		'M16 0V64M0 16H64M32 0V64M0 32H64M48 0V64M0 48H64',
-	)
-	await expect(page.locator('[data-grid-level="fine"]')).toHaveCount(0)
+	await expect(page.locator('svg.canvas')).toHaveCSS('background-size', '24px 24px')
+	await expect(page.locator('svg.canvas')).toHaveCSS('background-image', /radial-gradient/)
+	await expect(page.locator('.canvas-aurora')).toBeVisible()
+	await expect(page.locator('.canvas-grain')).toHaveCSS('pointer-events', 'none')
 	await page.getByRole('button', { name: 'Pan', exact: true }).click()
 	await page.mouse.move(600, 760)
 	await page.mouse.down()
 	await page.mouse.move(500, 700, { steps: 4 })
 	await page.mouse.up()
-	expect(await worldGrid()).toMatchObject({ x: -100, y: -60, offsetX: 28, offsetY: 4 })
+	expect(await worldGrid()).toMatchObject({ x: -100, y: -60, offsetX: -100, offsetY: -60 })
 	await verify(initial)
 	await page.mouse.wheel(0, -100000)
 	await expect.poll(async () => (await worldGrid()).zoom).toBe(3)
@@ -337,7 +338,7 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 	await page.getByRole('button', { name: 'Reset view' }).click()
 	await verify(initial)
 	await page.mouse.move(0, 0)
-	await page.screenshot({ path: '/tmp/mico-blueprint-fixed-dock.png', animations: 'disabled' })
+	await page.screenshot({ path: '/tmp/mico-dot-grid-fixed-dock.png', animations: 'disabled' })
 })
 
 test('dock and its property popovers stay on-screen at narrow and wide widths', async ({

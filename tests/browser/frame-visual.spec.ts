@@ -54,7 +54,7 @@ test('reference glass, jelly orbs and active tool match at pixel level', async (
 	await page.addStyleTag({
 		content: `
 		.app { background: white !important; }
-		.canvas { visibility: hidden !important; }
+		.canvas, .canvas-backdrop, .canvas-grain { visibility: hidden !important; }
 		.frame-empty { top: 200px !important; left: 0 !important; translate: none !important; }
 		.ai-status-pill { top: 600px !important; left: 100px !important; bottom: auto !important; width: 160px !important; max-width: none !important; transform: none !important; }
 		.ai-status-pill > * { visibility: hidden !important; }
