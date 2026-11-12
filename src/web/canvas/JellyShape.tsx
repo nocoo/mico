@@ -3,7 +3,7 @@ import { jellyStyle } from './jelly'
 import './jelly.css'
 import './jelly-shape.css'
 
-export function JellyShape({ shape }: { shape: CanvasShape }) {
+export function JellyShape({ shape, editing }: { shape: CanvasShape; editing: boolean }) {
 	if (shape.type !== 'rectangle' && shape.type !== 'ellipse') return null
 
 	const text = shape.text ?? ''
@@ -43,7 +43,10 @@ export function JellyShape({ shape }: { shape: CanvasShape }) {
 				pointerEvents="none"
 			>
 				{flowNode ? (
-					<div className="jelly-shape el-node canvas-jelly" style={jellyStyle(shape.color)}>
+					<div
+						className={`jelly-shape el-node canvas-jelly${editing ? ' jelly-shape-editing' : ''}`}
+						style={jellyStyle(shape.color)}
+					>
 						<div className="nd-t" data-edit="">
 							{nodeTitle}
 						</div>
@@ -55,7 +58,7 @@ export function JellyShape({ shape }: { shape: CanvasShape }) {
 					</div>
 				) : (
 					<div
-						className="jelly-shape el-shape canvas-jelly"
+						className={`jelly-shape el-shape canvas-jelly${editing ? ' jelly-shape-editing' : ''}`}
 						data-shape={shape.type}
 						style={jellyStyle(shape.color)}
 					>

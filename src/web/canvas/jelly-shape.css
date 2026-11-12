@@ -30,6 +30,26 @@
 	text-align: center;
 }
 
+.jelly-shape-editing [data-edit] {
+	visibility: hidden;
+}
+
+.inline-editor.jelly-shape-editor textarea {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--j-ink);
+	caret-color: var(--j-ink);
+	font-family:
+		"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC",
+		"Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+	line-height: 1.35;
+	text-align: center;
+	box-shadow: none;
+	outline: none;
+}
+
 .jelly-shape.el-node::before {
 	display: none;
 }

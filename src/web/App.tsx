@@ -975,7 +975,9 @@ export default function App() {
 			shape.type !== 'frame' &&
 			shape.type !== 'html' &&
 			shape.type !== 'text' &&
-			shape.type !== 'note'
+			shape.type !== 'note' &&
+			shape.type !== 'rectangle' &&
+			shape.type !== 'ellipse'
 		)
 			return
 		const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
@@ -1326,6 +1328,14 @@ export default function App() {
 							| undefined
 						if (!target) return null
 						const header = target.type === 'frame' || target.type === 'html'
+						const jellyShape = target.type === 'rectangle' || target.type === 'ellipse'
+						const jellyNode = target.type === 'rectangle' && Boolean(target.text)
+						const jellyFontSize = jellyNode ? 12.5 : 13
+						const jellyLineHeight = jellyNode ? 1.35 : 1.5
+						const jellyTextHeight = Math.min(
+							target.h,
+							(target.text?.split('\n').length ?? 1) * jellyFontSize * jellyLineHeight,
+						)
 						const box = header
 							? {
 									x: target.x,
@@ -1340,8 +1350,15 @@ export default function App() {
 										w: Math.max(0, target.w - 30),
 										h: Math.max(0, target.h - 31),
 									}
-								: { x: target.x, y: target.y, w: target.w, h: target.h }
-						const multiline = target.type === 'text' || target.type === 'note'
+								: jellyShape
+									? {
+											x: target.x + Math.min(12, target.w / 2),
+											y: target.y + (target.h - jellyTextHeight) / 2,
+											w: Math.max(0, target.w - 24),
+											h: jellyTextHeight,
+										}
+									: { x: target.x, y: target.y, w: target.w, h: target.h }
+						const multiline = target.type === 'text' || target.type === 'note' || jellyShape
 						const style =
 							target.type === 'text'
 								? {
@@ -1364,15 +1381,23 @@ export default function App() {
 								y={box.y}
 								width={box.w}
 								height={box.h}
-								className={`inline-editor${target.type === 'note' ? ' sticky-note-editor' : ''}`}
-								style={target.type === 'note' ? jellyStyle(target.color) : undefined}
+								className={`inline-editor${target.type === 'note' ? ' sticky-note-editor' : jellyShape ? ' jelly-shape-editor' : ''}`}
+								style={target.type === 'note' || jellyShape ? jellyStyle(target.color) : undefined}
 								onPointerDown={(event) => event.stopPropagation()}
 							>
 								{multiline ? (
 									<textarea
 										ref={(node) => node?.focus()}
 										defaultValue={editing.value}
-										style={style}
+										style={
+											jellyShape
+												? {
+														fontSize: `${jellyFontSize}px`,
+														fontWeight: jellyNode ? 700 : 600,
+														lineHeight: jellyLineHeight,
+													}
+												: style
+										}
 										onBlur={(event) => commit(event.target.value)}
 										onKeyDown={(event) => {
 											event.stopPropagation()

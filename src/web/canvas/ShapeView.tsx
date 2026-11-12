@@ -84,7 +84,7 @@ export function ShapeView({
 	if (shape.type === 'rectangle' || shape.type === 'ellipse') {
 		return (
 			<g {...common}>
-				<JellyShape shape={shape} />
+				<JellyShape shape={shape} editing={editingId === shape.id} />
 				{active && (
 					<rect
 						className="selection"

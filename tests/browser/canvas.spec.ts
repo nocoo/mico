@@ -1299,6 +1299,50 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 	await page.screenshot({ path: '/tmp/mico-frame-mobile.png', animations: 'disabled' })
 })
 
+test('jelly shapes edit in place and preserve cancellation', async ({ page, request }) => {
+	await page.locator('[data-shape-id="a"] > rect').first().dblclick()
+	const editor = page.locator('.jelly-shape-editor textarea')
+	await expect(editor).toBeFocused()
+	await expect(page.locator('[data-shape-id="a"] .nd-t')).toHaveCSS('visibility', 'hidden')
+	await editor.fill('Updated title\nUpdated detail')
+	await editor.press('Control+Enter')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
+		.toMatchObject({ text: 'Updated title\nUpdated detail' })
+	await expect(page.locator('[data-shape-id="a"] .nd-t')).toHaveText('Updated title')
+	await expect(page.locator('[data-shape-id="a"] .nd-s')).toHaveText('Updated detail')
+	await page.locator('[data-shape-id="a"] > rect').first().dblclick()
+	await editor.fill('Discarded')
+	await editor.press('Escape')
+	await expect(editor).toHaveCount(0)
+	await expect(page.locator('[data-shape-id="a"] .nd-t')).toHaveText('Updated title')
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === 'a'))
+		.toMatchObject({ text: 'Updated title\nUpdated detail' })
+})
+
+test('an empty ellipse accepts inline text', async ({ page, request }) => {
+	await resetBoard(request, [
+		{ id: 'editable-ellipse', type: 'ellipse', x: 200, y: 180, w: 200, h: 120, color: '#f69143' },
+	])
+	await page.reload()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
+	await page.locator('[data-shape-id="editable-ellipse"] > ellipse').dblclick()
+	const editor = page.locator('.jelly-shape-editor textarea')
+	await expect(editor).toBeFocused()
+	await editor.fill('Ellipse label')
+	await editor.press('Control+Enter')
+	await expect
+		.poll(async () =>
+			(await board(request)).shapes.find((shape) => shape.id === 'editable-ellipse'),
+		)
+		.toMatchObject({ text: 'Ellipse label' })
+	await expect(page.locator('[data-shape-id="editable-ellipse"] [data-edit]')).toHaveText(
+		'Ellipse label',
+	)
+})
+
 test('multi-line concept labels preserve title and detail text', async ({ page, request }) => {
 	await resetBoard(request, [
 		{
