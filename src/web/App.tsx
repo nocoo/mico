@@ -19,6 +19,7 @@ import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
 import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
+import { Marquee } from './canvas/Marquee'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
@@ -1351,16 +1352,7 @@ export default function App() {
 						preview
 					/>
 				)}
-				{marquee && (
-					<rect
-						className="marquee"
-						x={marquee.x}
-						y={marquee.y}
-						width={marquee.w}
-						height={marquee.h}
-						vectorEffect="non-scaling-stroke"
-					/>
-				)}
+				{marquee && <Marquee rect={marquee} zoom={viewport.zoom} />}
 				{editing &&
 					(() => {
 						const target = visibleShapes.find((shape) => shape.id === editing.id) as

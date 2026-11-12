@@ -506,6 +506,57 @@ test('HTML card surface and label match the original prototype', async ({
 	}
 })
 
+test('selection marquee matches the original prototype', async ({
+	page,
+	context,
+	request,
+	baseURL,
+}) => {
+	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	await resetBoard(request, [])
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await page.goto('/')
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await page.addStyleTag({
+		content:
+			'.app, .canvas-backdrop { background: white !important; } .canvas-aurora, .canvas-grain, .frame-empty { display: none !important; } svg.canvas { background-image: none !important; }',
+	})
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
+	await reference.goto(
+		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/teams-ai-whiteboard.html')).href,
+	)
+	try {
+		await reference.addStyleTag({
+			content:
+				'.aurora, .grain, #hero { display: none !important; } #stage { background: white !important; }',
+		})
+		await reference.mouse.move(350, 350)
+		await reference.mouse.down()
+		await reference.mouse.move(520, 460, { steps: 4 })
+		await page.mouse.move(350, 350)
+		await page.mouse.down()
+		await page.mouse.move(520, 460, { steps: 4 })
+		const target = reference.locator('#marquee')
+		const marquee = page.locator('.marquee')
+		await expect(target).toBeVisible()
+		await expect(marquee).toBeVisible()
+		const expected = await screenshotElement(reference, target, 170, 110)
+		const actual = await screenshotElement(page, marquee, 170, 110)
+		const diff = await differingPixels(page, expected, actual)
+		expect(
+			diff.different / diff.total,
+			`${diff.different}/${diff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.001)
+	} finally {
+		await page.mouse.up()
+		await reference.mouse.up()
+		await reference.close()
+	}
+})
+
 test('labelled flow node matches the original prototype', async ({
 	page,
 	context,
