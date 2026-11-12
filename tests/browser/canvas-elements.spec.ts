@@ -411,6 +411,101 @@ test('connector matches the original prototype between aligned nodes', async ({
 	}
 })
 
+test('HTML card surface and label match the original prototype', async ({
+	page,
+	context,
+	request,
+	baseURL,
+}) => {
+	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
+	await reference.goto(
+		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/teams-ai-whiteboard.html')).href,
+	)
+	try {
+		await reference.addStyleTag({
+			content:
+				'.aurora, .grain { display: none !important; } #stage { background: white !important; } #world { transform: translate(-700px, 0) scale(1) !important; } .el.pop { animation: none !important; }',
+		})
+		await reference.locator('#hero-skip').click()
+		const target = reference.locator('.el-card')
+		await expect(target).toHaveCount(1)
+		const box = await target.boundingBox()
+		if (!box) throw new Error('Missing reference card')
+		await resetBoard(request, [
+			{
+				id: 'reference-card',
+				type: 'html',
+				x: 450,
+				y: 110,
+				w: 620,
+				h: box.height,
+				color: '#00a2e1',
+				title: 'AI 原生白板：原型验证与产品边界',
+				html: '',
+			},
+		])
+		await page.emulateMedia({ reducedMotion: 'reduce' })
+		await page.setViewportSize({ width: 1440, height: 960 })
+		await page.goto('/')
+		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+		await page.getByRole('button', { name: 'Reset view' }).click()
+		await page.addStyleTag({
+			content:
+				'.app, .canvas-backdrop { background: white !important; } .canvas-aurora, .canvas-grain { display: none !important; } svg.canvas { background-image: none !important; } .html-card-empty, .html-card-label-handle { visibility: hidden !important; } .ai-assistant, .toolbar-module, .topbar.frame-identity { display: none !important; }',
+		})
+		await reference.addStyleTag({
+			content:
+				'.el-card > * { visibility: hidden !important; } #panel, .topbar, .tools, #aistatus, .minimap { display: none !important; }',
+		})
+		const height = Math.ceil(box.height)
+		const expected = await screenshotElement(reference, target, 620, height)
+		const actual = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-card"] .html-card'),
+			620,
+			height,
+		)
+		const diff = await differingPixels(page, expected, actual)
+		expect(
+			diff.different / diff.total,
+			`${diff.different}/${diff.total} differing card pixels`,
+		).toBeLessThanOrEqual(0.001)
+		await page.addStyleTag({
+			content: '.html-card-label-handle { visibility: visible !important; }',
+		})
+		await reference.addStyleTag({
+			content: '.el-card > .card-tab { visibility: visible !important; }',
+		})
+		const referenceLabel = reference.locator('.el-card .card-tab')
+		const labelBox = await referenceLabel.boundingBox()
+		if (!labelBox) throw new Error('Missing reference card label')
+		const labelWidth = Math.ceil(labelBox.width)
+		const labelHeight = Math.ceil(labelBox.height)
+		const expectedLabel = await screenshotElement(
+			reference,
+			referenceLabel,
+			labelWidth,
+			labelHeight,
+		)
+		const actualLabel = await screenshotElement(
+			page,
+			page.locator('[data-card-handle="reference-card"] .card-pill'),
+			labelWidth,
+			labelHeight,
+		)
+		const labelDiff = await differingPixels(page, expectedLabel, actualLabel)
+		expect(
+			labelDiff.different / labelDiff.total,
+			`${labelDiff.different}/${labelDiff.total} differing label pixels`,
+		).toBeLessThanOrEqual(0.001)
+	} finally {
+		await reference.close()
+	}
+})
+
 test('labelled flow node matches the original prototype', async ({
 	page,
 	context,

@@ -1,5 +1,4 @@
 import type { CanvasShape } from '../../shared/types'
-import { jellyStyle } from './jelly'
 import './canvas-image.css'
 
 export function CanvasImage({ shape }: { shape: CanvasShape }) {
@@ -40,7 +39,7 @@ export function CanvasImage({ shape }: { shape: CanvasShape }) {
 				height={shape.h}
 				rx={radiusX}
 				ry={radiusY}
-				style={jellyStyle(shape.color)}
+				style={{ stroke: shape.color }}
 				vectorEffect="non-scaling-stroke"
 				pointerEvents="none"
 			/>

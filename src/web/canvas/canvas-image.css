@@ -9,8 +9,6 @@
 
 .canvas-image-edge {
 	fill: none;
-	stroke: var(--j-edge);
-	stroke-opacity: 0.42;
 	stroke-width: 1;
 	pointer-events: none;
 }

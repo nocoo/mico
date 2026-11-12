@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
+import { jellyStyle } from '../../src/web/canvas/jelly'
 import { CANDY_COLORS, CANDY_TINTS, SHAPE_COLORS } from '../../src/web/design'
 import { closeAssistant, resetBoard } from './support'
 
@@ -565,19 +566,23 @@ test('frame selection wraps members and deleting the frame releases them', async
 		await expect
 			.poll(async () => (await board(request)).shapes.find((shape) => shape.id === frame.id))
 			.toMatchObject({ color: value })
-		await expect(frameBody).toHaveAttribute(
-			'style',
-			/fill: color-mix\(in srgb, .* 5%, var\(--surface\)\)/,
-		)
+		await expect
+			.poll(() =>
+				frameBody.evaluate((element) => (element as SVGElement).style.getPropertyValue('--j-a')),
+			)
+			.toBe((jellyStyle(value) as Record<string, string>)['--j-a'])
+		await expect(frameBody).toHaveCSS('fill-opacity', '0.14')
 	}
 	await page.getByLabel('Custom color').fill('#123456')
 	await expect
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === frame.id))
 		.toMatchObject({ color: '#123456' })
-	await expect(frameBody).toHaveAttribute(
-		'style',
-		/fill: color-mix\(in srgb, .* 5%, var\(--surface\)\)/,
-	)
+	await expect
+		.poll(() =>
+			frameBody.evaluate((element) => (element as SVGElement).style.getPropertyValue('--j-a')),
+		)
+		.toBe((jellyStyle('#123456') as Record<string, string>)['--j-a'])
+	await expect(frameBody).toHaveCSS('fill-opacity', '0.14')
 
 	await page.getByRole('button', { name: 'Delete selected' }).click()
 	await expect

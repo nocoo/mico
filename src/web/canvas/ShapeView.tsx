@@ -1,17 +1,16 @@
-import bootstrapCss from 'bootstrap/dist/css/bootstrap.min.css?raw'
-import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
-import { CodeXml, Frame } from 'lucide-react'
+import { Frame } from 'lucide-react'
 import type React from 'react'
-import { FRAME_FILL_PERCENT } from '../../shared/palette'
 import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
 import { CardHeaderPill } from '../CardHeaderPill'
-import { CANDY_COLORS, candyLine, candyWash, type Tool } from '../design'
-import { HTML_CARD_SANDBOX, htmlCardDocument } from '../htmlCard'
-import { imagePreserveAspectRatio } from '../image'
+import type { Tool } from '../design'
 import { StickyNote } from '../StickyNote'
+import { CanvasFrame } from './CanvasFrame'
+import { CanvasImage } from './CanvasImage'
 import { CanvasText } from './CanvasText'
 import { ConnectorView } from './ConnectorView'
+import { HtmlCardLabel } from './HtmlCardLabel'
+import { HtmlCardSurface } from './HtmlCardSurface'
 import { JellyShape } from './JellyShape'
 import { SelectionOutline } from './SelectionOutline'
 import './canvas-entry.css'
@@ -110,48 +109,9 @@ export function ShapeView({
 	if (shape.type === 'html') {
 		return (
 			<g {...common}>
-				<rect
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					rx={10}
-					style={{
-						fill: candyWash(shape.color, 5),
-						stroke: active ? shape.color : candyLine(shape.color),
-					}}
-					strokeWidth={active ? 2 : 1}
-					vectorEffect="non-scaling-stroke"
-				/>
-				<foreignObject
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					pointerEvents={active ? 'auto' : 'none'}
-				>
-					<div className="html-card">
-						{shape.html ? (
-							<iframe
-								className="html-card-frame"
-								title={shape.title ?? 'HTML card'}
-								sandbox={HTML_CARD_SANDBOX}
-								referrerPolicy="no-referrer"
-								srcDoc={htmlCardDocument(shape.html, bootstrapCss, bootstrapJs)}
-							/>
-						) : (
-							<div className="html-card-empty">HTML content is generated through the API</div>
-						)}
-					</div>
-				</foreignObject>
-				<CardHeaderPill
-					x={shape.x}
-					y={shape.y}
-					width={Math.min(shape.w, 360)}
-					color={shape.color}
-					title={shape.title ?? 'HTML card'}
-					icon={CodeXml}
-					handleId={shape.id}
+				<HtmlCardSurface shape={shape} active={active} />
+				<HtmlCardLabel
+					shape={shape}
 					onPointerDown={(event) => onPointerDown(event, shape)}
 					onDoubleClick={(event) => onDoubleClick(event, shape)}
 				/>
@@ -163,30 +123,7 @@ export function ShapeView({
 		if (!shape.imageId) return null
 		return (
 			<g {...common}>
-				<image
-					className="canvas-image"
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					href={`/api/images/${encodeURIComponent(shape.imageId)}`}
-					preserveAspectRatio="xMidYMid meet"
-					style={{
-						clipPath: `inset(0 round ${Math.min(10, shape.w / 2)}px / ${Math.min(10, shape.h / 2)}px)`,
-					}}
-					pointerEvents="none"
-				/>
-				<rect
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					rx={10}
-					fill="transparent"
-					stroke={shape.color ?? CANDY_COLORS.ink}
-					strokeWidth={active ? 3 : 1}
-					vectorEffect="non-scaling-stroke"
-				/>
+				<CanvasImage shape={shape} />
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
@@ -199,41 +136,9 @@ export function ShapeView({
 			: undefined
 		const backgroundImageId =
 			backgroundShape?.type === 'image' ? backgroundShape.imageId : undefined
-		const clipId = `frame-bg-${shape.id}`
 		return (
 			<g className="canvas-shape frame" data-shape-id={shape.id}>
-				<defs>
-					<clipPath id={clipId}>
-						<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} rx={10} />
-					</clipPath>
-				</defs>
-				{backgroundImageId && (
-					<image
-						className="frame-background-image"
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						href={`/api/images/${encodeURIComponent(backgroundImageId)}`}
-						preserveAspectRatio={imagePreserveAspectRatio(shape.backgroundFit)}
-						clipPath={`url(#${clipId})`}
-						pointerEvents="none"
-					/>
-				)}
-				<rect
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					rx={10}
-					style={{
-						fill: backgroundImageId ? 'none' : candyWash(shape.color, FRAME_FILL_PERCENT),
-						stroke: active ? shape.color : candyLine(shape.color),
-					}}
-					strokeWidth={active ? 2 : 1}
-					vectorEffect="non-scaling-stroke"
-					pointerEvents="none"
-				/>
+				<CanvasFrame shape={shape} backgroundImageId={backgroundImageId} />
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)

@@ -1377,12 +1377,19 @@ export default function App() {
 							(target.text?.split('\n').length ?? 1) * jellyFontSize * jellyLineHeight,
 						)
 						const box = header
-							? {
-									x: target.x,
-									y: target.y - 40,
-									w: Math.max(160, Math.min(target.w, 360)),
-									h: 36,
-								}
+							? target.type === 'html'
+								? {
+										x: target.x + 20,
+										y: target.y - 34,
+										w: Math.max(160, Math.min(target.w - 40, 360)),
+										h: 26,
+									}
+								: {
+										x: target.x,
+										y: target.y - 40,
+										w: Math.max(160, Math.min(target.w, 360)),
+										h: 36,
+									}
 							: target.type === 'note'
 								? {
 										x: target.x + 15,
