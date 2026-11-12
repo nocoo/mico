@@ -64,11 +64,12 @@ test('assistant requests carry selection, mode and active canvas', () => {
 })
 
 test('Escape closes only from an assistant interaction context', () => {
+	const pointerInside = false
+	assert.equal(shouldCloseAssistantEscape('Escape', false, pointerInside, false), false)
 	assert.equal(shouldCloseAssistantEscape('Escape', false, true, false), true)
-	assert.equal(shouldCloseAssistantEscape('Escape', false, false, true), true)
+	assert.equal(shouldCloseAssistantEscape('Escape', false, pointerInside, true), true)
 	assert.equal(shouldCloseAssistantEscape('Escape', true, true, true), false)
 	assert.equal(shouldCloseAssistantEscape('Enter', false, true, true), false)
-	assert.equal(shouldCloseAssistantEscape('Escape', false, false, false), false)
 })
 
 test('assistant status reports only real session and connection state', () => {

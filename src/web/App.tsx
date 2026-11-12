@@ -64,7 +64,7 @@ import {
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
-import { fitViewport } from './viewport'
+import { fitViewport, panelViewportInset } from './viewport'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -127,6 +127,8 @@ export default function App() {
 	const [aiPanelOpen, setAiPanelOpen] = useState(
 		() => aiPrompt.length > 0 || window.innerWidth >= 900,
 	)
+	const aiPanelOpenRef = useRef(aiPanelOpen)
+	aiPanelOpenRef.current = aiPanelOpen
 	const emptyState = useEmptyStateViewModel({
 		canvasId: activeCanvasId,
 		shapeCount: board.shapes.length,
@@ -218,6 +220,26 @@ export default function App() {
 		setCanvases((current) => upsertCanvasSummary(current, summary))
 	}, [])
 
+	const fitShapesInCanvas = useCallback((shapes: Shape[]) => {
+		const svg = svgRef.current
+		if (!svg) return
+		const rect = svg.getBoundingClientRect()
+		const panel = document.getElementById('ai-panel')
+		const panelStyle = panel ? getComputedStyle(panel) : null
+		const reservedWidth =
+			Number.parseFloat(getComputedStyle(svg).getPropertyValue('--frame-panel-reserved')) || 0
+		const reservedRight =
+			aiPanelOpenRef.current && panelStyle
+				? panelViewportInset(
+						rect.width,
+						reservedWidth,
+						Number.parseFloat(panelStyle.width) || 0,
+						Number.parseFloat(panelStyle.getPropertyValue('--ai-inset')) || 0,
+					)
+				: 0
+		setViewport(fitViewport(shapes, rect.width, rect.height, { right: reservedRight }))
+	}, [])
+
 	const applySnapshot = useCallback(
 		(snapshot: CanvasSnapshot) => {
 			if (snapshot.stateVersion < stateVersionRef.current) return
@@ -247,15 +269,14 @@ export default function App() {
 				setDragPreviews(new Map())
 				setCreation(null)
 				setBrushPoints(null)
-				const rect = svgRef.current?.getBoundingClientRect()
-				if (rect) setViewport(fitViewport(snapshot.board.shapes, rect.width, rect.height))
+				fitShapesInCanvas(snapshot.board.shapes)
 				return
 			}
 			setSelectedIds((current) =>
 				current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[trackNewNotes],
+		[fitShapesInCanvas, trackNewNotes],
 	)
 
 	const postOperations = useCallback(
@@ -400,9 +421,8 @@ export default function App() {
 	)
 
 	const fitBoard = useCallback(() => {
-		const rect = svgRef.current?.getBoundingClientRect()
-		if (rect) setViewport(fitViewport(boardRef.current.shapes, rect.width, rect.height))
-	}, [])
+		fitShapesInCanvas(boardRef.current.shapes)
+	}, [fitShapesInCanvas])
 
 	const createShape = (shape: CanvasShape) => {
 		const frameId =

@@ -230,7 +230,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 
 	useEffect(() => {
 		if (!state.open) return
-		pointerInside.current = true
+		pointerInside.current = false
 		const onPointerDown = (event: PointerEvent) => {
 			const target = event.target
 			if (!(target instanceof Node)) return
