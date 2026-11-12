@@ -27,7 +27,7 @@ test('the project logo and assistant trigger preserve the reference identity and
 		.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth))
 		.toBe(256)
 	await expect(identity.locator('.brand strong')).toHaveText('mico')
-	await expect(identity.locator('.identity-ai-badge')).toHaveText('AI')
+	await expect(identity.locator('.identity-ai-badge')).toHaveCount(0)
 	await expect(identity.getByRole('status')).toHaveCount(0)
 	await expect(identity).toHaveCSS('border-radius', '22px')
 	await expect(identity).toHaveCSS('backdrop-filter', 'blur(22px) saturate(1.7)')

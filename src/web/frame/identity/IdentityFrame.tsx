@@ -23,7 +23,6 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 							<img className="brand-mark-icon" src="/logo.png" alt="" aria-hidden="true" />
 						</span>
 						<strong>mico</strong>
-						<span className="identity-ai-badge">AI</span>
 					</div>
 					<IconButton
 						icon={Layers}
