@@ -38,13 +38,11 @@ test('an empty canvas produces a framed placeholder preview', () => {
 	assert.doesNotMatch(svg, /<text|<ellipse|<line/)
 })
 
-test('shapes, connectors and labels render inside the preview bounds', () => {
+test('block silhouettes render inside the preview bounds without content or connectors', () => {
 	const svg = decode(canvasPreview([rect, note, edge]))
-	assert.match(svg, /width="160" height="100"/)
 	assert.match(svg, /fill="#00a2e1"/)
 	assert.match(svg, /fill="#fff8d4"/)
-	assert.match(svg, /<line /)
-	assert.match(svg, /Gateway/)
+	assert.doesNotMatch(svg, /<line|<text|Gateway|Idea/)
 	for (const match of svg.matchAll(
 		/<rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.]+)" height="([\d.]+)"/g,
 	)) {
@@ -56,18 +54,20 @@ test('shapes, connectors and labels render inside the preview bounds', () => {
 	}
 })
 
-test('frame previews use the lighter fill for every frame color', () => {
+test('frame previews use the lighter fill and render before other blocks', () => {
 	for (const color of ['#00a2e1', '#a6d94f', '#f7de4b', '#ff7fa3', '#2b3038', '#123456']) {
 		const svg = decode(
-			canvasPreview([{ id: 'frame', type: 'frame', x: 0, y: 0, w: 200, h: 120, color }]),
+			canvasPreview([rect, { id: 'frame', type: 'frame', x: 0, y: 0, w: 200, h: 120, color }]),
 		)
 		assert.ok(svg.includes(`fill="${color}" fill-opacity="0.05"`))
+		const silhouettes = svg.match(/<rect [^>]+fill-opacity="[^"]+"[^>]*\/>/g) ?? []
+		assert.match(silhouettes[0] ?? '', new RegExp(`fill="${color}" fill-opacity="0.05"`))
 	}
 })
 
-test('large boards are scaled into the preview and text is escaped', () => {
-	const huge: Shape = {
-		id: 'huge',
+test('large boards stay bounded while standalone text does not affect them', () => {
+	const ignored: Shape = {
+		id: 'huge-text',
 		type: 'text',
 		x: 10_000,
 		y: 10_000,
@@ -77,9 +77,8 @@ test('large boards are scaled into the preview and text is escaped', () => {
 		text: '<script>&"danger"</script>',
 		fontSize: 48,
 	}
-	const svg = decode(canvasPreview([huge]))
-	assert.doesNotMatch(svg, /<script>/)
-	assert.match(svg, /&lt;script&gt;&amp;&quot;danger&quot;&lt;\/script&gt;/)
+	const svg = decode(canvasPreview([ignored, rect]))
+	assert.doesNotMatch(svg, /<script>|danger|<text/)
 	for (const match of svg.matchAll(
 		/<rect x="([\d.-]+)" y="([\d.-]+)" width="([\d.]+)" height="([\d.]+)"/g,
 	)) {
@@ -91,7 +90,7 @@ test('large boards are scaled into the preview and text is escaped', () => {
 	}
 })
 
-test('image elements remain visible as bounded placeholders without embedding asset data', () => {
+test('image elements use a silhouette without embedding asset data', () => {
 	const image: Shape = {
 		id: 'image',
 		type: 'image',
@@ -101,63 +100,53 @@ test('image elements remain visible as bounded placeholders without embedding as
 		h: 100,
 		color: '#00a2e1',
 		imageId: 'asset-id',
+		text: 'private image caption',
 	}
 	const svg = decode(canvasPreview([image]))
-	assert.match(svg, /<path d="M/)
-	assert.doesNotMatch(svg, /asset-id|<image/)
+	assert.match(svg, /<rect /)
+	assert.doesNotMatch(svg, /asset-id|private image caption|<image|<path/)
 })
 
-test('signed lines keep their true direction in the preview', () => {
+test('lines and paths contribute neither artwork nor bounds', () => {
 	const line: Shape = {
-		id: 'signed-line',
+		id: 'line',
 		type: 'line',
-		x: 100,
-		y: 100,
-		w: -80,
-		h: -40,
+		x: -100_000,
+		y: -100_000,
+		w: 200_000,
+		h: 200_000,
 		color: '#5c8c1e',
 	}
-	const svg = decode(canvasPreview([line]))
-	const match = svg.match(/<line x1="([\d.-]+)" y1="([\d.-]+)" x2="([\d.-]+)" y2="([\d.-]+)"/)
-	assert.ok(match)
-	const [x1, y1, x2, y2] = match.slice(1).map(Number)
-	assert.ok(x2 < x1)
-	assert.ok(y2 < y1)
-})
-
-test('control characters are stripped and long paths are sampled', () => {
-	const text: Shape = {
-		id: 'control-text',
-		type: 'text',
-		x: 0,
-		y: 0,
-		w: 120,
-		h: 40,
-		color: '#0b7ba8',
-		text: 'before\u0001after',
-		fontSize: 16,
-	}
 	const path: Shape = {
-		id: 'long-path',
+		id: 'path',
 		type: 'path',
-		x: 0,
-		y: 0,
-		w: 400,
-		h: 200,
+		x: -100_000,
+		y: -100_000,
+		w: 200_000,
+		h: 200_000,
 		color: '#b23f63',
 		brush: 'brush',
 		strokeWidth: 4,
-		points: Array.from({ length: 500 }, (_, index) => ({
-			x: (index * 400) / 499,
-			y: (index % 2) * 200,
-		})),
+		points: Array.from({ length: 500 }, (_, index) => ({ x: index, y: index })),
 	}
-	const svg = decode(canvasPreview([text, path]))
-	assert.ok(!svg.includes('\u0001'))
-	assert.match(svg, /beforeafter/)
-	const pathMatch = svg.match(/<path d="([^"]+)"/)
-	assert.ok(pathMatch)
-	const commands = pathMatch[1].split(/[ML]/).filter((part) => part.trim().length > 0)
-	assert.ok(commands.length <= 65)
-	assert.ok(commands.length >= 2)
+	const svg = decode(canvasPreview([line, path, note]))
+	assert.doesNotMatch(svg, /<line|<path/)
+	assert.match(svg, /fill="#fff8d4"/)
+})
+
+test('malicious colors are escaped and preview output is bounded', () => {
+	const shapes = Array.from(
+		{ length: 500 },
+		(_, index): Shape => ({
+			...rect,
+			id: String(index),
+			color: index === 0 ? '"><script>\u0001' : rect.color,
+		}),
+	)
+	const svg = decode(canvasPreview(shapes))
+	assert.doesNotMatch(svg, /<script>/)
+	assert.equal(svg.includes('\u0001'), false)
+	const fills = svg.match(/fill="#00a2e1"/g) ?? []
+	assert.ok(fills.length > 0 && fills.length <= 240)
+	assert.match(svg, /&quot;&gt;&lt;script&gt;/)
 })
