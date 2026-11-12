@@ -8,7 +8,15 @@ export interface ConnectorGeometry {
 	end: Point
 }
 
+export interface ConnectorVisualGeometry extends ConnectorGeometry {
+	arrowTip: Point
+	showArrow: boolean
+}
+
 const EPSILON = 1e-9
+const ENDPOINT_GAP = 4
+const ARROW_LENGTH = 9
+const MIN_ARROW_DISTANCE = 18
 
 function direction(x: number, y: number, fallback: Point): Point {
 	const length = Math.hypot(x, y)
@@ -102,6 +110,70 @@ export function getConnectorGeometry(
 ): ConnectorGeometry {
 	const { start, end } = getConnectorAnchors(from, to, shape)
 	return createConnectorGeometry(start, end, from, to, shape)
+}
+
+export function createConnectorVisualGeometry(
+	geometry: ConnectorGeometry,
+	from?: CanvasShape,
+	to?: CanvasShape,
+	pins: AnchorPins = {},
+): ConnectorVisualGeometry {
+	const distance = Math.hypot(geometry.end.x - geometry.start.x, geometry.end.y - geometry.start.y)
+	const startFallback = fallbackDirection(geometry.start, geometry.end)
+	const endFallback = fallbackDirection(geometry.end, geometry.start)
+	const startDirection = from
+		? outwardDirection(from, geometry.start, pins.fromAnchor, startFallback)
+		: startFallback
+	const endDirection = to
+		? outwardDirection(to, geometry.end, pins.toAnchor, endFallback)
+		: endFallback
+	const showArrow = distance >= MIN_ARROW_DISTANCE
+	const gap = showArrow ? Math.min(ENDPOINT_GAP, distance / 4) : 0
+	const start = from
+		? {
+				x: geometry.start.x + startDirection.x * gap,
+				y: geometry.start.y + startDirection.y * gap,
+			}
+		: geometry.start
+	const arrowTip = to
+		? {
+				x: geometry.end.x + endDirection.x * gap,
+				y: geometry.end.y + endDirection.y * gap,
+			}
+		: geometry.end
+	const dx = arrowTip.x - start.x
+	const dy = arrowTip.y - start.y
+	const horizontal = Math.abs(dx) >= Math.abs(dy)
+	const bend = Math.max(horizontal ? 14 : 18, (horizontal ? Math.abs(dx) : Math.abs(dy)) / 2)
+	const end = showArrow
+		? {
+				x: arrowTip.x + endDirection.x * ARROW_LENGTH,
+				y: arrowTip.y + endDirection.y * ARROW_LENGTH,
+			}
+		: arrowTip
+
+	return {
+		start,
+		controlStart: {
+			x: start.x + startDirection.x * bend,
+			y: start.y + startDirection.y * bend,
+		},
+		controlEnd: {
+			x: arrowTip.x + endDirection.x * bend,
+			y: arrowTip.y + endDirection.y * bend,
+		},
+		end,
+		arrowTip,
+		showArrow,
+	}
+}
+
+export function getConnectorVisualGeometry(
+	shape: Connector,
+	from: CanvasShape,
+	to: CanvasShape,
+): ConnectorVisualGeometry {
+	return createConnectorVisualGeometry(getConnectorGeometry(shape, from, to), from, to, shape)
 }
 
 export function connectorPath({ start, controlStart, controlEnd, end }: ConnectorGeometry): string {

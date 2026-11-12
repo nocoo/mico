@@ -1,7 +1,11 @@
 import type React from 'react'
 import type { CanvasShape, Connector, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
-import { connectorPath, createConnectorGeometry } from './canvas/connectorGeometry'
+import {
+	connectorPath,
+	createConnectorGeometry,
+	createConnectorVisualGeometry,
+} from './canvas/connectorGeometry'
 import { jellyStyle } from './canvas/jelly'
 import { CANDY_LAYOUT } from './design'
 import type { ConnectionDraft } from './useConnectionGesture'
@@ -51,19 +55,27 @@ export function ConnectionOverlay({
 		: undefined
 	const previewFrom = draft?.endpoint === 'from' ? target : fixed
 	const previewTo = draft?.endpoint === 'from' ? fixed : target
+	const previewPins = draft
+		? {
+				fromAnchor: draft.endpoint === 'from' ? draft.target?.anchorIndex : draft.fixed.anchorIndex,
+				toAnchor: draft.endpoint === 'from' ? draft.fixed.anchorIndex : draft.target?.anchorIndex,
+			}
+		: undefined
+	const previewFromShape = previewFrom?.type !== 'connector' ? previewFrom : undefined
+	const previewToShape = previewTo?.type !== 'connector' ? previewTo : undefined
 	const previewGeometry =
 		preview && draft
-			? createConnectorGeometry(
-					preview.start,
-					preview.end,
-					previewFrom?.type !== 'connector' ? previewFrom : undefined,
-					previewTo?.type !== 'connector' ? previewTo : undefined,
-					{
-						fromAnchor:
-							draft.endpoint === 'from' ? draft.target?.anchorIndex : draft.fixed.anchorIndex,
-						toAnchor:
-							draft.endpoint === 'from' ? draft.fixed.anchorIndex : draft.target?.anchorIndex,
-					},
+			? createConnectorVisualGeometry(
+					createConnectorGeometry(
+						preview.start,
+						preview.end,
+						previewFromShape,
+						previewToShape,
+						previewPins,
+					),
+					previewFromShape,
+					previewToShape,
+					previewPins,
 				)
 			: null
 	return (
@@ -82,7 +94,7 @@ export function ConnectionOverlay({
 					}}
 					strokeDasharray={draft.target ? undefined : '8 8'}
 					vectorEffect="non-scaling-stroke"
-					markerEnd="url(#arrow)"
+					markerEnd={previewGeometry.showArrow ? 'url(#arrow)' : undefined}
 					pointerEvents="none"
 				/>
 			)}

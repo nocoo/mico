@@ -4,7 +4,9 @@ import type { CanvasShape, Connector } from '../../shared/types.ts'
 import {
 	connectorPath,
 	createConnectorGeometry,
+	createConnectorVisualGeometry,
 	getConnectorGeometry,
+	getConnectorVisualGeometry,
 } from './connectorGeometry.ts'
 
 const box = (id: string, x: number, y: number): CanvasShape => ({
@@ -109,6 +111,97 @@ test('degenerate and coincident endpoints remain finite without moving their anc
 	)
 	assertFinite(unanchored)
 	assert.deepEqual(unanchored.start, unanchored.end)
+})
+
+test('visual geometry matches the reference horizontal and vertical gaps and arrow tip', () => {
+	const from = box('from', 0, 0)
+	const horizontal = getConnectorVisualGeometry(connector(), from, box('to', 300, 0))
+	assert.deepEqual(horizontal.start, { x: 104, y: 40 })
+	assert.deepEqual(horizontal.arrowTip, { x: 296, y: 40 })
+	assert.deepEqual(horizontal.end, { x: 287, y: 40 })
+	assert.deepEqual(horizontal.controlStart, { x: 200, y: 40 })
+	assert.deepEqual(horizontal.controlEnd, { x: 200, y: 40 })
+	assert.equal(horizontal.showArrow, true)
+
+	const vertical = getConnectorVisualGeometry(connector(), from, box('to', 0, 300))
+	assert.deepEqual(vertical.start, { x: 50, y: 84 })
+	assert.deepEqual(vertical.arrowTip, { x: 50, y: 296 })
+	assert.deepEqual(vertical.end, { x: 50, y: 287 })
+	assert.deepEqual(vertical.controlStart, { x: 50, y: 190 })
+	assert.deepEqual(vertical.controlEnd, { x: 50, y: 190 })
+})
+
+test('visual geometry keeps the four anchor sides and pinned endpoints exact', () => {
+	const from = box('from', 0, 0)
+	const to = box('to', 300, 0)
+	const startOffsets = [
+		{ x: 0, y: -4 },
+		{ x: 0, y: 4 },
+		{ x: -4, y: 0 },
+		{ x: 4, y: 0 },
+	]
+	const targetOffsets = [
+		{ x: 0, y: -4 },
+		{ x: 0, y: 4 },
+		{ x: -4, y: 0 },
+		{ x: 4, y: 0 },
+	]
+
+	for (const [index, offset] of startOffsets.entries()) {
+		const edge = connector({ fromAnchor: index, toAnchor: 3 })
+		const physical = getConnectorGeometry(edge, from, to)
+		const visual = getConnectorVisualGeometry(edge, from, to)
+		assert.deepEqual(visual.start, {
+			x: physical.start.x + offset.x,
+			y: physical.start.y + offset.y,
+		})
+		assert.ok(visual.showArrow)
+	}
+	for (const [index, offset] of targetOffsets.entries()) {
+		const edge = connector({ fromAnchor: 3, toAnchor: index })
+		const physical = getConnectorGeometry(edge, from, to)
+		const visual = getConnectorVisualGeometry(edge, from, to)
+		assert.deepEqual(visual.arrowTip, {
+			x: physical.end.x + offset.x,
+			y: physical.end.y + offset.y,
+		})
+	}
+})
+
+test('ellipse visual gaps follow the pinned outward normal', () => {
+	const from: CanvasShape = { ...box('from', 0, 0), type: 'ellipse' }
+	const to = box('to', 300, 0)
+	const edge = connector({ fromAnchor: 4, toAnchor: 2 })
+	const physical = getConnectorGeometry(edge, from, to)
+	const visual = getConnectorVisualGeometry(edge, from, to)
+	const radiusX = from.w / 2
+	const radiusY = from.h / 2
+	const gradient = {
+		x: (physical.start.x - from.x - radiusX) / (radiusX * radiusX),
+		y: (physical.start.y - from.y - radiusY) / (radiusY * radiusY),
+	}
+	const length = Math.hypot(gradient.x, gradient.y)
+	assert.ok(Math.abs(visual.start.x - physical.start.x - (gradient.x / length) * 4) < 1e-9)
+	assert.ok(Math.abs(visual.start.y - physical.start.y - (gradient.y / length) * 4) < 1e-9)
+})
+
+test('short and degenerate visual endpoints stay finite without a distant arrow', () => {
+	const short = createConnectorVisualGeometry(
+		createConnectorGeometry({ x: 10, y: 20 }, { x: 20, y: 20 }),
+	)
+	assert.equal(short.showArrow, false)
+	assert.deepEqual(short.start, { x: 10, y: 20 })
+	assert.deepEqual(short.end, { x: 20, y: 20 })
+	assert.deepEqual(short.arrowTip, short.end)
+	assertFinite(short)
+
+	const zero = createConnectorVisualGeometry(
+		createConnectorGeometry({ x: 10, y: 20 }, { x: 10, y: 20 }),
+	)
+	assert.equal(zero.showArrow, false)
+	assert.deepEqual(zero.start, zero.end)
+	assert.deepEqual(zero.arrowTip, zero.end)
+	assertFinite(zero)
 })
 
 test('preview geometry uses anchor points without viewport data', () => {

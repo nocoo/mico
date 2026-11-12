@@ -1,6 +1,6 @@
 import type React from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
-import { connectorPath, getConnectorGeometry } from './connectorGeometry'
+import { connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
 import { jellyStyle } from './jelly'
 
 export interface ConnectorViewProps {
@@ -20,7 +20,8 @@ export function ConnectorView({
 	cursor,
 	onPointerDown,
 }: ConnectorViewProps) {
-	const path = connectorPath(getConnectorGeometry(shape, from, to))
+	const geometry = getConnectorVisualGeometry(shape, from, to)
+	const path = connectorPath(geometry)
 	return (
 		<g
 			className={`canvas-shape connector edge${selected ? ' sel' : ''}`}
@@ -44,7 +45,7 @@ export function ConnectorView({
 				stroke="currentColor"
 				strokeWidth={selected ? 5 : 3}
 				strokeLinecap="round"
-				markerEnd="url(#arrow)"
+				markerEnd={geometry.showArrow ? 'url(#arrow)' : undefined}
 				vectorEffect="non-scaling-stroke"
 				filter={selected ? 'drop-shadow(0 0 4px currentColor)' : undefined}
 			/>

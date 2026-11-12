@@ -62,7 +62,7 @@ export function CanvasView({
 				<marker
 					id="arrow"
 					viewBox="-10 -5.5 10 11"
-					refX="0"
+					refX="-9"
 					refY="0"
 					markerWidth="10"
 					markerHeight="11"
