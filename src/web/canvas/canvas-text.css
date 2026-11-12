@@ -1,6 +1,6 @@
 .canvas-text {
 	height: 100%;
-	overflow: visible;
+	overflow: hidden;
 	line-height: 1.5;
 	white-space: pre-wrap;
 }
