@@ -98,9 +98,10 @@ Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` pe
 
 - Implemented Mico identity, disconnected meeting preview, desktop and responsive toolbar, empty-state hero, assistant shell, real-status pill, and refreshed selection properties. Meeting controls are explicitly unavailable and do not request media permissions.
 - Extracted recording, microphone, MOSS and AI settings lifecycles into view models. Existing board and provider contracts remain in place. The frame uses Audio, Chat, Live and Settings to retain current product modes; the prototype's Outline and other not-yet-implemented capabilities remain in phase 3.
-- Added isolated geometry and pixel comparisons for reference glass, jelly orbs and active toolbar controls. This does not yet establish pixel-level equivalence for all panel contents, theme variants, motion states or mobile breakpoints. Canvas background and canvas elements remain unchanged until phase 2.
+- Added isolated geometry and pixel comparisons for reference glass, jelly orbs and active toolbar controls. This does not yet establish pixel-level equivalence for all panel contents, theme variants, motion states or mobile breakpoints.
 - Frame checks: 291 Node tests and 101 isolated browser tests pass; TypeScript and the production build pass. The complete Biome check remains blocked by pre-existing formatting differences in `README.md` and `docs/README.en.md`. Live provider and actual meeting acceptance remain outside this milestone.
-- The owner accepted the frame direction and requested a compact Mico logo, a matching canvas-list design, and less intrusive pointer focus. Continue to phase 2 while preserving these refinements.
+- The owner accepted the frame direction and requested a compact Mico logo, a matching canvas-list design, and less intrusive pointer focus. The recording selector and other select menus were subsequently styled to match, with pointer and keyboard focus tested separately.
+- Phase 2 is in progress: the SVG canvas host is separated into `CanvasView`, and the aurora, grain and adaptive dot grid now match the reference at rest, pan and zoom. Canvas shape renderers, the full canvas ViewModel extraction and the remaining phase-3 features are not yet complete.
 
 ## Decisions required before the dependent slices
 
