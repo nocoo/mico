@@ -12,6 +12,7 @@
 
 ## Tool usage
 
+- An external Playwright review config inherited a relative web-server command, so the runner resolved `scripts/browser-server.ts` under the temporary config directory and could not start. Set `webServer.cwd` explicitly when reusing the repository fixture from an external config; verify accessible control labels from source before writing probes.
 - During the prototype comparison, `pnpm exec playwright test` again triggered automatic dependency verification against the default registry and reported tarball URL mismatches before running the installed tests. Read the registry and recorded startup constraints first; use `node_modules/.bin/playwright` or the installed Node entrypoint for read-only verification. The 16 selected browser tests passed, and the lockfile was unchanged.
 - Curved connectors can extend beyond their endpoint shapes, and an arrowhead can extend beyond a constant-width hit path at high zoom. Fit must include Bézier and arrow bounds; the painted head must remain selectable independently of the line hit area.
 - Changing text line height clipped older multiline and wrapped content, and normalizing custom colors erased the distinction between black and white ink. Test saved legacy shapes against their original geometry and retain exact custom stroke colors.
