@@ -123,6 +123,51 @@ test('saved multiline and wrapped text remain visible within their original boun
 	}
 })
 
+test('HTML card preserves content and interactions at its corners', async ({ page, request }) => {
+	await resetBoard(request, [
+		{
+			id: 'corner-card',
+			type: 'html',
+			x: 200,
+			y: 200,
+			w: 300,
+			h: 200,
+			color: '#00a2e1',
+			title: 'Card',
+			html: '<html><body style="margin:0"><button id="corner" style="position:absolute;left:0;top:0;width:16px;height:16px;border:0;padding:0;background:#ff0000" onclick="this.dataset.clicked=\'yes\'"></button></body></html>',
+		},
+	])
+	await openCanvas(page)
+	await resetView(page)
+	const label = page.locator('[data-card-handle="corner-card"] .card-pill')
+	const labelBox = await label.boundingBox()
+	if (!labelBox) throw new Error('Missing card label')
+	await page.mouse.click(labelBox.x + labelBox.width / 2, labelBox.y + labelBox.height / 2)
+	const card = page.locator('[data-shape-id="corner-card"] .html-card')
+	await expect(card).toHaveCSS('overflow', 'visible')
+	await expect(card.locator('iframe')).toHaveCSS('border-radius', '0px')
+	const corner = page.frameLocator('[data-shape-id="corner-card"] iframe').locator('#corner')
+	await expect(corner).toBeVisible()
+	await corner.click({ position: { x: 4, y: 4 } })
+	await expect(corner).toHaveAttribute('data-clicked', 'yes')
+	const screenshot = await page.screenshot({ clip: { x: 200, y: 200, width: 16, height: 16 } })
+	const pixel = await page.evaluate(async (data) => {
+		const image = await createImageBitmap(
+			await (await fetch(`data:image/png;base64,${data}`)).blob(),
+		)
+		const canvas = document.createElement('canvas')
+		canvas.width = canvas.height = 16
+		const context = canvas.getContext('2d')
+		if (!context) throw new Error('Canvas context unavailable')
+		context.drawImage(image, 0, 0)
+		image.close()
+		return [...context.getImageData(3, 3, 1, 1).data]
+	}, screenshot.toString('base64'))
+	expect(pixel[0]).toBeGreaterThan(240)
+	expect(pixel[1]).toBeLessThan(10)
+	expect(pixel[2]).toBeLessThan(10)
+})
+
 test('HTML card color updates its visible label', async ({ page, request }) => {
 	await resetBoard(request, [
 		{
