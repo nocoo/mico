@@ -505,8 +505,9 @@ test('invalid browser origins and malformed WebSocket frames are isolated', asyn
 			assert.equal(await getBoard(port, 'https://mico.dev.hexly.ai.evil.example'), 403)
 			bad = connect(port, '127.0.0.1')
 			await once(bad, 'connect', { signal: AbortSignal.timeout(WAIT_MS) })
+			const key = Buffer.from('the sample nonce').toString('base64')
 			bad.write(
-				`GET /api/events HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==\r\nSec-WebSocket-Version: 13\r\nOrigin: https://mico.dev.hexly.ai\r\n\r\n`,
+				`GET /api/events HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Key: ${key}\r\nSec-WebSocket-Version: 13\r\nOrigin: https://mico.dev.hexly.ai\r\n\r\n`,
 			)
 			const [handshake] = await once(bad, 'data', { signal: AbortSignal.timeout(WAIT_MS) })
 			assert.match(handshake.toString(), /101 Switching Protocols/)
