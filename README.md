@@ -37,11 +37,11 @@ Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.
 
 在保存设置之前，守护进程读取以下环境变量和默认值：
 
-| 变量              | 默认值                      | 用途                                       |
-| ----------------- | --------------------------- | ------------------------------------------ |
-| `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | 网关地址，包含 `/v1`。                     |
-| `MAGPIE_MODEL`    | `auto/gpt-6-luna`           | 发给网关的模型 ID。                        |
-| `MAGPIE_API_KEY`  | `magpie`                    | Bearer token；设为空字符串则不发送。       |
+| 变量              | 默认值                     | 用途                                 |
+| ----------------- | -------------------------- | ------------------------------------ |
+| `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | 网关地址，包含 `/v1`。               |
+| `MAGPIE_MODEL`    | `auto/gpt-6-luna`          | 发给网关的模型 ID。                  |
+| `MAGPIE_API_KEY`  | `magpie`                   | Bearer token；设为空字符串则不发送。 |
 
 已保存的设置优先于环境变量。网关不可达时，面板会给出可操作的错误信息和 Continue 按钮。助手只能操作画布，不是通用聊天端点。
 
@@ -172,18 +172,18 @@ pnpm build
 
 ## 技术栈
 
-| 技术 | 用途 |
-| --- | --- |
-| React 19 | 浏览器画布界面 |
-| Vite 8 | 开发服务器与构建 |
-| TypeScript | 源码与共享契约 |
-| Node.js 24 | 守护进程、HTTP API、CLI 与 WebSocket 同步 |
-| SQLite | 本地命名画布和素材存储 |
-| Vercel AI SDK | 兼容 OpenAI 的流式输出与画布工具 |
-| Bootstrap 5 | 沙箱 iframe 内的 HTML 卡片渲染 |
-| Lucide | 界面图标 |
-| Biome | 格式与静态检查 |
-| Playwright | 浏览器交互测试 |
+| 技术          | 用途                                      |
+| ------------- | ----------------------------------------- |
+| React 19      | 浏览器画布界面                            |
+| Vite 8        | 开发服务器与构建                          |
+| TypeScript    | 源码与共享契约                            |
+| Node.js 24    | 守护进程、HTTP API、CLI 与 WebSocket 同步 |
+| SQLite        | 本地命名画布和素材存储                    |
+| Vercel AI SDK | 兼容 OpenAI 的流式输出与画布工具          |
+| Bootstrap 5   | 沙箱 iframe 内的 HTML 卡片渲染            |
+| Lucide        | 界面图标                                  |
+| Biome         | 格式与静态检查                            |
+| Playwright    | 浏览器交互测试                            |
 
 ## 文档
 

@@ -172,18 +172,18 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 
 ## Stack
 
-| Technology | Role |
-| --- | --- |
-| React 19 | Browser canvas interface |
-| Vite 8 | Development server and build |
-| TypeScript | Source and shared contracts |
-| Node.js 24 | Daemon, HTTP API, CLI and WebSocket synchronization |
-| SQLite | Local named-canvas and asset storage |
-| Vercel AI SDK | OpenAI-compatible streaming and canvas tools |
-| Bootstrap 5 | HTML card rendering inside the sandboxed iframe |
-| Lucide | Interface icons |
-| Biome | Formatting and static checks |
-| Playwright | Browser interaction tests |
+| Technology    | Role                                                |
+| ------------- | --------------------------------------------------- |
+| React 19      | Browser canvas interface                            |
+| Vite 8        | Development server and build                        |
+| TypeScript    | Source and shared contracts                         |
+| Node.js 24    | Daemon, HTTP API, CLI and WebSocket synchronization |
+| SQLite        | Local named-canvas and asset storage                |
+| Vercel AI SDK | OpenAI-compatible streaming and canvas tools        |
+| Bootstrap 5   | HTML card rendering inside the sandboxed iframe     |
+| Lucide        | Interface icons                                     |
+| Biome         | Formatting and static checks                        |
+| Playwright    | Browser interaction tests                           |
 
 ## Documentation
 
