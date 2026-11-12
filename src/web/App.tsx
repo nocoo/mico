@@ -17,7 +17,7 @@ import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
-import { jellyStyle } from './canvas/jelly'
+import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
@@ -751,7 +751,12 @@ export default function App() {
 			y: world.y,
 			w: 0,
 			h: 0,
-			color: tool === 'line' ? CANDY_LAYOUT.linePreset : CANDY_COLORS.blue,
+			color:
+				tool === 'line'
+					? CANDY_LAYOUT.linePreset
+					: tool === 'ellipse'
+						? JELLY_COLORS.peach
+						: CANDY_COLORS.blue,
 		})
 	}
 

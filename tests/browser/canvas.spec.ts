@@ -1299,7 +1299,7 @@ test('pan and zoom preserve endpoint geometry and the compact frame remains reac
 	await page.screenshot({ path: '/tmp/mico-frame-mobile.png', animations: 'disabled' })
 })
 
-test('multi-line concept labels render one tspan per line', async ({ page, request }) => {
+test('multi-line concept labels preserve title and detail text', async ({ page, request }) => {
 	await resetBoard(request, [
 		{
 			id: 'multi',
@@ -1316,7 +1316,6 @@ test('multi-line concept labels render one tspan per line', async ({ page, reque
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await closeAssistant(page)
 	const label = page.locator('[data-shape-id="multi"]')
-	await expect(label.locator('tspan')).toHaveCount(2)
-	await expect(label).toContainText('Line one')
-	await expect(label).toContainText('Line two')
+	await expect(label.locator('.nd-t')).toHaveText('Line one')
+	await expect(label.locator('.nd-s')).toHaveText('Line two')
 })

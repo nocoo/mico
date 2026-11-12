@@ -11,24 +11,7 @@ import { HTML_CARD_SANDBOX, htmlCardDocument } from '../htmlCard'
 import { imagePreserveAspectRatio } from '../image'
 import { StickyNote } from '../StickyNote'
 import { ConnectorView } from './ConnectorView'
-
-function ShapeLabel({ text, x, y, fill }: { text: string; x: number; y: number; fill: string }) {
-	const lines = text.split('\n').map((line, index) => ({ line, key: `${index}-${line}` }))
-	const lineHeight = 18
-	return (
-		<text x={x} y={y} fill={fill} textAnchor="middle" dominantBaseline="middle">
-			{lines.map(({ line, key }, index) => (
-				<tspan
-					key={key}
-					x={x}
-					dy={index === 0 ? `${(-(lines.length - 1) * lineHeight) / 2}px` : `${lineHeight}px`}
-				>
-					{line || ' '}
-				</tspan>
-			))}
-		</text>
-	)
-}
+import { JellyShape } from './JellyShape'
 
 interface ShapeCallbacks {
 	onPointerDown: (event: React.PointerEvent<SVGGElement>, shape: Shape) => void
@@ -98,19 +81,10 @@ export function ShapeView({
 		onPointerDown: (event: React.PointerEvent<SVGGElement>) => onPointerDown(event, shape),
 	}
 
-	if (shape.type === 'rectangle') {
+	if (shape.type === 'rectangle' || shape.type === 'ellipse') {
 		return (
 			<g {...common}>
-				<rect
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					rx={10}
-					style={{ fill: candyWash(shape.color) }}
-					stroke={shape.color}
-					strokeWidth={active ? 3 : 2}
-				/>
+				<JellyShape shape={shape} />
 				{active && (
 					<rect
 						className="selection"
@@ -119,47 +93,6 @@ export function ShapeView({
 						width={shape.w + 8}
 						height={shape.h + 8}
 						rx={12}
-					/>
-				)}
-				{shape.text && (
-					<ShapeLabel
-						text={shape.text}
-						x={shape.x + shape.w / 2}
-						y={shape.y + shape.h / 2}
-						fill={candyInk(shape.color)}
-					/>
-				)}
-			</g>
-		)
-	}
-	if (shape.type === 'ellipse') {
-		return (
-			<g {...common}>
-				<ellipse
-					cx={shape.x + shape.w / 2}
-					cy={shape.y + shape.h / 2}
-					rx={shape.w / 2}
-					ry={shape.h / 2}
-					style={{ fill: candyWash(shape.color) }}
-					stroke={shape.color}
-					strokeWidth={active ? 3 : 2}
-				/>
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={12}
-					/>
-				)}
-				{shape.text && (
-					<ShapeLabel
-						text={shape.text}
-						x={shape.x + shape.w / 2}
-						y={shape.y + shape.h / 2}
-						fill={candyInk(shape.color)}
 					/>
 				)}
 			</g>

@@ -1,5 +1,6 @@
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Shape } from '../../src/shared/types'
+import { JELLY_COLORS } from '../../src/web/canvas/jelly'
 import { CANDY_COLORS, CANDY_TINTS } from '../../src/web/design'
 import {
 	board,
@@ -333,7 +334,7 @@ test('rectangle, ellipse and line tools draw by dragging', async ({ page, reques
 		y: 160,
 		w: 140,
 		h: 120,
-		color: CANDY_COLORS.blue,
+		color: JELLY_COLORS.peach,
 	})
 
 	await page.getByRole('button', { name: 'Line', exact: true }).click()
