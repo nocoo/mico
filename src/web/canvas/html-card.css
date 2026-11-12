@@ -1,0 +1,66 @@
+.html-card.html-card-reference-surface {
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	overflow: hidden;
+	border-radius: 32px;
+	color: var(--ui-ink);
+	background: light-dark(oklch(1 0 0 / 0.93), oklch(0.255 0.028 285 / 0.95));
+	box-shadow:
+		inset 0 0 0 1px var(--ui-glass-edge),
+		inset 0 2px 0 var(--ui-gloss),
+		0 0 0 1px var(--ui-hair),
+		0 40px 70px -36px var(--ui-shadow),
+		0 6px 14px -8px var(--ui-shadow);
+}
+
+.html-card-reference-surface .html-card-frame,
+.html-card-reference-surface .html-card-empty {
+	border-radius: inherit;
+}
+
+.html-card-label-handle {
+	cursor: move;
+}
+
+.html-card-label-handle .html-card-label.card-tab.card-pill {
+	position: absolute;
+	inset-block-end: 8px;
+	inset-inline-start: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: auto;
+	max-width: 100%;
+	padding: 4px 11px 4px 8px;
+	border: 0;
+	border-radius: 99px;
+	color: var(--ui-accent-ink);
+	background: var(--ui-glass-strong);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-hair),
+		0 6px 12px -8px var(--ui-shadow);
+	font-size: 11.5px;
+	font-weight: 600;
+	line-height: 1.5;
+	white-space: nowrap;
+	box-sizing: border-box;
+}
+
+.html-card-label-handle .html-card-label-icon {
+	display: inline-grid;
+	place-items: center;
+	width: 14px;
+	height: 14px;
+	flex: 0 0 14px;
+}
+
+.html-card-label-handle .html-card-label-icon svg {
+	width: 100%;
+	height: 100%;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
