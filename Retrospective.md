@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- A delegated image renderer again used one shared corner radius for both axes, undoing the earlier narrow-image fix. Preserve independently clamped horizontal and vertical radii and rerun both narrow orientations whenever replacing image geometry.
+- A new selection outline initially used SVG stroke geometry, which did not match the prototype's CSS outline at fractional pixel widths. Compare selected shapes at multiple zoom levels and let the browser apply the original outline semantics.
 - An SVG selection rectangle approximated CSS `outline` incorrectly: stroke centering and browser pixel rounding produced visibly different borders at different zoom levels. Render the same CSS outline in a pointer-transparent `foreignObject` and compare against the original at 100% and 200% zoom.
 - An SVG marker using `context-stroke` rendered the connector arrowhead black despite a colored line. Render the head with inherited `currentColor` and compare it against the original rather than trusting the marker declaration.
 - A pixel comparison accidentally included the prototype context toolbar or the application's properties panel. Hide unrelated overlays in isolated visual fixtures, while keeping interaction tests separate.
