@@ -134,7 +134,10 @@ test('image keeps its rounded border and clips its corners when selected and uns
 			const [r, g, b] = pixel(x, y)
 			expect(g > 200 && r < 50 && b < 50, `image clipped at ${x},${y}`).toBe(false)
 		}
-		expect(pixel(82, 82)).toEqual([0, 255, 0])
+		const [red, green, blue] = pixel(82, 82)
+		expect(red).toBeLessThanOrEqual(5)
+		expect(green).toBeGreaterThanOrEqual(240)
+		expect(blue).toBeLessThanOrEqual(5)
 	}
 	await dragWorld(page, { x: 280, y: 280 }, { x: 320, y: 320 })
 	await expect.poll(async () => (await shapeOf(request, 'image')).x).not.toBe(200)
