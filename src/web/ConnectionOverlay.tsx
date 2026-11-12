@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { CanvasShape, Connector, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
+import { connectorPath, createConnectorGeometry } from './canvas/connectorGeometry'
 import { CANDY_LAYOUT } from './design'
 import type { ConnectionDraft } from './useConnectionGesture'
 
@@ -44,15 +45,33 @@ export function ConnectionOverlay({
 			targetAnchors.findIndex(({ point: other }) => point.x === other.x && point.y === other.y) ===
 			index,
 	)
+	const fixed = draft
+		? shapes.find((shape) => shape.id === draft.fixed.shapeId && shape.type !== 'connector')
+		: undefined
+	const previewFrom = draft?.endpoint === 'from' ? target : fixed
+	const previewTo = draft?.endpoint === 'from' ? fixed : target
+	const previewGeometry =
+		preview && draft
+			? createConnectorGeometry(
+					preview.start,
+					preview.end,
+					previewFrom?.type !== 'connector' ? previewFrom : undefined,
+					previewTo?.type !== 'connector' ? previewTo : undefined,
+					{
+						fromAnchor:
+							draft.endpoint === 'from' ? draft.target?.anchorIndex : draft.fixed.anchorIndex,
+						toAnchor:
+							draft.endpoint === 'from' ? draft.fixed.anchorIndex : draft.target?.anchorIndex,
+					},
+				)
+			: null
 	return (
 		<>
-			{preview && draft && (
-				<line
+			{previewGeometry && draft && (
+				<path
 					className="connection-preview"
-					x1={preview.start.x}
-					y1={preview.start.y}
-					x2={preview.end.x}
-					y2={preview.end.y}
+					d={connectorPath(previewGeometry)}
+					fill="none"
 					stroke={draft.original?.color ?? CANDY_LAYOUT.connector}
 					strokeWidth={2}
 					strokeDasharray={draft.target ? undefined : '8 8'}
