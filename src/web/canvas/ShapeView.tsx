@@ -4,13 +4,13 @@ import { CodeXml, Frame } from 'lucide-react'
 import type React from 'react'
 import { FRAME_FILL_PERCENT } from '../../shared/palette'
 import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
-import { getConnectorAnchors } from '../anchors'
 import { BrushStroke } from '../BrushStroke'
 import { CardHeaderPill } from '../CardHeaderPill'
 import { CANDY_COLORS, candyInk, candyLine, candyWash, FONT_STACKS, type Tool } from '../design'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from '../htmlCard'
 import { imagePreserveAspectRatio } from '../image'
 import { StickyNote } from '../StickyNote'
+import { ConnectorView } from './ConnectorView'
 
 function ShapeLabel({ text, x, y, fill }: { text: string; x: number; y: number; fill: string }) {
 	const lines = text.split('\n').map((line, index) => ({ line, key: `${index}-${line}` }))
@@ -66,42 +66,21 @@ export function ShapeView({
 		const from = visibleShapes.find((item) => item.id === shape.from)
 		const to = visibleShapes.find((item) => item.id === shape.to)
 		if (!from || !to || from.type === 'connector' || to.type === 'connector') return null
-		const { start: a, end: b } = getConnectorAnchors(from, to, shape)
-		const active = selectedIds.includes(shape.id)
 		return (
-			<g
+			<ConnectorView
+				shape={shape}
+				from={from}
+				to={to}
+				selected={selectedIds.includes(shape.id)}
+				cursor={
+					tool === 'hand' || spacePressed || isPanning
+						? isPanning
+							? 'grabbing'
+							: 'grab'
+						: 'pointer'
+				}
 				onPointerDown={(event) => onPointerDown(event, shape)}
-				className="canvas-shape connector"
-				data-shape-id={shape.id}
-				style={{
-					cursor:
-						tool === 'hand' || spacePressed || isPanning
-							? isPanning
-								? 'grabbing'
-								: 'grab'
-							: 'pointer',
-				}}
-			>
-				<line
-					x1={a.x}
-					y1={a.y}
-					x2={b.x}
-					y2={b.y}
-					stroke="transparent"
-					strokeWidth={16}
-					vectorEffect="non-scaling-stroke"
-				/>
-				<line
-					x1={a.x}
-					y1={a.y}
-					x2={b.x}
-					y2={b.y}
-					stroke={shape.color}
-					strokeWidth={active ? 3 : 2}
-					markerEnd="url(#arrow)"
-					vectorEffect="non-scaling-stroke"
-				/>
-			</g>
+			/>
 		)
 	}
 

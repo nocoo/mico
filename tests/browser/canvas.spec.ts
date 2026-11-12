@@ -43,10 +43,10 @@ async function targetPoint(page: Page, id: string, side: 'left' | 'right' = 'lef
 
 async function selectEdge(page: Page) {
 	const point = await page
-		.locator('[data-shape-id="edge"] line')
+		.locator('[data-shape-id="edge"] .connector-line')
 		.last()
 		.evaluate((element) => {
-			const line = element as SVGLineElement
+			const line = element as SVGPathElement
 			const point = line.getPointAtLength(line.getTotalLength() / 2)
 			const screen = new DOMPoint(point.x, point.y).matrixTransform(
 				line.getScreenCTM() ?? undefined,
