@@ -16,6 +16,9 @@
 - `biome check` reported 24 warnings while `pnpm check` stayed green, so the lint slot would have been a no-op gate. Lint now runs with `--error-on-warnings`; fix warnings instead of raising the diagnostic limit.
 - A literal WebSocket handshake key in `src/server/index.test.ts` tripped gitleaks' `generic-api-key` rule, which would have failed the secret slot on the first CI run. Build probe credentials at runtime instead of allowlisting test files.
 - `docs/prototypes/` is lint-excluded rather than reformatted: the browser suite compares the canvas against those frozen files, so a formatter rewrite is a visual regression.
+- The committed lockfile carried 191 mirror tarball URLs from earlier local installs, which pnpm 11's supply-chain policy rejected in CI while every local command stayed green. Install with `--frozen-lockfile` and keep `registry` overrides out of the lockfile; the policy is the guard that caught it.
+- A browser test selected text with `Meta+A`. It passed on macOS and failed on the Linux runner with the old text still prefixed. Use `ControlOrMeta` for any keyboard chord that differs per platform.
+- The first gated CI run took 7m15s against a 5-minute target, almost entirely L4 (421s), because the runner is roughly twice as slow as this workstation (186s locally). Budget browser slots from CI measurements, not local ones.
 
 ## Tool usage
 

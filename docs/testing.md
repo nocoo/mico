@@ -48,7 +48,7 @@ pnpm build
 | L2 Runtime, P1 Package | —                                       | `na`: plain Node runtime, private package                   |
 | Z1 Gate                | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
 
-No Git hooks are installed yet, so CI is the only enforced stage. Known gaps: L1 declares no coverage target or percentage, L4 runs a subset in CI while the remaining specs run locally, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references that the browser suite compares against.
+No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). The first gated run took 7m15s end to end: L4 used 421s and every other slot stayed between 7s and 29s, so L4 is the only slot above the 5-minute target. Known gaps: L1 declares no coverage target or percentage, L4 runs a subset in CI while the remaining specs run locally, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references that the browser suite compares against.
 
 ## Local gates
 

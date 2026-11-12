@@ -23,6 +23,8 @@
 - Gate pushes and pull requests with a base-ci quality workflow that declares every System0 slot; CI runs types, zero-warning lint, workflow lint, secret and dependency scans, the build, unit and integration tests, and a browser E2E subset.
 - Split the Node suite into L1 and L3 partitions through `scripts/run-tests.ts`, so a test file in a new directory is discovered instead of silently skipped.
 - Fail `pnpm lint` on warnings, exclude the frozen prototype references from Biome, and build the WebSocket probe key at runtime so the secret scan stays clean.
+- Add local pre-commit and pre-push gates (`pnpm hooks:install`): lint, types and unit tests on an index snapshot plus a staged secret scan, then build, integration and dependency checks on each pushed commit.
+- Require one passing check, `quality / Z1: Gate`, on `main`; force pushes and branch deletion are blocked.
 
 ## v0.6.5
 
