@@ -162,15 +162,16 @@ MOSS 和 MAI 代理走 Vite。静态生产构建需要为这两个实时服务�
 ## 测试
 
 ```sh
-pnpm check          # Biome + TypeScript
-pnpm test           # 纯逻辑、存储、HTTP API、CLI 和 Agent 示例
-pnpm test:unit      # 纯逻辑、STT 切分和存储
-pnpm test:api       # HTTP、WebSocket 和 AI 流式契约
-pnpm test:cli       # 真实守护进程 + CLI 命令
-pnpm test:examples  # 经过校验存储的 Agent 批量示例
-pnpm test:browser   # Playwright 浏览器交互
+pnpm check            # Biome（零警告）+ TypeScript
+pnpm test             # 全部 Node 测试，自动发现 src/ 与 scripts/ 下的 *.test.ts
+pnpm test:unit        # L1：纯逻辑、存储、STT 与组件逻辑
+pnpm test:integration # L3：真实守护进程的 HTTP/WebSocket、CLI 与 Agent 示例
+pnpm test:e2e         # L4：CI 跑的浏览器子集
+pnpm test:browser     # L4：全部 Playwright 用例
 pnpm build
 ```
+
+推送和 PR 会触发 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)：它按 System0 槽位调用 base-ci 的 `quality.yml`（钉完整提交 SHA），分支保护只需要 `quality / Z1: Gate` 一个检查。
 
 测试分层、隔离规则、Agent API 契约和覆盖范围见 [`docs/testing.md`](docs/testing.md)。
 

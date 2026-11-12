@@ -162,15 +162,16 @@ The MOSS and MAI proxies run through Vite. A static production build needs equiv
 ## Tests
 
 ```sh
-pnpm check          # Biome + TypeScript
-pnpm test           # pure logic, store, HTTP API, CLI and agent examples
-pnpm test:unit      # pure logic, STT segmenter and store
-pnpm test:api       # HTTP, WebSocket and AI streaming contract
-pnpm test:cli       # real daemon + CLI commands
-pnpm test:examples  # agent example batches through the validated store
-pnpm test:browser   # Playwright browser interaction
+pnpm check              # Biome with zero warnings + TypeScript
+pnpm test              # every Node test file, discovered under src/ and scripts/
+pnpm test:unit          # L1: pure logic, store, STT and component logic
+pnpm test:integration   # L3: real daemon over HTTP/WebSocket, CLI, agent examples
+pnpm test:e2e           # L4: the browser subset gated in CI
+pnpm test:browser       # L4: every Playwright spec
 pnpm build
 ```
+
+Pushes and pull requests run [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml), which calls base-ci's `quality.yml` (pinned to a full commit SHA) per System0 slot; branch protection only needs `quality / Z1: Gate`.
 
 Testing layers, isolation rules, the agent API contract and the coverage map live in [`testing.md`](testing.md).
 

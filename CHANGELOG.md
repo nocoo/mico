@@ -20,6 +20,9 @@
 - Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.
 - Add full canvas management to the agent API and CLI, including per-canvas operations, `--canvas` targeting, state snapshots and WebSocket canvas events.
 - Migrate existing single-board databases to a canvas named “My canvas” automatically.
+- Gate pushes and pull requests with a base-ci quality workflow that declares every System0 slot; CI runs types, zero-warning lint, workflow lint, secret and dependency scans, the build, unit and integration tests, and a browser E2E subset.
+- Split the Node suite into L1 and L3 partitions through `scripts/run-tests.ts`, so a test file in a new directory is discovered instead of silently skipped.
+- Fail `pnpm lint` on warnings, exclude the frozen prototype references from Biome, and build the WebSocket probe key at runtime so the secret scan stays clean.
 
 ## v0.6.5
 

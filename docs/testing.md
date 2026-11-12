@@ -4,6 +4,8 @@ Mico has a collection of canvases but three interfaces over them: the browser ca
 
 ## Layers
 
+The Node layers feed L1 (pure logic, store, STT) or L3 (HTTP API, CLI, agent examples); the browser layers feed L4.
+
 | Layer               | Files                                                                                                                                     | What it proves                                                                                                                                                                                                                                         |
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Pure logic          | `src/web/{anchors,brush,canvasState,connections,containers,design,grid,move,selection,snap,viewport}.test.ts`, `src/web/canvas/*.test.ts` | Geometry, containment, snapping, connector anchors and classes, brush sampling, palette/token contract. No DOM, no database.                                                                                                                           |
@@ -17,15 +19,36 @@ Mico has a collection of canvases but three interfaces over them: the browser ca
 ## Commands
 
 ```sh
-pnpm check          # Biome + TypeScript
-pnpm test           # every Node test layer
-pnpm test:unit      # pure logic + store
-pnpm test:api       # HTTP/WebSocket daemon contract
-pnpm test:cli       # real daemon + CLI
-pnpm test:examples  # agent example batches
-pnpm test:browser   # Playwright, isolated Vite + daemon
+pnpm check              # Biome with zero warnings + TypeScript
+pnpm test               # every Node test file under src/ and scripts/
+pnpm test:unit          # L1: pure logic, store, STT and component logic
+pnpm test:integration   # L3: real daemon over HTTP/WebSocket, CLI, agent examples
+pnpm test:e2e           # L4: the browser subset gated in CI
+pnpm test:browser       # L4: every Playwright spec
 pnpm build
 ```
+
+`scripts/run-tests.ts` discovers every `*.test.ts` under `src/` and `scripts/` and splits the set in two. The files listed in its `INTEGRATION` constant run against a real daemon, ephemeral port and temporary SQLite file (L3); everything else is pure logic (L1). `pnpm test` runs the discovered set itself, so a test file in a new directory can never be skipped — move it into `INTEGRATION` when it needs a live daemon.
+
+## Quality slots
+
+`.github/workflows/ci.yml` calls `nocoo/base-ci`'s `quality.yml`, pinned to a full commit SHA, and declares every System0 slot in `slot-status`. Only one check needs branch protection: `quality / Z1: Gate`.
+
+| Slot                   | Command                                 | Scope                                                       |
+| ---------------------- | --------------------------------------- | ----------------------------------------------------------- |
+| S1 Types               | `pnpm typecheck`                        | every file in `tsconfig.json`                               |
+| S2 Lint                | `pnpm lint`                             | `biome check --error-on-warnings`, zero diagnostics allowed |
+| S3 Workflow            | actionlint 1.7.12 + immutable pin check | `.github/workflows`                                         |
+| G1 Secrets             | gitleaks 8.30.1 over the checkout       | tracked files                                               |
+| G2 Dependencies        | OSV Scanner over `pnpm-lock.yaml`       | single lockfile                                             |
+| B1 Build               | `pnpm build`                            | Vite production bundle                                      |
+| L1 Unit                | `pnpm test:unit`                        | 268 tests, no process or socket                             |
+| L3 Integration         | `pnpm test:integration`                 | 72 tests, real daemon and CLI                               |
+| L4 E2E                 | `pnpm test:e2e`                         | `canvas`, `canvases`, `controls` specs, 54 tests            |
+| L2 Runtime, P1 Package | —                                       | `na`: plain Node runtime, private package                   |
+| Z1 Gate                | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
+
+No Git hooks are installed yet, so CI is the only enforced stage. Known gaps: L1 declares no coverage target or percentage, L4 runs a subset in CI while the remaining specs run locally, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references that the browser suite compares against.
 
 ## Isolation
 
