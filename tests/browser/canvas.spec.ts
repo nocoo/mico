@@ -464,7 +464,7 @@ test('sticky note text edits inline and in the properties panel', async ({ page,
 	await page.mouse.down()
 	await expect(page.locator('.marquee')).toHaveCount(0)
 	await page.mouse.up()
-	await page.keyboard.press('Meta+A')
+	await page.keyboard.press('ControlOrMeta+A')
 	await page.keyboard.type('Inline remember')
 	await page.keyboard.press('Control+Enter')
 	await expect
