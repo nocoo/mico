@@ -12,6 +12,9 @@
 
 ## Tool usage
 
+- Opening the redesigned assistant by default exposed previously hidden interactions: fit used the full viewport, Escape treated the panel as previously engaged, portal menus could not inherit scoped tokens, and MAI captions lost scrolling. Test first-open, panel focus, portal rendering and obstructed canvas geometry alongside each frame replacement.
+- Extracting the MOSS view model reversed concurrent-tool error precedence and omitted live status from the new global indicator. Compare event ordering and observable state against the original implementation, then test overlapping tool results and session cleanup.
+- A test adaptation waited for an intentionally hidden status and assumed animations were disabled while asserting their names. Assert state independently of visibility, and separate reduced-motion geometry tests from animation tests.
 - A reference-fragment pixel comparison included the preceding surface's shadow and a fractional screenshot crop, producing false visual differences. Isolate visual fixtures from neighboring effects and align both crops to integer pixels before judging fidelity.
 - Changing the assistant's initial tab obscured `?ai=` results. When changing a default view, explicitly test alternate entry points and the view in which their results appear.
 - A frame screenshot probe waited for the live connection indicator to be visible even though the newly open panel intentionally hides it. Wait for the connection attribute or attached element when visibility is not the behavior under test.
