@@ -2,7 +2,7 @@
 	pointer-events: all;
 }
 
-.canvas-image-art {
+.canvas-image {
 	filter: drop-shadow(0 10px 16px color-mix(in oklch, var(--ui-shadow) 14%, transparent));
 	pointer-events: none;
 }

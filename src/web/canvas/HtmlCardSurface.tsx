@@ -22,6 +22,7 @@ export function HtmlCardSurface({ shape, active }: { shape: CanvasShape; active:
 				y={shape.y}
 				width={shape.w}
 				height={shape.h}
+				overflow="visible"
 				pointerEvents={active ? 'auto' : 'none'}
 			>
 				<div className="html-card html-card-reference-surface">

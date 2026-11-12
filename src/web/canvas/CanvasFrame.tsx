@@ -11,18 +11,26 @@ export function CanvasFrame({
 	backgroundImageId?: string
 }) {
 	const clipId = `canvas-frame-${shape.id}`
-	const radius = Math.max(0, Math.min(18, Math.abs(shape.w) / 2, Math.abs(shape.h) / 2))
+	const radiusX = Math.max(0, Math.min(18, Math.abs(shape.w) / 2))
+	const radiusY = Math.max(0, Math.min(18, Math.abs(shape.h) / 2))
 
 	return (
 		<>
 			<defs>
 				<clipPath id={clipId}>
-					<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} rx={radius} />
+					<rect
+						x={shape.x}
+						y={shape.y}
+						width={shape.w}
+						height={shape.h}
+						rx={radiusX}
+						ry={radiusY}
+					/>
 				</clipPath>
 			</defs>
 			{backgroundImageId && (
 				<image
-					className="canvas-frame-background"
+					className="frame-background-image"
 					x={shape.x}
 					y={shape.y}
 					width={shape.w}
@@ -39,7 +47,8 @@ export function CanvasFrame({
 				y={shape.y}
 				width={shape.w}
 				height={shape.h}
-				rx={radius}
+				rx={radiusX}
+				ry={radiusY}
 				style={jellyStyle(shape.color)}
 				vectorEffect="non-scaling-stroke"
 				pointerEvents="none"

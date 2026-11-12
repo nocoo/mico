@@ -33,9 +33,9 @@ test('shape radii match their visual family', () => {
 	assert.equal(selectionOutlineGeometry(shape('rectangle', { text: 'Node' }), 1).radius, 20)
 	assert.equal(selectionOutlineGeometry(shape('ellipse'), 1).radius, '50%')
 	assert.equal(selectionOutlineGeometry(shape('text'), 1).radius, 0)
-	for (const type of ['frame', 'html', 'image'] as const) {
-		assert.equal(selectionOutlineGeometry(shape(type), 1).radius, 10)
-	}
+	assert.equal(selectionOutlineGeometry(shape('frame'), 1).radius, 18)
+	assert.equal(selectionOutlineGeometry(shape('html'), 1).radius, 32)
+	assert.equal(selectionOutlineGeometry(shape('image'), 1).radius, 10)
 })
 
 test('signed lines and zero-size shapes retain usable bounds', () => {

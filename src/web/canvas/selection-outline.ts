@@ -16,11 +16,15 @@ export function selectionOutlineGeometry(shape: CanvasShape, zoom: number) {
 					? 20
 					: shape.type === 'rectangle'
 						? 22
-						: shape.type === 'frame' || shape.type === 'html' || shape.type === 'image'
-							? 10
-							: shape.type === 'text'
-								? 0
-								: 4
+						: shape.type === 'html'
+							? 32
+							: shape.type === 'frame'
+								? 18
+								: shape.type === 'image'
+									? 10
+									: shape.type === 'text'
+										? 0
+										: 4
 	return {
 		x: Math.min(shape.x, shape.x + shape.w),
 		y: Math.min(shape.y, shape.y + shape.h),
