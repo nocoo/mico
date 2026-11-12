@@ -25,9 +25,9 @@ HTML 卡片工具（W）先创建空卡片，再由 Agent 通过批量 API 填�
 
 选中笔刷工具（P）后拖动即可绘制。工具栏提供铅笔、马克笔和收尖笔刷三种笔触，以及 2/4/8px 三种宽度。笔画保存为 `path` 形状，选中后仍能改笔触、宽度和颜色。AI Agent 通过批量 API 创建同样的形状；[`examples/sketch.ts`](examples/sketch.ts) 用 23 笔收尖笔触画出房子、火柴人、太阳和山丘。选中手形工具或按住空格拖动可平移画布。画连接线时选连接线工具，从源节点拖向目标节点。框只连框，普通对象只连普通对象；靠近时兼容节点会显示锚点，高亮的锚点就是实际保存的附着点。选中连接线后可以拖动任一端点到另一个兼容节点；落在空白处、取消指针操作或按 Escape 都保持原状。属性面板里的 Source 和 Target 控件提供键盘操作方式。提交一次拖动前会检查并发的 Agent 编辑。
 
-拖动对象时，原点会吸附到可见的 16px 网格，并在六个屏幕像素范围内与附近对象做左/右/中或上/下/中对齐。匹配到的对齐会显示虚线辅助线，并在该轴上优先于网格。距离超过 160 屏幕像素的对象不会参与吸附。
+Dragging an object snaps its origin to a 16px world-space grid and aligns left/right/center or top/bottom/middle with nearby objects within six screen pixels. Matching alignments show dashed guides and take precedence over grid snapping on that axis. Objects farther than 160 screen pixels do not attract.
 
-界面使用一套取自 iPhone 5C 的糖果配色：鲜明的外壳色用于强调和描边，可读性更好的伴随色用于文字，浅色调用于便签、形状填充、框和画布背景。所有色值都定义在 [`src/web/design.ts`](src/web/design.ts)，并以 CSS 自定义属性暴露，组件和样式表共用同一来源。画布是浅中性底色加蓝图网格：100% 缩放下每 64px 一条实线，实线之间有四条 16px 虚线格。实线和虚线颜色、线宽一致，网格跟随世界坐标平移和缩放，低缩放时虚线细节淡出以避免摩尔纹。
+Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.ts); the surrounding frame uses the glass and jelly tokens in [`src/web/frame/tokens.css`](src/web/frame/tokens.css). The canvas has an animated aurora, subtle grain and a world-aligned dot grid: its visual spacing is 24 world units at 100% zoom and adapts to stay legible while zooming. This visual grid is distinct from the 16-unit snapping grid. Reduced-motion preferences stop the aurora animation.
 
 身份面板放 Logo 和 Canvases 按钮。右上角单独的 AI 按钮带呼吸状态灯，点开是停靠在右上角的助手面板，图标分页为 Chat、Live、Audio 和 Settings。Chat 通过 Vercel AI SDK 从本地 Magpie 网关流式读取回复；每条消息都是一次画布回合：助手读取画板和当前框选，调用绘图工具，回复流式输出的同时画板实时更新。指令要求增量工作——先写标题和核心对象，查看画板，再调整和扩展，而不是一次倾倒整个批次——所以一堂科学课会一步步出现。空画板提供快速课程提示，`?ai=<prompt>` 会打开面板并立即提交该提示，便于脚本化测试。Audio 播放预录会话。Live 采集麦克风语音，默认 MOSS Live，也可选 MAI 转写。底部工具栏固定在屏幕空间，选中对象的属性在右侧面板；窄视口会把属性面板移到工具栏上方并让控件换行，而不是裁掉。画布平移和缩放不会改变这些面板的尺寸或位置。控件固定 40px 高、20px 图标、14px 文字，间隔按四像素栅格：工具栏内边距、间隙、分隔线、属性列和选择内缩都是四的倍数。工具栏按内容定宽，按钮之间留四像素。功能图标统一用 Lucide，快捷键提示只在悬停时出现；工具栏支持方向键移动焦点、Enter 选中工具。浏览器页面缩放由 viewport 锁和键盘/手势拦截禁用，画布缩放独立保留。
 
