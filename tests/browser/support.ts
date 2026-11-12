@@ -26,6 +26,19 @@ export async function closeAssistant(page: Page) {
 		await page.getByRole('button', { name: 'Close AI assistant', exact: true }).click()
 	}
 	await expect(panel).toBeHidden()
+	await page.locator('#ai-panel, .toolbar').evaluateAll(async (elements) => {
+		await Promise.all(
+			elements
+				.flatMap((element) => element.getAnimations())
+				.map((animation) => animation.finished.catch(() => undefined)),
+		)
+	})
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
 }
 
 export type MicrophoneMockMode = 'allowed' | 'denied' | 'delayed'

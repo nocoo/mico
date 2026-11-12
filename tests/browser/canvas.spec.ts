@@ -151,6 +151,13 @@ test.beforeEach(async ({ request, page, baseURL }) => {
 test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigation', async ({
 	page,
 }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
 	await expect(page.locator('.identity-panel .brand strong')).toHaveText('mico')
 	await expect(page.locator('.identity-panel .identity-ai-badge')).toHaveText('AI')
@@ -209,39 +216,67 @@ test('selected object properties live inside the dock and edit the board', async
 	await expect(properties).toHaveCount(0)
 })
 
-test('frame controls align to four-pixel layout slots even on fractional viewport edges', async ({
-	page,
-}) => {
+test('frame controls follow the reference geometry without overlapping', async ({ page }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' })
 	await page.setViewportSize({ width: 1453, height: 969 })
+	const identity = await page.locator('.identity-panel').boundingBox()
+	const canvases = await page.getByRole('button', { name: 'Canvases', exact: true }).boundingBox()
+	const assistant = await page.locator('.ai-trigger').boundingBox()
+	const dock = await page.locator('.toolbar').boundingBox()
+	if (!identity || !canvases || !assistant || !dock) throw new Error('Missing reference frame')
+	expect(identity).toMatchObject({ x: 14, y: 14, width: 233, height: 56 })
+	expect(canvases).toMatchObject({ width: 34, height: 34 })
+	expect(assistant).toMatchObject({ y: 14, width: 56, height: 56 })
+	expect(assistant.x + assistant.width).toBe(1453 - 14)
+	expect(dock.y + dock.height).toBe(969 - 14)
+
 	const controls = await page
-		.locator(
-			'.topbar.frame-identity .icon-button, .topbar.ai-topbar .icon-button, .toolbar .icon-button, .zoom-value',
-		)
+		.locator('.toolbar .icon-button, .toolbar .zoom-value')
 		.evaluateAll((buttons) =>
 			buttons.map((button) => {
 				const { x, y, width, height } = button.getBoundingClientRect()
-				return { label: button.getAttribute('aria-label'), x, y, width, height }
+				return {
+					label: button.getAttribute('aria-label'),
+					x,
+					y,
+					width,
+					height,
+				}
 			}),
 		)
 	for (const control of controls) {
-		for (const dimension of [control.x, control.y, control.width, control.height]) {
-			expect(
-				Math.abs(dimension / 4 - Math.round(dimension / 4)),
-				`${control.label} must use four-pixel-aligned geometry`,
-			).toBeLessThan(0.001)
-		}
+		expect(control.height, control.label ?? undefined).toBe(40)
+		expect(control.width, control.label ?? undefined).toBe(control.label === 'Reset view' ? 52 : 40)
+		expect(control.x).toBeGreaterThanOrEqual(dock.x)
+		expect(control.x + control.width).toBeLessThanOrEqual(dock.x + dock.width)
+		expect(control.y).toBeGreaterThanOrEqual(dock.y)
+		expect(control.y + control.height).toBeLessThanOrEqual(dock.y + dock.height)
 	}
 	const sorted = [...controls].sort((a, b) => a.x - b.x)
 	for (let index = 1; index < sorted.length; index += 1) {
 		const gap = sorted[index].x - (sorted[index - 1].x + sorted[index - 1].width)
-		expect(gap, `${sorted[index].label} needs a visible gap`).toBeGreaterThanOrEqual(4)
-		expect(Math.abs(gap / 4 - Math.round(gap / 4))).toBeLessThan(0.001)
+		expect(gap, `${sorted[index].label} overlaps the previous control`).toBeGreaterThanOrEqual(2)
 	}
 })
 
 test('world grid follows pan and zoom while the identity and complete dock stay fixed', async ({
 	page,
 }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await expect(page.locator('#ai-panel')).toBeHidden()
+	await page.locator('#ai-panel, .toolbar').evaluateAll(async (elements) => {
+		await Promise.all(
+			elements
+				.flatMap((element) => element.getAnimations())
+				.map((animation) => animation.finished.catch(() => undefined)),
+		)
+	})
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
 	const snapshot = () =>
 		page.locator('.identity-panel, .brand-mark, .toolbar').evaluateAll((elements) =>
 			elements.map((element) => {
@@ -308,6 +343,7 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 test('dock and its property popovers stay on-screen at narrow and wide widths', async ({
 	page,
 }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' })
 	for (const width of [360, 390, 580, 768, 1440]) {
 		await page.setViewportSize({ width, height: 844 })
 		await page.getByRole('button', { name: 'Select', exact: true }).click()
@@ -315,13 +351,28 @@ test('dock and its property popovers stay on-screen at narrow and wide widths', 
 		const dock = page.getByRole('toolbar')
 		const dockBox = await dock.boundingBox()
 		if (!dockBox) throw new Error('Expected a visible dock')
+		expect(dockBox.x).toBeGreaterThanOrEqual(0)
+		expect(dockBox.x + dockBox.width).toBeLessThanOrEqual(width)
+		expect(dockBox.y).toBeGreaterThanOrEqual(0)
+		expect(dockBox.y + dockBox.height).toBeLessThanOrEqual(844)
 		for (const button of await dock.getByRole('button').all()) {
+			await button.scrollIntoViewIfNeeded()
 			await expect(button).toBeVisible()
+			await expect(button).toBeEnabled()
 			const box = await button.boundingBox()
 			if (!box) throw new Error('Expected a visible dock control')
-			expect(box.x).toBeGreaterThanOrEqual(0)
-			expect(box.x + box.width).toBeLessThanOrEqual(width)
-			expect(box.y + box.height).toBeLessThanOrEqual(844)
+			expect(box.x).toBeGreaterThanOrEqual(dockBox.x)
+			expect(box.x + box.width).toBeLessThanOrEqual(dockBox.x + dockBox.width)
+			expect(box.y).toBeGreaterThanOrEqual(dockBox.y)
+			expect(box.y + box.height).toBeLessThanOrEqual(dockBox.y + dockBox.height)
+			const clickable = await page.evaluate(
+				({ x, y }) => {
+					const hit = document.elementFromPoint(x, y)
+					return Boolean(hit?.closest('button'))
+				},
+				{ x: box.x + box.width / 2, y: box.y + box.height / 2 },
+			)
+			expect(clickable).toBe(true)
 		}
 		const panel = await page
 			.getByRole('region', { name: 'Selected object properties' })
@@ -460,7 +511,7 @@ test('the frame label hit area matches the visible pill and edits its title', as
 	})
 	expect(created.ok()).toBe(true)
 	await page.reload()
-	await page.locator('.status[aria-label="Live"]').waitFor()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
@@ -591,7 +642,7 @@ test('frames are selected and dragged only through their label', async ({ page, 
 	})
 	expect(created.ok()).toBe(true)
 	await page.reload()
-	await page.locator('.status[aria-label="Live"]').waitFor()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
@@ -673,7 +724,7 @@ test('drawing inside a frame joins it and dragging in or out updates membership'
 	})
 	expect(created.ok()).toBe(true)
 	await page.reload()
-	await page.locator('.status[aria-label="Live"]').waitFor()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
@@ -772,7 +823,7 @@ test('frames connect only to frames through the canvas and the API', async ({ pa
 	})
 	expect(created.ok()).toBe(true)
 	await page.reload()
-	await page.locator('.status[aria-label="Live"]').waitFor()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
@@ -889,7 +940,7 @@ test('html cards render generated markup and expose only their title', async ({
 		await route.abort()
 	})
 	await page.reload()
-	await page.locator('.status[aria-label="Live"]').waitFor()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
