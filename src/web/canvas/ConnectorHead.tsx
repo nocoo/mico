@@ -1,6 +1,12 @@
 import type { ConnectorVisualGeometry } from './connectorGeometry'
 
-export function ConnectorHead({ geometry }: { geometry: ConnectorVisualGeometry }) {
+export function ConnectorHead({
+	geometry,
+	interactive,
+}: {
+	geometry: ConnectorVisualGeometry
+	interactive: boolean
+}) {
 	if (!geometry.showArrow) return null
 	const angle =
 		(Math.atan2(geometry.arrowTip.y - geometry.end.y, geometry.arrowTip.x - geometry.end.x) * 180) /
@@ -14,7 +20,7 @@ export function ConnectorHead({ geometry }: { geometry: ConnectorVisualGeometry 
 			stroke="currentColor"
 			strokeWidth={2.5}
 			strokeLinejoin="round"
-			pointerEvents="none"
+			pointerEvents={interactive ? 'visiblePainted' : 'none'}
 		/>
 	)
 }

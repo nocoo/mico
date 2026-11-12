@@ -1,5 +1,12 @@
 import { expect, test } from '@playwright/test'
-import { closeAssistant, ISOLATED_ORIGIN, resetBoard, resetView } from './support'
+import {
+	closeAssistant,
+	ISOLATED_ORIGIN,
+	resetBoard,
+	resetView,
+	worldPoint,
+	worldView,
+} from './support'
 
 const openCanvas = async (page: import('@playwright/test').Page) => {
 	await page.goto('/')
@@ -31,6 +38,14 @@ test('connector arrowhead remains a selectable hit target', async ({ page, reque
 	await page.mouse.click(493, 290)
 	await expect(page.locator('[data-shape-id="edge"]')).toHaveClass(/\bsel\b/)
 	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await page.mouse.click(100, 500)
+	await expect(page.locator('[data-shape-id="edge"]')).not.toHaveClass(/\bsel\b/)
+	await page.mouse.move(493, 290)
+	await page.mouse.wheel(0, -100000)
+	await expect.poll(async () => (await worldView(page)).zoom).toBe(3)
+	const wing = await worldPoint(page, 487, 294)
+	await page.mouse.click(wing.x, wing.y)
+	await expect(page.locator('[data-shape-id="edge"]')).toHaveClass(/\bsel\b/)
 })
 
 test('Fit includes curved connectors outside their node bounds', async ({ page, request }) => {

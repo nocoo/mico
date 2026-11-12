@@ -99,7 +99,7 @@ export function ConnectionOverlay({
 						strokeLinecap="round"
 						strokeDasharray={draft.target ? undefined : '8 8'}
 					/>
-					<ConnectorHead geometry={previewGeometry} />
+					<ConnectorHead geometry={previewGeometry} interactive={false} />
 				</g>
 			)}
 			{target && draft && !draft.pending && (

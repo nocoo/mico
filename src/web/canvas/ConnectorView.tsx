@@ -63,7 +63,7 @@ export function ConnectorView({
 				strokeLinecap="round"
 				filter={selected ? 'drop-shadow(0 0 4px currentColor)' : undefined}
 			/>
-			<ConnectorHead geometry={geometry} />
+			<ConnectorHead geometry={geometry} interactive />
 		</g>
 	)
 }
