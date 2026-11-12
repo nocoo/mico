@@ -2,11 +2,11 @@
 
 ## Goal and scope
 
-Reproduce the visual design, interaction, motion, and responsive behavior of `/Users/nocoo/Downloads/teams-ai-whiteboard.html` in Mico, while retaining Mico's working canvas, persistence, CLI, HTTP API, Chat, recordings, MAI transcription, MOSS Live, and AI tools. The reference is an interaction prototype, not a production implementation or a source of real meeting data.
+Reproduce the visual design, interaction, motion, and responsive behavior of [`prototypes/teams-ai-whiteboard.html`](prototypes/teams-ai-whiteboard.html) in Mico, while retaining Mico's working canvas, persistence, CLI, HTTP API, Chat, recordings, MAI transcription, MOSS Live, and AI tools. The reference is an interaction prototype, not a production implementation or a source of real meeting data.
 
 Implementation proceeds in independently usable increments, with a visual and behavioral gate at each step. The first milestone is the application frame; stop for owner acceptance before changing canvas elements. Retain Mico branding and logo. Meeting UI is an isolated ViewModel and view without a real meeting integration; any placeholder data must be explicitly identified as non-live. Do not present simulated tool responses or latency as live product data.
 
-Reference analyzed: SHA-256 `a6eba63db41f3ef8078c3dc9afdbb5ca4cfa0e85e041a6a82e4b123ff4d25989`. Pin or archive the exact reference with the visual-test fixtures before implementation so that screenshots remain reproducible on other machines.
+The exact reference is archived in `docs/prototypes/teams-ai-whiteboard.html` with SHA-256 `a6eba63db41f3ef8078c3dc9afdbb5ca4cfa0e85e041a6a82e4b123ff4d25989` so the visual tests remain reproducible on other machines.
 
 ## Reference inventory
 
