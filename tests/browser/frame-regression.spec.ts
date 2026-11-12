@@ -82,7 +82,7 @@ test('initial Escape cancels the keyboard tool without closing the assistant', a
 	await expect(panel).toBeVisible()
 })
 
-test('Text font menu portals over the frame with an opaque usable surface', async ({ page }) => {
+test('Text font menu portals over the frame with a glass surface', async ({ page }) => {
 	await page.goto('/')
 	await expectLive(page)
 	await page.getByRole('button', { name: 'Text', exact: true }).click()
@@ -97,12 +97,13 @@ test('Text font menu portals over the frame with an opaque usable surface', asyn
 	await expect(content).toBeVisible()
 	await expect(hand).toBeVisible()
 	const presentation = await content.evaluate((element) => ({
-		background: getComputedStyle(element).backgroundColor,
+		background: getComputedStyle(element).backgroundImage,
+		backdrop: getComputedStyle(element).backdropFilter,
 		portaled: !element.closest('.app'),
 	}))
 	expect(presentation.portaled).toBe(true)
-	expect(presentation.background).not.toBe('rgba(0, 0, 0, 0)')
-	expect(presentation.background).not.toBe('transparent')
+	expect(presentation.background).toContain('linear-gradient')
+	expect(presentation.backdrop).toBe('blur(22px) saturate(1.7)')
 	await hand.hover()
 	await expect(hand).toHaveAttribute('data-highlighted', '')
 	await hand.click()
