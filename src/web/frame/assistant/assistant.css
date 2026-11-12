@@ -859,23 +859,112 @@
 	line-height: 1.3;
 }
 
+.ai-assistant .ai-model-select .rt-SelectTriggerInner {
+	display: none;
+}
+
+body:has(.ai-assistant .ai-model-select[aria-expanded="true"]) .select-content {
+	min-inline-size: min(280px, calc(100vw - 28px));
+	max-inline-size: calc(100vw - 28px);
+}
+
+body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
+	.select-content
+	.select-item
+	> span:not(.rt-SelectItemIndicator) {
+	display: -webkit-box;
+	overflow: hidden;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
 .ai-assistant .lesson .select-trigger {
 	justify-content: flex-start;
-	width: 100%;
-	height: 24px;
+	width: calc(100% + 6px);
+	height: 28px;
 	min-width: 0;
-	padding: 0;
-	border: 0;
+	margin: -2px -3px;
+	padding: 2px 5px 2px 7px;
+	gap: 7px;
+	border: 1px solid transparent;
+	border-radius: 10px;
 	background: transparent;
 	box-shadow: none;
 	color: var(--ui-ink);
 	font-weight: 700;
 }
 
+.ai-assistant .lesson .select-trigger > .rt-SelectTriggerInner {
+	flex: 1;
+	min-width: 0;
+	margin-inline-end: auto;
+}
+
 .ai-assistant .lesson .select-trigger > span:first-child {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+}
+
+.ai-assistant .lesson .select-trigger > .rt-SelectIcon {
+	flex: 0 0 13px;
+	width: 13px;
+	height: 13px;
+	color: var(--ui-ink-3);
+	transition:
+		color 180ms var(--ui-ease),
+		rotate 450ms var(--ui-spring);
+}
+
+.ai-assistant .lesson .select-trigger:hover:not(:disabled),
+.ai-assistant .lesson .select-trigger[aria-expanded="true"] {
+	border-color: var(--ui-hair);
+	background: var(--ui-glass-strong);
+	box-shadow:
+		inset 0 1px 0 var(--ui-gloss),
+		0 5px 10px -8px var(--ui-shadow);
+	translate: 0;
+}
+
+.ai-assistant .lesson .select-trigger:focus-visible:not([data-pointer-focus]),
+.ai-assistant .lesson .select-trigger[aria-expanded="true"] {
+	border-color: var(--ui-accent);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-accent),
+		0 0 0 3px var(--ui-accent-soft),
+		0 8px 16px -12px var(--ui-accent);
+}
+
+.ai-assistant .lesson .select-trigger[aria-expanded="true"] > .rt-SelectIcon {
+	color: var(--ui-accent-ink);
+	rotate: 180deg;
+}
+
+body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"]) .select-content {
+	min-inline-size: min(304px, calc(100vw - 28px));
+	max-inline-size: calc(100vw - 28px);
+	padding: 6px;
+	border-radius: 18px;
+}
+
+body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"]) .select-content .select-item {
+	min-block-size: 44px;
+	padding-block: 8px;
+}
+
+body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"])
+	.select-content
+	.select-item
+	> span:not(.rt-SelectItemIndicator) {
+	display: -webkit-box;
+	max-inline-size: 100%;
+	overflow: hidden;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
 }
 
 .ai-assistant .lesson-meta {
@@ -1636,10 +1725,35 @@
 	height: 32px;
 	padding: 0;
 	justify-content: center;
+	border: 1px solid var(--ui-hair);
+	border-radius: 11px;
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-glass));
+	box-shadow:
+		inset 0 1px 0 var(--ui-gloss),
+		0 5px 10px -8px var(--ui-shadow);
+	color: var(--ui-ink-2);
+	transition:
+		background 180ms var(--ui-ease),
+		color 180ms var(--ui-ease),
+		scale 450ms var(--ui-spring),
+		box-shadow 180ms var(--ui-ease);
 }
 
-.ai-assistant .ai-model-select .rt-SelectTriggerInner {
-	display: none;
+.ai-assistant .ai-model-select:hover:not(:disabled),
+.ai-assistant .ai-model-select[aria-expanded="true"] {
+	background: var(--ui-accent-soft);
+	color: var(--ui-accent-ink);
+}
+
+.ai-assistant .ai-model-select:active:not(:disabled) {
+	scale: 0.92;
+}
+
+.ai-assistant .ai-model-select[aria-expanded="true"] {
+	border-color: var(--ui-accent);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-accent),
+		0 0 0 3px var(--ui-accent-soft);
 }
 
 .ai-assistant .ai-settings-form .rt-Button {
@@ -1803,6 +1917,9 @@
 	.ai-assistant .lesson-summary,
 	.ai-assistant .lesson-button,
 	.ai-assistant .lesson-primary,
+	.ai-assistant .lesson .select-trigger,
+	.ai-assistant .lesson .select-trigger > .rt-SelectIcon,
+	.ai-assistant .ai-model-select,
 	.ai-assistant .call-wave-group,
 	.ai-assistant .call-caption,
 	.ai-assistant .ai-status-pill {

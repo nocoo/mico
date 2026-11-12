@@ -281,12 +281,15 @@
 	padding: 0 8px;
 	border: 1px solid var(--ui-hair);
 	border-radius: 12px;
-	background: var(--ui-glass-strong);
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-glass));
 	color: var(--ui-ink);
 	font-size: 12px;
 	box-shadow:
 		inset 0 1px 0 var(--ui-gloss),
 		0 5px 10px -7px var(--ui-shadow);
+}
+.toolbar-module .text-options .select-trigger:hover:not(:disabled) {
+	background: var(--ui-glass-strong);
 }
 
 .toolbar-module .text-options .select-trigger > .rt-SelectIcon {
@@ -304,24 +307,47 @@
 }
 
 body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"]) .select-content {
-	min-inline-size: 200px;
+	min-inline-size: min(220px, calc(100vw - 28px));
 	max-inline-size: calc(100vw - 28px);
-	max-block-size: min(65vh, 480px);
+	max-block-size: min(var(--radix-select-content-available-height), 65vh, 480px);
 	padding: 4px;
-	border: 1px solid var(--ui-hair);
-	border-radius: 16px;
-	background: var(--ui-glass-strong);
-	-webkit-backdrop-filter: blur(22px) saturate(1.7);
-	backdrop-filter: blur(22px) saturate(1.7);
+	border-color: var(--ui-glass-edge);
+	border-radius: 18px;
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-glass));
 	box-shadow:
-		inset 0 1px 0 var(--ui-gloss),
-		0 18px 36px -18px var(--ui-shadow);
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 24px 44px -22px var(--ui-shadow),
+		0 5px 12px -6px var(--ui-shadow);
 }
 
 body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"])
 	.select-content
 	.select-item {
 	height: auto;
+	min-block-size: 36px;
+}
+
+body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"])
+	.select-content
+	.select-item
+	> span:not(.rt-SelectItemIndicator) {
+	display: flex;
+	align-items: center;
+	max-inline-size: 100%;
+}
+
+body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"])
+	.select-content
+	.select-item
+	> span
+	> span {
+	display: block;
+	max-inline-size: 100%;
+	max-block-size: 48px;
+	overflow: hidden;
+	line-height: 1;
+	text-overflow: clip;
+	white-space: nowrap;
 }
 
 @media (max-width: 980px) {
