@@ -139,7 +139,7 @@
 .toolbar-module .text-button:focus-visible,
 .toolbar-module .zoom-value:focus-visible,
 .toolbar-module .segmented-control button:focus-visible,
-.toolbar-module .select-trigger:focus-visible {
+.toolbar-module .select-trigger:focus-visible:not([data-pointer-focus]) {
 	outline: 2px solid var(--ui-accent);
 	outline-offset: 2px;
 }
@@ -295,9 +295,8 @@
 	block-size: 12px;
 }
 
-.toolbar-module .text-options .select-trigger:focus-visible,
+.toolbar-module .text-options .select-trigger:focus-visible:not([data-pointer-focus]),
 .toolbar-module .text-options .select-trigger[aria-expanded="true"] {
-	outline: none;
 	border-color: var(--ui-accent);
 	box-shadow:
 		inset 0 0 0 1px var(--ui-accent),

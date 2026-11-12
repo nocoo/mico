@@ -23,7 +23,7 @@
 	cursor: default;
 }
 
-.ai-assistant button:focus-visible,
+.ai-assistant button:focus-visible:not([data-pointer-focus]),
 .ai-assistant textarea:focus-visible,
 .ai-assistant input:focus-visible,
 .ai-assistant select:focus-visible {

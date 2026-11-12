@@ -1,5 +1,5 @@
 import { Select } from '@radix-ui/themes'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 
 interface SelectFieldProps<T extends string> {
 	label: string
@@ -23,9 +23,18 @@ export function SelectField<T extends string>({
 	renderItem,
 }: SelectFieldProps<T>) {
 	const selectedOption = options.find((option) => option.value === value)
+	const [pointerFocus, setPointerFocus] = useState(false)
 	return (
 		<Select.Root value={value} onValueChange={(next) => onChange(next as T)} disabled={disabled}>
-			<Select.Trigger id={id} aria-label={label} className="select-trigger">
+			<Select.Trigger
+				id={id}
+				aria-label={label}
+				className="select-trigger"
+				data-pointer-focus={pointerFocus || undefined}
+				onPointerDown={() => setPointerFocus(true)}
+				onKeyDown={() => setPointerFocus(false)}
+				onBlur={() => setPointerFocus(false)}
+			>
 				{selectedOption?.label ?? null}
 			</Select.Trigger>
 			<Select.Content
@@ -35,6 +44,9 @@ export function SelectField<T extends string>({
 				sideOffset={6}
 				collisionPadding={8}
 				className="select-content"
+				onPointerDownCapture={() => setPointerFocus(true)}
+				onKeyDownCapture={() => setPointerFocus(false)}
+				onPointerDownOutside={() => setPointerFocus(true)}
 			>
 				{options.map((option) => (
 					<Select.Item className="select-item" key={option.value} value={option.value}>

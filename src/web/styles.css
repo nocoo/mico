@@ -99,7 +99,7 @@ button:disabled {
 	cursor: default;
 	opacity: 0.35;
 }
-button:focus-visible,
+button:focus-visible:not([data-pointer-focus]),
 input:focus-visible,
 select:focus-visible {
 	outline: var(--stroke-strong) solid var(--accent);
@@ -531,7 +531,10 @@ svg {
 	width: var(--icon-small);
 	height: var(--icon-small);
 }
-.select-trigger:focus-visible,
+.select-trigger[data-pointer-focus]:focus-visible {
+	outline: none;
+}
+.select-trigger:focus-visible:not([data-pointer-focus]),
 .select-trigger[aria-expanded="true"] {
 	outline: none;
 	border-color: var(--accent);
