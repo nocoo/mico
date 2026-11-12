@@ -361,7 +361,14 @@ test('dock and its property popovers stay on-screen at narrow and wide widths', 
 		for (const button of await dock.getByRole('button').all()) {
 			await button.scrollIntoViewIfNeeded()
 			await expect(button).toBeVisible()
-			await expect(button).toBeEnabled()
+			const historyButton = ['Undo', 'Redo'].includes(
+				(await button.getAttribute('aria-label')) ?? '',
+			)
+			if (historyButton) {
+				await expect(button).toBeDisabled()
+			} else {
+				await expect(button).toBeEnabled()
+			}
 			const box = await button.boundingBox()
 			if (!box) throw new Error('Expected a visible dock control')
 			expect(box.x).toBeGreaterThanOrEqual(dockBox.x)
@@ -375,7 +382,7 @@ test('dock and its property popovers stay on-screen at narrow and wide widths', 
 				},
 				{ x: box.x + box.width / 2, y: box.y + box.height / 2 },
 			)
-			expect(clickable).toBe(true)
+			expect(clickable).toBe(!historyButton)
 		}
 		const panel = await page
 			.getByRole('region', { name: 'Selected object properties' })
