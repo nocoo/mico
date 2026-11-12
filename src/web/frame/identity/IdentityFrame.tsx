@@ -91,7 +91,10 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 								</>
 							)
 							return (
-								<li key={canvas.id} className={`canvas-item ${active ? 'active' : ''}`}>
+								<li
+									key={canvas.id}
+									className={`canvas-item ${active ? 'active' : ''} ${renaming ? 'editing' : ''}`}
+								>
 									{renaming ? (
 										<div className="canvas-switch canvas-switch-editing">{body}</div>
 									) : (

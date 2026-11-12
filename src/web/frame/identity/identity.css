@@ -445,6 +445,10 @@
 		translate 280ms var(--ui-ease);
 }
 
+.frame-identity .canvas-item.editing .canvas-actions {
+	display: none;
+}
+
 .frame-identity .canvas-item:hover .canvas-actions,
 .frame-identity .canvas-item:focus-within .canvas-actions {
 	opacity: 1;

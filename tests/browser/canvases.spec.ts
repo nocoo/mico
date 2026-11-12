@@ -172,6 +172,13 @@ test('renaming and deleting canvases uses the panel and keeps one canvas', async
 	await mainItem.hover()
 	await panel.getByRole('button', { name: 'Rename My canvas', exact: true }).click()
 	const nameInput = panel.getByLabel('Canvas name')
+	await expect(mainItem.locator('.canvas-actions')).toBeHidden()
+	await nameInput.fill('A long canvas name that should remain editable')
+	const inputEndIsClickable = await nameInput.evaluate((input) => {
+		const box = input.getBoundingClientRect()
+		return document.elementFromPoint(box.right - 4, box.y + box.height / 2) === input
+	})
+	expect(inputEndIsClickable).toBe(true)
 	await nameInput.fill('Renamed canvas')
 	await nameInput.press('Enter')
 	await expect
@@ -182,6 +189,11 @@ test('renaming and deleting canvases uses the panel and keeps one canvas', async
 	await expect(page).toHaveTitle('mico · Renamed canvas')
 
 	const secondItem = panel.locator('.canvas-item').filter({ hasText: 'Second canvas' })
+	await secondItem.hover()
+	await panel.getByRole('button', { name: 'Rename Second canvas', exact: true }).click()
+	await expect(secondItem.locator('.canvas-actions')).toBeHidden()
+	await panel.getByLabel('Canvas name').press('Escape')
+	await expect(panel.getByRole('button', { name: 'Open canvas Second canvas' })).toBeVisible()
 	await secondItem.hover()
 	await panel.getByRole('button', { name: 'Delete Second canvas', exact: true }).click()
 	await panel.getByRole('button', { name: 'Confirm delete Second canvas', exact: true }).click()
