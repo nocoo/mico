@@ -1002,7 +1002,33 @@ test('html cards render generated markup and expose only their title', async ({
 		)
 		.toBe(true)
 	await expect(frame.locator('#bootstrap-panel')).not.toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await frame.locator('html').evaluate(() => {
+		const events: string[] = []
+		Object.assign(window, { __cardEvents: events })
+		for (const type of ['pointerdown', 'pointerup', 'click'])
+			document.addEventListener(
+				type,
+				(event) => events.push(`${event.type}:${(event.target as Element).id}`),
+				true,
+			)
+	})
+	await expect
+		.poll(async () => {
+			const box = await frame.locator('#bootstrap-button').boundingBox()
+			if (!box) return false
+			return page.evaluate(
+				({ x, y }) =>
+					document.elementFromPoint(x, y) ===
+					document.querySelector('[data-shape-id="html-card"] iframe'),
+				{ x: box.x + box.width / 2, y: box.y + box.height / 2 },
+			)
+		})
+		.toBe(true)
 	await frame.locator('#bootstrap-button').click()
+	const events = await frame
+		.locator('html')
+		.evaluate(() => (window as unknown as { __cardEvents?: string[] }).__cardEvents)
+	expect(events).toContain('click:bootstrap-button')
 	await expect(frame.locator('#bootstrap-panel')).toHaveClass(/(?:^|\s)show(?:\s|$)/)
 	await expect(frame.locator('#bootstrap-button')).toHaveAttribute('aria-expanded', 'true')
 
