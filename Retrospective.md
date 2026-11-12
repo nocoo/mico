@@ -12,6 +12,7 @@
 
 ## Tool usage
 
+- A dropdown keyboard test sent ArrowDown before Radix finished moving focus into the menu, so Enter selected the original item. Wait for the focused option and its next focus transition before asserting the selected value.
 - A dropdown's width was styled through the trigger's open state, so Radix's closing animation lost the width rule and briefly expanded. Style the portalled content by its own persistent class and test geometry throughout the exit animation.
 - An edit guessed a nonexistent `SelectField` property. Read the actual interface and anchor replacements to existing unique text before editing.
 - Delegated commits used scoped or unsupported commit types despite the shared commit rules. Check each worker's exact proposed commit message before authorizing its commit; use only the listed types and unscoped format.
