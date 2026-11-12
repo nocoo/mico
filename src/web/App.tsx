@@ -1,9 +1,5 @@
-import bootstrapCss from 'bootstrap/dist/css/bootstrap.min.css?raw'
-import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
-import { CodeXml, Frame } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FRAME_FILL_PERCENT } from '../shared/palette'
 import type {
 	Board,
 	BrushStyle,
@@ -18,10 +14,10 @@ import type {
 } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
-import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
+import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
@@ -30,9 +26,6 @@ import {
 	CANDY_LAYOUT,
 	CANDY_TINTS,
 	CONTROL_SIZE,
-	candyInk,
-	candyLine,
-	candyWash,
 	FONT_STACKS,
 	ICON_SIZE,
 	TEXT_SIZE,
@@ -45,16 +38,9 @@ import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
 import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
 import { Toolbar } from './frame/toolbar'
-import { HTML_CARD_SANDBOX, htmlCardDocument } from './htmlCard'
-import {
-	imagePreserveAspectRatio,
-	isSupportedImageFile,
-	readImageDimensions,
-	scaleImageDimensions,
-} from './image'
+import { isSupportedImageFile, readImageDimensions, scaleImageDimensions } from './image'
 import { canRebaseMoveGroup } from './move'
 import { SelectionPanel } from './SelectionPanel'
-import { StickyNote } from './StickyNote'
 import {
 	boundsOf,
 	expandRect,
@@ -74,24 +60,6 @@ const isConnector = (shape: Shape): shape is Connector => shape.type === 'connec
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
 
 const randomId = () => crypto.randomUUID()
-
-function ShapeLabel({ text, x, y, fill }: { text: string; x: number; y: number; fill: string }) {
-	const lines = text.split('\n').map((line, index) => ({ line, key: `${index}-${line}` }))
-	const lineHeight = 18
-	return (
-		<text x={x} y={y} fill={fill} textAnchor="middle" dominantBaseline="middle">
-			{lines.map(({ line, key }, index) => (
-				<tspan
-					key={key}
-					x={x}
-					dy={index === 0 ? `${(-(lines.length - 1) * lineHeight) / 2}px` : `${lineHeight}px`}
-				>
-					{line || ' '}
-				</tspan>
-			))}
-		</text>
-	)
-}
 
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
@@ -1009,6 +977,11 @@ export default function App() {
 		setEditing({ id: shape.id, field, value })
 	}
 
+	const onShapeDoubleClick = (event: React.MouseEvent<SVGGElement>, shape: CanvasShape) => {
+		event.stopPropagation()
+		beginInlineEdit(shape)
+	}
+
 	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
 		if (interactionRef.current) {
 			event.stopPropagation()
@@ -1126,425 +1099,17 @@ export default function App() {
 		return preview && isCanvasShape(shape) ? { ...shape, x: preview.x, y: preview.y } : shape
 	})
 
-	const renderShape = (shape: Shape) => {
-		if (isConnector(shape)) {
-			if (connection.draft?.original?.id === shape.id && connection.preview) return null
-			const from = visibleShapes.find((item) => item.id === shape.from)
-			const to = visibleShapes.find((item) => item.id === shape.to)
-			if (!from || !to || !isCanvasShape(from) || !isCanvasShape(to)) return null
-			const { start: a, end: b } = getConnectorAnchors(from, to, shape)
-			const active = selectedIds.includes(shape.id)
-			return (
-				<g
-					key={shape.id}
-					onPointerDown={(event) => onShapePointerDown(event, shape)}
-					className="canvas-shape connector"
-					data-shape-id={shape.id}
-					style={{
-						cursor:
-							tool === 'hand' || spacePressed || isPanning
-								? isPanning
-									? 'grabbing'
-									: 'grab'
-								: 'pointer',
-					}}
-				>
-					<line
-						x1={a.x}
-						y1={a.y}
-						x2={b.x}
-						y2={b.y}
-						stroke="transparent"
-						strokeWidth={16}
-						vectorEffect="non-scaling-stroke"
-					/>
-					<line
-						x1={a.x}
-						y1={a.y}
-						x2={b.x}
-						y2={b.y}
-						stroke={shape.color}
-						strokeWidth={active ? 3 : 2}
-						markerEnd="url(#arrow)"
-						vectorEffect="non-scaling-stroke"
-					/>
-				</g>
-			)
-		}
-
-		const active = selectedIds.includes(shape.id)
-		const common = {
-			className: 'canvas-shape',
-			'data-shape-id': shape.id,
-			onDoubleClick: (event: React.MouseEvent<SVGGElement>) => {
-				event.stopPropagation()
-				beginInlineEdit(shape)
-			},
-			style: {
-				cursor:
-					tool === 'hand' || spacePressed || isPanning ? (isPanning ? 'grabbing' : 'grab') : 'move',
-			},
-			onPointerDown: (event: React.PointerEvent<SVGGElement>) => onShapePointerDown(event, shape),
-		}
-
-		if (shape.type === 'rectangle') {
-			return (
-				<g key={shape.id} {...common}>
-					<rect
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						rx={10}
-						style={{ fill: candyWash(shape.color) }}
-						stroke={shape.color}
-						strokeWidth={active ? 3 : 2}
-					/>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={12}
-						/>
-					)}
-					{shape.text && (
-						<ShapeLabel
-							text={shape.text}
-							x={shape.x + shape.w / 2}
-							y={shape.y + shape.h / 2}
-							fill={candyInk(shape.color)}
-						/>
-					)}
-				</g>
-			)
-		}
-		if (shape.type === 'ellipse') {
-			return (
-				<g key={shape.id} {...common}>
-					<ellipse
-						cx={shape.x + shape.w / 2}
-						cy={shape.y + shape.h / 2}
-						rx={shape.w / 2}
-						ry={shape.h / 2}
-						style={{ fill: candyWash(shape.color) }}
-						stroke={shape.color}
-						strokeWidth={active ? 3 : 2}
-					/>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={12}
-						/>
-					)}
-					{shape.text && (
-						<ShapeLabel
-							text={shape.text}
-							x={shape.x + shape.w / 2}
-							y={shape.y + shape.h / 2}
-							fill={candyInk(shape.color)}
-						/>
-					)}
-				</g>
-			)
-		}
-		if (shape.type === 'html') {
-			return (
-				<g key={shape.id} {...common}>
-					<rect
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						rx={10}
-						style={{
-							fill: candyWash(shape.color, 5),
-							stroke: active ? shape.color : candyLine(shape.color),
-						}}
-						strokeWidth={active ? 2 : 1}
-						vectorEffect="non-scaling-stroke"
-					/>
-					<foreignObject
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						pointerEvents={active ? 'auto' : 'none'}
-					>
-						<div className="html-card">
-							{shape.html ? (
-								<iframe
-									className="html-card-frame"
-									title={shape.title ?? 'HTML card'}
-									sandbox={HTML_CARD_SANDBOX}
-									referrerPolicy="no-referrer"
-									srcDoc={htmlCardDocument(shape.html, bootstrapCss, bootstrapJs)}
-								/>
-							) : (
-								<div className="html-card-empty">HTML content is generated through the API</div>
-							)}
-						</div>
-					</foreignObject>
-					<CardHeaderPill
-						x={shape.x}
-						y={shape.y}
-						width={Math.min(shape.w, 360)}
-						color={shape.color}
-						title={shape.title ?? 'HTML card'}
-						icon={CodeXml}
-						handleId={shape.id}
-						onPointerDown={(event) => onShapePointerDown(event, shape)}
-						onDoubleClick={(event) => {
-							event.stopPropagation()
-							beginInlineEdit(shape)
-						}}
-					/>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={12}
-						/>
-					)}
-				</g>
-			)
-		}
-		if (shape.type === 'image') {
-			if (!shape.imageId) return null
-			return (
-				<g key={shape.id} {...common}>
-					<image
-						className="canvas-image"
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						href={`/api/images/${encodeURIComponent(shape.imageId)}`}
-						preserveAspectRatio="xMidYMid meet"
-						style={{
-							clipPath: `inset(0 round ${Math.min(10, shape.w / 2)}px / ${Math.min(10, shape.h / 2)}px)`,
-						}}
-						pointerEvents="none"
-					/>
-					<rect
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						rx={10}
-						fill="transparent"
-						stroke={shape.color ?? CANDY_COLORS.ink}
-						strokeWidth={active ? 3 : 1}
-						vectorEffect="non-scaling-stroke"
-					/>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={12}
-						/>
-					)}
-				</g>
-			)
-		}
-		if (shape.type === 'frame') {
-			const backgroundShape = shape.backgroundImageId
-				? visibleShapes.find(
-						(candidate) => candidate.type === 'image' && candidate.id === shape.backgroundImageId,
-					)
-				: undefined
-			const backgroundImageId =
-				backgroundShape?.type === 'image' ? backgroundShape.imageId : undefined
-			const clipId = `frame-bg-${shape.id}`
-			return (
-				<g key={shape.id} className="canvas-shape frame" data-shape-id={shape.id}>
-					<defs>
-						<clipPath id={clipId}>
-							<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} rx={10} />
-						</clipPath>
-					</defs>
-					{backgroundImageId && (
-						<image
-							className="frame-background-image"
-							x={shape.x}
-							y={shape.y}
-							width={shape.w}
-							height={shape.h}
-							href={`/api/images/${encodeURIComponent(backgroundImageId)}`}
-							preserveAspectRatio={imagePreserveAspectRatio(shape.backgroundFit)}
-							clipPath={`url(#${clipId})`}
-							pointerEvents="none"
-						/>
-					)}
-					<rect
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						rx={10}
-						style={{
-							fill: backgroundImageId ? 'none' : candyWash(shape.color, FRAME_FILL_PERCENT),
-							stroke: active ? shape.color : candyLine(shape.color),
-						}}
-						strokeWidth={active ? 2 : 1}
-						vectorEffect="non-scaling-stroke"
-						pointerEvents="none"
-					/>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={12}
-							pointerEvents="none"
-						/>
-					)}
-				</g>
-			)
-		}
-		if (shape.type === 'note') {
-			return (
-				<g key={shape.id} {...common}>
-					<StickyNote shape={shape} animate={animatedNotesRef.current.has(shape.id)} />
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={6}
-						/>
-					)}
-				</g>
-			)
-		}
-		if (shape.type === 'text') {
-			const font = shape.font ?? 'sans'
-			return (
-				<g key={shape.id} {...common}>
-					<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} fill="transparent" />
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={6}
-						/>
-					)}
-					<foreignObject
-						x={shape.x}
-						y={shape.y}
-						width={shape.w}
-						height={shape.h}
-						pointerEvents="none"
-					>
-						<div
-							className="typographic-text"
-							style={{
-								fontFamily: FONT_STACKS[font],
-								fontSize: `${shape.fontSize ?? 32}px`,
-								fontWeight: shape.fontWeight ?? 500,
-								color: candyInk(shape.color),
-							}}
-						>
-							{shape.text || 'Type something'}
-						</div>
-					</foreignObject>
-				</g>
-			)
-		}
-		if (shape.type === 'path' && shape.points && shape.brush && shape.strokeWidth) {
-			return (
-				<g key={shape.id} {...common}>
-					<BrushStroke
-						points={shape.points.map((point) => ({ x: shape.x + point.x, y: shape.y + point.y }))}
-						brush={shape.brush}
-						strokeWidth={shape.strokeWidth}
-						color={shape.color}
-					/>
-					{active && (
-						<rect
-							className="selection"
-							x={shape.x - 4}
-							y={shape.y - 4}
-							width={shape.w + 8}
-							height={shape.h + 8}
-							rx={4}
-						/>
-					)}
-				</g>
-			)
-		}
-		const lineX = Math.min(shape.x, shape.x + shape.w)
-		const lineY = Math.min(shape.y, shape.y + shape.h)
-		const lineW = Math.abs(shape.w)
-		const lineH = Math.abs(shape.h)
-		return (
-			<g key={shape.id} {...common}>
-				<line
-					x1={shape.x}
-					y1={shape.y}
-					x2={shape.x + shape.w}
-					y2={shape.y + shape.h}
-					stroke="transparent"
-					strokeWidth={16}
-				/>
-				<line
-					x1={shape.x}
-					y1={shape.y}
-					x2={shape.x + shape.w}
-					y2={shape.y + shape.h}
-					stroke={shape.color}
-					strokeWidth={active ? 3 : 2}
-				/>
-				{active && (
-					<rect
-						className="selection"
-						x={lineX - 4}
-						y={lineY - 4}
-						width={Math.max(lineW, 8) + 8}
-						height={Math.max(lineH, 8) + 8}
-						rx={8}
-					/>
-				)}
-			</g>
-		)
+	const shapeViewProps = {
+		visibleShapes,
+		selectedIds,
+		connection,
+		tool,
+		spacePressed,
+		isPanning,
+		animatedNoteIds: animatedNotesRef.current,
+		onPointerDown: onShapePointerDown,
+		onDoubleClick: onShapeDoubleClick,
 	}
-
-	const renderFrameLabel = (shape: CanvasShape) => (
-		<CardHeaderPill
-			key={`label:${shape.id}`}
-			x={shape.x}
-			y={shape.y}
-			width={Math.min(shape.w, 360)}
-			color={shape.color}
-			title={shape.title ?? 'Frame'}
-			icon={Frame}
-			handleId={shape.id}
-			onPointerDown={(event) => onShapePointerDown(event, shape)}
-			onDoubleClick={(event) => {
-				event.stopPropagation()
-				beginInlineEdit(shape)
-			}}
-		/>
-	)
 
 	return (
 		<main
@@ -1709,15 +1274,25 @@ export default function App() {
 					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
 				}}
 			>
-				{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
-				{visibleShapes.filter(isConnector).map(renderShape)}
+				{visibleShapes
+					.filter((shape) => shape.type === 'frame')
+					.map((shape) => (
+						<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
+					))}
+				{visibleShapes.filter(isConnector).map((shape) => (
+					<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
+				))}
 				{visibleShapes
 					.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
-					.map(renderShape)}
+					.map((shape) => (
+						<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
+					))}
 				{visibleShapes
 					.filter((shape): shape is CanvasShape => shape.type === 'frame')
-					.map(renderFrameLabel)}
-				{creation && renderShape(creation)}
+					.map((shape) => (
+						<FrameLabel key={`label:${shape.id}`} shape={shape} {...shapeViewProps} />
+					))}
+				{creation && <ShapeView shape={creation} {...shapeViewProps} />}
 				{brushPoints && (
 					<BrushStroke
 						points={brushPoints}
