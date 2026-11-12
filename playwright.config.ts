@@ -2,6 +2,7 @@ import { defineConfig } from '@playwright/test'
 import { BROWSER_PORT } from './src/shared/config.ts'
 
 const baseURL = `http://127.0.0.1:${BROWSER_PORT}`
+const channel = process.env.PLAYWRIGHT_CHANNEL ?? (process.env.CI ? 'chromium' : 'chrome')
 
 export default defineConfig({
 	testDir: './tests/browser',
@@ -9,10 +10,10 @@ export default defineConfig({
 	workers: 1,
 	timeout: 15000,
 	globalTimeout: 900000,
-	reporter: 'list',
+	reporter: [['list'], ['html', { open: 'never' }]],
 	use: {
 		baseURL,
-		channel: 'chrome',
+		channel,
 		viewport: { width: 1440, height: 960 },
 		launchOptions: { args: ['--use-mock-keychain', '--disable-sync'] },
 		trace: 'retain-on-failure',
