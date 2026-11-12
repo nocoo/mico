@@ -1,0 +1,10 @@
+.canvas-text {
+	height: 100%;
+	overflow: hidden;
+	line-height: 1.5;
+	white-space: pre-wrap;
+}
+
+.canvas-text-editing {
+	visibility: hidden;
+}
