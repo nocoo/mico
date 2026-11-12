@@ -35,7 +35,11 @@ export function ConnectorView({
 			style={{ ...jellyStyle(shape.color), color: 'var(--j-edge)', cursor }}
 			onPointerDown={onPointerDown}
 			onAnimationEnd={(event) => {
-				if (event.animationName !== 'canvas-edge-fade-in') return
+				if (
+					event.animationName !== 'canvas-edge-fade-in' &&
+					!(event.animationName === 'canvas-edge-draw' && !geometry.showArrow)
+				)
+					return
 				event.currentTarget.classList.remove('draw')
 				onAnimationComplete()
 			}}

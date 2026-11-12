@@ -56,16 +56,10 @@ export function ShapeView({
 	const animated = animatedObjectIds.has(shape.id)
 
 	if (shape.type === 'connector') {
-		if (connection.draft?.original?.id === shape.id && connection.preview) {
-			if (animated) onEntryAnimationConsumed(shape.id)
-			return null
-		}
+		if (connection.draft?.original?.id === shape.id && connection.preview) return null
 		const from = visibleShapes.find((item) => item.id === shape.from)
 		const to = visibleShapes.find((item) => item.id === shape.to)
-		if (!from || !to || from.type === 'connector' || to.type === 'connector') {
-			if (animated) onEntryAnimationConsumed(shape.id)
-			return null
-		}
+		if (!from || !to || from.type === 'connector' || to.type === 'connector') return null
 		return (
 			<ConnectorView
 				shape={shape}

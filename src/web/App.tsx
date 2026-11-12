@@ -1486,14 +1486,16 @@ export default function App() {
 					onReconnect={(event, connector, endpoint) => {
 						if (interactionRef.current || spacePressed || tool === 'hand' || event.button !== 0)
 							return
-						captureConnection(event, () =>
-							connection.reconnect(
+						captureConnection(event, () => {
+							const started = connection.reconnect(
 								connector,
 								endpoint,
 								clientToWorld(event.clientX, event.clientY),
 								event.pointerId,
-							),
-						)
+							)
+							if (started) consumeEntryAnimation(connector.id)
+							return started
+						})
 					}}
 				/>
 			</CanvasView>
