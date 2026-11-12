@@ -22,6 +22,7 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 				<div className="lesson-rec-main">
 					<SelectField
 						label="Recording"
+						contentClassName="lesson-recording-menu"
 						value={model.selected?.id ?? ''}
 						options={model.clips.map((clip) => ({
 							value: clip.id,

@@ -9,6 +9,7 @@ interface SelectFieldProps<T extends string> {
 	disabled?: boolean
 	id?: string
 	side?: 'top' | 'bottom' | 'left' | 'right'
+	contentClassName?: string
 	renderItem?: (option: { value: T; label: string }) => ReactNode
 }
 
@@ -20,6 +21,7 @@ export function SelectField<T extends string>({
 	disabled,
 	id,
 	side = 'bottom',
+	contentClassName,
 	renderItem,
 }: SelectFieldProps<T>) {
 	const selectedOption = options.find((option) => option.value === value)
@@ -45,7 +47,7 @@ export function SelectField<T extends string>({
 				align="start"
 				sideOffset={6}
 				collisionPadding={8}
-				className="select-content"
+				className={`select-content${contentClassName ? ` ${contentClassName}` : ''}`}
 				onPointerDownCapture={() => setPointerFocus(true)}
 				onKeyDownCapture={() => setPointerFocus(false)}
 				onPointerDownOutside={() => setPointerFocus(true)}

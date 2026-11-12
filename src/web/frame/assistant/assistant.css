@@ -863,23 +863,6 @@
 	display: none;
 }
 
-body:has(.ai-assistant .ai-model-select[aria-expanded="true"]) .select-content {
-	min-inline-size: min(280px, calc(100vw - 28px));
-	max-inline-size: calc(100vw - 28px);
-}
-
-body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
-	.select-content
-	.select-item
-	> span:not(.rt-SelectItemIndicator) {
-	display: -webkit-box;
-	overflow: hidden;
-	white-space: normal;
-	overflow-wrap: anywhere;
-	-webkit-box-orient: vertical;
-	-webkit-line-clamp: 2;
-}
-
 .ai-assistant .lesson .select-trigger {
 	justify-content: flex-start;
 	width: calc(100% + 6px);
@@ -920,21 +903,11 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 
 .ai-assistant .lesson .select-trigger:hover:not(:disabled),
 .ai-assistant .lesson .select-trigger[aria-expanded="true"] {
-	border-color: var(--ui-hair);
-	background: var(--ui-glass-strong);
-	box-shadow:
-		inset 0 1px 0 var(--ui-gloss),
-		0 5px 10px -8px var(--ui-shadow);
+	border-color: transparent;
+	background: transparent;
+	box-shadow: none;
+	color: var(--ui-accent-ink);
 	translate: 0;
-}
-
-.ai-assistant .lesson .select-trigger:focus-visible:not([data-pointer-focus]),
-.ai-assistant .lesson .select-trigger[aria-expanded="true"] {
-	border-color: var(--ui-accent);
-	box-shadow:
-		inset 0 0 0 1px var(--ui-accent),
-		0 0 0 3px var(--ui-accent-soft),
-		0 8px 16px -12px var(--ui-accent);
 }
 
 .ai-assistant .lesson .select-trigger[aria-expanded="true"] > .rt-SelectIcon {
@@ -942,7 +915,7 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	rotate: 180deg;
 }
 
-body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"]) .select-content {
+.select-content.lesson-recording-menu {
 	inline-size: min(348px, calc(100vw - 28px));
 	min-inline-size: 0;
 	max-inline-size: calc(100vw - 28px);
@@ -950,17 +923,40 @@ body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"]) .select-co
 	border-radius: 18px;
 }
 
-body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"]) .select-content .select-item {
+.select-content.lesson-recording-menu .select-item {
 	min-block-size: 44px;
-	padding-block: 8px;
+	padding: 8px 12px;
 }
 
-body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"])
+.select-content.lesson-recording-menu .select-item .rt-SelectItemIndicator {
+	display: none;
+}
+
+.select-content.lesson-recording-menu .select-item[data-state="checked"] {
+	background: transparent;
+	box-shadow: inset 0 0 0 1.5px color-mix(in oklch, var(--ui-accent) 62%, transparent);
+}
+
+.select-content.lesson-recording-menu .select-item > span:not(.rt-SelectItemIndicator) {
+	display: -webkit-box;
+	max-inline-size: 100%;
+	overflow: hidden;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 2;
+}
+
+body:has(.ai-assistant .ai-model-select[aria-expanded="true"]) .select-content {
+	min-inline-size: min(280px, calc(100vw - 28px));
+	max-inline-size: calc(100vw - 28px);
+}
+
+body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	.select-content
 	.select-item
 	> span:not(.rt-SelectItemIndicator) {
 	display: -webkit-box;
-	max-inline-size: 100%;
 	overflow: hidden;
 	white-space: normal;
 	overflow-wrap: anywhere;
