@@ -21,22 +21,13 @@ function requireFinite(value: number, name: string): void {
 	if (!Number.isFinite(value)) throw new RangeError(`selection outline: ${name} must be finite`)
 }
 
-function screenRadius(shape: CanvasShape, zoom: number): number {
-	const radius =
-		shape.type === 'ellipse'
-			? 0
-			: shape.type === 'note'
-				? 22
-				: shape.type === 'rectangle' && (shape.text?.length ?? 0) > 0
-					? 20
-					: shape.type === 'frame' || shape.type === 'html' || shape.type === 'image'
-						? 10
-						: shape.type === 'text'
-							? 6
-							: shape.type === 'line' || shape.type === 'path'
-								? 4
-								: 22
-	return radius / zoom
+function elementRadius(shape: CanvasShape): number {
+	if (shape.type === 'note') return 22
+	if (shape.type === 'rectangle' && (shape.text?.length ?? 0) > 0) return 20
+	if (shape.type === 'frame' || shape.type === 'html' || shape.type === 'image') return 10
+	if (shape.type === 'text') return 6
+	if (shape.type === 'line' || shape.type === 'path') return 4
+	return 22
 }
 
 export function selectionOutlineGeometry(
@@ -69,12 +60,16 @@ export function selectionOutlineGeometry(
 		}
 	}
 
+	const outlineWidth = width + offset * 2
+	const outlineHeight = height + offset * 2
+	const radius = Math.min(elementRadius(shape), width / 2, height / 2) + offset
+
 	return {
 		kind: 'rect',
 		x: left - offset,
 		y: top - offset,
-		width: width + offset * 2,
-		height: height + offset * 2,
-		rx: screenRadius(shape, zoom),
+		width: outlineWidth,
+		height: outlineHeight,
+		rx: Math.min(radius, outlineWidth / 2, outlineHeight / 2),
 	}
 }

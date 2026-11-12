@@ -14,14 +14,22 @@ const shape = (type: CanvasShape['type'], extra: Partial<CanvasShape> = {}): Can
 	...extra,
 })
 
-test('note outlines use 5px offset and 22px screen radius', () => {
+test('note outlines scale the world corner radius and add screen-space offset', () => {
+	assert.deepEqual(selectionOutlineGeometry(shape('note'), 0.5), {
+		kind: 'rect',
+		x: 90,
+		y: 40,
+		width: 180,
+		height: 180,
+		rx: 32,
+	})
 	assert.deepEqual(selectionOutlineGeometry(shape('note'), 1), {
 		kind: 'rect',
 		x: 95,
 		y: 45,
 		width: 170,
 		height: 170,
-		rx: 22,
+		rx: 27,
 	})
 	assert.deepEqual(selectionOutlineGeometry(shape('note'), 2), {
 		kind: 'rect',
@@ -29,8 +37,19 @@ test('note outlines use 5px offset and 22px screen radius', () => {
 		y: 47.5,
 		width: 165,
 		height: 165,
-		rx: 11,
+		rx: 24.5,
 	})
+})
+
+test('flow nodes keep their 20px world radius plus screen-space offset', () => {
+	for (const [zoom, radius] of [
+		[0.5, 30],
+		[1, 25],
+		[2, 22.5],
+	] as const) {
+		const outline = selectionOutlineGeometry(shape('rectangle', { text: 'Flow' }), zoom)
+		assert.equal(outline.kind === 'rect' && outline.rx, radius)
+	}
 })
 
 test('signed lines normalize to finite bounds', () => {
@@ -40,7 +59,7 @@ test('signed lines normalize to finite bounds', () => {
 		y: 45,
 		width: 50,
 		height: 30,
-		rx: 4,
+		rx: 9,
 	})
 })
 
@@ -61,7 +80,7 @@ test('zero and tiny dimensions remain valid', () => {
 		y: 45,
 		width: 10,
 		height: 10,
-		rx: 22,
+		rx: 5,
 	})
 	assert.deepEqual(selectionOutlineGeometry(shape('ellipse', { w: 0.01, h: 0.01 }), 1), {
 		kind: 'ellipse',
@@ -76,37 +95,37 @@ test('rectangles and other shape families use reference radii', () => {
 	assert.equal(
 		selectionOutlineGeometry(shape('rectangle'), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('rectangle'), 1).rx,
-		22,
+		27,
 	)
 	assert.equal(
 		selectionOutlineGeometry(shape('rectangle', { text: 'Flow' }), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('rectangle', { text: 'Flow' }), 1).rx,
-		20,
+		25,
 	)
 	assert.equal(
 		selectionOutlineGeometry(shape('frame'), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('frame'), 1).rx,
-		10,
+		15,
 	)
 	assert.equal(
 		selectionOutlineGeometry(shape('html'), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('html'), 1).rx,
-		10,
+		15,
 	)
 	assert.equal(
 		selectionOutlineGeometry(shape('image'), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('image'), 1).rx,
-		10,
+		15,
 	)
 	assert.equal(
 		selectionOutlineGeometry(shape('text'), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('text'), 1).rx,
-		6,
+		11,
 	)
 	assert.equal(
 		selectionOutlineGeometry(shape('path'), 1).kind === 'rect' &&
 			selectionOutlineGeometry(shape('path'), 1).rx,
-		4,
+		9,
 	)
 })
 
