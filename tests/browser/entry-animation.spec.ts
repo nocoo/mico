@@ -49,6 +49,25 @@ test('new node animation survives an update and does not replay', async ({ page,
 	await expect(node).not.toHaveClass(/canvas-entry/)
 })
 
+test('manual drag shapes do not pop, but new text does', async ({ page }) => {
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	await page.mouse.move(200, 400)
+	await page.mouse.down()
+	await page.mouse.move(380, 500, { steps: 4 })
+	await page.mouse.up()
+	const rectangle = page
+		.locator('.canvas-shape')
+		.filter({ has: page.locator('.el-shape[data-shape="rectangle"]') })
+	await expect(rectangle).toHaveCount(1)
+	await expect(rectangle).not.toHaveClass(/canvas-entry/)
+	await page.getByRole('button', { name: 'Text', exact: true }).click()
+	await page.mouse.click(500, 300)
+	const text = page.locator('.canvas-shape').filter({ has: page.locator('.canvas-text') })
+	await expect(text).toHaveCount(1)
+	await expect(text).toHaveClass(/canvas-entry/)
+	await expect(text).not.toHaveClass(/canvas-entry/, { timeout: 5000 })
+})
+
 test('reduced motion does not replay new nodes when preference changes', async ({
 	page,
 	request,
