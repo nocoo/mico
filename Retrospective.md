@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- Rounding the iframe itself clipped existing user HTML at its corners. Keep arbitrary iframe contents rectangular and uncut; apply the reference radius to the surrounding shell instead, and test corner rendering and interaction.
+- An iframe-in-SVG test intermittently reported a successful click without delivering a DOM click. Verify the outer hit target and capture actual iframe pointer/click events before asserting embedded behavior; do not replace physical input with synthetic events.
 - A delegated image renderer again used one shared corner radius for both axes, undoing the earlier narrow-image fix. Preserve independently clamped horizontal and vertical radii and rerun both narrow orientations whenever replacing image geometry.
 - A new selection outline initially used SVG stroke geometry, which did not match the prototype's CSS outline at fractional pixel widths. Compare selected shapes at multiple zoom levels and let the browser apply the original outline semantics.
 - An SVG selection rectangle approximated CSS `outline` incorrectly: stroke centering and browser pixel rounding produced visibly different borders at different zoom levels. Render the same CSS outline in a pointer-transparent `foreignObject` and compare against the original at 100% and 200% zoom.
