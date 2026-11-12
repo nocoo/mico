@@ -319,6 +319,12 @@ body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"]) .s
 		0 18px 36px -18px var(--ui-shadow);
 }
 
+body:has(.toolbar-module .text-options .select-trigger[aria-expanded="true"])
+	.select-content
+	.select-item {
+	height: auto;
+}
+
 @media (max-width: 980px) {
 	.toolbar-module.toolbar {
 		max-inline-size: max(0px, calc(100vw - var(--frame-panel-reserved, 0px) - 20px));
