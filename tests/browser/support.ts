@@ -6,11 +6,12 @@ export const ISOLATED_ORIGIN = 'http://127.0.0.1:27063'
 export type AssistantTab = 'Chat' | 'Audio' | 'Live' | 'Settings'
 
 export async function openAssistant(page: Page, tab: AssistantTab) {
-	const panel = page.getByRole('region', { name: 'AI assistant' })
-	if ((await panel.getAttribute('aria-hidden')) === 'true') {
+	const panelElement = page.locator('#ai-panel')
+	if ((await panelElement.getAttribute('aria-hidden')) === 'true') {
 		await page.getByRole('button', { name: 'Open AI assistant', exact: true }).click()
 	}
-	await expect(panel).toBeVisible()
+	await expect(panelElement).toBeVisible()
+	const panel = page.getByRole('region', { name: 'AI assistant' })
 	await panel.getByRole('tab', { name: tab, exact: true }).click()
 	await expect(panel.getByRole('tab', { name: tab, exact: true })).toHaveAttribute(
 		'aria-selected',
@@ -20,7 +21,7 @@ export async function openAssistant(page: Page, tab: AssistantTab) {
 }
 
 export async function closeAssistant(page: Page) {
-	const panel = page.getByRole('region', { name: 'AI assistant' })
+	const panel = page.locator('#ai-panel')
 	if ((await panel.getAttribute('aria-hidden')) !== 'true') {
 		await page.getByRole('button', { name: 'Close AI assistant', exact: true }).click()
 	}

@@ -132,11 +132,16 @@ test('the Audio tab loads prerecorded sessions and playback controls', async ({ 
 	expect(segmentsBox.y + segmentsBox.height).toBeLessThanOrEqual(lessonBox.y + lessonBox.height + 1)
 	expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(960)
 
+	const manifestResponse = await page.request.get('/evals/manifest.json')
+	expect(manifestResponse.ok()).toBe(true)
+	const manifest = (await manifestResponse.json()) as { evals?: unknown[] }
+	expect(manifest.evals?.length).toBeGreaterThan(0)
+
 	const picker = panel.getByRole('combobox', { name: 'Recording', exact: true })
 	await expect(picker).toBeVisible()
 	await expect(picker).toContainText('中文 · 物理 · 斜面、定滑轮与摩擦：连接体受力分析')
 	await picker.click()
-	await expect(page.getByRole('option')).toHaveCount(20)
+	await expect(page.getByRole('option')).toHaveCount(manifest.evals?.length ?? 0)
 	await page.keyboard.press('Escape')
 })
 
@@ -431,23 +436,32 @@ test('the Live tab preserves the microphone layout', async ({ page }) => {
 	const shortComposer = panel.getByRole('textbox', { name: COMPOSER })
 	await expect(shortComposer).toBeVisible()
 	const composerBox = await shortComposer.boundingBox()
-	if (!composerBox) throw new Error('Missing compact composer')
-	const dockBox = await page.locator('.toolbar').boundingBox()
-	if (!dockBox) throw new Error('Missing dock')
-	expect(composerBox.y + composerBox.height).toBeLessThanOrEqual(dockBox.y)
-	const composerOnTop = await page.evaluate(
-		({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest('.ai-composer')),
-		{ x: composerBox.x + composerBox.width / 2, y: composerBox.y + composerBox.height / 2 },
+	const compactPanelBox = await panel.boundingBox()
+	if (!composerBox || !compactPanelBox) throw new Error('Missing compact composer or panel')
+	expect(composerBox.y).toBeGreaterThanOrEqual(compactPanelBox.y)
+	expect(composerBox.y + composerBox.height).toBeLessThanOrEqual(
+		compactPanelBox.y + compactPanelBox.height,
 	)
-	expect(composerOnTop).toBe(true)
+	await shortComposer.click()
+	await expect(shortComposer).toBeFocused()
 
-	const selectBox = await page.getByRole('button', { name: 'Select', exact: true }).boundingBox()
-	if (!selectBox) throw new Error('Missing dock control')
+	await page.getByRole('button', { name: 'Close AI assistant', exact: true }).click()
+	await expect(panel).toBeHidden()
+	const select = page.getByRole('button', { name: 'Select', exact: true })
+	const dockBox = await page.locator('.toolbar').boundingBox()
+	const selectBox = await select.boundingBox()
+	const viewport = page.viewportSize()
+	if (!dockBox || !selectBox || !viewport) throw new Error('Missing compact dock geometry')
+	expect(dockBox.x).toBeGreaterThanOrEqual(0)
+	expect(dockBox.x + dockBox.width).toBeLessThanOrEqual(viewport.width)
+	expect(dockBox.y + dockBox.height).toBeLessThanOrEqual(viewport.height)
 	const dockOnTop = await page.evaluate(
 		({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest('.toolbar')),
 		{ x: selectBox.x + selectBox.width / 2, y: selectBox.y + selectBox.height / 2 },
 	)
 	expect(dockOnTop).toBe(true)
+	await select.click()
+	await expect(select).toHaveAttribute('aria-pressed', 'true')
 })
 
 test('Escape cancels an active canvas gesture instead of closing the panel', async ({
