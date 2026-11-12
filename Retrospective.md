@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- Delegated commits used scoped or unsupported commit types despite the shared commit rules. Check each worker's exact proposed commit message before authorizing its commit; use only the listed types and unscoped format.
+- Visual regression tests must distinguish a translucent gradient surface from a missing background, and screenshot color checks must account for intentional grain. Verify the actual rendered effect before changing an assertion.
 - A reference screenshot test passed options to `BrowserContext.newPage`, which Playwright ignored at runtime but TypeScript rejected. Run the repository typecheck before committing browser tests and set viewport/media on the new page explicitly.
 - Canvas list editing tests initially used a text-filtered row that disappeared during renaming, letting hidden assertions pass vacuously. Assert the editing row exists before checking controls and pointer hit targets.
 - A delegated canvas worker ran `pnpm exec` despite an explicit prohibition and triggered the unwanted dependency precheck. Require direct `node` or `node_modules/.bin` commands in worker prompts and inspect their command logs before accepting verification; no lockfile was changed.
