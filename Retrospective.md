@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- A reference screenshot test passed options to `BrowserContext.newPage`, which Playwright ignored at runtime but TypeScript rejected. Run the repository typecheck before committing browser tests and set viewport/media on the new page explicitly.
+- Canvas list editing tests initially used a text-filtered row that disappeared during renaming, letting hidden assertions pass vacuously. Assert the editing row exists before checking controls and pointer hit targets.
 - A delegated canvas worker ran `pnpm exec` despite an explicit prohibition and triggered the unwanted dependency precheck. Require direct `node` or `node_modules/.bin` commands in worker prompts and inspect their command logs before accepting verification; no lockfile was changed.
 - A background worker committed canvas source while an isolated browser suite was starting, risking Vite hot reload during assertions. Freeze production edits before launching browser tests and rerun any suite exposed to concurrent edits.
 - A Radix select menu hides the trigger from role queries while open, and mouse selection restores focus with `:focus-visible`. Test the DOM trigger directly while the menu is open and verify both pointer selection and keyboard focus rather than assuming native modality heuristics.
