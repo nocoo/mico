@@ -1,16 +1,18 @@
 import type {
+	CSSProperties,
 	MouseEventHandler,
 	PointerEventHandler,
 	ReactNode,
 	Ref,
 	WheelEventHandler,
 } from 'react'
+import { computeGrid } from '../grid.ts'
+import './canvas.css'
 
 interface CanvasViewProps {
 	svgRef: Ref<SVGSVGElement>
 	viewport: { x: number; y: number; zoom: number }
 	cursor: 'default' | 'grab' | 'grabbing'
-	grid: ReactNode
 	children: ReactNode
 	onPointerDown: PointerEventHandler<SVGSVGElement>
 	onPointerMove: PointerEventHandler<SVGSVGElement>
@@ -25,7 +27,6 @@ export function CanvasView({
 	svgRef,
 	viewport,
 	cursor,
-	grid,
 	children,
 	onPointerDown,
 	onPointerMove,
@@ -35,6 +36,14 @@ export function CanvasView({
 	onDoubleClick,
 	onLostPointerCapture,
 }: CanvasViewProps) {
+	const grid = computeGrid(viewport)
+	const style = {
+		cursor,
+		'--canvas-grid-size': `${grid.spacing}px`,
+		'--canvas-grid-x': `${grid.offsetX}px`,
+		'--canvas-grid-y': `${grid.offsetY}px`,
+	} as CSSProperties
+
 	return (
 		<svg
 			ref={svgRef}
@@ -46,7 +55,7 @@ export function CanvasView({
 			onWheel={onWheel}
 			onDoubleClick={onDoubleClick}
 			aria-label="Infinite canvas"
-			style={{ cursor }}
+			style={style}
 			onLostPointerCapture={onLostPointerCapture}
 		>
 			<defs>
@@ -62,7 +71,6 @@ export function CanvasView({
 					<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
 				</marker>
 			</defs>
-			{grid}
 			<g
 				data-world-layer="true"
 				transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}

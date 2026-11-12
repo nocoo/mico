@@ -1,0 +1,86 @@
+.canvas-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
+	background: light-dark(oklch(0.975 0.012 290), oklch(0.185 0.025 285));
+}
+
+.canvas-aurora {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	opacity: 0.85;
+}
+
+.canvas-aurora i {
+	position: absolute;
+	inline-size: 62vmax;
+	block-size: 62vmax;
+	border-radius: 50%;
+	background: radial-gradient(closest-side, var(--canvas-aurora-color), transparent);
+	animation: canvas-drift 26s ease-in-out infinite alternate;
+}
+
+.canvas-aurora i:nth-child(1) {
+	--canvas-aurora-color: oklch(0.88 0.09 296 / 0.7);
+	inset-inline-start: -18vmax;
+	inset-block-start: -22vmax;
+}
+
+.canvas-aurora i:nth-child(2) {
+	--canvas-aurora-color: oklch(0.9 0.08 200 / 0.6);
+	inset-inline-end: -16vmax;
+	inset-block-start: -10vmax;
+	animation-duration: 32s;
+	animation-delay: -8s;
+}
+
+.canvas-aurora i:nth-child(3) {
+	--canvas-aurora-color: oklch(0.91 0.08 20 / 0.55);
+	inset-inline-start: 18vmax;
+	inset-block-end: -34vmax;
+	animation-duration: 38s;
+	animation-delay: -14s;
+}
+
+.canvas-aurora i:nth-child(4) {
+	--canvas-aurora-color: oklch(0.93 0.09 105 / 0.45);
+	inset-inline-end: 8vmax;
+	inset-block-end: -30vmax;
+	animation-duration: 30s;
+	animation-delay: -4s;
+}
+
+@keyframes canvas-drift {
+	to {
+		translate: 7vmax 5vmax;
+		scale: 1.12;
+	}
+}
+
+.canvas-grain {
+	position: fixed;
+	inset: 0;
+	z-index: 70;
+	inline-size: 100%;
+	block-size: 100%;
+	pointer-events: none;
+	opacity: 0.05;
+	mix-blend-mode: multiply;
+}
+
+.canvas {
+	z-index: 1;
+	background-image: radial-gradient(circle, var(--canvas-dot) 1.15px, transparent 1.7px);
+	background-position: var(--canvas-grid-x, 0) var(--canvas-grid-y, 0);
+	background-size: var(--canvas-grid-size, 24px) var(--canvas-grid-size, 24px);
+	--canvas-dot: light-dark(oklch(0.55 0.08 285 / 0.2), oklch(1 0 0 / 0.13));
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.canvas-aurora i {
+		animation: none;
+	}
+}

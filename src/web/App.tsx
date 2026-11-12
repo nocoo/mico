@@ -17,10 +17,10 @@ import type {
 	Shape,
 } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
-import { BlueprintGrid } from './BlueprintGrid'
 import { BrushStroke } from './BrushStroke'
 import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
+import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
@@ -1561,6 +1561,7 @@ export default function App() {
 				} as React.CSSProperties
 			}
 		>
+			<CanvasBackdrop />
 			<input
 				ref={imageInputRef}
 				className="image-file-input"
@@ -1686,7 +1687,6 @@ export default function App() {
 				svgRef={svgRef}
 				viewport={viewport}
 				cursor={isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default'}
-				grid={<BlueprintGrid viewport={viewport} />}
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
 				onPointerUp={onCanvasPointerUp}
