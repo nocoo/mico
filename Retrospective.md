@@ -12,6 +12,7 @@
 
 ## Tool usage
 
+- Overview integration initially left an API snapshot untyped in a browser test, and the worker's first SVG-only keyboard target failed accessibility lint. Use the existing snapshot contract and a native focusable control; run scoped type and semantic checks before browser verification. Frame-preview ordering assertions must target block silhouettes rather than the earlier background/border SVG elements.
 - A whole-repository typecheck during parallel history/minimap implementation caught the minimap worker's unfinished exports as well as a real history-union caller omission. Keep intermediate checks scoped to owned files and run integrated TypeScript only after workers commit; enumerate exhaustive operation consumers when extending the protocol.
 - An external Playwright review config inherited a relative web-server command, so the runner resolved `scripts/browser-server.ts` under the temporary config directory and could not start. Set `webServer.cwd` explicitly when reusing the repository fixture from an external config; verify accessible control labels from source before writing probes.
 - During the prototype comparison, `pnpm exec playwright test` again triggered automatic dependency verification against the default registry and reported tarball URL mismatches before running the installed tests. Read the registry and recorded startup constraints first; use `node_modules/.bin/playwright` or the installed Node entrypoint for read-only verification. The 16 selected browser tests passed, and the lockfile was unchanged.

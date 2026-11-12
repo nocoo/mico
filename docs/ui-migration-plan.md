@@ -105,6 +105,12 @@ Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` pe
 - Canvas verification: 317 Node tests and 135 isolated Chrome browser tests passed; Biome, TypeScript and the production build passed. Pixel comparisons cover the recorded light-theme states and selected zoom levels, not every content, color, animation or browser.
 - Canvas interaction state still lives in `App.tsx`; extracting that interaction ViewModel, generated HTML content styling, themes, and phase-3 features remain incomplete.
 
+## Overview and history increment
+
+- Added a bottom-left minimap and replaced canvas-list previews with the same block-only extraction/projection. Standalone text, lines, connectors and paths do not contribute content or bounds. The minimap supports click, pointer drag and keyboard navigation; its projection is frozen during dragging. It remains above the expanded toolbar at all desktop widths and follows the prototype's hidden state at 980px or less.
+- Added browser-memory undo/redo for 20 manual edits per canvas. Canvas switching retains history, reload clears it, and new edits discard redo. Replay uses revision-checked atomic operations, preserves unrelated external work and refuses conflicting objects or new dependencies. Exact shape restoration preserves optional fields, cascade relationships and stacking order without persisting server history.
+- These additions do not implement theme switching, layer filtering, provenance, outline, AI follow, or meeting integration.
+
 ## Decisions required before the dependent slices
 
 - Meeting integration is explicitly deferred. Keep the meeting view and its ViewModel isolated from real meeting data and media controls.

@@ -9,11 +9,15 @@
 
 Mico 是一个本地优先的画布实验：人和本地 Agent 编辑同一批画板。浏览器负责渲染画布，守护进程管理一组命名画布并存入 SQLite，CLI 与 HTTP API 让 Agent 能完整访问同一批画布和同一套操作。
 
-它是一台机器上的本地画布集合，不是多人服务器。除了限制浏览器来源和主机之外没有其他鉴权，本机运行的进程都被视为可信；不要把守护进程暴露到网络。撤销/重做、调整尺寸、远程部署和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
+它是一台机器上的本地画布集合，不是多人服务器。除了限制浏览器来源和主机之外没有其他鉴权，本机运行的进程都被视为可信；不要把守护进程暴露到网络。调整尺寸、远程部署和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
 
 ## 功能
 
 画布支持多个命名画布、平移、缩放、矩形、椭圆、排版文字、直线、自由笔刷、便签、图片、框、HTML 卡片、连接线、拖动、吸附、框选、配色和删除。画板首次加载时适配视口；点 Fit 或按 F 可再次适配全部对象。
+
+The bottom-left minimap and canvas-list previews share a block-only overview: notes, rectangles, ellipses, frames, HTML cards and images contribute silhouettes; standalone text, lines, connectors and strokes are ignored, including their bounds. No labels, HTML or image bytes are embedded. Click or drag the minimap to navigate, or focus it and use the arrow keys. It shows the visible viewport, accounts for the open assistant, and hides at widths of 980px or less.
+
+The toolbar's Undo and Redo retain the last 20 successful manual edits per canvas in browser memory. A completed gesture or property submission is one step; pan/zoom and external AI/API edits are not recorded. Switching canvases retains each history; reloading clears them. A new edit clears redo. Use Cmd/Ctrl+Z to undo, Cmd/Ctrl+Shift+Z or Ctrl+Y to redo; text inputs retain native editing shortcuts. Undo restores deleted connectors, frame membership, image backgrounds and stacking order. Unrelated external edits survive; conflicting changes to affected objects block replay with a notice instead of overwriting them. History does not cover canvas creation, renaming or deletion.
 
 Logo 旁的 Canvases 按钮打开面板，列出每个画布的名称、最后更新时间和生成的预览。可在面板里创建、切换、重命名和删除画布。活动画布由所有已连接的浏览器、API 和 CLI 共用，Agent 可以把工作留在一个画布上，人再切过去看。最后一个画布不允许删除。切换画布会清除临时选择并重新适配画板，刷新页面仍保持当前画布。
 
@@ -140,6 +144,8 @@ node src/cli/index.ts shape update <frame-id> '{"backgroundImageId":"photo","bac
 - `GET /api/ai/models` — `{models: string[]}`。用服务端密钥访问当前生效 `baseURL` 下兼容 OpenAI 的 `/models` 端点；密钥不会返回或发给浏览器，配置的前缀会保留，例如 `/v1/models`。
 - `POST /api/ai/chat` — `{messages, selection}`；流式返回 Vercel AI SDK 的 UI 消息块。服务端工具读取并修改活动画布，广播与 `POST /api/operations` 相同的 `board` 事件。`selection` 是用户框选的形状 ID 数组，助手会把它们的几何信息和标签作为主要上下文。
 - `GET /api/events` — WebSocket 事件。连接时以及画布创建/重命名/删除/切换后，守护进程发送 `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`；操作后发送 `{type: "board", canvasId, canvas, board}`。画布元数据变化时 `stateVersion` 递增，客户端可据此忽略延迟到达的快照；客户端从 `canvas` 更新预览元数据，并且只在 `canvasId` 是自己的活动画布时应用 `board`。
+
+History replay also uses `{type: "restore", shape, index}` operations: restore an exact shape at its zero-based stacking position, replacing the same ID without delete cascades. These operations require `expectedRevision` and validate the final board and image limits atomically. No history is stored by the daemon.
 
 批次按画布校验并原子持久化。可选的 `expectedRevision` 会拒绝基于过期状态的写入。画布名称会去除首尾空白，长度 1–80 字符，含控制字符会被拒绝。
 

@@ -52,6 +52,7 @@ pnpm build
 `POST /api/operations` accepts `{ operations, expectedRevision?, canvasId? }`. It defaults to the active canvas and can target any canvas without switching. A batch is validated and persisted atomically per canvas; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.
 
 - `create` carries a complete shape. `update` carries `{ id, patch }`; patch keys are scoped per shape type. `delete` removes the shape, its connectors and releases frame members.
+- `restore` carries a complete `{ shape, index }` and requires `expectedRevision`. It restores the exact shape and stacking position without delete cascades; the final board references, asset IDs and five-image limit are validated atomically. This supports browser history without storing history on the server.
 - Shape types: `rectangle`, `ellipse`, `text`, `line`, `note`, `path`, `frame`, `html`, `image`, `connector`.
 - `POST /api/images` accepts raw PNG, JPEG, WebP or GIF bytes up to 10 MiB with a matching `Content-Type`, validates the signature and returns an asset ID. `GET /api/images/:id` serves the bytes. Images are stored separately from board JSON; uploads remain after shape deletion.
 - `image` needs an existing asset `imageId` and may be a frame member. A frame's optional `backgroundImageId` references an image shape on the same board; `backgroundFit` is `cover`, `contain` or `stretch`. Deleting the image clears frame references.
@@ -84,9 +85,15 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 | CLI                                 | `src/cli/index.test.ts`                                                                                                      | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures. |
 | Agent examples                      | `examples.test.ts`                                                                                                           |
 
+## Overview and browser history
+
+- `src/shared/overview.test.ts`, `src/web/canvas/minimap.test.ts` and `src/server/preview.test.ts` cover shared block extraction, ignored text/line bounds, projection, negative/empty/extreme geometry, navigation and bounded SVG output.
+- `src/web/canvas/history.test.ts` and `src/server/history.test.ts` cover the fixed 20-step limit, branching, exact optional fields, delete cascades, frame/image references, stacking order, image limits and conflicts with external work.
+- `tests/browser/minimap.spec.ts` and `tests/browser/history.spec.ts` cover real pointer/keyboard navigation, canvas-list previews, responsive placement, undo/redo buttons and shortcuts, native text editing, canvas switching, refresh, request rejection and unrelated/concurrent API edits.
+
 ## Known gaps
 
 - Pixel comparisons cover the pinned prototype's light-theme backdrop, notes, shapes, text, ink, connector, selection marquee and HTML card shell. Other themes, arbitrary generated card contents and all animation frames are not exhaustively compared.
 - Browser tests run Chrome only. Safari/Firefox rendering of `foreignObject` and sandboxed iframes is unverified.
 - No load, soak or large-board performance tests; the 1 MB request limit is exercised for the 413 contract only.
-- Not yet supported by the product, so not tested: undo/redo, resizing, multi-user sessions, MCP, remote deployment.
+- Not yet supported by the product, so not tested: resizing, multi-user sessions, MCP, remote deployment.
