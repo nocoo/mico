@@ -5,6 +5,7 @@ import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
+import { CanvasMinimap } from './canvas/CanvasMinimap'
 import { CanvasView } from './canvas/CanvasView'
 import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
@@ -932,6 +933,16 @@ export default function App() {
 			}
 		>
 			<CanvasBackdrop />
+			<CanvasMinimap
+				shapes={visibleShapes}
+				viewport={viewport}
+				canvasRef={svgRef}
+				canvasId={activeCanvasId}
+				onViewportChange={(next) => {
+					if (isGestureActive()) cancelInteraction()
+					setViewport(next)
+				}}
+			/>
 			<input
 				ref={imageInputRef}
 				className="image-file-input"
