@@ -17,6 +17,7 @@ import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
+import { jellyStyle } from './canvas/jelly'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
@@ -1107,6 +1108,7 @@ export default function App() {
 		spacePressed,
 		isPanning,
 		animatedNoteIds: animatedNotesRef.current,
+		editingId: editing?.id ?? null,
 		onPointerDown: onShapePointerDown,
 		onDoubleClick: onShapeDoubleClick,
 	}
@@ -1327,7 +1329,12 @@ export default function App() {
 									h: 36,
 								}
 							: target.type === 'note'
-								? { x: target.x + 12, y: target.y + 12, w: target.w - 24, h: target.h - 24 }
+								? {
+										x: target.x + 15,
+										y: target.y + 21,
+										w: Math.max(0, target.w - 30),
+										h: Math.max(0, target.h - 31),
+									}
 								: { x: target.x, y: target.y, w: target.w, h: target.h }
 						const multiline = target.type === 'text' || target.type === 'note'
 						const style =
@@ -1352,7 +1359,8 @@ export default function App() {
 								y={box.y}
 								width={box.w}
 								height={box.h}
-								className="inline-editor"
+								className={`inline-editor${target.type === 'note' ? ' sticky-note-editor' : ''}`}
+								style={target.type === 'note' ? jellyStyle(target.color) : undefined}
 								onPointerDown={(event) => event.stopPropagation()}
 							>
 								{multiline ? (

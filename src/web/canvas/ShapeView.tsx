@@ -47,6 +47,7 @@ export interface ShapeViewProps extends ShapeCallbacks {
 	spacePressed: boolean
 	isPanning: boolean
 	animatedNoteIds: ReadonlySet<string>
+	editingId: string | null
 }
 
 export function ShapeView({
@@ -58,6 +59,7 @@ export function ShapeView({
 	spacePressed,
 	isPanning,
 	animatedNoteIds,
+	editingId,
 	onPointerDown,
 	onDoubleClick,
 }: ShapeViewProps) {
@@ -325,7 +327,11 @@ export function ShapeView({
 	if (shape.type === 'note') {
 		return (
 			<g {...common}>
-				<StickyNote shape={shape} animate={animatedNoteIds.has(shape.id)} />
+				<StickyNote
+					shape={shape}
+					animate={animatedNoteIds.has(shape.id)}
+					editing={editingId === shape.id}
+				/>
 				{active && (
 					<rect
 						className="selection"

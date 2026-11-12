@@ -23,6 +23,27 @@
 	overflow-wrap: anywhere;
 }
 
+.sticky-body-editing {
+	visibility: hidden;
+}
+
+.inline-editor.sticky-note-editor textarea {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--j-ink);
+	caret-color: var(--j-ink);
+	font-family:
+		"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC",
+		"Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+	font-size: 13px;
+	font-weight: 400;
+	line-height: 1.6;
+	box-shadow: none;
+	outline: none;
+}
+
 .sticky-entry {
 	transform-box: fill-box;
 	transform-origin: 50% 50%;

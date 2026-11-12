@@ -3,7 +3,15 @@ import { jellyStyle } from './canvas/jelly'
 import './canvas/jelly.css'
 import './sticky-note.css'
 
-export function StickyNote({ shape, animate }: { shape: CanvasShape; animate: boolean }) {
+export function StickyNote({
+	shape,
+	animate,
+	editing,
+}: {
+	shape: CanvasShape
+	animate: boolean
+	editing: boolean
+}) {
 	return (
 		<g className={animate ? 'sticky-entry' : undefined}>
 			<rect
@@ -23,7 +31,9 @@ export function StickyNote({ shape, animate }: { shape: CanvasShape; animate: bo
 				pointerEvents="none"
 			>
 				<div className="sticky-jelly canvas-jelly" style={jellyStyle(shape.color)}>
-					<div className="sticky-body">{shape.text || ''}</div>
+					<div className={editing ? 'sticky-body sticky-body-editing' : 'sticky-body'}>
+						{shape.text || ''}
+					</div>
 				</div>
 			</foreignObject>
 		</g>
