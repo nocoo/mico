@@ -22,10 +22,9 @@ test('canvas backdrop matches the reference at rest, pan and zoom', async ({
 		svg.canvas > * { visibility: hidden !important; }
 	`,
 	})
-	const reference = await context.newPage({
-		viewport: { width: 1440, height: 960 },
-		reducedMotion: 'reduce',
-	})
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
 	await reference.goto(
 		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/canvas-reference.html')).href,
 	)
