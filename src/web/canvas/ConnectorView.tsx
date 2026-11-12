@@ -2,7 +2,6 @@ import type React from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
 import { ConnectorHead } from './ConnectorHead'
 import { connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
-import { entryAnimationCompleted } from './entry-animation'
 import { jellyStyle } from './jelly'
 import './canvas-entry.css'
 
@@ -36,7 +35,9 @@ export function ConnectorView({
 			style={{ ...jellyStyle(shape.color), color: 'var(--j-edge)', cursor }}
 			onPointerDown={onPointerDown}
 			onAnimationEnd={(event) => {
-				if (entryAnimationCompleted('draw', event.animationName)) onAnimationComplete()
+				if (event.animationName !== 'canvas-edge-fade-in') return
+				event.currentTarget.classList.remove('draw')
+				onAnimationComplete()
 			}}
 		>
 			<path

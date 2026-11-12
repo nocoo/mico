@@ -17,15 +17,7 @@ import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
-import {
-	clearEntrySuppression,
-	clearObservedEntrySuppressions,
-	clearReducedMotionEntries,
-	type EntrySuppressionRegistry,
-	suppressEntryAnimation,
-	suppressedEntryIds,
-	transitionEntryAnimations,
-} from './canvas/entry-animation'
+import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
@@ -77,8 +69,7 @@ export default function App() {
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const animatedObjectsRef = useRef(new Set<string>())
-	const suppressedEntryIdsRef = useRef<EntrySuppressionRegistry>(new Map())
-	const [, setEntryAnimationRevision] = useState(0)
+	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
 	const reducedMotionQueryRef = useRef<MediaQueryList | null>(null)
 	if (!reducedMotionQueryRef.current)
 		reducedMotionQueryRef.current = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -173,38 +164,34 @@ export default function App() {
 	const cancelInteractionRef = useRef<() => void>(() => {})
 
 	const consumeEntryAnimation = useCallback((id: string) => {
-		if (!animatedObjectsRef.current.delete(id)) return
-		setEntryAnimationRevision((revision) => revision + 1)
+		animatedObjectsRef.current.delete(id)
 	}, [])
 
 	useEffect(() => {
-		const clearForReducedMotion = () => {
-			if (!clearReducedMotionEntries(animatedObjectsRef.current, boardRef.current.shapes)) return
-			setEntryAnimationRevision((revision) => revision + 1)
-		}
 		const query = reducedMotionQueryRef.current
 		if (!query) return
 		const update = (event: MediaQueryListEvent) => {
+			if (event.matches) animatedObjectsRef.current.clear()
 			setReducedMotion(event.matches)
-			if (event.matches) clearForReducedMotion()
 		}
-		if (query.matches) clearForReducedMotion()
 		query.addEventListener('change', update)
 		return () => query.removeEventListener('change', update)
 	}, [])
 
-	const trackNewObjects = useCallback((next: Board, switching: boolean) => {
-		const canvasId = activeCanvasIdRef.current
-		animatedObjectsRef.current = transitionEntryAnimations(
-			boardRef.current,
-			next,
-			switching,
-			animatedObjectsRef.current,
-			canvasId ? suppressedEntryIds(suppressedEntryIdsRef.current, canvasId) : new Set(),
-		)
-		if (canvasId)
-			clearObservedEntrySuppressions(suppressedEntryIdsRef.current, canvasId, next.shapes)
-	}, [])
+	const trackNewObjects = useCallback(
+		(next: Board, switching: boolean) => {
+			const canvasId = activeCanvasIdRef.current
+			animatedObjectsRef.current = transitionEntryAnimations(
+				boardRef.current,
+				next,
+				switching,
+				animatedObjectsRef.current,
+				canvasId ? (suppressedEntryIdsRef.current.get(canvasId) ?? new Set()) : new Set(),
+			)
+			if (reducedMotion) animatedObjectsRef.current.clear()
+		},
+		[reducedMotion],
+	)
 
 	const applyBoard = useCallback(
 		(next: Board) => {
@@ -431,9 +418,14 @@ export default function App() {
 
 	const createShape = (shape: CanvasShape, suppressEntry = false) => {
 		const canvasId = activeCanvasIdRef.current
-		const suppressionToken = suppressEntry && canvasId ? Symbol() : null
-		if (suppressionToken)
-			suppressEntryAnimation(suppressedEntryIdsRef.current, canvasId, shape.id, suppressionToken)
+		if (suppressEntry && canvasId) {
+			let ids = suppressedEntryIdsRef.current.get(canvasId)
+			if (!ids) {
+				ids = new Set()
+				suppressedEntryIdsRef.current.set(canvasId, ids)
+			}
+			ids.add(shape.id)
+		}
 		const frameId =
 			shape.type === 'frame'
 				? null
@@ -442,8 +434,10 @@ export default function App() {
 		void postOperations([
 			{ type: 'create', shape: frameId ? { ...shape, frameId } : shape },
 		]).finally(() => {
-			if (suppressionToken)
-				clearEntrySuppression(suppressedEntryIdsRef.current, canvasId, shape.id, suppressionToken)
+			if (!suppressEntry || !canvasId) return
+			const ids = suppressedEntryIdsRef.current.get(canvasId)
+			ids?.delete(shape.id)
+			if (ids?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
 		})
 	}
 
@@ -1160,7 +1154,6 @@ export default function App() {
 		spacePressed,
 		isPanning,
 		animatedObjectIds: animatedObjectsRef.current,
-		reducedMotion,
 		onEntryAnimationConsumed: consumeEntryAnimation,
 		editingId: editing?.id ?? null,
 		onPointerDown: onShapePointerDown,
