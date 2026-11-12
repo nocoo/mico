@@ -1,6 +1,13 @@
 import { type APIRequestContext, expect, type Route, test } from '@playwright/test'
 import type { Board, CanvasSnapshot, CanvasSummary } from '../../src/shared/types'
-import { clickWorld, ISOLATED_ORIGIN, resetBoard, resetView, worldPoint } from './support'
+import {
+	clickWorld,
+	closeAssistant,
+	ISOLATED_ORIGIN,
+	resetBoard,
+	resetView,
+	worldPoint,
+} from './support'
 
 async function state(request: APIRequestContext): Promise<CanvasSnapshot> {
 	const response = await request.get('/api/state')
@@ -43,6 +50,7 @@ test.beforeEach(async ({ page, request, baseURL }) => {
 	await resetCanvases(request)
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
 	await resetView(page)
 })
 
@@ -136,6 +144,7 @@ test('creating and switching canvases keeps each board and survives reload', asy
 
 	await page.reload()
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
 	await expect.poll(async () => (await state(request)).activeCanvasId).toBe(mainCanvas.id)
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 	await expect(page.getByRole('region', { name: 'Canvases' }).locator('.canvas-item')).toHaveCount(

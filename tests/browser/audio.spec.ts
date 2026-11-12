@@ -1,7 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-
-const AI_BUTTON = 'AI assistant'
-const OPEN_AI = 'Open AI assistant'
+import { openAssistant } from './support'
 
 interface AudioMockState {
 	sessionUpdates: number
@@ -141,9 +139,7 @@ async function openAudio(page: Page, state: AudioMockState) {
 
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	return { panel, prerecorded: panel.getByRole('tabpanel', { name: 'Audio' }) }
 }
 
@@ -230,9 +226,7 @@ test('Audio natural end does not commit a terminal short empty silence buffer', 
 		})
 	})
 	await page.goto('/')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
 	await expect(prerecorded.getByText('Recording complete', { exact: true })).toBeVisible()
@@ -310,9 +304,7 @@ test('Audio pads a sub-100ms final voiced tail instead of dropping real speech',
 		})
 	})
 	await page.goto('/')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
 	await expect(prerecorded.getByText('Sub-100ms real speech', { exact: true })).toBeVisible()
@@ -411,9 +403,7 @@ test('Audio correlates an empty final commit and preserves an earlier outstandin
 		})
 	})
 	await page.goto('/')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
 	await expect(prerecorded.getByText('Earlier real speech', { exact: true })).toBeVisible()
@@ -505,9 +495,7 @@ test('Audio correlates acknowledged items and releases out-of-order completions 
 		})
 	})
 	await page.goto('/')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
 
@@ -624,9 +612,7 @@ for (const fatal of ['error', 'close'] as const) {
 			})
 		})
 		await page.goto('/')
-		await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-		const panel = page.getByRole('region', { name: AI_BUTTON })
-		await panel.getByRole('tab', { name: 'Audio' }).click()
+		const panel = await openAssistant(page, 'Audio')
 		const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 		await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
 
@@ -707,9 +693,7 @@ test('Audio shows exact nested provider errors instead of a generic model error'
 		})
 	})
 	await page.goto('/')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
 	await expect(

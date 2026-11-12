@@ -6,6 +6,7 @@ import {
 	choose,
 	clickPathInk,
 	clickWorld,
+	closeAssistant,
 	dragWorld,
 	ISOLATED_ORIGIN,
 	pillBox,
@@ -54,6 +55,7 @@ test.beforeEach(async ({ page, request, baseURL }) => {
 	await resetBoard(request, [])
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
 	await resetView(page)
 })
 
@@ -940,41 +942,27 @@ test('zoom buttons, reset and fit keep objects reachable', async ({ page, reques
 	}
 })
 
-test('identity, dock and properties panels share one surface style', async ({ page, request }) => {
+test('identity, dock and panels use the reference glass geometry', async ({ page, request }) => {
 	await seed(page, request, [rect('surface-rect', 200, 200, 200, 100)])
 	await clickWorld(page, 300, 250)
 	const properties = page.getByRole('region', { name: 'Selected object properties' })
 	await expect(properties).toBeVisible()
 	await expect(properties).toHaveClass(/floating-panel/)
 
-	const panelStyles = await page.evaluate(() => {
-		const read = (selector: string) => {
-			const element = document.querySelector(selector)
-			if (!element) throw new Error(`Missing panel ${selector}`)
-			const style = getComputedStyle(element)
-			return {
-				background: style.backgroundColor,
-				radius: style.borderRadius,
-				shadow: style.boxShadow,
-				border: `${style.borderTopWidth} ${style.borderTopColor}`,
-			}
-		}
-		return {
-			identity: read('.identity-panel'),
-			dock: read('.toolbar'),
-			properties: read('.selection-panel'),
-			assistant: read('.ai-panel'),
-		}
-	})
-
-	for (const panel of Object.values(panelStyles)) {
-		expect(panel.background).toBe('rgb(255, 255, 255)')
-		expect(panel.radius).toBe('20px')
-		expect(panel.shadow).not.toBe('none')
+	for (const [selector, radius] of [
+		['.identity-panel', '22px'],
+		['.toolbar-module', '24px'],
+		['.selection-panel', '26px'],
+		['.ai-panel', '30px'],
+	] as const) {
+		const panel = page.locator(selector)
+		await expect(panel).toHaveCSS('border-radius', radius)
+		await expect(panel).not.toHaveCSS('box-shadow', 'none')
 	}
-	expect(panelStyles.identity).toEqual(panelStyles.dock)
-	expect(panelStyles.dock).toEqual(panelStyles.properties)
-	expect(panelStyles.properties).toEqual(panelStyles.assistant)
+	for (const selector of ['.identity-panel', '.toolbar-module', '.selection-panel']) {
+		await expect(page.locator(selector)).toHaveCSS('backdrop-filter', 'blur(22px) saturate(1.7)')
+	}
+	await expect(page.locator('.ai-panel')).toHaveCSS('backdrop-filter', 'blur(34px) saturate(1.8)')
 
 	const idleToolBackgrounds = await page
 		.locator('.drawing-tools .icon-button:not([aria-pressed="true"])')

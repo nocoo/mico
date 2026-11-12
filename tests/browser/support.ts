@@ -3,6 +3,30 @@ import type { Board, CanvasShape, Shape } from '../../src/shared/types'
 
 export const ISOLATED_ORIGIN = 'http://127.0.0.1:27063'
 
+export type AssistantTab = 'Chat' | 'Audio' | 'Live' | 'Settings'
+
+export async function openAssistant(page: Page, tab: AssistantTab) {
+	const panel = page.getByRole('region', { name: 'AI assistant' })
+	if ((await panel.getAttribute('aria-hidden')) === 'true') {
+		await page.getByRole('button', { name: 'Open AI assistant', exact: true }).click()
+	}
+	await expect(panel).toBeVisible()
+	await panel.getByRole('tab', { name: tab, exact: true }).click()
+	await expect(panel.getByRole('tab', { name: tab, exact: true })).toHaveAttribute(
+		'aria-selected',
+		'true',
+	)
+	return panel
+}
+
+export async function closeAssistant(page: Page) {
+	const panel = page.getByRole('region', { name: 'AI assistant' })
+	if ((await panel.getAttribute('aria-hidden')) !== 'true') {
+		await page.getByRole('button', { name: 'Close AI assistant', exact: true }).click()
+	}
+	await expect(panel).toBeHidden()
+}
+
 export type MicrophoneMockMode = 'allowed' | 'denied' | 'delayed'
 
 export interface MicrophoneMockState {

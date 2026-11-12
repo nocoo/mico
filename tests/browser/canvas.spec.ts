@@ -1,7 +1,7 @@
 import { type APIRequestContext, expect, type Locator, type Page, test } from '@playwright/test'
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
 import { CANDY_COLORS, CANDY_TINTS, SHAPE_COLORS } from '../../src/web/design'
-import { resetBoard } from './support'
+import { closeAssistant, resetBoard } from './support'
 
 async function board(request: APIRequestContext): Promise<Board> {
 	const response = await request.get('/api/board')
@@ -144,6 +144,7 @@ test.beforeEach(async ({ request, page, baseURL }) => {
 	expect(response.ok()).toBe(true)
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
 	await expect(page.locator('.canvas-shape')).toHaveCount(5)
 })
 
@@ -151,9 +152,10 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	page,
 }) => {
 	const toolbar = page.getByRole('toolbar', { name: 'Canvas tools' })
-	await expect(page.locator('.identity-panel')).toHaveText('mico')
+	await expect(page.locator('.identity-panel .brand strong')).toHaveText('mico')
+	await expect(page.locator('.identity-panel .identity-ai-badge')).toHaveText('AI')
 	await expect(page.locator('.identity-panel img.brand-mark-icon')).toHaveCount(1)
-	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'connection-status-breathe')
+	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'ai-connection-breathe')
 	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(16)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	for (const topbar of await page.locator('.topbar').all()) {
@@ -459,6 +461,7 @@ test('the frame label hit area matches the visible pill and edits its title', as
 	expect(created.ok()).toBe(true)
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
+	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
 	const behind = await worldPoint(page, 510, 178)
@@ -589,6 +592,7 @@ test('frames are selected and dragged only through their label', async ({ page, 
 	expect(created.ok()).toBe(true)
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
+	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
 	const inside = await worldPoint(page, 620, 500)
@@ -670,6 +674,7 @@ test('drawing inside a frame joins it and dragging in or out updates membership'
 	expect(created.ok()).toBe(true)
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
+	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
@@ -768,6 +773,7 @@ test('frames connect only to frames through the canvas and the API', async ({ pa
 	expect(created.ok()).toBe(true)
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
+	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
 	const before = (await board(request)).shapes.filter((shape) => shape.type === 'connector')
@@ -884,6 +890,7 @@ test('html cards render generated markup and expose only their title', async ({
 	})
 	await page.reload()
 	await page.locator('.status[aria-label="Live"]').waitFor()
+	await closeAssistant(page)
 	await page.getByRole('button', { name: 'Reset view' }).click()
 
 	await expect(page.locator('[data-shape-id="html-card"] iframe')).toHaveAttribute(
@@ -1058,6 +1065,7 @@ test('freehand brush draws a persisted tapered path and API sketches render', as
 		expect(point.y).toBeLessThanOrEqual(path.h)
 	}
 	await page.reload()
+	await closeAssistant(page)
 	await expect(page.locator(`[data-shape-id="${path.id}"] path`)).not.toHaveCount(0)
 
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
@@ -1130,6 +1138,7 @@ test('drag creates a connector with exactly the highlighted target anchor', asyn
 	)
 	expect(created).toMatchObject({ from: 'a', to: 'c', fromAnchor: 3, toAnchor: anchorIndex })
 	await page.reload()
+	await closeAssistant(page)
 	await expect(page.locator('.canvas-shape')).toHaveCount(6)
 })
 
@@ -1253,6 +1262,7 @@ test('multi-line concept labels render one tspan per line', async ({ page, reque
 	])
 	await page.reload()
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
 	const label = page.locator('[data-shape-id="multi"]')
 	await expect(label.locator('tspan')).toHaveCount(2)
 	await expect(label).toContainText('Line one')

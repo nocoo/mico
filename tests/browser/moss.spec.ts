@@ -4,11 +4,10 @@ import {
 	installMicrophoneMock,
 	type MicrophoneMockState,
 	mockMaiTranscription,
+	openAssistant,
 	resetBoard,
 } from './support'
 
-const AI_BUTTON = 'AI assistant'
-const OPEN_AI = 'Open AI assistant'
 const CLOSE_AI = 'Close AI assistant'
 
 interface MossOutput {
@@ -39,9 +38,7 @@ interface MossMockState {
 }
 
 async function openLive(page: Page) {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Live' }).click()
+	const panel = await openAssistant(page, 'Live')
 	await expect(panel.getByRole('tabpanel', { name: 'Live' })).toBeVisible()
 	return panel
 }

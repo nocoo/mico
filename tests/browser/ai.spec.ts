@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { board, resetBoard } from './support'
+import { board, openAssistant, resetBoard } from './support'
 
 const AI_BUTTON = 'AI assistant'
 const OPEN_AI = 'Open AI assistant'
@@ -11,7 +11,7 @@ test.beforeEach(async ({ page, request }) => {
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 })
 
-test('the project logo and pen use their original containers and actions', async ({
+test('the project logo and assistant trigger preserve the reference identity and actions', async ({
 	page,
 	request,
 }) => {
@@ -20,56 +20,55 @@ test('the project logo and pen use their original containers and actions', async
 	expect(image.ok()).toBe(true)
 	expect(image.headers()['content-type']).toContain('image/png')
 
-	const logo = page.locator('.identity-panel img.brand-mark-icon')
+	const identity = page.locator('.identity-panel')
+	const logo = identity.locator('img.brand-mark-icon')
 	await expect(logo).toHaveAttribute('src', '/logo.png')
 	await expect
 		.poll(() => logo.evaluate((element: HTMLImageElement) => element.naturalWidth))
 		.toBe(256)
-	await expect(page.locator('.identity-panel').getByRole('status')).toHaveCount(0)
+	await expect(identity.locator('.brand strong')).toHaveText('mico')
+	await expect(identity.locator('.identity-ai-badge')).toHaveText('AI')
+	await expect(identity.getByRole('status')).toHaveCount(0)
+	await expect(identity).toHaveCSS('border-radius', '22px')
+	await expect(identity).toHaveCSS('backdrop-filter', 'blur(22px) saturate(1.7)')
 	await expect(page.getByRole('button', { name: 'Canvases', exact: true })).toBeVisible()
 
 	const trigger = page.locator('[data-ai-toggle="true"]')
-	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
-	await expect(trigger).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
-	await expect(trigger).toHaveCSS('box-shadow', 'none')
+	const triggerSurface = page.locator('.ai-trigger')
 	const pen = trigger.locator('svg.trigger-logo.lucide-pen-tool')
-	await expect(pen).toHaveCSS('opacity', '1')
-	const status = page.locator('.ai-trigger').getByRole('status', { name: 'Live' })
+	const close = trigger.locator('svg.trigger-close')
+	const status = triggerSurface.getByRole('status', { name: 'Live' })
 	const statusDot = status.locator('.status-dot')
-	await expect(status).toBeVisible()
+	await expect(trigger).toHaveAttribute('aria-label', 'Close AI assistant')
+	await expect(triggerSurface).toHaveCSS('border-radius', '12px')
+	await expect(pen).toHaveCSS('opacity', '0')
+	await expect(close).toHaveCSS('opacity', '1')
+	await expect(statusDot).toBeHidden()
 	const logoBox = await logo.boundingBox()
 	const triggerBox = await trigger.boundingBox()
-	const penBox = await pen.boundingBox()
-	const statusBox = await status.boundingBox()
-	if (!logoBox || !triggerBox || !penBox || !statusBox) throw new Error('Missing header icons')
+	if (!logoBox || !triggerBox) throw new Error('Missing header icons')
 	expect(logoBox.x).toBeLessThan(triggerBox.x)
-	expect(statusBox.x + statusBox.width / 2).toBeCloseTo(penBox.x + 3, 0)
-	expect(statusBox.y + statusBox.height / 2).toBeCloseTo(penBox.y + 3, 0)
+
+	await trigger.click()
+	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
+	await expect(triggerSurface).toHaveCSS('border-radius', '22px')
+	await expect(pen).toHaveCSS('opacity', '1')
+	await expect(close).toHaveCSS('opacity', '0')
 	await expect(statusDot).toBeVisible()
-	await expect(statusDot).toHaveCSS('animation-name', 'connection-status-breathe')
+	await expect(statusDot).toHaveCSS('animation-name', 'ai-connection-breathe')
+
 	await trigger.click()
 	await expect(trigger).toHaveAttribute('aria-label', 'Close AI assistant')
-	await expect(pen).toHaveCSS('opacity', '0')
-	const close = trigger.locator('svg.trigger-close')
-	await expect(close).toHaveCSS('opacity', '1')
-	await expect(status).toHaveAttribute('aria-label', 'Live')
 	await expect(statusDot).toBeHidden()
 	await page.getByRole('tab', { name: 'Live' }).click()
 	await expect(statusDot).toBeHidden()
-	await trigger.click()
-	await expect(pen).toHaveCSS('opacity', '1')
-	await expect(statusDot).toBeVisible()
 })
 
 test('the AI panel streams a tool loop and draws on the board', async ({ page, request }) => {
 	const trigger = page.locator('[data-ai-toggle="true"]')
-	await expect(trigger).toHaveAttribute('aria-label', OPEN_AI)
-	await expect(trigger).toHaveAttribute('aria-expanded', 'false')
-	await trigger.click()
 	await expect(trigger).toHaveAttribute('aria-label', 'Close AI assistant')
 	await expect(trigger).toHaveAttribute('aria-expanded', 'true')
-
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await expect(panel).toBeVisible()
 	await expect(panel.getByText('Draw a lesson with Mico')).toBeVisible()
 	for (const name of ['Chat', 'Audio', 'Live', 'Settings']) {
@@ -108,9 +107,7 @@ test('the AI panel streams a tool loop and draws on the board', async ({ page, r
 })
 
 test('the Audio tab loads prerecorded sessions and playback controls', async ({ page }) => {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Audio' }).click()
+	const panel = await openAssistant(page, 'Audio')
 	await expect(panel.getByRole('tab', { name: 'Audio' })).toHaveAttribute('aria-selected', 'true')
 	const prerecorded = panel.getByRole('tabpanel', { name: 'Audio' })
 	await expect(prerecorded.getByText('Live transcript')).toBeVisible()
@@ -147,8 +144,7 @@ test('AI panels adapt to short and narrow viewports without clipping bottom cont
 	page,
 }) => {
 	await page.route('**/api/ai/models', (route) => route.fulfill({ json: { models: ['model/a'] } }))
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Audio')
 	const insidePanel = async (target: ReturnType<typeof page.locator>) => {
 		await target.scrollIntoViewIfNeeded()
 		const panelBox = await panel.boundingBox()
@@ -167,7 +163,8 @@ test('AI panels adapt to short and narrow viewports without clipping bottom cont
 	const settingsHeight = (await panel.boundingBox())?.height ?? 0
 	await panel.getByRole('tab', { name: 'Audio' }).click()
 	const audioHeight = (await panel.boundingBox())?.height ?? 0
-	expect(audioHeight).toBeGreaterThan(settingsHeight)
+	expect(settingsHeight).toBe(932)
+	expect(audioHeight).toBe(932)
 	for (const viewport of [
 		{ width: 1440, height: 440 },
 		{ width: 390, height: 650 },
@@ -201,8 +198,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		}
 	})
 	await page.reload()
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await panel.getByRole('tab', { name: 'Chat' }).focus()
 	await page.keyboard.press('End')
 	await expect(panel.getByRole('tab', { name: 'Settings' })).toBeFocused()
@@ -214,7 +210,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 	const saveBox = await settings.getByRole('button', { name: 'Save settings' }).boundingBox()
 	expect(fieldBox?.height).toBe(40)
 	expect(checkboxBox?.height).toBe(16)
-	expect(saveBox?.height).toBe(32)
+	expect(saveBox?.height).toBe(40)
 	await settings.getByLabel('Endpoint').fill('https://example.test/v1')
 	await settings.getByLabel('Model', { exact: true }).fill('example-model')
 	await settings.getByRole('button', { name: 'Save settings' }).click()
@@ -239,8 +235,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		apiKey: '',
 	})
 	await page.reload()
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	await panel.getByRole('tab', { name: 'Settings' }).click()
+	await openAssistant(page, 'Settings')
 	await expect(settings.getByLabel('Endpoint')).toHaveValue('https://example.test/v1')
 	await expect(settings.getByLabel('Model', { exact: true })).toHaveValue('example-model')
 	await expect(settings.getByLabel('Remove current API key')).toHaveCount(0)
@@ -269,9 +264,7 @@ test('settings select or enter a model and refresh the saved endpoint list', asy
 			: route.fulfill({ json: { models: ['group/coding', 'group/steering'] } })
 	})
 	await page.reload()
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Settings' }).click()
+	const panel = await openAssistant(page, 'Settings')
 	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
 	const model = settings.getByLabel('Model', { exact: true })
 	const modelPicker = settings.getByRole('combobox', { name: 'Choose model' })
@@ -309,8 +302,7 @@ test('a second turn keeps the conversation and the tool history valid', async ({
 	page,
 	request,
 }) => {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	const composer = panel.getByRole('textbox', { name: COMPOSER })
 	await composer.fill('Draw projectile motion')
 	await composer.press('Enter')
@@ -330,8 +322,7 @@ test('a second turn keeps the conversation and the tool history valid', async ({
 })
 
 test('quick prompts draw without typing', async ({ page, request }) => {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await panel.getByRole('button', { name: 'Projectile motion' }).click()
 	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
 	await expect(panel.locator('.ai-message.user .ai-message-text')).toContainText(
@@ -343,6 +334,7 @@ test('a URL prompt opens the panel and starts the lesson', async ({ page, reques
 	await page.goto('/?ai=Explain%20and%20draw%20projectile%20motion')
 	const panel = page.getByRole('region', { name: AI_BUTTON })
 	await expect(panel).toBeVisible()
+	await expect(panel.getByRole('tab', { name: 'Chat' })).toHaveAttribute('aria-selected', 'true')
 	await expect.poll(async () => (await board(request)).shapes.length).toBe(8)
 	await expect(panel.getByRole('textbox', { name: COMPOSER })).toHaveValue('')
 })
@@ -370,8 +362,7 @@ test('the current marquee selection is attached to the request', async ({ page, 
 		await route.continue()
 	})
 
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await expect(panel.getByText('1 selected object attached')).toBeVisible()
 	await panel.getByRole('textbox', { name: COMPOSER }).fill('Extend the selected object')
 	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
@@ -387,8 +378,7 @@ test('a failed gateway response shows an actionable error', async ({ page }) => 
 			body: JSON.stringify({ error: 'INTERNAL_ERROR', message: 'gateway down' }),
 		}),
 	)
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await panel.getByRole('textbox', { name: COMPOSER }).fill('Draw something')
 	await panel.getByRole('textbox', { name: COMPOSER }).press('Enter')
 	await expect(panel.getByRole('alert')).toContainText('Assistant request failed')
@@ -405,9 +395,7 @@ test('Live defaults to MOSS and can switch to MAI without starting a session', a
 	page.on('request', (request) => {
 		if (request.url().includes('/api/moss/session')) sessions++
 	})
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Live' }).click()
+	const panel = await openAssistant(page, 'Live')
 	const moss = panel.getByRole('radio', { name: 'MOSS Live' })
 	const mai = panel.getByRole('radio', { name: 'MAI Transcribe' })
 	await expect(moss).toHaveAttribute('data-state', 'on')
@@ -421,9 +409,7 @@ test('Live defaults to MOSS and can switch to MAI without starting a session', a
 })
 
 test('the Live tab preserves the microphone layout', async ({ page }) => {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
-	await panel.getByRole('tab', { name: 'Live' }).click()
+	const panel = await openAssistant(page, 'Live')
 	await expect(panel.getByRole('tab', { name: 'Live' })).toHaveAttribute('aria-selected', 'true')
 	await expect(panel.getByRole('tabpanel', { name: 'Live' })).toBeVisible()
 
@@ -433,13 +419,13 @@ test('the Live tab preserves the microphone layout', async ({ page }) => {
 	const box = await mic.boundingBox()
 	const panelBox = await panel.boundingBox()
 	if (!box || !panelBox) throw new Error('Missing microphone or panel box')
-	expect(box.height).toBe(64)
+	expect(box.height).toBe(68)
 
 	await page.setViewportSize({ width: 667, height: 375 })
 	await expect(panel).toBeVisible()
 	const compactBox = await panel.getByRole('button', { name: 'Start recording' }).boundingBox()
 	if (!compactBox) throw new Error('Missing compact microphone')
-	expect(compactBox.height).toBe(64)
+	expect(compactBox.height).toBe(68)
 
 	await panel.getByRole('tab', { name: 'Chat' }).click()
 	const shortComposer = panel.getByRole('textbox', { name: COMPOSER })
@@ -468,8 +454,7 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 	page,
 	request,
 }) => {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await expect(panel).toBeVisible()
 	await expect(panel.getByRole('textbox', { name: COMPOSER })).toBeFocused()
 
@@ -485,8 +470,7 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 })
 
 test('Escape closes the panel when keyboard focus is back in the composer', async ({ page }) => {
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
-	const panel = page.getByRole('region', { name: AI_BUTTON })
+	const panel = await openAssistant(page, 'Chat')
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
 	await panel.getByRole('textbox', { name: COMPOSER }).focus()
 	await page.keyboard.press('Escape')
@@ -497,7 +481,7 @@ test('the narrow Canvases panel stays above the AI panel', async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 })
 	await page.reload()
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+	await openAssistant(page, 'Audio')
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 
 	const canvases = page.getByRole('region', { name: 'Canvases' })
@@ -545,12 +529,10 @@ test('the AI panel replaces the narrow properties sheet instead of hiding its co
 	await expect(
 		properties.getByRole('combobox', { name: 'Font weight', exact: true }),
 	).toContainText('400')
-	await page.getByRole('button', { name: OPEN_AI, exact: true }).click()
+	const panel = await openAssistant(page, 'Chat')
 	await expect(properties).toBeHidden()
 
-	const composer = page
-		.getByRole('region', { name: AI_BUTTON })
-		.getByRole('textbox', { name: COMPOSER })
+	const composer = panel.getByRole('textbox', { name: COMPOSER })
 	await composer.fill('Sketch a login flow')
 	await expect(composer).toHaveValue('Sketch a login flow')
 })
