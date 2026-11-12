@@ -10,6 +10,13 @@
 - A fake audio file began playing as soon as the microphone opened, before MOSS finished connecting. The client discards pre-ready frames, so only the end of the synthetic request reached the provider and no tool call was observed. Future probes must start synthetic speech only after the session is ready; distinguish a validated connection from an unverified tool-call path.
 - A 177-second synthetic geography lesson on a user-authorized new canvas confirmed all 11 tools, audio output, and one acknowledged `add_texts` call, but the call arrived near the end and produced only a title and subtitle. Several speech segments were badly misrecognized. A separate local 20-second capture produced 20.07 seconds of PCM with strong waveform correlation, so the cause of the long-session recognition and response failures remains unproven. Future long-form checks should record frame timing and transcript quality, not merely connection and tool registration.
 
+## Quality gate
+
+- The test scripts listed directories by hand (`src/**/*.test.ts` expands one level under `sh`), so ten server and script test files never ran in any subset and a test added under a new directory would have been skipped silently. `scripts/run-tests.ts` now discovers every `*.test.ts` and derives L1 as "all minus the declared L3 files", so a new file cannot disappear. Compare `pnpm test` with `test:unit` plus `test:integration` after adding files.
+- `biome check` reported 24 warnings while `pnpm check` stayed green, so the lint slot would have been a no-op gate. Lint now runs with `--error-on-warnings`; fix warnings instead of raising the diagnostic limit.
+- A literal WebSocket handshake key in `src/server/index.test.ts` tripped gitleaks' `generic-api-key` rule, which would have failed the secret slot on the first CI run. Build probe credentials at runtime instead of allowlisting test files.
+- `docs/prototypes/` is lint-excluded rather than reformatted: the browser suite compares the canvas against those frozen files, so a formatter rewrite is a visual regression.
+
 ## Tool usage
 
 - A canvas pan regression used the lower-left corner, which became an interactive minimap hit area. Keep canvas gestures outside fixed chrome rather than treating minimap navigation as a canvas-pan failure; retain the exact endpoint delta assertions. Bottom-aligning the minimap also requires reserving horizontal toolbar space, not just changing its bottom inset.
