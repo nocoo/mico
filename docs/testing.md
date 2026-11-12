@@ -61,6 +61,8 @@ L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minu
 
 ## Isolation
 
+- Install with `pnpm install --frozen-lockfile`. A plain install through a local mirror rewrites `pnpm-lock.yaml` with mirror tarball URLs, and `pnpm` 11's supply-chain check then rejects the lockfile in CI.
+
 - Never point an automated test at the daily board (`.mico/board.sqlite`) or the daily ports.
 - Store/API/CLI/example tests use `mkdtempSync` databases and port `0`.
 - The browser fixture (`scripts/browser-server.ts`) owns `127.0.0.1:27063`, an ephemeral daemon, a temporary SQLite file and a separate Vite cache. Every spec refuses to run against another origin.
