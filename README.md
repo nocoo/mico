@@ -145,7 +145,7 @@ node src/cli/index.ts shape update <frame-id> '{"backgroundImageId":"photo","bac
 - `POST /api/ai/chat` — `{messages, selection}`；流式返回 Vercel AI SDK 的 UI 消息块。服务端工具读取并修改活动画布，广播与 `POST /api/operations` 相同的 `board` 事件。`selection` 是用户框选的形状 ID 数组，助手会把它们的几何信息和标签作为主要上下文。
 - `GET /api/events` — WebSocket 事件。连接时以及画布创建/重命名/删除/切换后，守护进程发送 `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`；操作后发送 `{type: "board", canvasId, canvas, board}`。画布元数据变化时 `stateVersion` 递增，客户端可据此忽略延迟到达的快照；客户端从 `canvas` 更新预览元数据，并且只在 `canvasId` 是自己的活动画布时应用 `board`。
 
-History replay also uses `{type: "restore", shape, index}` operations: restore an exact shape at its zero-based stacking position, replacing the same ID without delete cascades. These operations require `expectedRevision` and validate the final board and image limits atomically. No history is stored by the daemon.
+History replay also uses `{type: "restore", shape, index}` operations: restore an exact shape at its zero-based stacking position, replacing the same ID without delete cascades. These operations require `expectedRevision` and validate the final board and image limits atomically. Restore/delete-only replay batches allow up to 64 MiB so rich-card restoration can exceed the ordinary 1 MiB request cap. No history is stored by the daemon.
 
 批次按画布校验并原子持久化。可选的 `expectedRevision` 会拒绝基于过期状态的写入。画布名称会去除首尾空白，长度 1–80 字符，含控制字符会被拒绝。
 
