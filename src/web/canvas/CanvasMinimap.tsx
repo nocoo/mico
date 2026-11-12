@@ -1,5 +1,5 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from 'react'
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { OverviewCanvasSize, OverviewProjection } from '../../shared/overview.ts'
 import {
 	canvasViewportRect,
@@ -54,24 +54,41 @@ export function CanvasMinimap({
 	onViewportChange,
 	canvasId,
 }: CanvasMinimapProps) {
-	const [canvasBounds, setCanvasBounds] = useState({ width: 1, height: 1 })
+	const [canvas, setCanvas] = useState<OverviewCanvasSize>({ width: 1, height: 1, rightInset: 0 })
 	const [dragging, setDragging] = useState(false)
 	const frozenProjection = useRef<OverviewProjection | null>(null)
 	const pointerId = useRef<number | null>(null)
 	const pointerTarget = useRef<SVGSVGElement | null>(null)
 	const renderedCanvasId = useRef(canvasId)
 
-	useLayoutEffect(() => {
+	useEffect(() => {
 		const canvas = canvasRef.current
 		if (!canvas) return
 		const measure = () => {
 			const rect = canvas.getBoundingClientRect()
-			setCanvasBounds({ width: Math.max(1, rect.width), height: Math.max(1, rect.height) })
+			const next = {
+				width: Math.max(1, rect.width),
+				height: Math.max(1, rect.height),
+				rightInset: reservedCanvasWidth(canvas, rect.width),
+			}
+			setCanvas((current) =>
+				current.width === next.width &&
+				current.height === next.height &&
+				current.rightInset === next.rightInset
+					? current
+					: next,
+			)
 		}
 		measure()
 		const observer = new ResizeObserver(measure)
 		observer.observe(canvas)
-		return () => observer.disconnect()
+		const app = canvas.closest('.app')
+		const frameObserver = new MutationObserver(measure)
+		if (app) frameObserver.observe(app, { attributes: true, attributeFilter: ['class', 'style'] })
+		return () => {
+			observer.disconnect()
+			frameObserver.disconnect()
+		}
 	}, [canvasRef])
 
 	useEffect(() => {
@@ -87,10 +104,6 @@ export function CanvasMinimap({
 		setDragging(false)
 	}, [canvasId])
 
-	const canvas: OverviewCanvasSize = {
-		...canvasBounds,
-		rightInset: reservedCanvasWidth(canvasRef.current, canvasBounds.width),
-	}
 	const visibleViewport = canvasViewportRect(viewport, canvas)
 	const projection = overviewProjection(shapes, {
 		width: OVERVIEW_WIDTH,

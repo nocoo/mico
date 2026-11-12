@@ -37,10 +37,10 @@ export function canvasPreview(shapes: Shape[]): string {
 		.map((block) => {
 			const color = escapeXml(block.color)
 			if (block.type === 'ellipse') {
-				return `<ellipse cx="${block.projectedX + block.projectedWidth / 2}" cy="${block.projectedY + block.projectedHeight / 2}" rx="${block.projectedWidth / 2}" ry="${block.projectedHeight / 2}" fill="${color}" fill-opacity="0.22" stroke="${color}" stroke-width="1.5"/>`
+				return `<ellipse cx="${block.projectedX + block.projectedWidth / 2}" cy="${block.projectedY + block.projectedHeight / 2}" rx="${block.projectedWidth / 2}" ry="${block.projectedHeight / 2}" fill="${color}" fill-opacity="0.8" stroke="${color}" stroke-width="1.5"/>`
 			}
 			const frame = block.type === 'frame'
-			return `<rect x="${block.projectedX}" y="${block.projectedY}" width="${block.projectedWidth}" height="${block.projectedHeight}" rx="${frame ? 4 : 3}" fill="${color}" fill-opacity="${frame ? FRAME_FILL_PERCENT / 100 : 0.22}" stroke="${color}" stroke-opacity="${frame ? 0.45 : 0.85}"/>`
+			return `<rect x="${block.projectedX}" y="${block.projectedY}" width="${block.projectedWidth}" height="${block.projectedHeight}" rx="${frame ? 4 : 3}" fill="${color}" fill-opacity="${frame ? FRAME_FILL_PERCENT / 100 : 0.8}" stroke="${color}" stroke-opacity="${frame ? 0.45 : 0.85}"/>`
 		})
 		.join('')
 	const background = `<rect width="${PREVIEW_WIDTH}" height="${PREVIEW_HEIGHT}" fill="${CANDY_LAYOUT.canvas}"/>`

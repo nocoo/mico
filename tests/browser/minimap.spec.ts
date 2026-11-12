@@ -84,11 +84,18 @@ test('click, drag and keyboard navigation move the viewport without creating his
 	const map = page.locator('.canvas-minimap-map')
 	const box = await map.boundingBox()
 	if (!box) throw new Error('Missing minimap')
+	const outline = map.locator('.canvas-minimap-viewport')
+	await expect.poll(async () => Number(await outline.getAttribute('width'))).toBeGreaterThan(50)
+	await expect.poll(async () => Number(await outline.getAttribute('height'))).toBeGreaterThan(40)
 	const initial = await worldView(page)
 	await map.click({ position: { x: 140, y: 80 } })
 	await expect.poll(() => worldView(page)).not.toEqual(initial)
 	const clicked = await worldView(page)
 	expect(clicked.zoom).toBe(initial.zoom)
+	const scale = (176 - 24) / 2800
+	const world = { x: (140 - (88 - 400 * scale)) / scale, y: (80 - (58 - 280 * scale)) / scale }
+	expect(clicked.x).toBeCloseTo(1440 / 2 - world.x, 3)
+	expect(clicked.y).toBeCloseTo(960 / 2 - world.y, 3)
 	await page.mouse.move(box.x + 80, box.y + 55)
 	await page.mouse.down()
 	await page.mouse.move(box.x + 120, box.y + 75, { steps: 5 })
@@ -100,6 +107,25 @@ test('click, drag and keyboard navigation move the viewport without creating his
 	await expect.poll(async () => (await worldView(page)).x).toBeLessThan(dragged.x)
 	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled()
 	await expect(map.locator('.canvas-minimap-viewport')).toBeVisible()
+})
+
+test('minimap remeasures the visible viewport when the assistant opens and closes', async ({
+	page,
+}) => {
+	const outline = page.locator('.canvas-minimap-viewport')
+	const scale = (176 - 24) / 2800
+	await expect
+		.poll(async () => Number(await outline.getAttribute('width')))
+		.toBeCloseTo(1440 * scale, 3)
+	await openAssistant(page, 'Chat')
+	await expect
+		.poll(async () => Number(await outline.getAttribute('width')))
+		.toBeCloseTo((1440 - 376) * scale, 3)
+	await page.locator('.canvas-minimap-map').click({ position: { x: 140, y: 80 } })
+	const worldX = (140 - (88 - 400 * scale)) / scale
+	await expect.poll(async () => (await worldView(page)).x).toBeCloseTo((1440 - 376) / 2 - worldX, 3)
+	await closeAssistant(page)
+	await expect.poll(async () => Number(await outline.getAttribute('width'))).toBeGreaterThan(60)
 })
 
 test('minimap avoids the wider history toolbar and follows responsive visibility', async ({

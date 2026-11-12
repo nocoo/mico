@@ -55,8 +55,8 @@
 }
 
 .canvas-minimap-block {
-	fill: var(--j-a);
-	fill-opacity: 0.82;
+	fill: var(--j-edge);
+	fill-opacity: 0.8;
 	stroke: var(--j-edge);
 	stroke-opacity: 0.78;
 	stroke-width: 0.8;
