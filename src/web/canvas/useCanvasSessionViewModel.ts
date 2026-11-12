@@ -19,6 +19,16 @@ interface CanvasSessionViewModelProps {
 	onBoardAccepted: (next: Board, switching: boolean) => void
 }
 
+interface PendingReplay {
+	canvasId: string
+	revision: number
+	history: CanvasHistory
+	direction: HistoryDirection
+	confirmed?: Board
+	uncertain?: boolean
+	completed?: boolean
+}
+
 export function useCanvasSessionViewModel({
 	announce,
 	onBoardTransition,
@@ -33,13 +43,8 @@ export function useCanvasSessionViewModel({
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const historiesRef = useRef(new Map<string, CanvasHistory>())
-	const replayRef = useRef<{
-		canvasId: string
-		revision: number
-		history: CanvasHistory
-		direction: HistoryDirection
-		confirmed?: Board
-	} | null>(null)
+	const replayRef = useRef<PendingReplay | null>(null)
+	const [historyWaiting, setHistoryWaiting] = useState(false)
 	const [pendingOperations, setPendingOperations] = useState(0)
 	const [, refreshHistory] = useState(0)
 	const activeCanvasIdRef = useRef('')
@@ -55,18 +60,31 @@ export function useCanvasSessionViewModel({
 	onBoardTransitionRef.current = onBoardTransition
 	onBoardAcceptedRef.current = onBoardAccepted
 
-	const cacheBoard = useCallback((canvasId: string, next: Board) => {
-		const replay = replayRef.current
-		if (
-			replay &&
-			replay.canvasId === canvasId &&
-			replay.revision === next.revision &&
-			replay.history.matchesResult(next, replay.direction)
-		) {
-			replay.confirmed = next
-		}
-		rememberBoard(boardCacheRef.current, canvasId, next)
+	const completeReplay = useCallback((replay: PendingReplay) => {
+		if (replay.completed) return
+		replay.completed = true
+		replay.history.complete(replay.direction)
+		refreshHistory((version) => version + 1)
+		setHistoryWaiting(false)
+		if (replayRef.current === replay) replayRef.current = null
 	}, [])
+
+	const cacheBoard = useCallback(
+		(canvasId: string, next: Board) => {
+			const replay = replayRef.current
+			if (
+				replay &&
+				replay.canvasId === canvasId &&
+				replay.revision <= next.revision &&
+				replay.history.matchesResult(next, replay.direction)
+			) {
+				replay.confirmed = next
+				if (replay.uncertain) completeReplay(replay)
+			}
+			rememberBoard(boardCacheRef.current, canvasId, next)
+		},
+		[completeReplay],
+	)
 
 	const applyBoard = useCallback(
 		(next: Board) => {
@@ -102,6 +120,10 @@ export function useCanvasSessionViewModel({
 			for (const id of historiesRef.current.keys()) {
 				if (!liveIds.has(id)) historiesRef.current.delete(id)
 			}
+			if (replayRef.current && !liveIds.has(replayRef.current.canvasId)) {
+				replayRef.current = null
+				setHistoryWaiting(false)
+			}
 			cacheBoard(snapshot.activeCanvasId, snapshot.board)
 			if (!switching && snapshot.board.revision < revisionRef.current) return
 			onBoardTransitionRef.current(
@@ -129,6 +151,12 @@ export function useCanvasSessionViewModel({
 			const result = operationQueue.current.then(async () => {
 				try {
 					if (!targetCanvasId) return false
+					if (replayRef.current?.uncertain) {
+						announceRef.current(
+							'Waiting to confirm history replay. Reconnect or reload to reset local history.',
+						)
+						return false
+					}
 					const targetBoard = boardCacheRef.current.get(targetCanvasId)
 					if (!targetBoard) return false
 					let history = historiesRef.current.get(targetCanvasId)
@@ -183,6 +211,8 @@ export function useCanvasSessionViewModel({
 				} catch (error) {
 					const replay = replayRef.current
 					if (replay && !(error instanceof HistoryConflict)) {
+						replay.uncertain = true
+						setHistoryWaiting(true)
 						if (!replay.confirmed) {
 							try {
 								const response = await fetch(
@@ -196,25 +226,30 @@ export function useCanvasSessionViewModel({
 							}
 						}
 						if (replay.confirmed) {
-							replay.history.complete(replay.direction)
-							refreshHistory((version) => version + 1)
+							completeReplay(replay)
 							if (targetCanvasId === activeCanvasIdRef.current) applyBoard(replay.confirmed)
 							setApiConnected(true)
 							return true
 						}
 					}
 					if (!(error instanceof HistoryConflict)) setApiConnected(false)
-					announceRef.current(error instanceof Error ? error.message : 'Operation failed')
+					announceRef.current(
+						replay?.uncertain
+							? 'Waiting to confirm history replay. Reconnect or reload to reset local history.'
+							: error instanceof Error
+								? error.message
+								: 'Operation failed',
+					)
 					return false
 				} finally {
-					replayRef.current = null
+					if (!replayRef.current?.uncertain) replayRef.current = null
 					setPendingOperations((count) => count - 1)
 				}
 			})
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[applyBoard, applySnapshot, cacheBoard],
+		[applyBoard, applySnapshot, cacheBoard, completeReplay],
 	)
 
 	const postOperations = useCallback(
@@ -237,6 +272,14 @@ export function useCanvasSessionViewModel({
 				const snapshot = (await response.json()) as CanvasSnapshot
 				if (!stopped) {
 					applySnapshot(snapshot)
+					const replay = replayRef.current
+					if (replay?.uncertain && replay.canvasId !== snapshot.activeCanvasId) {
+						const detail = await fetch(`/api/canvases/${encodeURIComponent(replay.canvasId)}`, {
+							signal: AbortSignal.timeout(3000),
+						})
+						if (detail.ok && !stopped)
+							cacheBoard(replay.canvasId, ((await detail.json()) as CanvasDetail).board)
+					}
 					setApiConnected(true)
 				}
 			} catch {
@@ -403,8 +446,14 @@ export function useCanvasSessionViewModel({
 		postOperations,
 		undo,
 		redo,
-		canUndo: pendingOperations === 0 && Boolean(historiesRef.current.get(activeCanvasId)?.canUndo),
-		canRedo: pendingOperations === 0 && Boolean(historiesRef.current.get(activeCanvasId)?.canRedo),
+		canUndo:
+			!historyWaiting &&
+			pendingOperations === 0 &&
+			Boolean(historiesRef.current.get(activeCanvasId)?.canUndo),
+		canRedo:
+			!historyWaiting &&
+			pendingOperations === 0 &&
+			Boolean(historiesRef.current.get(activeCanvasId)?.canRedo),
 		refreshCanvases,
 		createCanvas,
 		createLessonCanvas,

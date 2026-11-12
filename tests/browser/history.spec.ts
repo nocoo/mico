@@ -179,6 +179,66 @@ test('a committed undo survives a lost HTTP response and later unrelated edits',
 	await expect.poll(async () => (await board(request)).shapes).toEqual([note, foreign])
 })
 
+test('history waits for a delayed reconnect snapshot instead of losing the replay', async ({
+	page,
+	request,
+}) => {
+	let blocked = false
+	let flush = () => {}
+	await page.routeWebSocket('**/api/events', (socket) => {
+		const server = socket.connectToServer()
+		const messages: (string | Buffer)[] = []
+		server.onMessage((message) => {
+			if (blocked) messages.push(message)
+			else socket.send(message)
+		})
+		flush = () => {
+			blocked = false
+			for (const message of messages.splice(0)) socket.send(message)
+		}
+	})
+	await page.reload()
+	await closeAssistant(page)
+	await resetView(page)
+	await dragWorld(page, { x: 350, y: 280 }, { x: 430, y: 360 })
+	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
+	await page.route('**/api/state*', (route) => (blocked ? route.abort() : route.continue()))
+	await page.route('**/api/canvases/*', (route) => (blocked ? route.abort() : route.continue()))
+	await page.route(
+		'**/api/operations',
+		async (route) => {
+			blocked = true
+			const response = await route.fetch()
+			expect(response.ok()).toBe(true)
+			await route.abort('connectionreset')
+		},
+		{ times: 1 },
+	)
+	await page.getByRole('button', { name: 'Undo', exact: true }).click()
+	await expect(page.locator('.notice')).toContainText('Waiting to confirm history replay')
+	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled()
+	await expect(page.getByRole('button', { name: 'Redo', exact: true })).toBeDisabled()
+	const confirmed = await board(request)
+	expect(confirmed.shapes).toEqual([note])
+	await page.getByRole('button', { name: 'Delete selected', exact: true }).click()
+	await expect(page.locator('.notice')).toContainText('Waiting to confirm history replay')
+	expect(await board(request)).toEqual(confirmed)
+	flush()
+	await expect(page.getByRole('button', { name: 'Redo', exact: true })).toBeEnabled()
+	await page.getByRole('button', { name: 'Redo', exact: true }).click()
+	await expect.poll(async () => (await board(request)).shapes).not.toEqual([note])
+})
+
+test('history shortcuts work after changing a selected object color', async ({ page, request }) => {
+	await page.locator(`[data-shape-id="${note.id}"]`).click()
+	const color = page.getByRole('button', { name: 'Set color Green', exact: true })
+	await color.click()
+	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
+	await color.focus()
+	await page.keyboard.press('Control+z')
+	await expect.poll(async () => (await board(request)).shapes).toEqual([note])
+})
+
 test('text editors keep native undo instead of undoing the board', async ({ page, request }) => {
 	await dragWorld(page, { x: 350, y: 280 }, { x: 430, y: 360 })
 	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()

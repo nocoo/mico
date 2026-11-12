@@ -156,7 +156,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
-			if (target.closest('.selection-panel, .select-content')) return
+			if (target.closest('.select-content')) return
 			if (target.closest('input, textarea, select, [contenteditable="true"]')) return
 			const command = toolbarCommandForKey(event.key, {
 				metaKey: event.metaKey,
@@ -165,6 +165,8 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				shiftKey: event.shiftKey,
 			})
 			if (!command) return
+			if (target.closest('.selection-panel') && command.type !== 'undo' && command.type !== 'redo')
+				return
 			if (['delete-selection', 'undo', 'redo'].includes(command.type)) event.preventDefault()
 			executeToolbarCommand(command, state, actions)
 			if (command.type === 'select-tool') focusToolInToolbar(dockRef.current, command.tool)
