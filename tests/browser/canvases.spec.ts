@@ -172,7 +172,9 @@ test('renaming and deleting canvases uses the panel and keeps one canvas', async
 	await mainItem.hover()
 	await panel.getByRole('button', { name: 'Rename My canvas', exact: true }).click()
 	const nameInput = panel.getByLabel('Canvas name')
-	await expect(mainItem.locator('.canvas-actions')).toBeHidden()
+	const editingItem = panel.locator('.canvas-item.editing')
+	await expect(editingItem).toHaveCount(1)
+	await expect(editingItem.locator('.canvas-actions')).toBeHidden()
 	await nameInput.fill('A long canvas name that should remain editable')
 	const inputEndIsClickable = await nameInput.evaluate((input) => {
 		const box = input.getBoundingClientRect()
@@ -191,8 +193,17 @@ test('renaming and deleting canvases uses the panel and keeps one canvas', async
 	const secondItem = panel.locator('.canvas-item').filter({ hasText: 'Second canvas' })
 	await secondItem.hover()
 	await panel.getByRole('button', { name: 'Rename Second canvas', exact: true }).click()
-	await expect(secondItem.locator('.canvas-actions')).toBeHidden()
-	await panel.getByLabel('Canvas name').press('Escape')
+	await expect(editingItem).toHaveCount(1)
+	await expect(editingItem.locator('.canvas-actions')).toBeHidden()
+	const secondInput = panel.getByLabel('Canvas name')
+	await secondInput.fill('A long inactive canvas name')
+	expect(
+		await secondInput.evaluate((input) => {
+			const box = input.getBoundingClientRect()
+			return document.elementFromPoint(box.right - 4, box.y + box.height / 2) === input
+		}),
+	).toBe(true)
+	await secondInput.press('Escape')
 	await expect(panel.getByRole('button', { name: 'Open canvas Second canvas' })).toBeVisible()
 	await secondItem.hover()
 	await panel.getByRole('button', { name: 'Delete Second canvas', exact: true }).click()
