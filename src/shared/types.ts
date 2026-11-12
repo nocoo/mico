@@ -114,6 +114,7 @@ export type ServerEvent =
 
 export type Operation =
 	| { type: 'create'; shape: Shape }
+	| { type: 'restore'; shape: Shape; index: number }
 	| {
 			type: 'update'
 			id: string

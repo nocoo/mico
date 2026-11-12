@@ -10,11 +10,13 @@ import {
 	Minus,
 	MousePointer2,
 	Plus,
+	Redo2,
 	Slash,
 	Square,
 	StickyNote,
 	Trash2,
 	Type,
+	Undo2,
 } from 'lucide-react'
 import {
 	Fragment,
@@ -160,9 +162,10 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 				metaKey: event.metaKey,
 				ctrlKey: event.ctrlKey,
 				altKey: event.altKey,
+				shiftKey: event.shiftKey,
 			})
 			if (!command) return
-			if (command.type === 'delete-selection') event.preventDefault()
+			if (['delete-selection', 'undo', 'redo'].includes(command.type)) event.preventDefault()
 			executeToolbarCommand(command, state, actions)
 			if (command.type === 'select-tool') focusToolInToolbar(dockRef.current, command.tool)
 		}
@@ -330,6 +333,23 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							))}
 						</Fragment>
 					))}
+					<span className="panel-divider" />
+					<IconButton
+						icon={Undo2}
+						label="Undo"
+						shortcut="⌘/Ctrl Z"
+						tabIndex={-1}
+						disabled={!state.canUndo}
+						onClick={actions.undo}
+					/>
+					<IconButton
+						icon={Redo2}
+						label="Redo"
+						shortcut="⌘/Ctrl Shift Z"
+						tabIndex={-1}
+						disabled={!state.canRedo}
+						onClick={actions.redo}
+					/>
 					<span className="panel-divider" />
 					<IconButton
 						icon={Trash2}

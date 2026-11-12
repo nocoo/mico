@@ -171,8 +171,14 @@ function projectOperations(current: Shape[], operations: Operation[]): Shape[] {
 			}
 			continue
 		}
-		const index = projected.findIndex((shape) => shape.id === operation.id)
-		if (index >= 0) projected.splice(index, 1)
+		if (operation.type === 'restore') {
+			const index = projected.findIndex((shape) => shape.id === operation.shape.id)
+			if (index >= 0) projected.splice(index, 1)
+			projected.splice(operation.index, 0, { ...operation.shape })
+		} else {
+			const index = projected.findIndex((shape) => shape.id === operation.id)
+			if (index >= 0) projected.splice(index, 1)
+		}
 	}
 	return projected
 }

@@ -31,6 +31,8 @@ export interface ToolbarState {
 	zoom: number
 	canDelete: boolean
 	canFrame: boolean
+	canUndo: boolean
+	canRedo: boolean
 	brushStyle: BrushStyle
 	brushWidth: BrushWidth
 	noteColor: string
@@ -52,6 +54,8 @@ export interface ToolbarActions {
 	fitBoard: () => void
 	deleteSelection: () => void
 	frameSelection: () => void
+	undo: () => void
+	redo: () => void
 	setBrushStyle: (style: BrushStyle) => void
 	setBrushWidth: (width: BrushWidth) => void
 	setNoteColor: (color: string) => void

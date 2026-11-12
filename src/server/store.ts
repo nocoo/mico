@@ -1009,6 +1009,20 @@ export class BoardStore {
 				continue
 			}
 
+			if (operation.type === 'restore') {
+				if (!hasExactKeys(operation, ['type', 'shape', 'index']))
+					invalid('invalid restore operation')
+				if (!Object.hasOwn(request, 'expectedRevision'))
+					invalid('restore requires expectedRevision')
+				if (!Number.isInteger(operation.index) || operation.index < 0)
+					invalid('invalid restore index')
+				validateShapeShape(operation.shape)
+				if (operation.shape.type === 'image') createsImage = true
+				next.shapes = next.shapes.filter((shape) => shape.id !== operation.shape.id)
+				next.shapes.splice(Math.min(operation.index, next.shapes.length), 0, operation.shape)
+				continue
+			}
+
 			if (operation.type === 'update') {
 				if (!hasExactKeys(operation, ['type', 'id', 'patch'])) invalid('invalid update operation')
 				if (!validId(operation.id)) invalid('update id must be a non-empty string')

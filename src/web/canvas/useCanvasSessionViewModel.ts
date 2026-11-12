@@ -7,6 +7,7 @@ import type {
 	ServerEvent,
 } from '../../shared/types'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from '../canvasState'
+import { CanvasHistory, HistoryConflict, type HistoryDirection } from './history'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -30,6 +31,9 @@ export function useCanvasSessionViewModel({
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
+	const historiesRef = useRef(new Map<string, CanvasHistory>())
+	const [pendingOperations, setPendingOperations] = useState(0)
+	const [, refreshHistory] = useState(0)
 	const activeCanvasIdRef = useRef('')
 	const requestedCanvasIdRef = useRef('')
 	const stateVersionRef = useRef(-1)
@@ -70,6 +74,9 @@ export function useCanvasSessionViewModel({
 		for (const id of boardCacheRef.current.keys()) {
 			if (!liveIds.has(id)) boardCacheRef.current.delete(id)
 		}
+		for (const id of historiesRef.current.keys()) {
+			if (!liveIds.has(id)) historiesRef.current.delete(id)
+		}
 		rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
 		if (!switching && snapshot.board.revision < revisionRef.current) return
 		onBoardTransitionRef.current(
@@ -84,13 +91,27 @@ export function useCanvasSessionViewModel({
 		onBoardAcceptedRef.current(snapshot.board, switching)
 	}, [])
 
-	const postOperations = useCallback(
-		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
+	const submitOperations = useCallback(
+		(
+			command: Operation[] | HistoryDirection,
+			expectedRevision?: number,
+			canRebase?: (board: Board) => boolean,
+		) => {
 			const targetCanvasId = activeCanvasIdRef.current
+			setPendingOperations((count) => count + 1)
 			const result = operationQueue.current.then(async () => {
 				try {
 					if (!targetCanvasId) return false
-					const targetBoard = boardCacheRef.current.get(targetCanvasId) ?? boardRef.current
+					const targetBoard = boardCacheRef.current.get(targetCanvasId)
+					if (!targetBoard) return false
+					let history = historiesRef.current.get(targetCanvasId)
+					if (!history) {
+						history = new CanvasHistory()
+						historiesRef.current.set(targetCanvasId, history)
+					}
+					const operations =
+						typeof command === 'string' ? history.plan(targetBoard, command) : command
+					if (!operations) return false
 					if (canRebase && !canRebase(targetBoard)) {
 						announceRef.current('Object changed during drag')
 						return false
@@ -117,14 +138,19 @@ export function useCanvasSessionViewModel({
 						return false
 					}
 					const next = (await response.json()) as Board
+					if (typeof command === 'string') history.complete(command)
+					else history.record(targetBoard, next)
+					refreshHistory((version) => version + 1)
 					rememberBoard(boardCacheRef.current, targetCanvasId, next)
 					if (targetCanvasId === activeCanvasIdRef.current) applyBoard(next)
 					setApiConnected(true)
 					return true
 				} catch (error) {
-					setApiConnected(false)
+					if (!(error instanceof HistoryConflict)) setApiConnected(false)
 					announceRef.current(error instanceof Error ? error.message : 'Operation failed')
 					return false
+				} finally {
+					setPendingOperations((count) => count - 1)
 				}
 			})
 			operationQueue.current = result.then(() => undefined)
@@ -132,6 +158,14 @@ export function useCanvasSessionViewModel({
 		},
 		[applyBoard, applySnapshot],
 	)
+
+	const postOperations = useCallback(
+		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) =>
+			submitOperations(operations, expectedRevision, canRebase),
+		[submitOperations],
+	)
+	const undo = useCallback(() => submitOperations('undo'), [submitOperations])
+	const redo = useCallback(() => submitOperations('redo'), [submitOperations])
 
 	useEffect(() => {
 		let stopped = false
@@ -309,6 +343,10 @@ export function useCanvasSessionViewModel({
 		apiConnected,
 		wsConnected,
 		postOperations,
+		undo,
+		redo,
+		canUndo: pendingOperations === 0 && Boolean(historiesRef.current.get(activeCanvasId)?.canUndo),
+		canRedo: pendingOperations === 0 && Boolean(historiesRef.current.get(activeCanvasId)?.canRedo),
 		refreshCanvases,
 		createCanvas,
 		createLessonCanvas,

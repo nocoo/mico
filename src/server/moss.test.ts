@@ -59,6 +59,10 @@ class MockMossStore implements MossStore {
 			} else if (operation.type === 'update') {
 				const index = next.findIndex((shape) => shape.id === operation.id)
 				if (index >= 0) next[index] = { ...next[index], ...operation.patch } as Shape
+			} else if (operation.type === 'restore') {
+				const index = next.findIndex((shape) => shape.id === operation.shape.id)
+				if (index >= 0) next.splice(index, 1)
+				next.splice(operation.index, 0, operation.shape)
 			} else {
 				const index = next.findIndex((shape) => shape.id === operation.id)
 				if (index >= 0) next.splice(index, 1)

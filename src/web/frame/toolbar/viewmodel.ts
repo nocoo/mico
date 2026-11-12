@@ -83,15 +83,21 @@ export type ToolbarCommand =
 	| { type: 'zoom-out' }
 	| { type: 'reset-view' }
 	| { type: 'fit-board' }
+	| { type: 'undo' }
+	| { type: 'redo' }
 
 export function toolbarCommandForKey(
 	key: string,
-	modifiers: { metaKey: boolean; ctrlKey: boolean; altKey: boolean } = {
+	modifiers: { metaKey: boolean; ctrlKey: boolean; altKey: boolean; shiftKey?: boolean } = {
 		metaKey: false,
 		ctrlKey: false,
 		altKey: false,
 	},
 ): ToolbarCommand | null {
+	if (!modifiers.altKey && (modifiers.metaKey || modifiers.ctrlKey)) {
+		if (key.toLowerCase() === 'z') return { type: modifiers.shiftKey ? 'redo' : 'undo' }
+		if (key.toLowerCase() === 'y' && !modifiers.shiftKey) return { type: 'redo' }
+	}
 	if (modifiers.metaKey || modifiers.ctrlKey || modifiers.altKey) return null
 	if (key === 'Delete' || key === 'Backspace') return { type: 'delete-selection' }
 	if (key === '+' || key === '=') return { type: 'zoom-in' }
@@ -142,5 +148,11 @@ export function executeToolbarCommand(
 			return
 		case 'fit-board':
 			actions.fitBoard()
+			return
+		case 'undo':
+			if (state.canUndo) actions.undo()
+			return
+		case 'redo':
+			if (state.canRedo) actions.redo()
 	}
 }

@@ -17,6 +17,8 @@ const state: ToolbarState = {
 	zoom: 1.25,
 	canDelete: true,
 	canFrame: false,
+	canUndo: true,
+	canRedo: false,
 	brushStyle: 'brush',
 	brushWidth: 4,
 	noteColor: '#fff2a8',
@@ -37,6 +39,8 @@ const actions = (): ToolbarActions & { calls: string[] } => {
 		fitBoard: () => calls.push('fit'),
 		deleteSelection: () => calls.push('delete'),
 		frameSelection: () => calls.push('frame'),
+		undo: () => calls.push('undo'),
+		redo: () => calls.push('redo'),
 		setBrushStyle: (style) => calls.push(`brush:${style}`),
 		setBrushWidth: (width) => calls.push(`brushWidth:${width}`),
 		setNoteColor: (color) => calls.push(`note:${color}`),
@@ -93,6 +97,13 @@ test('tool shortcuts cover every toolbar tool in prototype order', () => {
 	assert.deepEqual(toolbarCommandForKey('0'), { type: 'reset-view' })
 	assert.deepEqual(toolbarCommandForKey('f'), { type: 'fit-board' })
 	assert.equal(toolbarCommandForKey('r', { metaKey: true, ctrlKey: false, altKey: false }), null)
+	const modifiers = { metaKey: true, ctrlKey: false, altKey: false }
+	assert.deepEqual(toolbarCommandForKey('z', modifiers), { type: 'undo' })
+	assert.deepEqual(toolbarCommandForKey('Z', { ...modifiers, shiftKey: true }), { type: 'redo' })
+	assert.deepEqual(toolbarCommandForKey('y', { ...modifiers, metaKey: false, ctrlKey: true }), {
+		type: 'redo',
+	})
+	assert.equal(toolbarCommandForKey('z', { ...modifiers, altKey: true }), null)
 })
 
 test('arrow navigation is restricted to drawing and view controls', () => {
@@ -112,6 +123,8 @@ test('toolbar commands preserve action guards and zoom factors', () => {
 	executeToolbarCommand({ type: 'zoom-out' }, state, calls)
 	executeToolbarCommand({ type: 'reset-view' }, state, calls)
 	executeToolbarCommand({ type: 'fit-board' }, state, calls)
+	executeToolbarCommand({ type: 'undo' }, state, calls)
+	executeToolbarCommand({ type: 'redo' }, state, calls)
 	assert.deepEqual(calls.calls, [
 		'tool:text',
 		'delete',
@@ -119,12 +132,17 @@ test('toolbar commands preserve action guards and zoom factors', () => {
 		'zoom:0.8333333333333334',
 		'reset',
 		'fit',
+		'undo',
 	])
 
 	const blocked = actions()
 	executeToolbarCommand({ type: 'delete-selection' }, { ...state, canDelete: false }, blocked)
 	executeToolbarCommand({ type: 'frame-selection' }, { ...state, canFrame: false }, blocked)
+	executeToolbarCommand({ type: 'undo' }, { ...state, canUndo: false }, blocked)
+	executeToolbarCommand({ type: 'redo' }, { ...state, canRedo: false }, blocked)
 	assert.deepEqual(blocked.calls, [])
+	executeToolbarCommand({ type: 'redo' }, { ...state, canRedo: true }, blocked)
+	assert.deepEqual(blocked.calls, ['redo'])
 })
 
 test('toolbar options width includes divider and horizontal padding', () => {

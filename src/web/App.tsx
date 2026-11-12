@@ -202,6 +202,10 @@ export default function App() {
 		apiConnected,
 		wsConnected,
 		postOperations,
+		undo,
+		redo,
+		canUndo,
+		canRedo,
 		refreshCanvases,
 		createCanvas,
 		createLessonCanvas,
@@ -961,6 +965,8 @@ export default function App() {
 					zoom: viewport.zoom,
 					canDelete: selectedIds.length > 0,
 					canFrame: selectedIds.length > 0,
+					canUndo,
+					canRedo,
 					brushStyle,
 					brushWidth,
 					noteColor,
@@ -985,6 +991,14 @@ export default function App() {
 					fitBoard,
 					deleteSelection: deleteSelected,
 					frameSelection,
+					undo: () => {
+						cancelInteraction()
+						void undo()
+					},
+					redo: () => {
+						cancelInteraction()
+						void redo()
+					},
 					setBrushStyle,
 					setBrushWidth,
 					setNoteColor,
