@@ -65,8 +65,8 @@ test('minimap and canvas-list previews use block silhouettes without text or lin
 	expect(box).toMatchObject({ x: 14, y: 754, width: 184, height: 124 })
 	const state = (await (await request.get('/api/state')).json()) as CanvasSnapshot
 	const preview = state.canvases.find((canvas) => canvas.id === state.activeCanvasId)?.preview
-	expect(preview).toBeTruthy()
-	const svg = Buffer.from(preview!.split(',')[1], 'base64').toString('utf8')
+	if (!preview) throw new Error('Missing canvas preview')
+	const svg = Buffer.from(preview.split(',')[1], 'base64').toString('utf8')
 	expect(svg).not.toMatch(/Private|Ignore|<text|<line|<path/)
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 	const image = page.locator('[data-canvas-panel="true"] img').first()
