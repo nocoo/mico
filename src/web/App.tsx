@@ -21,6 +21,7 @@ import { BlueprintGrid } from './BlueprintGrid'
 import { BrushStroke } from './BrushStroke'
 import { CardHeaderPill } from './CardHeaderPill'
 import { ConnectionOverlay } from './ConnectionOverlay'
+import { CanvasView } from './canvas/CanvasView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
 import { canRebaseConnector } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
@@ -1681,9 +1682,11 @@ export default function App() {
 
 			{notice && <div className="notice">{notice}</div>}
 
-			<svg
-				ref={svgRef}
-				className="canvas"
+			<CanvasView
+				svgRef={svgRef}
+				viewport={viewport}
+				cursor={isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default'}
+				grid={<BlueprintGrid viewport={viewport} />}
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
 				onPointerUp={onCanvasPointerUp}
@@ -1702,167 +1705,144 @@ export default function App() {
 					const shape = id ? visibleShapes.find((candidate) => candidate.id === id) : undefined
 					if (shape && isCanvasShape(shape)) beginInlineEdit(shape)
 				}}
-				aria-label="Infinite canvas"
-				style={{
-					cursor: isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default',
-				}}
 				onLostPointerCapture={(event) => {
 					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
 				}}
 			>
-				<defs>
-					<marker
-						id="arrow"
-						viewBox="0 0 10 10"
-						refX="9"
-						refY="5"
-						markerWidth="7"
-						markerHeight="7"
-						orient="auto-start-reverse"
-					>
-						<path d="M 0 0 L 10 5 L 0 10 z" fill="context-stroke" />
-					</marker>
-				</defs>
-				<BlueprintGrid viewport={viewport} />
-				<g
-					data-world-layer="true"
-					transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}
-				>
-					{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
-					{visibleShapes.filter(isConnector).map(renderShape)}
-					{visibleShapes
-						.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
-						.map(renderShape)}
-					{visibleShapes
-						.filter((shape): shape is CanvasShape => shape.type === 'frame')
-						.map(renderFrameLabel)}
-					{creation && renderShape(creation)}
-					{brushPoints && (
-						<BrushStroke
-							points={brushPoints}
-							brush={brushStyle}
-							strokeWidth={brushWidth}
-							color={CANDY_COLORS.ink}
-							preview
-						/>
-					)}
-					{marquee && (
-						<rect
-							className="marquee"
-							x={marquee.x}
-							y={marquee.y}
-							width={marquee.w}
-							height={marquee.h}
-							vectorEffect="non-scaling-stroke"
-						/>
-					)}
-					{editing &&
-						(() => {
-							const target = visibleShapes.find((shape) => shape.id === editing.id) as
-								| CanvasShape
-								| undefined
-							if (!target) return null
-							const header = target.type === 'frame' || target.type === 'html'
-							const box = header
-								? {
-										x: target.x,
-										y: target.y - 40,
-										w: Math.max(160, Math.min(target.w, 360)),
-										h: 36,
-									}
-								: target.type === 'note'
-									? { x: target.x + 12, y: target.y + 12, w: target.w - 24, h: target.h - 24 }
-									: { x: target.x, y: target.y, w: target.w, h: target.h }
-							const multiline = target.type === 'text' || target.type === 'note'
-							const style =
-								target.type === 'text'
-									? {
-											fontFamily: FONT_STACKS[target.font ?? 'sans'],
-											fontSize: `${target.fontSize ?? 32}px`,
-											fontWeight: target.fontWeight ?? 500,
-										}
-									: undefined
-							const commit = (value: string) => {
-								if (value !== editing.value) {
-									void postOperations([
-										{ type: 'update', id: editing.id, patch: { [editing.field]: value } },
-									])
-								}
-								setEditing(null)
-							}
-							return (
-								<foreignObject
-									x={box.x}
-									y={box.y}
-									width={box.w}
-									height={box.h}
-									className="inline-editor"
-									onPointerDown={(event) => event.stopPropagation()}
-								>
-									{multiline ? (
-										<textarea
-											ref={(node) => node?.focus()}
-											defaultValue={editing.value}
-											style={style}
-											onBlur={(event) => commit(event.target.value)}
-											onKeyDown={(event) => {
-												event.stopPropagation()
-												if (event.key === 'Escape') setEditing(null)
-												if (event.key === 'Enter' && (event.metaKey || event.ctrlKey))
-													commit(event.currentTarget.value)
-											}}
-										/>
-									) : (
-										<input
-											ref={(node) => node?.focus()}
-											defaultValue={editing.value}
-											style={style}
-											onBlur={(event) => commit(event.target.value)}
-											onKeyDown={(event) => {
-												event.stopPropagation()
-												if (event.key === 'Escape') setEditing(null)
-												if (event.key === 'Enter') commit(event.currentTarget.value)
-											}}
-										/>
-									)}
-								</foreignObject>
-							)
-						})()}
-					{guides.map((guide) => (
-						<line
-							key={`${guide.axis}:${guide.value}`}
-							className="alignment-guide"
-							data-guide-axis={guide.axis}
-							x1={guide.axis === 'x' ? guide.value : guide.from}
-							y1={guide.axis === 'x' ? guide.from : guide.value}
-							x2={guide.axis === 'x' ? guide.value : guide.to}
-							y2={guide.axis === 'x' ? guide.to : guide.value}
-							vectorEffect="non-scaling-stroke"
-						/>
-					))}
-					<ConnectionOverlay
-						draft={connection.draft}
-						preview={connection.preview}
-						target={connection.targetShape}
-						selected={selected && isConnector(selected) ? selected : null}
-						shapes={visibleShapes}
-						zoom={viewport.zoom}
-						controlSize={CONTROL_SIZE}
-						onReconnect={(event, connector, endpoint) => {
-							if (interactionRef.current || spacePressed || tool === 'hand' || event.button !== 0)
-								return
-							captureConnection(event, () =>
-								connection.reconnect(
-									connector,
-									endpoint,
-									clientToWorld(event.clientX, event.clientY),
-									event.pointerId,
-								),
-							)
-						}}
+				{visibleShapes.filter((shape) => shape.type === 'frame').map(renderShape)}
+				{visibleShapes.filter(isConnector).map(renderShape)}
+				{visibleShapes
+					.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
+					.map(renderShape)}
+				{visibleShapes
+					.filter((shape): shape is CanvasShape => shape.type === 'frame')
+					.map(renderFrameLabel)}
+				{creation && renderShape(creation)}
+				{brushPoints && (
+					<BrushStroke
+						points={brushPoints}
+						brush={brushStyle}
+						strokeWidth={brushWidth}
+						color={CANDY_COLORS.ink}
+						preview
 					/>
-				</g>
-			</svg>
+				)}
+				{marquee && (
+					<rect
+						className="marquee"
+						x={marquee.x}
+						y={marquee.y}
+						width={marquee.w}
+						height={marquee.h}
+						vectorEffect="non-scaling-stroke"
+					/>
+				)}
+				{editing &&
+					(() => {
+						const target = visibleShapes.find((shape) => shape.id === editing.id) as
+							| CanvasShape
+							| undefined
+						if (!target) return null
+						const header = target.type === 'frame' || target.type === 'html'
+						const box = header
+							? {
+									x: target.x,
+									y: target.y - 40,
+									w: Math.max(160, Math.min(target.w, 360)),
+									h: 36,
+								}
+							: target.type === 'note'
+								? { x: target.x + 12, y: target.y + 12, w: target.w - 24, h: target.h - 24 }
+								: { x: target.x, y: target.y, w: target.w, h: target.h }
+						const multiline = target.type === 'text' || target.type === 'note'
+						const style =
+							target.type === 'text'
+								? {
+										fontFamily: FONT_STACKS[target.font ?? 'sans'],
+										fontSize: `${target.fontSize ?? 32}px`,
+										fontWeight: target.fontWeight ?? 500,
+									}
+								: undefined
+						const commit = (value: string) => {
+							if (value !== editing.value) {
+								void postOperations([
+									{ type: 'update', id: editing.id, patch: { [editing.field]: value } },
+								])
+							}
+							setEditing(null)
+						}
+						return (
+							<foreignObject
+								x={box.x}
+								y={box.y}
+								width={box.w}
+								height={box.h}
+								className="inline-editor"
+								onPointerDown={(event) => event.stopPropagation()}
+							>
+								{multiline ? (
+									<textarea
+										ref={(node) => node?.focus()}
+										defaultValue={editing.value}
+										style={style}
+										onBlur={(event) => commit(event.target.value)}
+										onKeyDown={(event) => {
+											event.stopPropagation()
+											if (event.key === 'Escape') setEditing(null)
+											if (event.key === 'Enter' && (event.metaKey || event.ctrlKey))
+												commit(event.currentTarget.value)
+										}}
+									/>
+								) : (
+									<input
+										ref={(node) => node?.focus()}
+										defaultValue={editing.value}
+										style={style}
+										onBlur={(event) => commit(event.target.value)}
+										onKeyDown={(event) => {
+											event.stopPropagation()
+											if (event.key === 'Escape') setEditing(null)
+											if (event.key === 'Enter') commit(event.currentTarget.value)
+										}}
+									/>
+								)}
+							</foreignObject>
+						)
+					})()}
+				{guides.map((guide) => (
+					<line
+						key={`${guide.axis}:${guide.value}`}
+						className="alignment-guide"
+						data-guide-axis={guide.axis}
+						x1={guide.axis === 'x' ? guide.value : guide.from}
+						y1={guide.axis === 'x' ? guide.from : guide.value}
+						x2={guide.axis === 'x' ? guide.value : guide.to}
+						y2={guide.axis === 'x' ? guide.to : guide.value}
+						vectorEffect="non-scaling-stroke"
+					/>
+				))}
+				<ConnectionOverlay
+					draft={connection.draft}
+					preview={connection.preview}
+					target={connection.targetShape}
+					selected={selected && isConnector(selected) ? selected : null}
+					shapes={visibleShapes}
+					zoom={viewport.zoom}
+					controlSize={CONTROL_SIZE}
+					onReconnect={(event, connector, endpoint) => {
+						if (interactionRef.current || spacePressed || tool === 'hand' || event.button !== 0)
+							return
+						captureConnection(event, () =>
+							connection.reconnect(
+								connector,
+								endpoint,
+								clientToWorld(event.clientX, event.clientY),
+								event.pointerId,
+							),
+						)
+					}}
+				/>
+			</CanvasView>
 		</main>
 	)
 }
