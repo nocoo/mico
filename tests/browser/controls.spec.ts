@@ -1054,12 +1054,34 @@ test('properties icon is centered and the panel clears top surfaces at every wid
 	await page.setViewportSize({ width: 390, height: 844 })
 	await expect(properties).not.toBeVisible()
 	await expect(aiPanel).toBeVisible()
+	await page.locator('#ai-panel, .ai-trigger, .identity-panel').evaluateAll(async (elements) => {
+		await Promise.all(
+			elements
+				.flatMap((element) => element.getAnimations())
+				.map((animation) => animation.finished.catch(() => undefined)),
+		)
+	})
+	await expect
+		.poll(async () => {
+			const panel = await aiPanel.boundingBox()
+			const trigger = await aiTrigger.boundingBox()
+			return panel && trigger ? { panelX: panel.x, triggerX: trigger.x } : null
+		})
+		.toEqual({ panelX: 14, triggerX: 332 })
 	const mobileAi = await aiPanel.boundingBox()
 	const mobileTrigger = await aiTrigger.boundingBox()
 	const mobileIdentity = await identity.boundingBox()
 	if (!mobileAi || !mobileTrigger || !mobileIdentity)
 		throw new Error('Expected mobile open geometry')
+	expect(mobileAi).toEqual({ x: 14, y: 14, width: 362, height: 816 })
+	expect(mobileTrigger).toEqual({ x: 332, y: 24, width: 34, height: 34 })
+	expect(mobileIdentity).toEqual({ x: 14, y: 14, width: 100, height: 56 })
 	expect(mobileTrigger.x).toBeGreaterThan(mobileAi.x)
 	expect(mobileTrigger.y).toBeLessThan(mobileAi.y + mobileAi.height)
 	expect(mobileIdentity.x + mobileIdentity.width).toBeLessThan(mobileTrigger.x)
+	const triggerClickable = await page.evaluate(
+		({ x, y }) => Boolean(document.elementFromPoint(x, y)?.closest('[data-ai-toggle="true"]')),
+		{ x: mobileTrigger.x + mobileTrigger.width / 2, y: mobileTrigger.y + mobileTrigger.height / 2 },
+	)
+	expect(triggerClickable).toBe(true)
 })
