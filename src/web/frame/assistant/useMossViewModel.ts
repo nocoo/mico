@@ -9,6 +9,31 @@ export interface UseMossViewModelProps {
 	active: boolean
 	canvasId: string
 	selectedIds: string[]
+	onStatusChange?: (status: MossAssistantStatus | null) => void
+}
+
+export interface MossAssistantStatus {
+	phase: MossPhase
+	activity: string
+	detail: string
+}
+
+export function mossAssistantActivity(status: MossAssistantStatus) {
+	if (status.phase === 'idle') return null
+	if (status.phase === 'error') {
+		return { state: 'attention', text: status.detail || 'MOSS Live connection error' }
+	}
+	if (status.detail) return { state: 'attention', text: status.detail }
+	if (status.activity.startsWith('Tool failed:')) {
+		return { state: 'attention', text: status.activity }
+	}
+	if (status.phase === 'connecting') {
+		return { state: 'work', text: 'MOSS Live is connecting…' }
+	}
+	return {
+		state: 'work',
+		text: status.activity === 'Ready to draw' ? 'MOSS Live is listening…' : status.activity,
+	}
 }
 
 export function mossCompletedToolActivity(name: string, phase: 'done' | 'error') {
@@ -20,7 +45,32 @@ export function mossCompletedToolActivity(name: string, phase: 'done' | 'error')
 			: 'Canvas updated'
 }
 
-export function useMossViewModel({ active, canvasId, selectedIds }: UseMossViewModelProps) {
+export function nextMossToolActivity(
+	pending: number,
+	name: string,
+	phase: 'started' | 'done' | 'error',
+) {
+	if (phase === 'started') {
+		return { pending: pending + 1, activity: `Drawing: ${name.replaceAll('_', ' ')}` }
+	}
+	const nextPending = Math.max(0, pending - 1)
+	return {
+		pending: nextPending,
+		activity:
+			phase === 'error'
+				? mossCompletedToolActivity(name, phase)
+				: nextPending > 0
+					? 'Drawing…'
+					: mossCompletedToolActivity(name, phase),
+	}
+}
+
+export function useMossViewModel({
+	active,
+	canvasId,
+	selectedIds,
+	onStatusChange,
+}: UseMossViewModelProps) {
 	const sessionRef = useRef<MossLiveSession | null>(null)
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const peaks = useRef<number[]>([])
@@ -30,6 +80,12 @@ export function useMossViewModel({ active, canvasId, selectedIds }: UseMossViewM
 	const [elapsed, setElapsed] = useState(0)
 	const [transcript, setTranscript] = useState({ user: '', assistant: '' })
 	const [activity, setActivity] = useState('Ready to draw')
+
+	useEffect(() => {
+		onStatusChange?.({ phase, activity, detail })
+	}, [phase, activity, detail, onStatusChange])
+
+	useEffect(() => () => onStatusChange?.(null), [onStatusChange])
 
 	const stop = () => {
 		const session = sessionRef.current
@@ -100,16 +156,9 @@ export function useMossViewModel({ active, canvasId, selectedIds }: UseMossViewM
 			} else if (event.type === 'transcript' && event.text.trim()) {
 				setTranscript((current) => ({ ...current, [event.speaker]: event.text }))
 			} else if (event.type === 'tool') {
-				const name = event.name.replaceAll('_', ' ')
-				if (event.phase === 'started') {
-					pendingTools.current++
-					setActivity(`Drawing: ${name}`)
-				} else {
-					pendingTools.current = Math.max(0, pendingTools.current - 1)
-					setActivity(
-						pendingTools.current ? 'Drawing…' : mossCompletedToolActivity(event.name, event.phase),
-					)
-				}
+				const next = nextMossToolActivity(pendingTools.current, event.name, event.phase)
+				pendingTools.current = next.pending
+				setActivity(next.activity)
 			} else if (event.type === 'audio') {
 				peaks.current.push(event.min, event.max)
 				if (peaks.current.length > 1200) peaks.current.splice(0, peaks.current.length - 1200)

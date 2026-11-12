@@ -25,11 +25,14 @@ import { LessonPanel, type LessonSegment } from './LessonPanel'
 import { MicrophonePanel } from './MicrophonePanel'
 import { MossPanel } from './MossPanel'
 import type { AssistantViewModel } from './useAssistantSession'
+import type { MossAssistantStatus } from './useMossViewModel'
 
 interface AssistantViewProps {
 	state: AssistantState
 	actions: AssistantActions
 	model: AssistantViewModel
+	mossActivity: AssistantViewModel['activity']
+	onMossStatusChange: (status: MossAssistantStatus | null) => void
 }
 
 const QUICK_PROMPTS = [
@@ -178,7 +181,13 @@ function UserMessage({ text }: { text: string }) {
 	)
 }
 
-export function AssistantView({ state, actions, model }: AssistantViewProps) {
+export function AssistantView({
+	state,
+	actions,
+	model,
+	mossActivity,
+	onMossStatusChange,
+}: AssistantViewProps) {
 	const submit = (event?: FormEvent) => model.submit(event)
 
 	return (
@@ -211,12 +220,12 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 
 			<div
 				className="ai-status-pill floating-panel"
-				data-state={model.activity.state}
+				data-state={mossActivity.state}
 				role="status"
 				aria-live="polite"
 			>
 				<span className="ai-status-orb" aria-hidden="true" />
-				<span className="ai-status-text">{model.activity.text}</span>
+				<span className="ai-status-text">{mossActivity.text}</span>
 			</div>
 
 			<section
@@ -471,6 +480,7 @@ export function AssistantView({ state, actions, model }: AssistantViewProps) {
 							active={state.open && model.tab === 'live'}
 							canvasId={state.canvasId}
 							selectedIds={state.selectedIds}
+							onStatusChange={onMossStatusChange}
 						/>
 					) : (
 						<MicrophonePanel

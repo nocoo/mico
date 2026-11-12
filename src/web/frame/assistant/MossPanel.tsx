@@ -1,14 +1,15 @@
 import { Mic, Square } from 'lucide-react'
-import { useMossViewModel } from './useMossViewModel'
+import { type MossAssistantStatus, useMossViewModel } from './useMossViewModel'
 
 interface MossPanelProps {
 	active: boolean
 	canvasId: string
 	selectedIds: string[]
+	onStatusChange: (status: MossAssistantStatus | null) => void
 }
 
-export function MossPanel({ active, canvasId, selectedIds }: MossPanelProps) {
-	const model = useMossViewModel({ active, canvasId, selectedIds })
+export function MossPanel({ active, canvasId, selectedIds, onStatusChange }: MossPanelProps) {
+	const model = useMossViewModel({ active, canvasId, selectedIds, onStatusChange })
 
 	return (
 		<div className="microphone-panel">

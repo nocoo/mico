@@ -1549,6 +1549,7 @@
 }
 
 .ai-assistant .call-stage.has-output .call-caption {
+	pointer-events: auto;
 	transition-delay: 80ms;
 }
 
