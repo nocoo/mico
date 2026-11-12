@@ -943,7 +943,8 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 }
 
 body:has(.ai-assistant .lesson .select-trigger[aria-expanded="true"]) .select-content {
-	min-inline-size: min(304px, calc(100vw - 28px));
+	inline-size: min(348px, calc(100vw - 28px));
+	min-inline-size: 0;
 	max-inline-size: calc(100vw - 28px);
 	padding: 6px;
 	border-radius: 18px;
