@@ -518,6 +518,7 @@ svg {
 .select-trigger:active:not(:disabled) {
 	translate: 0;
 }
+/* biome-ignore lint/style/noDescendingSpecificity: matches .select-trigger, while the higher-specificity icon-button rule matches a different parent; verified no cascade conflict */
 .select-trigger > svg,
 .select-trigger .rt-SelectIcon {
 	flex: 0 0 var(--icon-small);
@@ -896,6 +897,7 @@ svg {
 	gap: var(--space-1);
 	color: var(--ink-secondary);
 }
+/* biome-ignore lint/style/noDescendingSpecificity: matches .panel-hint, while the higher-specificity icon-button rule matches a different parent; verified no cascade conflict */
 .panel-hint > svg {
 	flex: 0 0 auto;
 	margin-top: 2px;

@@ -7,13 +7,7 @@
 	},
 	"files": {
 		"ignoreUnknown": true,
-		"includes": [
-			"**",
-			"!pnpm-lock.yaml",
-			"!evals/runs",
-			"!artwork/logo-family",
-			"!docs/prototypes/teams-ai-whiteboard.html"
-		]
+		"includes": ["**", "!pnpm-lock.yaml", "!evals/runs", "!artwork/logo-family", "!docs/prototypes"]
 	},
 	"formatter": {
 		"indentStyle": "tab",

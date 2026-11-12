@@ -255,7 +255,7 @@ function validateBoardState(board: Board, assetIds?: Set<string>): void {
 			}
 			if (shape.type === 'frame' && shape.backgroundImageId) {
 				const image = board.shapes.find((candidate) => candidate.id === shape.backgroundImageId)
-				if (!image || image.type !== 'image') {
+				if (image?.type !== 'image') {
 					invalid(
 						`frame ${shape.id} references an invalid background image ${shape.backgroundImageId}`,
 					)

@@ -218,8 +218,7 @@ test('image tool uploads a raster and frame background uses image shape identity
 		.poll(async () => (await board(request)).shapes.find((shape) => shape.type === 'image'))
 		.toBeTruthy()
 	const image = (await board(request)).shapes.find((shape) => shape.type === 'image')
-	if (!image || image.type !== 'image' || !image.imageId)
-		throw new Error('Missing uploaded image shape')
+	if (image?.type !== 'image' || !image.imageId) throw new Error('Missing uploaded image shape')
 	await expect(page.locator(`[data-shape-id="${image.id}"] .canvas-image`)).toHaveCount(1)
 
 	const current = await board(request)
@@ -357,7 +356,7 @@ test('default pencil ink uses the reference color and selection glow', async ({
 	await dragWorld(page, { x: 200, y: 420 }, { x: 320, y: 480 })
 	await expect.poll(async () => countOf(request, 'path')).toBe(1)
 	const path = (await board(request)).shapes.find((shape) => shape.type === 'path')
-	if (!path || path.type !== 'path') throw new Error('Missing pencil stroke')
+	if (path?.type !== 'path') throw new Error('Missing pencil stroke')
 	expect(path).toMatchObject({ brush: 'pencil', strokeWidth: 4, color: JELLY_COLORS.grape })
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	await clickPathInk(page, path.id)

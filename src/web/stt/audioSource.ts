@@ -11,7 +11,7 @@ export interface LectureAudio {
 function toInt16(channel: Float32Array): Int16Array {
 	const out = new Int16Array(channel.length)
 	for (let index = 0; index < channel.length; index++) {
-		const sample = channel[index] < -1 ? -1 : channel[index] > 1 ? 1 : channel[index]
+		const sample = Math.min(1, Math.max(-1, channel[index]))
 		out[index] = sample < 0 ? sample * 0x8000 : sample * 0x7fff
 	}
 	return out

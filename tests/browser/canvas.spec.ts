@@ -450,7 +450,7 @@ test('sticky note text edits inline and in the properties panel', async ({ page,
 	const note = (await board(request)).shapes.find((shape) => shape.type === 'note') as
 		| CanvasShape
 		| undefined
-	if (!note || note.type !== 'note') throw new Error('Expected a note')
+	if (note?.type !== 'note') throw new Error('Expected a note')
 	expect(note).toMatchObject({ color: CANDY_TINTS.pink, text: 'Note' })
 	await expect(page.locator(`[data-shape-id="${note.id}"]`).first()).toBeVisible()
 
@@ -1147,7 +1147,7 @@ test('freehand brush draws a persisted tapered path and API sketches render', as
 		.toBe(1)
 	const path = (await board(request)).shapes.find((shape) => shape.type === 'path')
 	expect(path).toMatchObject({ type: 'path', brush: 'brush', strokeWidth: 8 })
-	if (!path || path.type !== 'path') throw new Error('Expected a path shape')
+	if (path?.type !== 'path') throw new Error('Expected a path shape')
 	expect(path.points?.length ?? 0).toBeGreaterThan(3)
 	for (const point of path.points ?? []) {
 		expect(point.x).toBeGreaterThanOrEqual(0)

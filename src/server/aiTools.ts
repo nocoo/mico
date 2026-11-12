@@ -286,7 +286,7 @@ function apply(
 	const growthOperations: Operation[] = []
 	for (const frameId of frameIds) {
 		const frame = projected.find((shape) => shape.id === frameId)
-		if (!frame || frame.type !== 'frame') continue
+		if (frame?.type !== 'frame') continue
 		const memberUnion = paddedMemberBounds(projected, frameId)
 		if (!memberUnion) continue
 		const frameBounds = shapeBounds(frame)
