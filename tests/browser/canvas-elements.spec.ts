@@ -58,7 +58,7 @@ test('manual sticky note matches the original prototype', async ({
 	try {
 		await reference.addStyleTag({
 			content:
-				'.aurora, .grain, #hero { display: none !important; } #stage { background: white !important; } .el.pop { animation: none !important; }',
+				'.aurora, .grain, #hero, #ctx { display: none !important; } #stage { background: white !important; } .el.pop { animation: none !important; }',
 		})
 		await reference.locator('#tools [data-tool="sticky"]').click()
 		await reference.locator('#stage').click({ position: { x: 400, y: 350 } })
@@ -73,6 +73,52 @@ test('manual sticky note matches the original prototype', async ({
 		expect(
 			diff.different / diff.total,
 			`${diff.different}/${diff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.001)
+		await target.click()
+		await page.locator('[data-shape-id="reference-note"] rect').first().click()
+		await expect(page.locator('[data-shape-id="reference-note"] .selection')).toHaveCount(1)
+		const selectedReference = await screenshotElement(reference, target)
+		const selectedActual = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-note"] .sticky-jelly'),
+		)
+		const selectionDiff = await differingPixels(page, selectedReference, selectedActual)
+		expect(
+			selectionDiff.different / selectionDiff.total,
+			`${selectionDiff.different}/${selectionDiff.total} differing selected pixels`,
+		).toBeLessThanOrEqual(0.001)
+		await page.addStyleTag({ content: '.selection-panel { display: none !important; }' })
+		await page.mouse.move(500, 315)
+		await page.mouse.wheel(0, -Math.log(2) / 0.0015)
+		await expect
+			.poll(() =>
+				page
+					.locator('[data-world-layer]')
+					.evaluate(
+						(element) => (element as SVGGElement).transform.baseVal.consolidate()?.matrix.a ?? 0,
+					),
+			)
+			.toBeCloseTo(2, 3)
+		const position = await target.evaluate((element) => ({
+			x: Number.parseFloat(element.style.left),
+			y: Number.parseFloat(element.style.top),
+		}))
+		await reference.locator('#world').evaluate((element, value) => {
+			const world = element as HTMLElement
+			world.style.transform = `translate(${200 - value.x * 2}px, ${200 - value.y * 2}px) scale(2)`
+			world.style.setProperty('--inv', '0.5')
+		}, position)
+		const zoomedReference = await screenshotElement(reference, target, 400, 260)
+		const zoomedActual = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-note"] .sticky-jelly'),
+			400,
+			260,
+		)
+		const zoomedDiff = await differingPixels(page, zoomedReference, zoomedActual)
+		expect(
+			zoomedDiff.different / zoomedDiff.total,
+			`${zoomedDiff.different}/${zoomedDiff.total} differing zoomed pixels`,
 		).toBeLessThanOrEqual(0.001)
 	} finally {
 		await reference.close()
@@ -111,7 +157,7 @@ for (const item of [
 		try {
 			await reference.addStyleTag({
 				content:
-					'.aurora, .grain, #hero { display: none !important; } #stage { background: white !important; } .el.pop { animation: none !important; }',
+					'.aurora, .grain, #hero, #ctx { display: none !important; } #stage { background: white !important; } .el.pop { animation: none !important; }',
 			})
 			await reference.locator(`#tools [data-tool="${item.tool}"]`).click()
 			await reference.mouse.move(350, 350)
@@ -132,6 +178,21 @@ for (const item of [
 			expect(
 				diff.different / diff.total,
 				`${diff.different}/${diff.total} differing pixels`,
+			).toBeLessThanOrEqual(0.001)
+			await target.click()
+			await page.locator('[data-shape-id="reference-shape"]').click()
+			await expect(page.locator('[data-shape-id="reference-shape"] .selection')).toHaveCount(1)
+			const selectedReference = await screenshotElement(reference, target, 170, 110)
+			const selectedActual = await screenshotElement(
+				page,
+				page.locator('[data-shape-id="reference-shape"] .jelly-shape'),
+				170,
+				110,
+			)
+			const selectionDiff = await differingPixels(page, selectedReference, selectedActual)
+			expect(
+				selectionDiff.different / selectionDiff.total,
+				`${selectionDiff.different}/${selectionDiff.total} differing selected pixels`,
 			).toBeLessThanOrEqual(0.001)
 		} finally {
 			await reference.close()

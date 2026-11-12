@@ -3,51 +3,25 @@ import { selectionOutlineGeometry } from './selection-outline.ts'
 
 export function SelectionOutline({ shape, zoom }: { shape: CanvasShape; zoom: number }) {
 	const geometry = selectionOutlineGeometry(shape, zoom)
-
-	if (geometry.kind === 'ellipse') {
-		return (
-			<ellipse
-				className="selection"
-				cx={geometry.cx}
-				cy={geometry.cy}
-				rx={geometry.rx}
-				ry={geometry.ry}
-				fill="none"
-				stroke="var(--ui-accent)"
-				strokeWidth={2.5}
-				strokeDasharray="none"
-				vectorEffect="non-scaling-stroke"
-				pointerEvents="none"
-				style={{
-					fill: 'none',
-					stroke: 'var(--ui-accent)',
-					strokeWidth: 2.5,
-					strokeDasharray: 'none',
-				}}
-			/>
-		)
-	}
-
 	return (
-		<rect
+		<foreignObject
 			className="selection"
 			x={geometry.x}
 			y={geometry.y}
 			width={geometry.width}
 			height={geometry.height}
-			rx={geometry.rx}
-			fill="none"
-			stroke="var(--ui-accent)"
-			strokeWidth={2.5}
-			strokeDasharray="none"
-			vectorEffect="non-scaling-stroke"
+			overflow="visible"
 			pointerEvents="none"
-			style={{
-				fill: 'none',
-				stroke: 'var(--ui-accent)',
-				strokeWidth: 2.5,
-				strokeDasharray: 'none',
-			}}
-		/>
+		>
+			<div
+				style={{
+					width: '100%',
+					height: '100%',
+					borderRadius: geometry.radius,
+					outline: `${geometry.outlineWidth}px solid var(--ui-accent)`,
+					outlineOffset: geometry.outlineOffset,
+				}}
+			/>
+		</foreignObject>
 	)
 }

@@ -13,6 +13,7 @@ import { StickyNote } from '../StickyNote'
 import { CanvasText } from './CanvasText'
 import { ConnectorView } from './ConnectorView'
 import { JellyShape } from './JellyShape'
+import { SelectionOutline } from './SelectionOutline'
 
 interface ShapeCallbacks {
 	onPointerDown: (event: React.PointerEvent<SVGGElement>, shape: Shape) => void
@@ -23,6 +24,7 @@ export interface ShapeViewProps extends ShapeCallbacks {
 	shape: Shape
 	visibleShapes: readonly Shape[]
 	selectedIds: readonly string[]
+	zoom: number
 	connection: {
 		draft: { original: Connector | null } | null
 		preview: { start: Point; end: Point } | null
@@ -38,6 +40,7 @@ export function ShapeView({
 	shape,
 	visibleShapes,
 	selectedIds,
+	zoom,
 	connection,
 	tool,
 	spacePressed,
@@ -86,16 +89,7 @@ export function ShapeView({
 		return (
 			<g {...common}>
 				<JellyShape shape={shape} editing={editingId === shape.id} />
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={12}
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
@@ -147,16 +141,7 @@ export function ShapeView({
 					onPointerDown={(event) => onPointerDown(event, shape)}
 					onDoubleClick={(event) => onDoubleClick(event, shape)}
 				/>
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={12}
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
@@ -188,16 +173,7 @@ export function ShapeView({
 					strokeWidth={active ? 3 : 1}
 					vectorEffect="non-scaling-stroke"
 				/>
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={12}
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
@@ -244,17 +220,7 @@ export function ShapeView({
 					vectorEffect="non-scaling-stroke"
 					pointerEvents="none"
 				/>
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={12}
-						pointerEvents="none"
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
@@ -266,16 +232,7 @@ export function ShapeView({
 					animate={animatedNoteIds.has(shape.id)}
 					editing={editingId === shape.id}
 				/>
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={6}
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
@@ -283,16 +240,7 @@ export function ShapeView({
 		return (
 			<g {...common}>
 				<CanvasText shape={shape} editing={editingId === shape.id} />
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={6}
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
@@ -305,23 +253,10 @@ export function ShapeView({
 					strokeWidth={shape.strokeWidth}
 					color={shape.color}
 				/>
-				{active && (
-					<rect
-						className="selection"
-						x={shape.x - 4}
-						y={shape.y - 4}
-						width={shape.w + 8}
-						height={shape.h + 8}
-						rx={4}
-					/>
-				)}
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}
-	const lineX = Math.min(shape.x, shape.x + shape.w)
-	const lineY = Math.min(shape.y, shape.y + shape.h)
-	const lineW = Math.abs(shape.w)
-	const lineH = Math.abs(shape.h)
 	return (
 		<g {...common}>
 			<line
@@ -340,16 +275,7 @@ export function ShapeView({
 				stroke={shape.color}
 				strokeWidth={active ? 3 : 2}
 			/>
-			{active && (
-				<rect
-					className="selection"
-					x={lineX - 4}
-					y={lineY - 4}
-					width={Math.max(lineW, 8) + 8}
-					height={Math.max(lineH, 8) + 8}
-					rx={8}
-				/>
-			)}
+			{active && <SelectionOutline shape={shape} zoom={zoom} />}
 		</g>
 	)
 }

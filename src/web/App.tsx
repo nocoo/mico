@@ -1111,6 +1111,7 @@ export default function App() {
 	const shapeViewProps = {
 		visibleShapes,
 		selectedIds,
+		zoom: viewport.zoom,
 		connection,
 		tool,
 		spacePressed,
