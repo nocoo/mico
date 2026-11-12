@@ -1,4 +1,4 @@
-.app {
+:root {
 	--ui-glass: light-dark(oklch(1 0 0 / 0.64), oklch(0.27 0.03 285 / 0.66));
 	--ui-glass-strong: light-dark(oklch(1 0 0 / 0.86), oklch(0.33 0.035 285 / 0.86));
 	--ui-glass-edge: light-dark(oklch(1 0 0 / 0.85), oklch(1 0 0 / 0.11));
@@ -43,8 +43,11 @@
 		1
 	);
 	--ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-	--frame-panel-reserved: 0px;
 	color-scheme: light;
+}
+
+.app {
+	--frame-panel-reserved: 0px;
 }
 
 .app.ai-open {
