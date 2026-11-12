@@ -21,9 +21,9 @@ Logo 旁的 Canvases 按钮打开面板，列出每个画布的名称、最后�
 
 图片工具（I）上传本地 PNG、JPEG、WebP 或 GIF，最大 10 MiB，并放到画布上。每个画布最多有五个图片形状，上传和 AI 生成的都算在内。图片字节与画布形状分开存放在本地 SQLite 里，由守护进程提供读取；画布同步只传素材 ID。选中框的标签后可以把已有图片设为背景，并选择 Cover（裁切）、Contain 或 Stretch。图片仍是独立的形状；删除它会清掉所有引用它的框背景。形状被删除后，上传的素材仍留在数据库里。画布列表的预览用图片占位符，不嵌入素材本身。
 
-HTML 卡片工具（W）先创建空卡片，再由 Agent 通过批量 API 填入内容。卡片里的 sandbox iframe 内联了 Bootstrap 5 的 CSS 和 JavaScript，可渲染内联 HTML、CSS、脚本和 data-URI 图片。沙箱不授予同源权限，内容安全策略会阻止外部资源。这个原型开启了脚本执行，不受信任的脚本仍可能占用浏览器资源。通过左上角的标题选中卡片才能操作控件，也可以拖标题移动它。卡片是叶子节点：可以放进框，但不能包含其他对象。界面上只能改标题，标记内容要通过 API 修改。
+HTML 卡片工具（W）先创建空卡片，再由 Agent 通过批量 API 填入内容。卡片里的 sandbox iframe 内联了 Bootstrap 5 的 CSS 和 JavaScript，可渲染内联 HTML、CSS、脚本和 data-URI 图片。沙箱不授予同源权限，内容安全策略会阻止外部资源。这个原型开启了脚本执行，不受信任的脚本仍可能占用浏览器资源。通过左上角的标题选中卡片才能操作控件，也可以拖标题移动它。卡片是叶子节点：可以放进框，但不能包含其他对象。界面上只能改标题，标记内容要通过 API 修改。 The rounded shell does not clip the sandboxed iframe, so saved content remains visible at its corners.
 
-选中笔刷工具（P）后拖动即可绘制。工具栏提供铅笔、马克笔和收尖笔刷三种笔触，以及 2/4/8px 三种宽度。笔画保存为 `path` 形状，选中后仍能改笔触、宽度和颜色。AI Agent 通过批量 API 创建同样的形状；[`examples/sketch.ts`](examples/sketch.ts) 用 23 笔收尖笔触画出房子、火柴人、太阳和山丘。选中手形工具或按住空格拖动可平移画布。画连接线时选连接线工具，从源节点拖向目标节点。框只连框，普通对象只连普通对象；靠近时兼容节点会显示锚点，高亮的锚点就是实际保存的附着点。选中连接线后可以拖动任一端点到另一个兼容节点；落在空白处、取消指针操作或按 Escape 都保持原状。属性面板里的 Source 和 Target 控件提供键盘操作方式。提交一次拖动前会检查并发的 Agent 编辑。
+选中笔刷工具（P）后拖动即可绘制。工具栏提供铅笔、马克笔和收尖笔刷三种笔触，以及 2/4/8px 三种宽度。 The default is a 4px grape pencil stroke.笔画保存为 `path` 形状，选中后仍能改笔触、宽度和颜色。AI Agent 通过批量 API 创建同样的形状；[`examples/sketch.ts`](examples/sketch.ts) 用 23 笔收尖笔触画出房子、火柴人、太阳和山丘。选中手形工具或按住空格拖动可平移画布。画连接线时选连接线工具，从源节点拖向目标节点。框只连框，普通对象只连普通对象；靠近时兼容节点会显示锚点，高亮的锚点就是实际保存的附着点。选中连接线后可以拖动任一端点到另一个兼容节点；落在空白处、取消指针操作或按 Escape 都保持原状。属性面板里的 Source 和 Target 控件提供键盘操作方式。提交一次拖动前会检查并发的 Agent 编辑。
 
 Dragging an object snaps its origin to a 16px world-space grid and aligns left/right/center or top/bottom/middle with nearby objects within six screen pixels. Matching alignments show dashed guides and take precedence over grid snapping on that axis. Objects farther than 160 screen pixels do not attract.
 
