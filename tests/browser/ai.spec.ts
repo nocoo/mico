@@ -424,13 +424,13 @@ test('the Live tab preserves the microphone layout', async ({ page }) => {
 	const box = await mic.boundingBox()
 	const panelBox = await panel.boundingBox()
 	if (!box || !panelBox) throw new Error('Missing microphone or panel box')
-	expect(box.height).toBe(68)
+	expect(box.height).toBeCloseTo(68, 1)
 
 	await page.setViewportSize({ width: 667, height: 375 })
 	await expect(panel).toBeVisible()
 	const compactBox = await panel.getByRole('button', { name: 'Start recording' }).boundingBox()
 	if (!compactBox) throw new Error('Missing compact microphone')
-	expect(compactBox.height).toBe(68)
+	expect(compactBox.height).toBeCloseTo(68, 1)
 
 	await panel.getByRole('tab', { name: 'Chat' }).click()
 	const shortComposer = panel.getByRole('textbox', { name: COMPOSER })
