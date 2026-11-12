@@ -12,6 +12,7 @@
 
 ## Tool usage
 
+- A Radix select menu hides the trigger from role queries while open, and mouse selection restores focus with `:focus-visible`. Test the DOM trigger directly while the menu is open and verify both pointer selection and keyboard focus rather than assuming native modality heuristics.
 - Replacing toolbar CSS dropped the auto-height rule for large font previews. Inventory the old style's behavioral rules before rewriting a surface, and retain browser checks for clipped large options.
 - The complete browser suite outgrew its five-minute global timeout; size the suite deadline for the actual sequential run while keeping per-test timeouts bounded.
 - Opening the redesigned assistant by default exposed previously hidden interactions: fit used the full viewport, Escape treated the panel as previously engaged, portal menus could not inherit scoped tokens, and MAI captions lost scrolling. Test first-open, panel focus, portal rendering and obstructed canvas geometry alongside each frame replacement.
