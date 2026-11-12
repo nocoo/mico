@@ -349,6 +349,25 @@ test('rectangle, ellipse and line tools draw by dragging', async ({ page, reques
 	})
 })
 
+test('default pencil ink uses the reference color and selection glow', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Brush', exact: true }).click()
+	await dragWorld(page, { x: 200, y: 420 }, { x: 320, y: 480 })
+	await expect.poll(async () => countOf(request, 'path')).toBe(1)
+	const path = (await board(request)).shapes.find((shape) => shape.type === 'path')
+	if (!path || path.type !== 'path') throw new Error('Missing pencil stroke')
+	expect(path).toMatchObject({ brush: 'pencil', strokeWidth: 4, color: JELLY_COLORS.grape })
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await clickPathInk(page, path.id)
+	await expect(page.locator(`[data-shape-id="${path.id}"]`)).toHaveCSS('filter', /drop-shadow/)
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toBeVisible()
+	await expect
+		.poll(async () => (await board(request)).shapes.find((shape) => shape.id === path.id))
+		.toMatchObject({ brush: 'pencil', strokeWidth: 4, color: JELLY_COLORS.grape })
+})
+
 test('text, sticky note and html tools create their primitives on click', async ({
 	page,
 	request,

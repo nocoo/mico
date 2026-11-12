@@ -264,6 +264,89 @@ test('manual text matches the original prototype', async ({ page, context, reque
 	}
 })
 
+test('freehand pencil matches the original prototype', async ({
+	page,
+	context,
+	request,
+	baseURL,
+}) => {
+	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	await resetBoard(request, [
+		{
+			id: 'reference-ink',
+			type: 'path',
+			x: 400,
+			y: 250,
+			w: 100,
+			h: 50,
+			color: '#b799ff',
+			brush: 'pencil',
+			strokeWidth: 4,
+			points: [
+				{ x: 0, y: 0 },
+				{ x: 100, y: 50 },
+			],
+		},
+	])
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await page.goto('/')
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	await page.addStyleTag({
+		content:
+			'.app, .canvas-backdrop { background: white !important; } .canvas-aurora, .canvas-grain { display: none !important; } svg.canvas { background-image: none !important; }',
+	})
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
+	await reference.goto(
+		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/teams-ai-whiteboard.html')).href,
+	)
+	try {
+		await reference.addStyleTag({
+			content:
+				'.aurora, .grain, #hero, #ctx { display: none !important; } #stage { background: white !important; }',
+		})
+		await reference.locator('#tools [data-tool="pen"]').click()
+		await reference.mouse.move(350, 350)
+		await reference.mouse.down()
+		await reference.mouse.move(450, 400)
+		await reference.mouse.up()
+		const target = reference.locator('#ink .pen[data-by="user"]')
+		await expect(target).toHaveCount(1)
+		const expected = await screenshotElement(reference, target, 100, 50)
+		const actual = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-ink"]'),
+			100,
+			50,
+		)
+		const diff = await differingPixels(page, expected, actual)
+		expect(
+			diff.different / diff.total,
+			`${diff.different}/${diff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.001)
+		await reference.locator('#tools [data-tool="select"]').click()
+		await target.click()
+		await page.locator('[data-shape-id="reference-ink"] path').click()
+		const selectedReference = await screenshotElement(reference, target, 100, 50)
+		const selectedActual = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-ink"]'),
+			100,
+			50,
+		)
+		const selectionDiff = await differingPixels(page, selectedReference, selectedActual)
+		expect(
+			selectionDiff.different / selectionDiff.total,
+			`${selectionDiff.different}/${selectionDiff.total} differing selected pixels`,
+		).toBeLessThanOrEqual(0.001)
+	} finally {
+		await reference.close()
+	}
+})
+
 test('connector matches the original prototype between aligned nodes', async ({
 	page,
 	context,

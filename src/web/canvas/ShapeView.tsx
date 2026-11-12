@@ -246,14 +246,21 @@ export function ShapeView({
 	}
 	if (shape.type === 'path' && shape.points && shape.brush && shape.strokeWidth) {
 		return (
-			<g {...common}>
+			<g
+				{...common}
+				style={{
+					...common.style,
+					filter: active ? 'drop-shadow(0 0 5px var(--ui-accent))' : undefined,
+				}}
+			>
 				<BrushStroke
 					points={shape.points.map((point) => ({ x: shape.x + point.x, y: shape.y + point.y }))}
 					brush={shape.brush}
-					strokeWidth={shape.strokeWidth}
+					strokeWidth={
+						active && shape.brush === 'pencil' && shape.strokeWidth === 4 ? 5 : shape.strokeWidth
+					}
 					color={shape.color}
 				/>
-				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
 	}

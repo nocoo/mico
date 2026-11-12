@@ -130,7 +130,7 @@ export default function App() {
 	const [wsConnected, setWsConnected] = useState(false)
 	const [guides, setGuides] = useState<AlignmentGuide[]>([])
 	const [brushPoints, setBrushPoints] = useState<Point[] | null>(null)
-	const [brushStyle, setBrushStyle] = useState<BrushStyle>('brush')
+	const [brushStyle, setBrushStyle] = useState<BrushStyle>('pencil')
 	const [brushWidth, setBrushWidth] = useState<BrushWidth>(4)
 	const [notice, setNotice] = useState('')
 	const [spacePressed, setSpacePressed] = useState(false)
@@ -874,7 +874,7 @@ export default function App() {
 				y: minY,
 				w,
 				h,
-				color: CANDY_COLORS.ink,
+				color: JELLY_COLORS.grape,
 				points,
 				brush: brushStyle,
 				strokeWidth: brushWidth,
@@ -1309,7 +1309,7 @@ export default function App() {
 						points={brushPoints}
 						brush={brushStyle}
 						strokeWidth={brushWidth}
-						color={CANDY_COLORS.ink}
+						color={JELLY_COLORS.grape}
 						preview
 					/>
 				)}
