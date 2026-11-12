@@ -169,6 +169,7 @@ pnpm test:integration # L3：真实守护进程的 HTTP/WebSocket、CLI 与 Agen
 pnpm test:e2e         # L4：CI 跑的浏览器子集
 pnpm test:browser     # L4：全部 Playwright 用例
 pnpm build
+pnpm hooks:install    # 一次性：把 core.hooksPath 指向 .githooks
 ```
 
 推送和 PR 会触发 [`.github/workflows/ci.yml`](.github/workflows/ci.yml)：它按 System0 槽位调用 base-ci 的 `quality.yml`（钉完整提交 SHA），分支保护只需要 `quality / Z1: Gate` 一个检查。

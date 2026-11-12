@@ -50,6 +50,15 @@ pnpm build
 
 No Git hooks are installed yet, so CI is the only enforced stage. Known gaps: L1 declares no coverage target or percentage, L4 runs a subset in CI while the remaining specs run locally, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references that the browser suite compares against.
 
+## Local gates
+
+`pnpm hooks:install` points Git at `.githooks/` (`core.hooksPath`); run it once per clone. Both hooks are check-only and never rewrite the index or the working tree.
+
+- `pre-commit` runs S2 on the staged files, then S1 types and L1 unit tests inside a snapshot of the index (`git checkout-index` into a temporary directory with `node_modules` symlinked), then G1 with `gitleaks git --staged`. An unstaged fix cannot hide a staged defect.
+- `pre-push` walks the refs on stdin, creates a detached worktree for each pushed OID, and runs B1 build, L3 integration and G2 `osv-scanner` against that OID's lockfile. Deletions are skipped.
+
+L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minute pre-push target. A missing `pnpm`, `gitleaks` or `osv-scanner` fails the gate with a message; never bypass it with `--no-verify`.
+
 ## Isolation
 
 - Never point an automated test at the daily board (`.mico/board.sqlite`) or the daily ports.

@@ -1,0 +1,38 @@
+#!/bin/sh
+# Pre-commit gate: S2 lint on the staged index, S1 types and L1 unit tests on an
+# index snapshot, G1 secrets on the staged changes. Nothing here may write to the
+# index or the working tree.
+set -eu
+
+repo=$(git rev-parse --show-toplevel)
+cd "$repo"
+
+for tool in node pnpm gitleaks; do
+	command -v "$tool" >/dev/null 2>&1 || {
+		echo "pre-commit: $tool is missing; install it instead of bypassing the gate" >&2
+		exit 1
+	}
+done
+
+echo "pre-commit: lint"
+pnpm exec biome check --error-on-warnings --staged
+
+snapshot=$(mktemp -d "${TMPDIR:-/tmp}/mico-commit-XXXXXX")
+cleanup() {
+	rm -rf "$snapshot"
+}
+trap cleanup EXIT INT TERM
+
+git checkout-index -a -f --prefix="$snapshot/"
+ln -s "$repo/node_modules" "$snapshot/node_modules"
+cd "$snapshot"
+
+echo "pre-commit: types"
+node_modules/.bin/tsc --noEmit
+
+echo "pre-commit: unit tests"
+node scripts/run-tests.ts unit
+
+cd "$repo"
+echo "pre-commit: staged secrets"
+gitleaks git --staged --no-banner --redact --log-level error

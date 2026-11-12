@@ -169,6 +169,7 @@ pnpm test:integration   # L3: real daemon over HTTP/WebSocket, CLI, agent exampl
 pnpm test:e2e           # L4: the browser subset gated in CI
 pnpm test:browser       # L4: every Playwright spec
 pnpm build
+pnpm hooks:install     # once per clone: point core.hooksPath at .githooks
 ```
 
 Pushes and pull requests run [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml), which calls base-ci's `quality.yml` (pinned to a full commit SHA) per System0 slot; branch protection only needs `quality / Z1: Gate`.

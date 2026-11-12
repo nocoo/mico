@@ -21,7 +21,8 @@
 		"test:unit": "node scripts/run-tests.ts unit",
 		"test:integration": "node scripts/run-tests.ts integration",
 		"test:e2e": "playwright test tests/browser/canvas.spec.ts tests/browser/canvases.spec.ts tests/browser/controls.spec.ts",
-		"test:browser": "playwright test"
+		"test:browser": "playwright test",
+		"hooks:install": "sh scripts/install-hooks.sh"
 	},
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "3.0.80",
