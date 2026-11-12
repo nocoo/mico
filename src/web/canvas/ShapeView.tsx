@@ -2,6 +2,7 @@ import bootstrapCss from 'bootstrap/dist/css/bootstrap.min.css?raw'
 import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
 import { CodeXml, Frame } from 'lucide-react'
 import type React from 'react'
+import { useEffect } from 'react'
 import { FRAME_FILL_PERCENT } from '../../shared/palette'
 import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
@@ -14,6 +15,7 @@ import { CanvasText } from './CanvasText'
 import { ConnectorView } from './ConnectorView'
 import { JellyShape } from './JellyShape'
 import { SelectionOutline } from './SelectionOutline'
+import './canvas-entry.css'
 
 interface ShapeCallbacks {
 	onPointerDown: (event: React.PointerEvent<SVGGElement>, shape: Shape) => void
@@ -32,7 +34,8 @@ export interface ShapeViewProps extends ShapeCallbacks {
 	tool: Tool
 	spacePressed: boolean
 	isPanning: boolean
-	animatedNoteIds: ReadonlySet<string>
+	animatedObjectIds: ReadonlySet<string>
+	onEntryAnimationConsumed: (id: string) => void
 	editingId: string | null
 }
 
@@ -45,11 +48,17 @@ export function ShapeView({
 	tool,
 	spacePressed,
 	isPanning,
-	animatedNoteIds,
+	animatedObjectIds,
+	onEntryAnimationConsumed,
 	editingId,
 	onPointerDown,
 	onDoubleClick,
 }: ShapeViewProps) {
+	const animated = animatedObjectIds.has(shape.id)
+	useEffect(() => {
+		if (shape.type !== 'note' && animated) onEntryAnimationConsumed(shape.id)
+	}, [animated, onEntryAnimationConsumed, shape.id, shape.type])
+
 	if (shape.type === 'connector') {
 		if (connection.draft?.original?.id === shape.id && connection.preview) return null
 		const from = visibleShapes.find((item) => item.id === shape.from)
@@ -61,6 +70,7 @@ export function ShapeView({
 				from={from}
 				to={to}
 				selected={selectedIds.includes(shape.id)}
+				animate={animated}
 				cursor={
 					tool === 'hand' || spacePressed || isPanning
 						? isPanning
@@ -74,8 +84,10 @@ export function ShapeView({
 	}
 
 	const active = selectedIds.includes(shape.id)
+	const pop =
+		(shape.type === 'rectangle' || shape.type === 'ellipse' || shape.type === 'text') && animated
 	const common = {
-		className: 'canvas-shape',
+		className: `canvas-shape${pop ? ' canvas-entry' : ''}`,
 		'data-shape-id': shape.id,
 		onDoubleClick: (event: React.MouseEvent<SVGGElement>) => onDoubleClick(event, shape),
 		style: {
@@ -229,7 +241,7 @@ export function ShapeView({
 			<g {...common}>
 				<StickyNote
 					shape={shape}
-					animate={animatedNoteIds.has(shape.id)}
+					animate={animatedObjectIds.has(shape.id)}
 					editing={editingId === shape.id}
 				/>
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}

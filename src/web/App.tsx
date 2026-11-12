@@ -17,6 +17,7 @@ import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasView } from './canvas/CanvasView'
+import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
@@ -67,7 +68,8 @@ export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
-	const animatedNotesRef = useRef(new Set<string>())
+	const animatedObjectsRef = useRef(new Set<string>())
+	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
 		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush' | 'marquee'
@@ -155,27 +157,32 @@ export default function App() {
 
 	const cancelInteractionRef = useRef<() => void>(() => {})
 
-	const trackNewNotes = useCallback((next: Board, switching: boolean) => {
-		if (switching) {
-			animatedNotesRef.current.clear()
-			return
-		}
-		const previousIds = new Set(boardRef.current.shapes.map((shape) => shape.id))
-		const noteIds = new Set(
-			next.shapes.filter((shape) => shape.type === 'note').map((shape) => shape.id),
+	const consumeEntryAnimation = useCallback((id: string) => {
+		animatedObjectsRef.current.delete(id)
+	}, [])
+
+	const trackNewObjects = useCallback((next: Board, switching: boolean) => {
+		const canvasId = activeCanvasIdRef.current
+		if (switching) suppressedEntryIdsRef.current.clear()
+		const suppressed = canvasId ? suppressedEntryIdsRef.current.get(canvasId) : undefined
+		animatedObjectsRef.current = transitionEntryAnimations(
+			boardRef.current,
+			next,
+			switching,
+			animatedObjectsRef.current,
+			suppressed ?? new Set(),
 		)
-		for (const id of animatedNotesRef.current) {
-			if (!noteIds.has(id)) animatedNotesRef.current.delete(id)
-		}
-		for (const id of noteIds) {
-			if (!previousIds.has(id)) animatedNotesRef.current.add(id)
+		if (suppressed) {
+			const ids = new Set(next.shapes.map(({ id }) => id))
+			for (const id of suppressed) if (ids.has(id)) suppressed.delete(id)
+			if (suppressed.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
 		}
 	}, [])
 
 	const applyBoard = useCallback(
 		(next: Board) => {
 			if (next.revision < revisionRef.current) return
-			trackNewNotes(next, false)
+			trackNewObjects(next, false)
 			revisionRef.current = next.revision
 			boardRef.current = next
 			rememberBoard(boardCacheRef.current, activeCanvasIdRef.current, next)
@@ -184,7 +191,7 @@ export default function App() {
 				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[trackNewNotes],
+		[trackNewObjects],
 	)
 
 	const mergeCanvas = useCallback((summary: CanvasSummary) => {
@@ -226,7 +233,7 @@ export default function App() {
 			}
 			rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
 			if (!switching && snapshot.board.revision < revisionRef.current) return
-			trackNewNotes(snapshot.board, switching)
+			trackNewObjects(snapshot.board, switching)
 			revisionRef.current = snapshot.board.revision
 			boardRef.current = snapshot.board
 			setBoard(snapshot.board)
@@ -247,7 +254,7 @@ export default function App() {
 				current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[fitShapesInCanvas, trackNewNotes],
+		[fitShapesInCanvas, trackNewObjects],
 	)
 
 	const postOperations = useCallback(
@@ -395,13 +402,32 @@ export default function App() {
 		fitShapesInCanvas(boardRef.current.shapes)
 	}, [fitShapesInCanvas])
 
-	const createShape = (shape: CanvasShape) => {
+	const createShape = (shape: CanvasShape, suppressEntry = false) => {
+		const canvasId = activeCanvasIdRef.current
+		let clearSuppression: (() => void) | undefined
+		if (suppressEntry && canvasId) {
+			let ids = suppressedEntryIdsRef.current.get(canvasId)
+			if (!ids) {
+				ids = new Set()
+				suppressedEntryIdsRef.current.set(canvasId, ids)
+			}
+			ids.add(shape.id)
+			clearSuppression = () => {
+				const current = suppressedEntryIdsRef.current.get(canvasId)
+				current?.delete(shape.id)
+				if (current?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
+			}
+		}
 		const frameId =
 			shape.type === 'frame'
 				? null
 				: membershipFor(boardRef.current.shapes, shapeBounds(shape), shape.id)
 		selectOnly(shape.id)
-		void postOperations([{ type: 'create', shape: frameId ? { ...shape, frameId } : shape }])
+		void postOperations([{ type: 'create', shape: frameId ? { ...shape, frameId } : shape }]).then(
+			(success) => {
+				if (success) clearSuppression?.()
+			},
+		)
 	}
 
 	const uploadImage = async (file: File) => {
@@ -888,7 +914,7 @@ export default function App() {
 					creation.type === 'line'
 						? creation
 						: { ...creation, w: Math.max(8, creation.w), h: Math.max(8, creation.h) }
-				createShape(shape)
+				createShape(shape, creation.type !== 'line')
 			}
 		}
 
@@ -1116,7 +1142,8 @@ export default function App() {
 		tool,
 		spacePressed,
 		isPanning,
-		animatedNoteIds: animatedNotesRef.current,
+		animatedObjectIds: animatedObjectsRef.current,
+		onEntryAnimationConsumed: consumeEntryAnimation,
 		editingId: editing?.id ?? null,
 		onPointerDown: onShapePointerDown,
 		onDoubleClick: onShapeDoubleClick,

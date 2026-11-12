@@ -3,12 +3,14 @@ import type { CanvasShape, Connector } from '../../shared/types'
 import { ConnectorHead } from './ConnectorHead'
 import { connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
 import { jellyStyle } from './jelly'
+import './canvas-entry.css'
 
 export interface ConnectorViewProps {
 	shape: Connector
 	from: CanvasShape
 	to: CanvasShape
 	selected: boolean
+	animate: boolean
 	cursor: string
 	onPointerDown: React.PointerEventHandler<SVGGElement>
 }
@@ -18,6 +20,7 @@ export function ConnectorView({
 	from,
 	to,
 	selected,
+	animate,
 	cursor,
 	onPointerDown,
 }: ConnectorViewProps) {
@@ -25,7 +28,7 @@ export function ConnectorView({
 	const path = connectorPath(geometry)
 	return (
 		<g
-			className={`canvas-shape connector edge${selected ? ' sel' : ''}`}
+			className={`canvas-shape connector edge${selected ? ' sel' : ''}${animate ? ' draw' : ''}`}
 			data-shape-id={shape.id}
 			style={{ ...jellyStyle(shape.color), color: 'var(--j-edge)', cursor }}
 			onPointerDown={onPointerDown}
@@ -42,6 +45,7 @@ export function ConnectorView({
 			<path
 				className="connector-line e-line"
 				d={path}
+				pathLength={1}
 				fill="none"
 				stroke="currentColor"
 				strokeWidth={selected ? 5 : 3}

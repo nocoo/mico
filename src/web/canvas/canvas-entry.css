@@ -1,0 +1,58 @@
+.canvas-shape.canvas-entry {
+	transform-box: fill-box;
+	transform-origin: 50% 50%;
+	animation: canvas-entry-pop 0.75s var(--ui-spring) both;
+}
+
+.edge.draw .e-line {
+	stroke-dasharray: 1;
+	stroke-dashoffset: 1;
+	animation: canvas-edge-draw 0.55s var(--ui-ease) forwards;
+}
+
+.edge.draw .e-head {
+	opacity: 0;
+	animation: canvas-edge-fade-in 0.25s 0.45s forwards;
+}
+
+@keyframes canvas-entry-pop {
+	from {
+		opacity: 0;
+		scale: 0.35;
+	}
+	30% {
+		opacity: 1;
+	}
+	to {
+		opacity: 1;
+		scale: 1;
+	}
+}
+
+@keyframes canvas-edge-draw {
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+
+@keyframes canvas-edge-fade-in {
+	to {
+		opacity: 1;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.canvas-shape.canvas-entry,
+	.edge.draw .e-line,
+	.edge.draw .e-head {
+		animation: none;
+	}
+
+	.edge.draw .e-line {
+		stroke-dashoffset: 0;
+	}
+
+	.edge.draw .e-head {
+		opacity: 1;
+	}
+}
