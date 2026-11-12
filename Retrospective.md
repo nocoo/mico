@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- Replacing toolbar CSS dropped the auto-height rule for large font previews. Inventory the old style's behavioral rules before rewriting a surface, and retain browser checks for clipped large options.
+- The complete browser suite outgrew its five-minute global timeout; size the suite deadline for the actual sequential run while keeping per-test timeouts bounded.
 - Opening the redesigned assistant by default exposed previously hidden interactions: fit used the full viewport, Escape treated the panel as previously engaged, portal menus could not inherit scoped tokens, and MAI captions lost scrolling. Test first-open, panel focus, portal rendering and obstructed canvas geometry alongside each frame replacement.
 - Extracting the MOSS view model reversed concurrent-tool error precedence and omitted live status from the new global indicator. Compare event ordering and observable state against the original implementation, then test overlapping tool results and session cleanup.
 - A test adaptation waited for an intentionally hidden status and assumed animations were disabled while asserting their names. Assert state independently of visibility, and separate reduced-motion geometry tests from animation tests.
