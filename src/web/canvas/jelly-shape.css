@@ -40,6 +40,17 @@
 	overflow-wrap: anywhere;
 }
 
+.jelly-shape.el-node .nd-s {
+	font-size: 11.5px;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+	opacity: 0.82;
+}
+
+.jelly-shape.el-node .nd-s:empty {
+	display: none;
+}
+
 .jelly-shape.el-shape {
 	display: grid;
 	place-items: center;

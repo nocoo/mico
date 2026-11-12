@@ -8,6 +8,8 @@ export function JellyShape({ shape }: { shape: CanvasShape }) {
 
 	const text = shape.text ?? ''
 	const flowNode = shape.type === 'rectangle' && text.length > 0
+	const [nodeTitle, ...nodeDetails] = text.split('\n')
+	const nodeSubtitle = nodeDetails.join('\n')
 	const hitGeometry =
 		shape.type === 'ellipse' ? (
 			<ellipse
@@ -43,8 +45,13 @@ export function JellyShape({ shape }: { shape: CanvasShape }) {
 				{flowNode ? (
 					<div className="jelly-shape el-node canvas-jelly" style={jellyStyle(shape.color)}>
 						<div className="nd-t" data-edit="">
-							{text}
+							{nodeTitle}
 						</div>
+						{nodeDetails.length > 0 && (
+							<div className="nd-s" data-edit="">
+								{nodeSubtitle}
+							</div>
+						)}
 					</div>
 				) : (
 					<div
