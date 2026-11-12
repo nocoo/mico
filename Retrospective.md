@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- A dropdown's width was styled through the trigger's open state, so Radix's closing animation lost the width rule and briefly expanded. Style the portalled content by its own persistent class and test geometry throughout the exit animation.
+- An edit guessed a nonexistent `SelectField` property. Read the actual interface and anchor replacements to existing unique text before editing.
 - Delegated commits used scoped or unsupported commit types despite the shared commit rules. Check each worker's exact proposed commit message before authorizing its commit; use only the listed types and unscoped format.
 - Visual regression tests must distinguish a translucent gradient surface from a missing background, and screenshot color checks must account for intentional grain. Verify the actual rendered effect before changing an assertion.
 - A reference screenshot test passed options to `BrowserContext.newPage`, which Playwright ignored at runtime but TypeScript rejected. Run the repository typecheck before committing browser tests and set viewport/media on the new page explicitly.
