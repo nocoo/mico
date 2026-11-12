@@ -130,6 +130,24 @@ test.afterEach(async ({ page, request, baseURL }) => {
 	await resetCanvases(request)
 })
 
+test('view updates keep one canvas subscription under StrictMode', async ({ page }) => {
+	let sockets = 0
+	let polls = 0
+	page.on('websocket', (socket) => {
+		if (new URL(socket.url()).pathname === '/api/events') sockets++
+	})
+	page.on('request', (request) => {
+		if (new URL(request.url()).pathname === '/api/state' && new URL(request.url()).search) polls++
+	})
+	await openCanvas(page)
+	await expect.poll(() => sockets, POLL).toBe(1)
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await expect.poll(() => polls, { timeout: 6000 }).toBeGreaterThan(0)
+	expect(sockets).toBe(1)
+})
+
 test('cancels a dimension-pending image upload when a canvas switch is only requested', async ({
 	page,
 	request,
