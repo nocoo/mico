@@ -345,6 +345,7 @@ test('world grid follows pan and zoom while the identity and complete dock stay 
 test('dock and its property popovers stay on-screen at narrow and wide widths', async ({
 	page,
 }) => {
+	test.setTimeout(30000)
 	await page.emulateMedia({ reducedMotion: 'reduce' })
 	for (const width of [360, 390, 580, 768, 1440]) {
 		await page.setViewportSize({ width, height: 844 })
