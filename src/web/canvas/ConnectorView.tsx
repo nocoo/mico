@@ -2,6 +2,7 @@ import type React from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
 import { ConnectorHead } from './ConnectorHead'
 import { connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
+import { entryAnimationCompleted } from './entry-animation'
 import { jellyStyle } from './jelly'
 import './canvas-entry.css'
 
@@ -11,6 +12,7 @@ export interface ConnectorViewProps {
 	to: CanvasShape
 	selected: boolean
 	animate: boolean
+	onAnimationComplete: () => void
 	cursor: string
 	onPointerDown: React.PointerEventHandler<SVGGElement>
 }
@@ -21,6 +23,7 @@ export function ConnectorView({
 	to,
 	selected,
 	animate,
+	onAnimationComplete,
 	cursor,
 	onPointerDown,
 }: ConnectorViewProps) {
@@ -32,6 +35,9 @@ export function ConnectorView({
 			data-shape-id={shape.id}
 			style={{ ...jellyStyle(shape.color), color: 'var(--j-edge)', cursor }}
 			onPointerDown={onPointerDown}
+			onAnimationEnd={(event) => {
+				if (entryAnimationCompleted('draw', event.animationName)) onAnimationComplete()
+			}}
 		>
 			<path
 				className="connector-hit e-hit"

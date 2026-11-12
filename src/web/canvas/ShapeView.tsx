@@ -13,6 +13,7 @@ import { imagePreserveAspectRatio } from '../image'
 import { StickyNote } from '../StickyNote'
 import { CanvasText } from './CanvasText'
 import { ConnectorView } from './ConnectorView'
+import { entryAnimationCompleted } from './entry-animation'
 import { JellyShape } from './JellyShape'
 import { SelectionOutline } from './SelectionOutline'
 import './canvas-entry.css'
@@ -35,6 +36,7 @@ export interface ShapeViewProps extends ShapeCallbacks {
 	spacePressed: boolean
 	isPanning: boolean
 	animatedObjectIds: ReadonlySet<string>
+	reducedMotion: boolean
 	onEntryAnimationConsumed: (id: string) => void
 	editingId: string | null
 }
@@ -49,15 +51,28 @@ export function ShapeView({
 	spacePressed,
 	isPanning,
 	animatedObjectIds,
+	reducedMotion,
 	onEntryAnimationConsumed,
 	editingId,
 	onPointerDown,
 	onDoubleClick,
 }: ShapeViewProps) {
 	const animated = animatedObjectIds.has(shape.id)
+	const connectorCancelled =
+		shape.type === 'connector' &&
+		(connection.draft?.original?.id === shape.id && connection.preview
+			? true
+			: !visibleShapes.some(
+					(candidate) => candidate.type !== 'connector' && candidate.id === shape.from,
+				) ||
+				!visibleShapes.some(
+					(candidate) => candidate.type !== 'connector' && candidate.id === shape.to,
+				))
 	useEffect(() => {
-		if (shape.type !== 'note' && animated) onEntryAnimationConsumed(shape.id)
-	}, [animated, onEntryAnimationConsumed, shape.id, shape.type])
+		if (shape.type === 'note' || !animated) return
+		if (reducedMotion || connectorCancelled) onEntryAnimationConsumed(shape.id)
+		return () => onEntryAnimationConsumed(shape.id)
+	}, [animated, connectorCancelled, onEntryAnimationConsumed, reducedMotion, shape.id, shape.type])
 
 	if (shape.type === 'connector') {
 		if (connection.draft?.original?.id === shape.id && connection.preview) return null
@@ -71,6 +86,7 @@ export function ShapeView({
 				to={to}
 				selected={selectedIds.includes(shape.id)}
 				animate={animated}
+				onAnimationComplete={() => onEntryAnimationConsumed(shape.id)}
 				cursor={
 					tool === 'hand' || spacePressed || isPanning
 						? isPanning
@@ -88,6 +104,9 @@ export function ShapeView({
 		(shape.type === 'rectangle' || shape.type === 'ellipse' || shape.type === 'text') && animated
 	const common = {
 		className: `canvas-shape${pop ? ' canvas-entry' : ''}`,
+		onAnimationEnd: (event: React.AnimationEvent<SVGGElement>) => {
+			if (entryAnimationCompleted('pop', event.animationName)) onEntryAnimationConsumed(shape.id)
+		},
 		'data-shape-id': shape.id,
 		onDoubleClick: (event: React.MouseEvent<SVGGElement>) => onDoubleClick(event, shape),
 		style: {
