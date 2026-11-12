@@ -24,7 +24,14 @@ export function CanvasText({ shape, editing }: { shape: CanvasShape; editing: bo
 				fill="transparent"
 				pointerEvents="all"
 			/>
-			<foreignObject x={shape.x} y={shape.y} width={shape.w} height={shape.h} pointerEvents="none">
+			<foreignObject
+				x={shape.x}
+				y={shape.y}
+				width={shape.w}
+				height={shape.h}
+				overflow="visible"
+				pointerEvents="none"
+			>
 				<div className={editing ? 'canvas-text canvas-text-editing' : 'canvas-text'} style={style}>
 					{shape.text || 'Type something'}
 				</div>
