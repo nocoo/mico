@@ -1,0 +1,322 @@
+import { useCallback, useEffect, useRef, useState } from 'react'
+import type {
+	Board,
+	CanvasSnapshot,
+	CanvasSummary,
+	Operation,
+	ServerEvent,
+} from '../../shared/types'
+import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from '../canvasState'
+
+const WS_URL = new URL('/api/events', window.location.href)
+WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+
+interface CanvasSessionViewModelProps {
+	announce: (message: string) => void
+	onBoardTransition: (previous: Board, next: Board, switching: boolean, canvasId: string) => void
+	onBoardAccepted: (next: Board, switching: boolean) => void
+}
+
+export function useCanvasSessionViewModel({
+	announce,
+	onBoardTransition,
+	onBoardAccepted,
+}: CanvasSessionViewModelProps) {
+	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
+	const [canvases, setCanvases] = useState<CanvasSummary[]>([])
+	const [activeCanvasId, setActiveCanvasId] = useState('')
+	const [apiConnected, setApiConnected] = useState(false)
+	const [wsConnected, setWsConnected] = useState(false)
+	const revisionRef = useRef(0)
+	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
+	const operationQueue = useRef<Promise<void>>(Promise.resolve())
+	const activeCanvasIdRef = useRef('')
+	const requestedCanvasIdRef = useRef('')
+	const stateVersionRef = useRef(-1)
+	const boardCacheRef = useRef<Map<string, Board>>(new Map())
+	const canvasesRef = useRef(canvases)
+	const announceRef = useRef(announce)
+	const onBoardTransitionRef = useRef(onBoardTransition)
+	const onBoardAcceptedRef = useRef(onBoardAccepted)
+	canvasesRef.current = canvases
+	announceRef.current = announce
+	onBoardTransitionRef.current = onBoardTransition
+	onBoardAcceptedRef.current = onBoardAccepted
+
+	const applyBoard = useCallback((next: Board) => {
+		if (next.revision < revisionRef.current) return
+		const canvasId = activeCanvasIdRef.current
+		onBoardTransitionRef.current(boardRef.current, next, false, canvasId)
+		revisionRef.current = next.revision
+		boardRef.current = next
+		rememberBoard(boardCacheRef.current, canvasId, next)
+		setBoard(next)
+		onBoardAcceptedRef.current(next, false)
+	}, [])
+
+	const mergeCanvas = useCallback((summary: CanvasSummary) => {
+		setCanvases((current) => upsertCanvasSummary(current, summary))
+	}, [])
+
+	const applySnapshot = useCallback((snapshot: CanvasSnapshot) => {
+		if (snapshot.stateVersion < stateVersionRef.current) return
+		stateVersionRef.current = snapshot.stateVersion
+		const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
+		activeCanvasIdRef.current = snapshot.activeCanvasId
+		requestedCanvasIdRef.current = snapshot.activeCanvasId
+		setActiveCanvasId(snapshot.activeCanvasId)
+		setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
+		const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
+		for (const id of boardCacheRef.current.keys()) {
+			if (!liveIds.has(id)) boardCacheRef.current.delete(id)
+		}
+		rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
+		if (!switching && snapshot.board.revision < revisionRef.current) return
+		onBoardTransitionRef.current(
+			boardRef.current,
+			snapshot.board,
+			switching,
+			snapshot.activeCanvasId,
+		)
+		revisionRef.current = snapshot.board.revision
+		boardRef.current = snapshot.board
+		setBoard(snapshot.board)
+		onBoardAcceptedRef.current(snapshot.board, switching)
+	}, [])
+
+	const postOperations = useCallback(
+		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
+			const targetCanvasId = activeCanvasIdRef.current
+			const result = operationQueue.current.then(async () => {
+				try {
+					if (!targetCanvasId) return false
+					const targetBoard = boardCacheRef.current.get(targetCanvasId) ?? boardRef.current
+					if (canRebase && !canRebase(targetBoard)) {
+						announceRef.current('Object changed during drag')
+						return false
+					}
+					const revision = canRebase
+						? targetBoard.revision
+						: (expectedRevision ?? targetBoard.revision)
+					const response = await fetch('/api/operations', {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json' },
+						signal: AbortSignal.timeout(10000),
+						body: JSON.stringify({
+							operations,
+							expectedRevision: revision,
+							canvasId: targetCanvasId,
+						}),
+					})
+					if (!response.ok) {
+						const current = await fetch('/api/state?previews=0', {
+							signal: AbortSignal.timeout(10000),
+						})
+						if (current.ok) applySnapshot((await current.json()) as CanvasSnapshot)
+						announceRef.current(`Operation failed: HTTP ${response.status}`)
+						return false
+					}
+					const next = (await response.json()) as Board
+					rememberBoard(boardCacheRef.current, targetCanvasId, next)
+					if (targetCanvasId === activeCanvasIdRef.current) applyBoard(next)
+					setApiConnected(true)
+					return true
+				} catch (error) {
+					setApiConnected(false)
+					announceRef.current(error instanceof Error ? error.message : 'Operation failed')
+					return false
+				}
+			})
+			operationQueue.current = result.then(() => undefined)
+			return result
+		},
+		[applyBoard, applySnapshot],
+	)
+
+	useEffect(() => {
+		let stopped = false
+
+		const fetchState = async (includePreviews: boolean) => {
+			try {
+				const response = await fetch(`/api/state${includePreviews ? '' : '?previews=0'}`, {
+					signal: AbortSignal.timeout(10000),
+				})
+				if (!response.ok) throw new Error(`HTTP ${response.status}`)
+				const snapshot = (await response.json()) as CanvasSnapshot
+				if (!stopped) {
+					applySnapshot(snapshot)
+					setApiConnected(true)
+				}
+			} catch {
+				if (!stopped) setApiConnected(false)
+			}
+		}
+
+		void fetchState(true)
+		const poll = window.setInterval(() => void fetchState(false), 3000)
+
+		let socket: WebSocket | null = null
+		let retry: number | null = null
+
+		const connect = () => {
+			if (stopped) return
+			const current = new WebSocket(WS_URL)
+			socket = current
+			current.onopen = () => {
+				if (!stopped) setWsConnected(true)
+			}
+			current.onmessage = (event) => {
+				if (stopped) return
+				try {
+					const message = JSON.parse(event.data) as ServerEvent
+					if (message.type === 'snapshot') {
+						applySnapshot(message)
+					} else if (message.type === 'board') {
+						rememberBoard(boardCacheRef.current, message.canvasId, message.board)
+						mergeCanvas(message.canvas)
+						if (message.canvasId === activeCanvasIdRef.current) applyBoard(message.board)
+					}
+					setApiConnected(true)
+				} catch {
+					announceRef.current('Invalid board event')
+				}
+			}
+			current.onclose = () => {
+				if (stopped) return
+				setWsConnected(false)
+				retry = window.setTimeout(connect, 2000)
+			}
+			current.onerror = () => current.close()
+		}
+
+		queueMicrotask(connect)
+
+		return () => {
+			stopped = true
+			window.clearInterval(poll)
+			if (retry) window.clearTimeout(retry)
+			socket?.close()
+		}
+	}, [applyBoard, applySnapshot, mergeCanvas])
+
+	const refreshCanvases = useCallback(async () => {
+		try {
+			const response = await fetch('/api/canvases', { signal: AbortSignal.timeout(10000) })
+			if (!response.ok) return
+			const data = (await response.json()) as {
+				stateVersion: number
+				canvases: CanvasSummary[]
+			}
+			if (data.stateVersion < stateVersionRef.current) return
+			stateVersionRef.current = data.stateVersion
+			setCanvases((current) => mergeSnapshotCanvases(current, data.canvases))
+		} catch {
+			// The poll and WebSocket keep the list fresh if this request fails.
+		}
+	}, [])
+
+	const requestCanvas = useCallback(
+		async (path: string, init: RequestInit) => {
+			try {
+				const response = await fetch(path, {
+					...init,
+					headers: { 'Content-Type': 'application/json' },
+					signal: AbortSignal.timeout(10000),
+				})
+				if (!response.ok) {
+					let message = `Canvas request failed: HTTP ${response.status}`
+					try {
+						const body = (await response.json()) as { message?: string }
+						if (body.message) message = body.message
+					} catch {
+						// Keep the status fallback.
+					}
+					announceRef.current(message)
+					return
+				}
+				applySnapshot((await response.json()) as CanvasSnapshot)
+				setApiConnected(true)
+			} catch (error) {
+				setApiConnected(false)
+				announceRef.current(error instanceof Error ? error.message : 'Canvas request failed')
+			}
+		},
+		[applySnapshot],
+	)
+
+	const createCanvas = useCallback(() => {
+		void requestCanvas('/api/canvases', {
+			method: 'POST',
+			body: JSON.stringify({ name: `Canvas ${canvasesRef.current.length + 1}`, activate: true }),
+		})
+	}, [requestCanvas])
+
+	const createLessonCanvas = useCallback(
+		(name: string) => {
+			void requestCanvas('/api/canvases', {
+				method: 'POST',
+				body: JSON.stringify({ name, activate: true }),
+			})
+		},
+		[requestCanvas],
+	)
+
+	const switchCanvas = useCallback(
+		(id: string) => {
+			requestedCanvasIdRef.current = id
+			void requestCanvas('/api/active-canvas', {
+				method: 'PUT',
+				body: JSON.stringify({ id }),
+			})
+		},
+		[requestCanvas],
+	)
+
+	const renameCanvas = useCallback(
+		(id: string, name: string) => {
+			void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, {
+				method: 'PATCH',
+				body: JSON.stringify({ name }),
+			})
+		},
+		[requestCanvas],
+	)
+
+	const deleteCanvas = useCallback(
+		(id: string) => {
+			void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, { method: 'DELETE' })
+		},
+		[requestCanvas],
+	)
+
+	const getCurrentBoard = useCallback(() => boardRef.current, [])
+	const getActiveCanvasId = useCallback(() => activeCanvasIdRef.current, [])
+	const isCanvasTargetCurrent = useCallback(
+		(canvasId: string) =>
+			activeCanvasIdRef.current === canvasId && requestedCanvasIdRef.current === canvasId,
+		[],
+	)
+
+	const activeCanvasName = canvases.find((canvas) => canvas.id === activeCanvasId)?.name
+	useEffect(() => {
+		document.title = activeCanvasName ? `mico · ${activeCanvasName}` : 'mico'
+	}, [activeCanvasName])
+
+	return {
+		board,
+		canvases,
+		activeCanvasId,
+		apiConnected,
+		wsConnected,
+		postOperations,
+		refreshCanvases,
+		createCanvas,
+		createLessonCanvas,
+		switchCanvas,
+		renameCanvas,
+		deleteCanvas,
+		getCurrentBoard,
+		getActiveCanvasId,
+		isCanvasTargetCurrent,
+	}
+}

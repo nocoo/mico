@@ -1,17 +1,6 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type {
-	Board,
-	BrushStyle,
-	CanvasShape,
-	CanvasSnapshot,
-	CanvasSummary,
-	Connector,
-	Operation,
-	Point,
-	ServerEvent,
-	Shape,
-} from '../shared/types'
+import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
@@ -21,7 +10,7 @@ import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { Marquee } from './canvas/Marquee'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
-import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState'
+import { useCanvasSessionViewModel } from './canvas/useCanvasSessionViewModel'
 import { canRebaseConnector } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
 import {
@@ -57,9 +46,6 @@ import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
 import { fitViewport, panelViewportInset } from './viewport'
 
-const WS_URL = new URL('/api/events', window.location.href)
-WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-
 const isConnector = (shape: Shape): shape is Connector => shape.type === 'connector'
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
 
@@ -67,8 +53,6 @@ const randomId = () => crypto.randomUUID()
 
 export default function App() {
 	const svgRef = useRef<SVGSVGElement>(null)
-	const revisionRef = useRef(0)
-	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
 	const reducedMotionQueryRef = useRef<MediaQueryList | null>(null)
@@ -77,7 +61,6 @@ export default function App() {
 	const [reducedMotion, setReducedMotion] = useState(
 		() => reducedMotionQueryRef.current?.matches ?? false,
 	)
-	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const interactionRef = useRef<{
 		mode: 'pan' | 'shape' | 'create' | 'connection' | 'brush' | 'marquee'
 		pointerId: number
@@ -90,16 +73,9 @@ export default function App() {
 		group?: CanvasShape[]
 	} | null>(null)
 	const dragTokenRef = useRef(0)
-
-	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
-	const [canvases, setCanvases] = useState<CanvasSummary[]>([])
-	const [activeCanvasId, setActiveCanvasId] = useState('')
-	const activeCanvasIdRef = useRef('')
-	const requestedCanvasIdRef = useRef('')
 	const imageInputRef = useRef<HTMLInputElement>(null)
-	const stateVersionRef = useRef(-1)
-	const boardCacheRef = useRef<Map<string, Board>>(new Map())
 	const connectionResetRef = useRef<() => void>(() => {})
+	const cancelInteractionRef = useRef<() => void>(() => {})
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState(
 		() => new URLSearchParams(window.location.search).get('ai')?.trim() ?? '',
@@ -109,12 +85,6 @@ export default function App() {
 	)
 	const aiPanelOpenRef = useRef(aiPanelOpen)
 	aiPanelOpenRef.current = aiPanelOpen
-	const emptyState = useEmptyStateViewModel({
-		canvasId: activeCanvasId,
-		shapeCount: board.shapes.length,
-		initialPrompt: aiPrompt,
-		openAssistant: () => setAiPanelOpen(true),
-	})
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
@@ -135,8 +105,6 @@ export default function App() {
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
 	>(() => new Map())
-	const [apiConnected, setApiConnected] = useState(false)
-	const [wsConnected, setWsConnected] = useState(false)
 	const [guides, setGuides] = useState<AlignmentGuide[]>([])
 	const [brushPoints, setBrushPoints] = useState<Point[] | null>(null)
 	const [brushStyle, setBrushStyle] = useState<BrushStyle>('pencil')
@@ -145,12 +113,6 @@ export default function App() {
 	const [spacePressed, setSpacePressed] = useState(false)
 	const [isPanning, setIsPanning] = useState(false)
 
-	const activeCanvasName = canvases.find((canvas) => canvas.id === activeCanvasId)?.name
-	useEffect(() => {
-		document.title = activeCanvasName ? `mico · ${activeCanvasName}` : 'mico'
-	}, [activeCanvasName])
-
-	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
 	const reportDockLayout = useCallback((layout: DockLayout | null) => {
 		setDockLayout((current) =>
 			current?.height === layout?.height && current?.left === layout?.left ? current : layout,
@@ -161,8 +123,6 @@ export default function App() {
 		setNotice(message)
 		window.setTimeout(() => setNotice((current) => (current === message ? '' : current)), 2600)
 	}, [])
-
-	const cancelInteractionRef = useRef<() => void>(() => {})
 
 	const consumeEntryAnimation = useCallback((id: string) => {
 		animatedObjectsRef.current.delete(id)
@@ -177,40 +137,6 @@ export default function App() {
 		}
 		query.addEventListener('change', update)
 		return () => query.removeEventListener('change', update)
-	}, [])
-
-	const trackNewObjects = useCallback(
-		(next: Board, switching: boolean) => {
-			const canvasId = activeCanvasIdRef.current
-			animatedObjectsRef.current = transitionEntryAnimations(
-				boardRef.current,
-				next,
-				switching,
-				animatedObjectsRef.current,
-				canvasId ? (suppressedEntryIdsRef.current.get(canvasId) ?? new Set()) : new Set(),
-			)
-			if (reducedMotion) animatedObjectsRef.current.clear()
-		},
-		[reducedMotion],
-	)
-
-	const applyBoard = useCallback(
-		(next: Board) => {
-			if (next.revision < revisionRef.current) return
-			trackNewObjects(next, false)
-			revisionRef.current = next.revision
-			boardRef.current = next
-			rememberBoard(boardCacheRef.current, activeCanvasIdRef.current, next)
-			setBoard(next)
-			setSelectedIds((current) =>
-				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
-			)
-		},
-		[trackNewObjects],
-	)
-
-	const mergeCanvas = useCallback((summary: CanvasSummary) => {
-		setCanvases((current) => upsertCanvasSummary(current, summary))
 	}, [])
 
 	const fitShapesInCanvas = useCallback((shapes: Shape[]) => {
@@ -233,25 +159,22 @@ export default function App() {
 		setViewport(fitViewport(shapes, rect.width, rect.height, { right: reservedRight }))
 	}, [])
 
-	const applySnapshot = useCallback(
-		(snapshot: CanvasSnapshot) => {
-			if (snapshot.stateVersion < stateVersionRef.current) return
-			stateVersionRef.current = snapshot.stateVersion
-			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
-			activeCanvasIdRef.current = snapshot.activeCanvasId
-			requestedCanvasIdRef.current = snapshot.activeCanvasId
-			setActiveCanvasId(snapshot.activeCanvasId)
-			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
-			const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
-			for (const id of boardCacheRef.current.keys()) {
-				if (!liveIds.has(id)) boardCacheRef.current.delete(id)
-			}
-			rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
-			if (!switching && snapshot.board.revision < revisionRef.current) return
-			trackNewObjects(snapshot.board, switching)
-			revisionRef.current = snapshot.board.revision
-			boardRef.current = snapshot.board
-			setBoard(snapshot.board)
+	const onBoardTransition = useCallback(
+		(previous: Board, next: Board, switching: boolean, canvasId: string) => {
+			animatedObjectsRef.current = transitionEntryAnimations(
+				previous,
+				next,
+				switching,
+				animatedObjectsRef.current,
+				canvasId ? (suppressedEntryIdsRef.current.get(canvasId) ?? new Set()) : new Set(),
+			)
+			if (reducedMotion) animatedObjectsRef.current.clear()
+		},
+		[reducedMotion],
+	)
+
+	const onBoardAccepted = useCallback(
+		(next: Board, switching: boolean) => {
 			if (switching) {
 				cancelInteractionRef.current()
 				connectionResetRef.current()
@@ -262,132 +185,41 @@ export default function App() {
 				setDragPreviews(new Map())
 				setCreation(null)
 				setBrushPoints(null)
-				fitShapesInCanvas(snapshot.board.shapes)
+				fitShapesInCanvas(next.shapes)
 				return
 			}
 			setSelectedIds((current) =>
-				current.filter((id) => snapshot.board.shapes.some((shape) => shape.id === id)),
+				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[fitShapesInCanvas, trackNewObjects],
+		[fitShapesInCanvas],
 	)
 
-	const postOperations = useCallback(
-		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) => {
-			const targetCanvasId = activeCanvasIdRef.current
-			const result = operationQueue.current.then(async () => {
-				try {
-					if (!targetCanvasId) return false
-					const targetBoard = boardCacheRef.current.get(targetCanvasId) ?? boardRef.current
-					if (canRebase && !canRebase(targetBoard)) {
-						announce('Object changed during drag')
-						return false
-					}
-					const revision = canRebase
-						? targetBoard.revision
-						: (expectedRevision ?? targetBoard.revision)
-					const response = await fetch('/api/operations', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						signal: AbortSignal.timeout(10000),
-						body: JSON.stringify({
-							operations,
-							expectedRevision: revision,
-							canvasId: targetCanvasId,
-						}),
-					})
-					if (!response.ok) {
-						const current = await fetch('/api/state?previews=0', {
-							signal: AbortSignal.timeout(10000),
-						})
-						if (current.ok) applySnapshot((await current.json()) as CanvasSnapshot)
-						announce(`Operation failed: HTTP ${response.status}`)
-						return false
-					}
-					const next = (await response.json()) as Board
-					rememberBoard(boardCacheRef.current, targetCanvasId, next)
-					if (targetCanvasId === activeCanvasIdRef.current) applyBoard(next)
-					setApiConnected(true)
-					return true
-				} catch (error) {
-					setApiConnected(false)
-					announce(error instanceof Error ? error.message : 'Operation failed')
-					return false
-				}
-			})
-			operationQueue.current = result.then(() => undefined)
-			return result
-		},
-		[announce, applyBoard, applySnapshot],
-	)
-
+	const {
+		board,
+		canvases,
+		activeCanvasId,
+		apiConnected,
+		wsConnected,
+		postOperations,
+		refreshCanvases,
+		createCanvas,
+		createLessonCanvas,
+		switchCanvas,
+		renameCanvas,
+		deleteCanvas,
+		getCurrentBoard,
+		getActiveCanvasId,
+		isCanvasTargetCurrent,
+	} = useCanvasSessionViewModel({ announce, onBoardTransition, onBoardAccepted })
+	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
+	const emptyState = useEmptyStateViewModel({
+		canvasId: activeCanvasId,
+		shapeCount: board.shapes.length,
+		initialPrompt: aiPrompt,
+		openAssistant: () => setAiPanelOpen(true),
+	})
 	const connection = useConnectionGesture(board, viewport.zoom, postOperations)
-
-	useEffect(() => {
-		let stopped = false
-
-		const fetchState = async (includePreviews: boolean) => {
-			try {
-				const response = await fetch(`/api/state${includePreviews ? '' : '?previews=0'}`, {
-					signal: AbortSignal.timeout(10000),
-				})
-				if (!response.ok) throw new Error(`HTTP ${response.status}`)
-				const snapshot = (await response.json()) as CanvasSnapshot
-				if (!stopped) {
-					applySnapshot(snapshot)
-					setApiConnected(true)
-				}
-			} catch {
-				if (!stopped) setApiConnected(false)
-			}
-		}
-
-		void fetchState(true)
-		const poll = window.setInterval(() => void fetchState(false), 3000)
-
-		let socket: WebSocket | null = null
-		let retry: number | null = null
-
-		const connect = () => {
-			if (stopped) return
-			const current = new WebSocket(WS_URL)
-			socket = current
-			current.onopen = () => {
-				if (!stopped) setWsConnected(true)
-			}
-			current.onmessage = (event) => {
-				if (stopped) return
-				try {
-					const message = JSON.parse(event.data) as ServerEvent
-					if (message.type === 'snapshot') {
-						applySnapshot(message)
-					} else if (message.type === 'board') {
-						rememberBoard(boardCacheRef.current, message.canvasId, message.board)
-						mergeCanvas(message.canvas)
-						if (message.canvasId === activeCanvasIdRef.current) applyBoard(message.board)
-					}
-					setApiConnected(true)
-				} catch {
-					announce('Invalid board event')
-				}
-			}
-			current.onclose = () => {
-				if (stopped) return
-				setWsConnected(false)
-				retry = window.setTimeout(connect, 2000)
-			}
-			current.onerror = () => current.close()
-		}
-
-		queueMicrotask(connect)
-
-		return () => {
-			stopped = true
-			window.clearInterval(poll)
-			if (retry) window.clearTimeout(retry)
-			socket?.close()
-		}
-	}, [announce, applyBoard, applySnapshot, mergeCanvas])
 
 	const clientToWorld = (clientX: number, clientY: number) => {
 		const rect = svgRef.current?.getBoundingClientRect()
@@ -414,11 +246,11 @@ export default function App() {
 	)
 
 	const fitBoard = useCallback(() => {
-		fitShapesInCanvas(boardRef.current.shapes)
-	}, [fitShapesInCanvas])
+		fitShapesInCanvas(getCurrentBoard().shapes)
+	}, [fitShapesInCanvas, getCurrentBoard])
 
 	const createShape = (shape: CanvasShape, suppressEntry = false) => {
-		const canvasId = activeCanvasIdRef.current
+		const canvasId = getActiveCanvasId()
 		if (suppressEntry && canvasId) {
 			let ids = suppressedEntryIdsRef.current.get(canvasId)
 			if (!ids) {
@@ -430,7 +262,7 @@ export default function App() {
 		const frameId =
 			shape.type === 'frame'
 				? null
-				: membershipFor(boardRef.current.shapes, shapeBounds(shape), shape.id)
+				: membershipFor(getCurrentBoard().shapes, shapeBounds(shape), shape.id)
 		selectOnly(shape.id)
 		void postOperations([
 			{ type: 'create', shape: frameId ? { ...shape, frameId } : shape },
@@ -449,7 +281,7 @@ export default function App() {
 			return
 		}
 
-		const targetCanvasId = activeCanvasIdRef.current
+		const targetCanvasId = getActiveCanvasId()
 		if (!targetCanvasId) {
 			announce('Canvas is not ready')
 			return
@@ -461,10 +293,7 @@ export default function App() {
 
 		try {
 			const natural = await readImageDimensions(file)
-			if (
-				activeCanvasIdRef.current !== targetCanvasId ||
-				requestedCanvasIdRef.current !== targetCanvasId
-			) {
+			if (!isCanvasTargetCurrent(targetCanvasId)) {
 				announce('Image upload canceled because the canvas changed')
 				return
 			}
@@ -487,10 +316,7 @@ export default function App() {
 			}
 			const body = (await response.json()) as { id?: string }
 			if (!body.id) throw new Error('Image upload returned no asset ID')
-			if (
-				activeCanvasIdRef.current !== targetCanvasId ||
-				requestedCanvasIdRef.current !== targetCanvasId
-			) {
+			if (!isCanvasTargetCurrent(targetCanvasId)) {
 				announce('Image uploaded, but the canvas changed')
 				return
 			}
@@ -554,86 +380,11 @@ export default function App() {
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
 	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
 
-	const refreshCanvases = useCallback(async () => {
-		try {
-			const response = await fetch('/api/canvases', { signal: AbortSignal.timeout(10000) })
-			if (!response.ok) return
-			const data = (await response.json()) as {
-				stateVersion: number
-				canvases: CanvasSummary[]
-			}
-			if (data.stateVersion < stateVersionRef.current) return
-			stateVersionRef.current = data.stateVersion
-			setCanvases((current) => mergeSnapshotCanvases(current, data.canvases))
-		} catch {
-			// The poll and WebSocket keep the list fresh if this request fails.
-		}
-	}, [])
-
 	const toggleCanvasPanel = () => {
 		setCanvasPanelOpen((open) => {
 			if (!open) void refreshCanvases()
 			return !open
 		})
-	}
-
-	const requestCanvas = async (path: string, init: RequestInit) => {
-		try {
-			const response = await fetch(path, {
-				...init,
-				headers: { 'Content-Type': 'application/json' },
-				signal: AbortSignal.timeout(10000),
-			})
-			if (!response.ok) {
-				let message = `Canvas request failed: HTTP ${response.status}`
-				try {
-					const body = (await response.json()) as { message?: string }
-					if (body.message) message = body.message
-				} catch {
-					// Keep the status fallback.
-				}
-				announce(message)
-				return
-			}
-			applySnapshot((await response.json()) as CanvasSnapshot)
-			setApiConnected(true)
-		} catch (error) {
-			setApiConnected(false)
-			announce(error instanceof Error ? error.message : 'Canvas request failed')
-		}
-	}
-
-	const createCanvas = () => {
-		void requestCanvas('/api/canvases', {
-			method: 'POST',
-			body: JSON.stringify({ name: `Canvas ${canvases.length + 1}`, activate: true }),
-		})
-	}
-
-	const createLessonCanvas = (name: string) => {
-		void requestCanvas('/api/canvases', {
-			method: 'POST',
-			body: JSON.stringify({ name, activate: true }),
-		})
-	}
-
-	const switchCanvas = (id: string) => {
-		requestedCanvasIdRef.current = id
-		void requestCanvas('/api/active-canvas', {
-			method: 'PUT',
-			body: JSON.stringify({ id }),
-		})
-	}
-
-	const renameCanvas = (id: string, name: string) => {
-		void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, {
-			method: 'PATCH',
-			body: JSON.stringify({ name }),
-		})
-	}
-
-	const deleteCanvas = (id: string) => {
-		void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, { method: 'DELETE' })
 	}
 
 	useEffect(() => {
