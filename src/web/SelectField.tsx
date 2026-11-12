@@ -33,7 +33,9 @@ export function SelectField<T extends string>({
 				data-pointer-focus={pointerFocus || undefined}
 				onPointerDown={() => setPointerFocus(true)}
 				onKeyDown={() => setPointerFocus(false)}
-				onBlur={() => setPointerFocus(false)}
+				onBlur={(event) => {
+					if (event.currentTarget.getAttribute('aria-expanded') !== 'true') setPointerFocus(false)
+				}}
 			>
 				{selectedOption?.label ?? null}
 			</Select.Trigger>
