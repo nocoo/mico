@@ -370,13 +370,6 @@ svg {
 	color: var(--ink);
 	white-space: pre-wrap;
 }
-.typographic-text {
-	height: 100%;
-	overflow: hidden;
-	line-height: 1.15;
-	letter-spacing: -0.01em;
-	white-space: pre-wrap;
-}
 .connector {
 	cursor: pointer;
 }

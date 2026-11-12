@@ -41,6 +41,10 @@ export function candyInk(color: string): string {
 	return READABLE_TEXT[color] ?? color
 }
 
+export function canvasTextColor(color: string): string {
+	return color === CANDY_COLORS.ink ? 'var(--ui-ink)' : candyInk(color)
+}
+
 export function candyLine(color: string, percent = 35): string {
 	return `color-mix(in srgb, ${color} ${percent}%, var(--border))`
 }
@@ -105,11 +109,11 @@ export const FONT_OPTIONS = [
 	{ id: 'mono', label: 'Mono' },
 ] as const
 
-export const FONT_SIZES = [16, 24, 32, 48] as const
-export const FONT_WEIGHTS = [300, 400, 500, 700] as const
+export const FONT_SIZES = [16, 18, 24, 32, 48] as const
+export const FONT_WEIGHTS = [300, 400, 500, 600, 700] as const
 
 export const FONT_STACKS: Record<(typeof FONT_OPTIONS)[number]['id'], string> = {
-	sans: 'Inter, ui-sans-serif, system-ui, sans-serif',
+	sans: '"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif',
 	serif: 'Georgia, "Times New Roman", serif',
 	hand: '"Bradley Hand", "Segoe Print", "Comic Sans MS", cursive',
 	mono: 'ui-monospace, SFMono-Regular, monospace',

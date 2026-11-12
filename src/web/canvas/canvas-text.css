@@ -8,3 +8,13 @@
 .canvas-text-editing {
 	visibility: hidden;
 }
+
+.inline-editor.canvas-text-editor textarea {
+	padding: 0;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	line-height: 1.5;
+	box-shadow: none;
+	outline: none;
+}

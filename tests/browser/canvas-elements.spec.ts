@@ -139,6 +139,70 @@ for (const item of [
 	})
 }
 
+test('manual text matches the original prototype', async ({ page, context, request, baseURL }) => {
+	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	await resetBoard(request, [
+		{
+			id: 'reference-text',
+			type: 'text',
+			x: 400,
+			y: 250,
+			w: 320,
+			h: 27,
+			color: '#2b3038',
+			text: 'Prototype text',
+			font: 'sans',
+			fontSize: 18,
+			fontWeight: 600,
+		},
+	])
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await page.goto('/')
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	await page.addStyleTag({
+		content:
+			'.app, .canvas-backdrop { background: white !important; } .canvas-aurora, .canvas-grain { display: none !important; } svg.canvas { background-image: none !important; }',
+	})
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
+	await reference.goto(
+		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/teams-ai-whiteboard.html')).href,
+	)
+	try {
+		await reference.addStyleTag({
+			content:
+				'.aurora, .grain, #hero { display: none !important; } #stage { background: white !important; } .el.pop { animation: none !important; }',
+		})
+		await reference.locator('#tools [data-tool="text"]').click()
+		await reference.locator('#stage').click({ position: { x: 400, y: 350 } })
+		await reference.locator('.el-text[contenteditable]').fill('Prototype text')
+		await reference.locator('#stage').click({ position: { x: 800, y: 700 } })
+		const target = reference.locator('.el-text[data-by="user"]')
+		await expect(target).toHaveCount(1)
+		const box = await target.boundingBox()
+		if (!box) throw new Error('Missing reference text')
+		const width = Math.ceil(box.width)
+		const height = Math.ceil(box.height)
+		const expected = await screenshotElement(reference, target, width, height)
+		const actual = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-text"]'),
+			width,
+			height,
+		)
+		const diff = await differingPixels(page, expected, actual)
+		expect(
+			diff.different / diff.total,
+			`${diff.different}/${diff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.001)
+	} finally {
+		await reference.close()
+	}
+})
+
 test('connector matches the original prototype between aligned nodes', async ({
 	page,
 	context,

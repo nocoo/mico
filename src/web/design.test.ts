@@ -7,6 +7,7 @@ import {
 	CANDY_TINTS,
 	candyInk,
 	candyWash,
+	canvasTextColor,
 	NOTE_COLORS,
 	SHAPE_COLORS,
 } from './design.ts'
@@ -42,6 +43,9 @@ test('the candy palette is vivid for surfaces and readable for text', () => {
 	assert.equal(candyInk(CANDY_COLORS.pink), CANDY_LAYOUT.pinkStroke)
 	assert.equal(candyInk(CANDY_COLORS.ink), CANDY_COLORS.ink)
 	assert.equal(candyInk('#123456'), '#123456')
+	assert.equal(canvasTextColor(CANDY_COLORS.ink), 'var(--ui-ink)')
+	assert.equal(canvasTextColor(CANDY_COLORS.blue), CANDY_LAYOUT.blueStroke)
+	assert.equal(canvasTextColor('#123456'), '#123456')
 })
 
 test('pale washes derive from the shared surface token', () => {

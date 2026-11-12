@@ -27,6 +27,7 @@ import {
 	CANDY_LAYOUT,
 	CANDY_TINTS,
 	CONTROL_SIZE,
+	canvasTextColor,
 	FONT_STACKS,
 	ICON_SIZE,
 	TEXT_SIZE,
@@ -117,8 +118,8 @@ export default function App() {
 	} | null>(null)
 	const [noteColor, setNoteColor] = useState<string>(CANDY_TINTS.yellow)
 	const [textFont, setTextFont] = useState<'sans' | 'serif' | 'hand' | 'mono'>('sans')
-	const [textSize, setTextSize] = useState(32)
-	const [textWeight, setTextWeight] = useState(500)
+	const [textSize, setTextSize] = useState(18)
+	const [textWeight, setTextWeight] = useState(600)
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
 	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
@@ -676,11 +677,11 @@ export default function App() {
 			createShape({
 				id: randomId(),
 				type: 'text',
-				x: world.x - 160,
-				y: world.y - textSize,
+				x: world.x,
+				y: world.y - 14,
 				w: 320,
-				h: Math.round(textSize * 1.6),
-				color: CANDY_LAYOUT.textPreset,
+				h: Math.round(textSize * 1.5),
+				color: CANDY_COLORS.ink,
 				text: 'Type something',
 				font: textFont,
 				fontSize: textSize,
@@ -1365,6 +1366,7 @@ export default function App() {
 										fontFamily: FONT_STACKS[target.font ?? 'sans'],
 										fontSize: `${target.fontSize ?? 32}px`,
 										fontWeight: target.fontWeight ?? 500,
+										color: canvasTextColor(target.color),
 									}
 								: undefined
 						const commit = (value: string) => {
@@ -1381,7 +1383,7 @@ export default function App() {
 								y={box.y}
 								width={box.w}
 								height={box.h}
-								className={`inline-editor${target.type === 'note' ? ' sticky-note-editor' : jellyShape ? ' jelly-shape-editor' : ''}`}
+								className={`inline-editor${target.type === 'note' ? ' sticky-note-editor' : jellyShape ? ' jelly-shape-editor' : target.type === 'text' ? ' canvas-text-editor' : ''}`}
 								style={target.type === 'note' || jellyShape ? jellyStyle(target.color) : undefined}
 								onPointerDown={(event) => event.stopPropagation()}
 							>

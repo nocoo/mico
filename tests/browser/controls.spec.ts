@@ -358,10 +358,10 @@ test('text, sticky note and html tools create their primitives on click', async 
 	await expect.poll(async () => countOf(request, 'text')).toBe(1)
 	expect((await board(request)).shapes.find((shape) => shape.type === 'text')).toMatchObject({
 		text: 'Type something',
-		color: CANDY_COLORS.blue,
+		color: CANDY_COLORS.ink,
 		font: 'sans',
-		fontSize: 32,
-		fontWeight: 500,
+		fontSize: 18,
+		fontWeight: 600,
 	})
 
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()

@@ -23,7 +23,6 @@ export const CANDY_LAYOUT = {
 	greenStroke: '#5c8c1e',
 	yellowStroke: '#8c7300',
 	pinkStroke: '#b23f63',
-	textPreset: CANDY_COLORS.blue,
 	linePreset: CANDY_COLORS.green,
 	yellowPreset: '#8c7300',
 	pinkPreset: '#b23f63',

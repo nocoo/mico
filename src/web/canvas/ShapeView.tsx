@@ -6,10 +6,11 @@ import { FRAME_FILL_PERCENT } from '../../shared/palette'
 import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
 import { CardHeaderPill } from '../CardHeaderPill'
-import { CANDY_COLORS, candyInk, candyLine, candyWash, FONT_STACKS, type Tool } from '../design'
+import { CANDY_COLORS, candyLine, candyWash, type Tool } from '../design'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from '../htmlCard'
 import { imagePreserveAspectRatio } from '../image'
 import { StickyNote } from '../StickyNote'
+import { CanvasText } from './CanvasText'
 import { ConnectorView } from './ConnectorView'
 import { JellyShape } from './JellyShape'
 
@@ -279,10 +280,9 @@ export function ShapeView({
 		)
 	}
 	if (shape.type === 'text') {
-		const font = shape.font ?? 'sans'
 		return (
 			<g {...common}>
-				<rect x={shape.x} y={shape.y} width={shape.w} height={shape.h} fill="transparent" />
+				<CanvasText shape={shape} editing={editingId === shape.id} />
 				{active && (
 					<rect
 						className="selection"
@@ -293,25 +293,6 @@ export function ShapeView({
 						rx={6}
 					/>
 				)}
-				<foreignObject
-					x={shape.x}
-					y={shape.y}
-					width={shape.w}
-					height={shape.h}
-					pointerEvents="none"
-				>
-					<div
-						className="typographic-text"
-						style={{
-							fontFamily: FONT_STACKS[font],
-							fontSize: `${shape.fontSize ?? 32}px`,
-							fontWeight: shape.fontWeight ?? 500,
-							color: candyInk(shape.color),
-						}}
-					>
-						{shape.text || 'Type something'}
-					</div>
-				</foreignObject>
 			</g>
 		)
 	}
