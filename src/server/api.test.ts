@@ -718,6 +718,45 @@ test('patch validation is scoped to the target shape type', async () => {
 	})
 })
 
+test('revision-guarded history restores accept atomic boards larger than the normal request limit', async () => {
+	await withDaemon(async (url) => {
+		const shapes = Array.from({ length: 6 }, (_, index) => ({
+			id: `restore-card-${index}`,
+			type: 'html',
+			x: index * 300,
+			y: 0,
+			w: 200,
+			h: 200,
+			color: '#00a2e1',
+			title: 'Large card',
+			html: 'x'.repeat(200_000),
+		}))
+		for (const shape of shapes)
+			assert.equal((await apply(url, [{ type: 'create', shape }])).status, 200)
+		const deleted = await apply(
+			url,
+			shapes.map(({ id }) => ({ type: 'delete', id })),
+		)
+		assert.equal(deleted.status, 200)
+		const revision = (deleted.body as Board).revision
+		const restore = shapes.map((shape, index) => ({ type: 'restore', shape, index }))
+		assertError(await apply(url, restore), 413, 'PAYLOAD_TOO_LARGE')
+		assertError(
+			await apply(
+				url,
+				[...restore, { type: 'create', shape: { ...shapes[0], id: 'extra' } }],
+				revision,
+			),
+			413,
+			'PAYLOAD_TOO_LARGE',
+		)
+		const restored = await apply(url, restore, revision)
+		assert.equal(restored.status, 200)
+		assert.deepEqual((restored.body as Board).shapes, shapes)
+		assert.equal((restored.body as Board).revision, revision + 1)
+	})
+})
+
 test('operation envelopes are validated and oversized bodies are rejected', async () => {
 	await withDaemon(async (url) => {
 		const malformed = [

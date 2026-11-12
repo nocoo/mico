@@ -102,7 +102,7 @@ export class CanvasHistory {
 				? result.findIndex((item) => item.id === next)
 				: previous
 					? result.findIndex((item) => item.id === previous) + 1
-					: result.length
+					: Math.min(index, result.length)
 			result.splice(position, 0, shape)
 		}
 		const resultIds = new Set(result.map((shape) => shape.id))
@@ -117,6 +117,16 @@ export class CanvasHistory {
 				target.has(shape.id) ? [{ type: 'restore', shape, index }] : [],
 			),
 		]
+	}
+
+	matchesResult(board: Board, direction: HistoryDirection): boolean {
+		const entry = (direction === 'undo' ? this.past : this.future).at(-1)
+		if (!entry) return false
+		const target = direction === 'undo' ? entry.before : entry.after
+		const current = new Map(board.shapes.map((shape) => [shape.id, shape]))
+		return [...new Set([...entry.before.keys(), ...entry.after.keys()])].every((id) =>
+			equal(current.get(id), target.get(id)),
+		)
 	}
 
 	complete(direction: HistoryDirection): void {

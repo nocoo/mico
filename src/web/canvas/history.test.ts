@@ -123,6 +123,16 @@ test('undo restores deleted objects in their original order around foreign objec
 	)
 })
 
+test('undo keeps original stacking positions when all old neighbours were deleted', () => {
+	const history = new CanvasHistory()
+	history.record(board(note('a'), note('b')), board())
+	const restored = replay(history, board(note('foreign')), 'undo')
+	assert.deepEqual(
+		restored.shapes.map((shape) => shape.id),
+		['a', 'b', 'foreign'],
+	)
+})
+
 test('undo does not resurrect connectors whose other endpoint was deleted elsewhere', () => {
 	const history = new CanvasHistory()
 	const edge: Shape = { id: 'edge', type: 'connector', from: 'a', to: 'b', color: '#00a2e1' }
@@ -140,6 +150,16 @@ test('recorded entries are immutable and compare values rather than JSON key ord
 	) as unknown as Shape
 	assert.ok(history.plan(board(reordered), 'undo'))
 	assert.throws(() => history.plan(board(after), 'undo'), HistoryConflict)
+})
+
+test('replay confirmation checks the full affected result including absent objects', () => {
+	const history = new CanvasHistory()
+	history.record(board(), board(note('a')))
+	assert.equal(history.matchesResult(board(note('a')), 'undo'), false)
+	assert.equal(history.matchesResult(board(note('foreign')), 'undo'), true)
+	history.complete('undo')
+	assert.equal(history.matchesResult(board(note('a'), note('foreign')), 'redo'), true)
+	assert.equal(history.matchesResult(board(note('a', 'external')), 'redo'), false)
 })
 
 test('separate browser canvas histories do not share entries', () => {

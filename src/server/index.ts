@@ -27,7 +27,10 @@ function parsePort(): number {
 	return port
 }
 
-function readJson(req: IncomingMessage): Promise<unknown> {
+const MAX_JSON_BYTES = 1024 * 1024
+const MAX_RESTORE_BYTES = 64 * MAX_JSON_BYTES
+
+function readJson(req: IncomingMessage, allowRestore = false): Promise<unknown> {
 	return new Promise((resolveBody, reject) => {
 		const chunks: Buffer[] = []
 		let size = 0
@@ -35,9 +38,15 @@ function readJson(req: IncomingMessage): Promise<unknown> {
 		req.on('data', (chunk: Buffer) => {
 			if (tooLarge) return
 			size += chunk.length
-			if (size > 1024 * 1024) {
+			if (size > (allowRestore ? MAX_RESTORE_BYTES : MAX_JSON_BYTES)) {
 				tooLarge = true
-				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 1 MB'))
+				reject(
+					new OperationError(
+						413,
+						'PAYLOAD_TOO_LARGE',
+						`Request body exceeds ${allowRestore ? 64 : 1} MB`,
+					),
+				)
 				return
 			}
 			chunks.push(chunk)
@@ -46,9 +55,29 @@ function readJson(req: IncomingMessage): Promise<unknown> {
 			if (tooLarge) return
 			try {
 				const text = Buffer.concat(chunks).toString('utf8')
-				resolveBody(text.length === 0 ? undefined : JSON.parse(text))
-			} catch {
-				reject(new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'))
+				const body: unknown = text.length === 0 ? undefined : JSON.parse(text)
+				const restore =
+					allowRestore &&
+					isRecord(body) &&
+					Number.isInteger(body.expectedRevision) &&
+					Array.isArray(body.operations) &&
+					body.operations.some(
+						(operation: unknown) => isRecord(operation) && operation.type === 'restore',
+					) &&
+					body.operations.every(
+						(operation: unknown) =>
+							isRecord(operation) && (operation.type === 'restore' || operation.type === 'delete'),
+					)
+				if (size > MAX_JSON_BYTES && !restore) {
+					throw new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 1 MB')
+				}
+				resolveBody(body)
+			} catch (error) {
+				reject(
+					error instanceof OperationError
+						? error
+						: new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'),
+				)
 			}
 		})
 		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
@@ -527,7 +556,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const result = store.applyRequest(await readJson(req))
+				const result = store.applyRequest(await readJson(req, true))
 				broadcast({
 					type: 'board',
 					canvasId: result.canvasId,

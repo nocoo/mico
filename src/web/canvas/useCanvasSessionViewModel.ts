@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
 	Board,
+	CanvasDetail,
 	CanvasSnapshot,
 	CanvasSummary,
 	Operation,
@@ -32,6 +33,13 @@ export function useCanvasSessionViewModel({
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
 	const historiesRef = useRef(new Map<string, CanvasHistory>())
+	const replayRef = useRef<{
+		canvasId: string
+		revision: number
+		history: CanvasHistory
+		direction: HistoryDirection
+		confirmed?: Board
+	} | null>(null)
 	const [pendingOperations, setPendingOperations] = useState(0)
 	const [, refreshHistory] = useState(0)
 	const activeCanvasIdRef = useRef('')
@@ -47,49 +55,68 @@ export function useCanvasSessionViewModel({
 	onBoardTransitionRef.current = onBoardTransition
 	onBoardAcceptedRef.current = onBoardAccepted
 
-	const applyBoard = useCallback((next: Board) => {
-		if (next.revision < revisionRef.current) return
-		const canvasId = activeCanvasIdRef.current
-		onBoardTransitionRef.current(boardRef.current, next, false, canvasId)
-		revisionRef.current = next.revision
-		boardRef.current = next
+	const cacheBoard = useCallback((canvasId: string, next: Board) => {
+		const replay = replayRef.current
+		if (
+			replay &&
+			replay.canvasId === canvasId &&
+			replay.revision === next.revision &&
+			replay.history.matchesResult(next, replay.direction)
+		) {
+			replay.confirmed = next
+		}
 		rememberBoard(boardCacheRef.current, canvasId, next)
-		setBoard(next)
-		onBoardAcceptedRef.current(next, false)
 	}, [])
+
+	const applyBoard = useCallback(
+		(next: Board) => {
+			if (next.revision < revisionRef.current) return
+			const canvasId = activeCanvasIdRef.current
+			onBoardTransitionRef.current(boardRef.current, next, false, canvasId)
+			revisionRef.current = next.revision
+			boardRef.current = next
+			cacheBoard(canvasId, next)
+			setBoard(next)
+			onBoardAcceptedRef.current(next, false)
+		},
+		[cacheBoard],
+	)
 
 	const mergeCanvas = useCallback((summary: CanvasSummary) => {
 		setCanvases((current) => upsertCanvasSummary(current, summary))
 	}, [])
 
-	const applySnapshot = useCallback((snapshot: CanvasSnapshot) => {
-		if (snapshot.stateVersion < stateVersionRef.current) return
-		stateVersionRef.current = snapshot.stateVersion
-		const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
-		activeCanvasIdRef.current = snapshot.activeCanvasId
-		requestedCanvasIdRef.current = snapshot.activeCanvasId
-		setActiveCanvasId(snapshot.activeCanvasId)
-		setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
-		const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
-		for (const id of boardCacheRef.current.keys()) {
-			if (!liveIds.has(id)) boardCacheRef.current.delete(id)
-		}
-		for (const id of historiesRef.current.keys()) {
-			if (!liveIds.has(id)) historiesRef.current.delete(id)
-		}
-		rememberBoard(boardCacheRef.current, snapshot.activeCanvasId, snapshot.board)
-		if (!switching && snapshot.board.revision < revisionRef.current) return
-		onBoardTransitionRef.current(
-			boardRef.current,
-			snapshot.board,
-			switching,
-			snapshot.activeCanvasId,
-		)
-		revisionRef.current = snapshot.board.revision
-		boardRef.current = snapshot.board
-		setBoard(snapshot.board)
-		onBoardAcceptedRef.current(snapshot.board, switching)
-	}, [])
+	const applySnapshot = useCallback(
+		(snapshot: CanvasSnapshot) => {
+			if (snapshot.stateVersion < stateVersionRef.current) return
+			stateVersionRef.current = snapshot.stateVersion
+			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
+			activeCanvasIdRef.current = snapshot.activeCanvasId
+			requestedCanvasIdRef.current = snapshot.activeCanvasId
+			setActiveCanvasId(snapshot.activeCanvasId)
+			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
+			const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
+			for (const id of boardCacheRef.current.keys()) {
+				if (!liveIds.has(id)) boardCacheRef.current.delete(id)
+			}
+			for (const id of historiesRef.current.keys()) {
+				if (!liveIds.has(id)) historiesRef.current.delete(id)
+			}
+			cacheBoard(snapshot.activeCanvasId, snapshot.board)
+			if (!switching && snapshot.board.revision < revisionRef.current) return
+			onBoardTransitionRef.current(
+				boardRef.current,
+				snapshot.board,
+				switching,
+				snapshot.activeCanvasId,
+			)
+			revisionRef.current = snapshot.board.revision
+			boardRef.current = snapshot.board
+			setBoard(snapshot.board)
+			onBoardAcceptedRef.current(snapshot.board, switching)
+		},
+		[cacheBoard],
+	)
 
 	const submitOperations = useCallback(
 		(
@@ -119,6 +146,14 @@ export function useCanvasSessionViewModel({
 					const revision = canRebase
 						? targetBoard.revision
 						: (expectedRevision ?? targetBoard.revision)
+					if (typeof command === 'string') {
+						replayRef.current = {
+							canvasId: targetCanvasId,
+							revision: revision + 1,
+							history,
+							direction: command,
+						}
+					}
 					const response = await fetch('/api/operations', {
 						method: 'POST',
 						headers: { 'Content-Type': 'application/json' },
@@ -141,22 +176,45 @@ export function useCanvasSessionViewModel({
 					if (typeof command === 'string') history.complete(command)
 					else history.record(targetBoard, next)
 					refreshHistory((version) => version + 1)
-					rememberBoard(boardCacheRef.current, targetCanvasId, next)
+					cacheBoard(targetCanvasId, next)
 					if (targetCanvasId === activeCanvasIdRef.current) applyBoard(next)
 					setApiConnected(true)
 					return true
 				} catch (error) {
+					const replay = replayRef.current
+					if (replay && !(error instanceof HistoryConflict)) {
+						if (!replay.confirmed) {
+							try {
+								const response = await fetch(
+									`/api/canvases/${encodeURIComponent(targetCanvasId)}`,
+									{ signal: AbortSignal.timeout(3000) },
+								)
+								if (response.ok)
+									cacheBoard(targetCanvasId, ((await response.json()) as CanvasDetail).board)
+							} catch {
+								// Only a verified successor snapshot proves that the replay committed.
+							}
+						}
+						if (replay.confirmed) {
+							replay.history.complete(replay.direction)
+							refreshHistory((version) => version + 1)
+							if (targetCanvasId === activeCanvasIdRef.current) applyBoard(replay.confirmed)
+							setApiConnected(true)
+							return true
+						}
+					}
 					if (!(error instanceof HistoryConflict)) setApiConnected(false)
 					announceRef.current(error instanceof Error ? error.message : 'Operation failed')
 					return false
 				} finally {
+					replayRef.current = null
 					setPendingOperations((count) => count - 1)
 				}
 			})
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[applyBoard, applySnapshot],
+		[applyBoard, applySnapshot, cacheBoard],
 	)
 
 	const postOperations = useCallback(
@@ -206,7 +264,7 @@ export function useCanvasSessionViewModel({
 					if (message.type === 'snapshot') {
 						applySnapshot(message)
 					} else if (message.type === 'board') {
-						rememberBoard(boardCacheRef.current, message.canvasId, message.board)
+						cacheBoard(message.canvasId, message.board)
 						mergeCanvas(message.canvas)
 						if (message.canvasId === activeCanvasIdRef.current) applyBoard(message.board)
 					}
@@ -231,7 +289,7 @@ export function useCanvasSessionViewModel({
 			if (retry) window.clearTimeout(retry)
 			socket?.close()
 		}
-	}, [applyBoard, applySnapshot, mergeCanvas])
+	}, [applyBoard, applySnapshot, mergeCanvas, cacheBoard])
 
 	const refreshCanvases = useCallback(async () => {
 		try {

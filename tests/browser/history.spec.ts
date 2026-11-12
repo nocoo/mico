@@ -85,6 +85,7 @@ test('foreign changes are not history and unrelated changes survive undo', async
 	await page.getByRole('button', { name: 'Undo', exact: true }).click()
 	await expect.poll(async () => (await board(request)).shapes).toEqual([note, foreign])
 	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled()
+	await expect(page.getByRole('button', { name: 'Redo', exact: true })).toBeEnabled()
 	await page.keyboard.press('Control+Shift+z')
 	await expect
 		.poll(async () => (await board(request)).shapes.find((s) => s.id === note.id))
@@ -145,6 +146,37 @@ test('an HTTP rejection does not consume undo and a retry remains possible', asy
 	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
 	await page.getByRole('button', { name: 'Undo', exact: true }).click()
 	await expect.poll(async () => (await board(request)).shapes).toEqual([note])
+})
+
+test('a committed undo survives a lost HTTP response and later unrelated edits', async ({
+	page,
+	request,
+}) => {
+	await dragWorld(page, { x: 350, y: 280 }, { x: 430, y: 360 })
+	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
+	const first = (await board(request)).shapes
+	await dragWorld(page, { x: 430, y: 360 }, { x: 510, y: 440 })
+	await expect.poll(async () => (await board(request)).shapes).not.toEqual(first)
+	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
+	const foreign = { ...note, id: 'foreign-after-undo', x: 700 }
+	await page.route(
+		'**/api/operations',
+		async (route) => {
+			const response = await route.fetch()
+			expect(response.ok()).toBe(true)
+			await request.post('/api/operations', {
+				data: { operations: [{ type: 'create', shape: foreign }] },
+			})
+			await expect(page.locator('[data-shape-id="foreign-after-undo"]')).toBeVisible()
+			await route.abort('connectionreset')
+		},
+		{ times: 1 },
+	)
+	await page.getByRole('button', { name: 'Undo', exact: true }).click()
+	await expect(page.getByRole('button', { name: 'Redo', exact: true })).toBeEnabled()
+	await expect.poll(async () => (await board(request)).shapes).toEqual([...first, foreign])
+	await page.getByRole('button', { name: 'Undo', exact: true }).click()
+	await expect.poll(async () => (await board(request)).shapes).toEqual([note, foreign])
 })
 
 test('text editors keep native undo instead of undoing the board', async ({ page, request }) => {
