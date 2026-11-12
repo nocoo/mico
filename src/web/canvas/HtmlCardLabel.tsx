@@ -1,6 +1,8 @@
 import type React from 'react'
 import { useLayoutEffect, useRef, useState } from 'react'
+import { CANDY_COLORS } from '../../shared/palette'
 import type { CanvasShape } from '../../shared/types'
+import { jellyStyle } from './jelly'
 import './html-card.css'
 
 interface HtmlCardLabelProps {
@@ -14,6 +16,14 @@ export function HtmlCardLabel({ shape, onPointerDown, onDoubleClick }: HtmlCardL
 	const [hitBox, setHitBox] = useState({ width: 0, height: 0 })
 	const maxWidth = Math.max(160, Math.min(shape.w - 40, 360))
 	const x = shape.x + 20
+	const color =
+		shape.color.toLowerCase() === CANDY_COLORS.blue
+			? undefined
+			: {
+					...jellyStyle(shape.color),
+					color: 'var(--j-ink)',
+					boxShadow: 'inset 0 0 0 1px var(--j-edge), 0 6px 12px -8px var(--ui-shadow)',
+				}
 
 	useLayoutEffect(() => {
 		const pill = pillRef.current
@@ -35,7 +45,7 @@ export function HtmlCardLabel({ shape, onPointerDown, onDoubleClick }: HtmlCardL
 	return (
 		<g className="html-card-label-handle" data-card-handle={shape.id} {...handlers}>
 			<foreignObject x={x} y={shape.y - 40} width={maxWidth} height={40} pointerEvents="none">
-				<div className="html-card-label card-tab card-pill" ref={pillRef}>
+				<div className="html-card-label card-tab card-pill" ref={pillRef} style={color}>
 					<span className="html-card-label-icon" aria-hidden="true">
 						<svg viewBox="0 0 24 24" aria-hidden="true">
 							<path d="M9 7l-5 5 5 5M15 7l5 5-5 5" />
