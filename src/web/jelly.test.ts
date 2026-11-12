@@ -36,10 +36,23 @@ test('peach and grape use the remaining reference color families', () => {
 	assert.match(variable(jellyStyle(JELLY_COLORS.grape), '--j-b'), /\.1 296/)
 })
 
-test('custom colors retain their source through CSS relative color syntax', () => {
-	const style = jellyStyle('#123456')
-	assert.match(variable(style, '--j-a'), /oklch\(from #123456/)
-	assert.match(variable(style, '--j-edge'), /calc\(c \* 1\.45\)/)
+test('custom colors retain their exact edge identity and use relative jelly fills', () => {
+	for (const color of ['#123456', '#ABCDEF', '#000000', '#ffffff']) {
+		const style = jellyStyle(color)
+		assert.equal(variable(style, '--j-edge'), color)
+		assert.match(variable(style, '--j-a'), new RegExp(`oklch\\(from ${color}`))
+		assert.match(variable(style, '--j-a'), /l \* \.07/)
+	}
+})
+
+test('neutral jelly fills preserve enough source lightness to distinguish black and white', () => {
+	for (const name of ['--j-a', '--j-b'] as const) {
+		const black = variable(jellyStyle('#000000'), name)
+		const white = variable(jellyStyle('#ffffff'), name)
+		assert.notEqual(black, white)
+		assert.match(black, /l \*/)
+		assert.match(white, /l \*/)
+	}
 })
 
 test('neutral and ink remain custom colors instead of inventing a reference family', () => {

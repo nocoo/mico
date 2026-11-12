@@ -38,9 +38,9 @@ const FAMILIES = new Map<string, JellyProperties>([
 
 function relativeStyle(color: string): JellyProperties {
 	return {
-		'--j-a': `light-dark(oklch(from ${color} 0.968 calc(c * .5) h / .92), oklch(from ${color} 0.42 calc(c * .95) h / .82))`,
-		'--j-b': `light-dark(oklch(from ${color} 0.9 c h / .92), oklch(from ${color} 0.31 c h / .86))`,
-		'--j-edge': `light-dark(oklch(from ${color} 0.75 calc(c * 1.45) h), oklch(from ${color} 0.72 calc(c * 1.35) h))`,
+		'--j-a': `light-dark(oklch(from ${color} calc(.93 + l * .07) calc(c * .5) h / .92), oklch(from ${color} calc(.3 + l * .15) calc(c * .95) h / .82))`,
+		'--j-b': `light-dark(oklch(from ${color} calc(.84 + l * .1) c h / .92), oklch(from ${color} calc(.2 + l * .15) c h / .86))`,
+		'--j-edge': color,
 		'--j-ink': `light-dark(oklch(from ${color} 0.35 calc(c * .95) h), oklch(from ${color} 0.95 calc(c * .45) h))`,
 		'--j-glow': `light-dark(oklch(from ${color} 0.7 calc(c * 1.5) h / .45), oklch(from ${color} 0.62 calc(c * 1.5) h / .34))`,
 	}
