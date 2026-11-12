@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- Curved connectors can extend beyond their endpoint shapes, and an arrowhead can extend beyond a constant-width hit path at high zoom. Fit must include Bézier and arrow bounds; the painted head must remain selectable independently of the line hit area.
+- Changing text line height clipped older multiline and wrapped content, and normalizing custom colors erased the distinction between black and white ink. Test saved legacy shapes against their original geometry and retain exact custom stroke colors.
 - Tried to prompt a worker pane after it had been closed. Query live pane IDs before delegating additional work instead of reusing stale handles.
 - Rounding the iframe itself clipped existing user HTML at its corners. Keep arbitrary iframe contents rectangular and uncut; apply the reference radius to the surrounding shell instead, and test corner rendering and interaction.
 - An iframe-in-SVG test intermittently reported a successful click without delivering a DOM click. Verify the outer hit target and capture actual iframe pointer/click events before asserting embedded behavior; do not replace physical input with synthetic events.
