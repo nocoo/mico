@@ -240,8 +240,10 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			)
 		}
 		const onKeyDown = (event: globalThis.KeyboardEvent) => {
+			const focused = document.activeElement
 			const focusInside =
-				document.activeElement instanceof Node && panelRef.current?.contains(document.activeElement)
+				focused instanceof Element &&
+				(panelRef.current?.contains(focused) || focused.closest('[data-ai-toggle="true"]'))
 			if (
 				shouldCloseAssistantEscape(
 					event.key,

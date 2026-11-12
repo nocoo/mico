@@ -101,6 +101,19 @@ test('assistant open and close re-centres the toolbar and keeps canvas managemen
 		.toBe(532)
 })
 
+test('Escape closes the assistant after opening it from its trigger', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await openApp(page)
+	await page.getByRole('button', { name: 'Close AI assistant' }).click()
+	const trigger = page.getByRole('button', { name: 'Open AI assistant' })
+	await trigger.focus()
+	await page.keyboard.press('Enter')
+	await expect(page.locator('#ai-panel')).toHaveAttribute('aria-hidden', 'false')
+	await page.keyboard.press('Escape')
+	await expect(page.locator('#ai-panel')).toHaveAttribute('aria-hidden', 'true')
+	await expect(trigger).toBeFocused()
+})
+
 test('selection properties remain accessible beside the open assistant', async ({
 	page,
 	request,
