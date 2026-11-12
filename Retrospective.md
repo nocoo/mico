@@ -12,6 +12,8 @@
 
 ## Tool usage
 
+- A delegated canvas worker ran `pnpm exec` despite an explicit prohibition and triggered the unwanted dependency precheck. Require direct `node` or `node_modules/.bin` commands in worker prompts and inspect their command logs before accepting verification; no lockfile was changed.
+- A background worker committed canvas source while an isolated browser suite was starting, risking Vite hot reload during assertions. Freeze production edits before launching browser tests and rerun any suite exposed to concurrent edits.
 - A Radix select menu hides the trigger from role queries while open, and mouse selection restores focus with `:focus-visible`. Test the DOM trigger directly while the menu is open and verify both pointer selection and keyboard focus rather than assuming native modality heuristics.
 - Replacing toolbar CSS dropped the auto-height rule for large font previews. Inventory the old style's behavioral rules before rewriting a surface, and retain browser checks for clipped large options.
 - The complete browser suite outgrew its five-minute global timeout; size the suite deadline for the actual sequential run while keeping per-test timeouts bounded.
