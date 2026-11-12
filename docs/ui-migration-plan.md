@@ -94,6 +94,13 @@ Keep one authoritative domain model and transport; React views are replaceable p
 
 Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` per `docs/testing.md`, using the approved registry/auto-install settings. Update frame geometry contracts and add visual regression tests rather than weakening them. Cover all shape types, selection and connectors, canvas CRUD and cross-canvas races, CLI/API/store contracts, keyboard, scrolling, focus, theming, assistant queue/selection/errors, playback and microphone cleanup. Real MAI/MOSS and meeting integration need explicit manual end-to-end acceptance; mocks cannot prove provider behavior.
 
+## Frame milestone progress
+
+- Implemented Mico identity, disconnected meeting preview, desktop and responsive toolbar, empty-state hero, assistant shell, real-status pill, and refreshed selection properties. Meeting controls are explicitly unavailable and do not request media permissions.
+- Extracted recording, microphone, MOSS and AI settings lifecycles into view models. Existing board and provider contracts remain in place. The frame uses Audio, Chat, Live and Settings to retain current product modes; the prototype's Outline and other not-yet-implemented capabilities remain in phase 3.
+- Added isolated geometry and pixel comparisons for reference glass, jelly orbs and active toolbar controls. This does not yet establish pixel-level equivalence for all panel contents, theme variants, motion states or mobile breakpoints. Canvas background and canvas elements remain unchanged until phase 2.
+- Stop after the frame checks and request owner acceptance. Do not start phase 2 or phase 3 before approval.
+
 ## Decisions required before the dependent slices
 
 - Meeting integration is explicitly deferred. Keep the meeting view and its ViewModel isolated from real meeting data and media controls.
