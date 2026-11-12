@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type React from 'react'
 import { CANDY_COLORS, CANDY_TINTS } from '../shared/palette.ts'
-import { jellyStyle } from './canvas/jelly.ts'
+import { JELLY_COLORS, jellyStyle } from './canvas/jelly.ts'
 
 const sky = jellyStyle(CANDY_TINTS.blue)
 const variable = (style: React.CSSProperties, name: `--j-${string}`) =>
@@ -30,6 +30,11 @@ for (const [preset, tint, hue, chroma] of [
 		assert.match(variable(style, '--j-b'), new RegExp(`^.*${chroma} ${hue}`))
 	})
 }
+
+test('peach and grape use the remaining reference color families', () => {
+	assert.match(variable(jellyStyle(JELLY_COLORS.peach), '--j-b'), /\.105 55/)
+	assert.match(variable(jellyStyle(JELLY_COLORS.grape), '--j-b'), /\.1 296/)
+})
 
 test('custom colors retain their source through CSS relative color syntax', () => {
 	const style = jellyStyle('#123456')

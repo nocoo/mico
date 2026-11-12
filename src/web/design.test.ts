@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { JELLY_COLORS } from './canvas/jelly.ts'
 import {
 	CANDY_COLORS,
 	CANDY_LAYOUT,
@@ -18,6 +19,8 @@ test('the candy palette is vivid for surfaces and readable for text', () => {
 			CANDY_COLORS.green,
 			CANDY_COLORS.yellow,
 			CANDY_COLORS.pink,
+			JELLY_COLORS.peach,
+			JELLY_COLORS.grape,
 			CANDY_COLORS.ink,
 		],
 	)
@@ -28,6 +31,8 @@ test('the candy palette is vivid for surfaces and readable for text', () => {
 			CANDY_TINTS.pink,
 			CANDY_TINTS.green,
 			CANDY_TINTS.blue,
+			JELLY_COLORS.peach,
+			JELLY_COLORS.grape,
 			CANDY_TINTS.neutral,
 		],
 	)

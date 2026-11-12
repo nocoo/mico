@@ -4,6 +4,8 @@ import { CANDY_COLORS, CANDY_TINTS } from '../../shared/palette.ts'
 type JellyFamily = readonly [hue: number, chroma: string]
 type JellyProperties = React.CSSProperties & Record<`--j-${string}`, string>
 
+export const JELLY_COLORS = { peach: '#f69143', grape: '#b799ff' } as const
+
 function familyStyle([hue, chroma]: JellyFamily): JellyProperties {
 	return {
 		'--j-a': `light-dark(oklch(0.968 calc(${chroma} * .5) ${hue} / .92), oklch(0.42 calc(${chroma} * .95) ${hue} / .82))`,
@@ -18,6 +20,8 @@ const SKY = familyStyle([236, '.085'])
 const MINT = familyStyle([166, '.095'])
 const LEMON = familyStyle([98, '.12'])
 const PINK = familyStyle([8, '.1'])
+const PEACH = familyStyle([55, '.105'])
+const GRAPE = familyStyle([296, '.1'])
 
 const FAMILIES = new Map<string, JellyProperties>([
 	[CANDY_COLORS.blue, SKY],
@@ -28,6 +32,8 @@ const FAMILIES = new Map<string, JellyProperties>([
 	[CANDY_TINTS.yellow, LEMON],
 	[CANDY_COLORS.pink, PINK],
 	[CANDY_TINTS.pink, PINK],
+	[JELLY_COLORS.peach, PEACH],
+	[JELLY_COLORS.grape, GRAPE],
 ])
 
 function relativeStyle(color: string): JellyProperties {

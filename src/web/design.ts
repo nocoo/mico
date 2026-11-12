@@ -1,4 +1,5 @@
 import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
+import { JELLY_COLORS } from './canvas/jelly.ts'
 import { FRAME_LAYOUT } from './frame/layout.ts'
 
 export { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
@@ -82,6 +83,8 @@ export const SHAPE_COLORS = [
 	{ value: CANDY_COLORS.green, label: 'Green' },
 	{ value: CANDY_COLORS.yellow, label: 'Yellow' },
 	{ value: CANDY_COLORS.pink, label: 'Pink' },
+	{ value: JELLY_COLORS.peach, label: 'Peach' },
+	{ value: JELLY_COLORS.grape, label: 'Grape' },
 	{ value: CANDY_COLORS.ink, label: 'Ink' },
 ] as const
 
@@ -90,6 +93,8 @@ export const NOTE_COLORS = [
 	{ value: CANDY_TINTS.pink, label: 'Pink' },
 	{ value: CANDY_TINTS.green, label: 'Green' },
 	{ value: CANDY_TINTS.blue, label: 'Blue' },
+	{ value: JELLY_COLORS.peach, label: 'Peach' },
+	{ value: JELLY_COLORS.grape, label: 'Grape' },
 	{ value: CANDY_TINTS.neutral, label: 'Neutral' },
 ] as const
 
