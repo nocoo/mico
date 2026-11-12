@@ -100,7 +100,7 @@ Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` pe
 - Extracted recording, microphone, MOSS and AI settings lifecycles into view models. Existing board and provider contracts remain in place. The frame uses Audio, Chat, Live and Settings to retain current product modes; the prototype's Outline and other not-yet-implemented capabilities remain in phase 3.
 - Added isolated geometry and pixel comparisons for reference glass, jelly orbs and active toolbar controls. This does not yet establish pixel-level equivalence for all panel contents, theme variants, motion states or mobile breakpoints. Canvas background and canvas elements remain unchanged until phase 2.
 - Frame checks: 291 Node tests and 101 isolated browser tests pass; TypeScript and the production build pass. The complete Biome check remains blocked by pre-existing formatting differences in `README.md` and `docs/README.en.md`. Live provider and actual meeting acceptance remain outside this milestone.
-- Stop after the frame checks and request owner acceptance. Do not start phase 2 or phase 3 before approval.
+- The owner accepted the frame direction and requested a compact Mico logo, a matching canvas-list design, and less intrusive pointer focus. Continue to phase 2 while preserving these refinements.
 
 ## Decisions required before the dependent slices
 
