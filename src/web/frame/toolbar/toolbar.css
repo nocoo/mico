@@ -1,14 +1,20 @@
 .toolbar-module.toolbar {
 	position: fixed;
 	z-index: 20;
-	inset-inline-start: calc((100% - var(--frame-panel-reserved, 0px)) / 2);
+	inset-inline-start: calc(
+		(100% - var(--frame-panel-reserved, 0px) + var(--frame-minimap-reserved, 0px)) /
+		2
+	);
 	inset-block-end: calc(14px + env(safe-area-inset-bottom, 0px));
 	translate: -50% 0;
 	display: flex;
 	align-items: center;
 	box-sizing: border-box;
 	width: max-content;
-	max-inline-size: max(0px, calc(100vw - var(--frame-panel-reserved, 0px) - 28px));
+	max-inline-size: max(
+		0px,
+		calc(100vw - var(--frame-panel-reserved, 0px) - var(--frame-minimap-reserved, 0px) - 28px)
+	);
 	min-block-size: 56px;
 	padding: 8px;
 	border-radius: 24px;

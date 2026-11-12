@@ -159,6 +159,8 @@ test('measured dock placement centers over the remaining frame space', () => {
 	assert.equal(calculateToolbarLeft(375, 347, 376), 16)
 	assert.equal(calculateToolbarLeft(500, 480, 376), 12)
 	assert.equal(calculateToolbarLeft(300, 320, 0), 0)
+	assert.equal(calculateToolbarLeft(1440, 838, 376, 198), 212)
+	assert.equal(calculateToolbarLeft(1440, 900, 0, 198), 368)
 
 	const calls = actions()
 	calls.reportLayout({ left: calculateToolbarLeft(1000, 520, 376), height: 56 })

@@ -107,7 +107,7 @@ Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` pe
 
 ## Overview and history increment
 
-- Added a bottom-left minimap and replaced canvas-list previews with the same block-only extraction/projection. Standalone text, lines, connectors and paths do not contribute content or bounds. The minimap supports click, pointer drag and keyboard navigation; its projection is frozen during dragging. It remains above the expanded toolbar at all desktop widths and follows the prototype's hidden state at 980px or less.
+- Added a bottom-left minimap and replaced canvas-list previews with the same block-only extraction/projection. Standalone text, lines, connectors and paths do not contribute content or bounds. The minimap supports click, pointer drag and keyboard navigation; its projection is frozen during dragging. Its bottom edge aligns with the toolbar at a 14px inset. The desktop toolbar reserves the minimap's left-hand space to prevent overlap; the minimap follows the prototype's hidden state at 980px or less.
 - Added browser-memory undo/redo for 20 manual edits per canvas. Canvas switching retains history, reload clears it, and new edits discard redo. Replay uses revision-checked atomic operations, preserves unrelated external work and refuses conflicting objects or new dependencies. Exact shape restoration preserves optional fields, cascade relationships and stacking order without persisting server history.
 - These additions do not implement theme switching, layer filtering, provenance, outline, AI follow, or meeting integration.
 

@@ -98,10 +98,12 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 		}
 		const measure = () => {
 			const rect = dock.getBoundingClientRect()
-			const panelReserved =
-				Number.parseFloat(getComputedStyle(dock).getPropertyValue('--frame-panel-reserved')) || 0
+			const style = getComputedStyle(dock)
+			const panelReserved = Number.parseFloat(style.getPropertyValue('--frame-panel-reserved')) || 0
+			const minimapReserved =
+				Number.parseFloat(style.getPropertyValue('--frame-minimap-reserved')) || 0
 			reportLayout({
-				left: calculateToolbarLeft(window.innerWidth, rect.width, panelReserved),
+				left: calculateToolbarLeft(window.innerWidth, rect.width, panelReserved, minimapReserved),
 				height: rect.height,
 			})
 		}

@@ -62,7 +62,7 @@ test('minimap and canvas-list previews use block silhouettes without text or lin
 	await expect(minimap.locator('.canvas-minimap-block')).toHaveCount(2)
 	await expect(minimap.locator('text,line,path')).toHaveCount(0)
 	const box = await minimap.boundingBox()
-	expect(box).toMatchObject({ x: 14, y: 754, width: 184, height: 124 })
+	expect(box).toMatchObject({ x: 14, y: 822, width: 184, height: 124 })
 	const state = (await (await request.get('/api/state')).json()) as CanvasSnapshot
 	const preview = state.canvases.find((canvas) => canvas.id === state.activeCanvasId)?.preview
 	if (!preview) throw new Error('Missing canvas preview')
@@ -131,13 +131,18 @@ test('minimap remeasures the visible viewport when the assistant opens and close
 test('minimap avoids the wider history toolbar and follows responsive visibility', async ({
 	page,
 }) => {
-	for (const width of [1440, 1500, 1920]) {
+	for (const width of [981, 1440, 1500, 1920]) {
 		await page.setViewportSize({ width, height: 960 })
-		await openAssistant(page, 'Chat')
-		const map = await page.locator('.canvas-minimap').boundingBox()
-		const dock = await page.locator('.toolbar-module').boundingBox()
-		if (!map || !dock) throw new Error('Missing canvas chrome')
-		expect(map.y + map.height).toBeLessThanOrEqual(dock.y)
+		for (const panelOpen of [true, false]) {
+			if (panelOpen) await openAssistant(page, 'Chat')
+			else await closeAssistant(page)
+			const map = await page.locator('.canvas-minimap').boundingBox()
+			const dock = await page.locator('.toolbar-module').boundingBox()
+			if (!map || !dock) throw new Error('Missing canvas chrome')
+			expect(map.x).toBe(14)
+			expect(map.y + map.height).toBeCloseTo(dock.y + dock.height, 1)
+			expect(map.x + map.width + 14).toBeLessThanOrEqual(dock.x)
+		}
 	}
 	await page.setViewportSize({ width: 980, height: 960 })
 	await expect(page.locator('.canvas-minimap')).toBeHidden()

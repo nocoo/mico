@@ -48,6 +48,13 @@
 
 .app {
 	--frame-panel-reserved: 0px;
+	--frame-minimap-reserved: 0px;
+}
+
+@media (min-width: 981px) {
+	.app {
+		--frame-minimap-reserved: 198px;
+	}
 }
 
 .app.ai-open {

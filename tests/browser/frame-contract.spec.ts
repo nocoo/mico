@@ -62,7 +62,7 @@ test('desktop frame follows reference geometry while preserving Mico identity', 
 	const toolbar = await getBox(page.locator('.toolbar-module'))
 	expect(toolbar.y).toBe(890)
 	expect(toolbar.height).toBe(56)
-	expect(Math.abs(toolbar.x + toolbar.width / 2 - 532)).toBeLessThanOrEqual(1)
+	expect(Math.abs(toolbar.x + toolbar.width / 2 - 631)).toBeLessThanOrEqual(1)
 	const status = await getBox(page.locator('.ai-status-pill'))
 	expect(status.y).toBe(840)
 	expect(status.height).toBe(38)
@@ -87,7 +87,7 @@ test('assistant open and close re-centres the toolbar and keeps canvas managemen
 			const box = await getBox(page.locator('.toolbar-module'))
 			return Math.round(box.x + box.width / 2)
 		})
-		.toBe(720)
+		.toBe(819)
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 	await expect(page.locator('[data-canvas-panel="true"]')).toBeVisible()
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
@@ -98,7 +98,7 @@ test('assistant open and close re-centres the toolbar and keeps canvas managemen
 			const box = await getBox(page.locator('.toolbar-module'))
 			return Math.round(box.x + box.width / 2)
 		})
-		.toBe(532)
+		.toBe(631)
 })
 
 test('Escape closes the assistant after opening it from its trigger', async ({ page }) => {

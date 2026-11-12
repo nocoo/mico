@@ -2,7 +2,7 @@
 	position: fixed;
 	z-index: 19;
 	inset-inline-start: calc(14px + env(safe-area-inset-left, 0px));
-	inset-block-end: calc(82px + env(safe-area-inset-bottom, 0px));
+	inset-block-end: calc(14px + env(safe-area-inset-bottom, 0px));
 	box-sizing: border-box;
 	inline-size: 184px;
 	block-size: 124px;
