@@ -12,6 +12,9 @@
 
 ## Tool usage
 
+- An SVG selection rectangle approximated CSS `outline` incorrectly: stroke centering and browser pixel rounding produced visibly different borders at different zoom levels. Render the same CSS outline in a pointer-transparent `foreignObject` and compare against the original at 100% and 200% zoom.
+- An SVG marker using `context-stroke` rendered the connector arrowhead black despite a colored line. Render the head with inherited `currentColor` and compare it against the original rather than trusting the marker declaration.
+- A pixel comparison accidentally included the prototype context toolbar or the application's properties panel. Hide unrelated overlays in isolated visual fixtures, while keeping interaction tests separate.
 - Ran a full TypeScript check while a delegated view extraction was between edits, producing missing-prop errors from an uncommitted intermediate state. Wait for the worker's atomic commit before validating the integrated tree.
 - Started an isolated screenshot test while a worker was mid-editing `App.tsx`; Vite hot-reloaded an intermediate state and the test failed for an unrelated missing import. Freeze all production edits before browser probes, even for an expected-failure baseline, and rerun after workers commit.
 - A delegated canvas worker used `find` despite the machine's `fd` rule. Require `fd` and `rg` explicitly for all delegated file discovery and check worker command logs during execution.
