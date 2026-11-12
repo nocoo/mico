@@ -1,0 +1,16 @@
+.canvas-image-hit {
+	pointer-events: all;
+}
+
+.canvas-image-art {
+	filter: drop-shadow(0 10px 16px color-mix(in oklch, var(--ui-shadow) 14%, transparent));
+	pointer-events: none;
+}
+
+.canvas-image-edge {
+	fill: none;
+	stroke: var(--j-edge);
+	stroke-opacity: 0.42;
+	stroke-width: 1;
+	pointer-events: none;
+}

@@ -1,0 +1,18 @@
+.canvas-frame-background {
+	pointer-events: none;
+}
+
+.canvas-frame-surface {
+	fill: var(--j-a);
+	fill-opacity: 0.14;
+	stroke: var(--j-edge);
+	stroke-opacity: 0.5;
+	stroke-width: 1.5;
+	filter: drop-shadow(0 12px 18px var(--j-glow));
+	pointer-events: none;
+}
+
+.canvas-frame-surface.has-background {
+	fill: none;
+	stroke-opacity: 0.64;
+}
