@@ -491,13 +491,17 @@ test('Escape closes the panel when keyboard focus is back in the composer', asyn
 	await expect(panel).toBeHidden()
 })
 
-test('the narrow Canvases panel stays above the AI panel', async ({ page }) => {
+test('the narrow Canvases panel and AI panel remain reachable', async ({ page }) => {
 	await page.setViewportSize({ width: 390, height: 844 })
 	await page.reload()
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-	await openAssistant(page, 'Audio')
-	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
+	const aiPanel = await openAssistant(page, 'Audio')
+	await expect(aiPanel).toBeVisible()
 
+	await page.getByRole('button', { name: 'Close AI assistant', exact: true }).click()
+	await expect(aiPanel).toBeHidden()
+	const canvasesToggle = page.getByRole('button', { name: 'Canvases', exact: true })
+	await canvasesToggle.click()
 	const canvases = page.getByRole('region', { name: 'Canvases' })
 	await expect(canvases).toBeVisible()
 	const onTop = await canvases.evaluate((element) => {
@@ -506,6 +510,11 @@ test('the narrow Canvases panel stays above the AI panel', async ({ page }) => {
 		return Boolean(hit && element.contains(hit))
 	})
 	expect(onTop).toBe(true)
+
+	await canvasesToggle.click()
+	await expect(canvases).toHaveCount(0)
+	await openAssistant(page, 'Audio')
+	await expect(aiPanel).toBeVisible()
 })
 
 test('the AI panel replaces the narrow properties sheet instead of hiding its controls underneath', async ({
