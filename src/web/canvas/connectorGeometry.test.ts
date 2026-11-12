@@ -2,10 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CanvasShape, Connector } from '../../shared/types.ts'
 import {
+	connectorHitPath,
 	connectorPath,
+	connectorVisualBounds,
 	createConnectorGeometry,
 	createConnectorVisualGeometry,
 	getConnectorGeometry,
+	getConnectorVisualBounds,
 	getConnectorVisualGeometry,
 } from './connectorGeometry.ts'
 
@@ -123,6 +126,10 @@ test('visual geometry matches the reference horizontal and vertical gaps and arr
 	assert.deepEqual(horizontal.controlEnd, { x: 200, y: 40 })
 	assert.equal(horizontal.showArrow, true)
 
+	const visualPath = connectorPath(horizontal)
+	assert.equal(connectorHitPath(horizontal), `${visualPath}L296 40`)
+	assert.equal(visualPath, 'M104 40C200 40 200 40 287 40')
+
 	const vertical = getConnectorVisualGeometry(connector(), from, box('to', 0, 300))
 	assert.deepEqual(vertical.start, { x: 50, y: 84 })
 	assert.deepEqual(vertical.arrowTip, { x: 50, y: 296 })
@@ -166,6 +173,24 @@ test('visual geometry keeps the four anchor sides and pinned endpoints exact', (
 			y: physical.end.y + offset.y,
 		})
 	}
+})
+
+test('visual bounds include exact curve extrema and the stroked arrow', () => {
+	const from = { ...box('from', 0, 0), w: 200 }
+	const to = { ...box('to', 1000, 0), w: 200 }
+	const geometry = getConnectorVisualGeometry(connector({ fromAnchor: 0, toAnchor: 0 }), from, to)
+	const bounds = connectorVisualBounds(geometry)
+	assert.ok(bounds)
+
+	const t = (1000 - Math.sqrt(982000)) / 18
+	const inverse = 1 - t
+	const exactTop =
+		inverse ** 3 * -4 + 3 * inverse ** 2 * t * -504 + 3 * inverse * t ** 2 * -504 + t ** 3 * -13
+	assert.ok(Math.abs(bounds.top - exactTop) < 1e-9)
+	assert.equal(bounds.bottom, -2.75)
+	assert.equal(bounds.right, 1106.75)
+	assert.equal(connectorVisualBounds({ ...geometry, start: { x: Number.NaN, y: 0 } }), null)
+	assert.equal(getConnectorVisualBounds(connector({ fromAnchor: 12 }), from, to), null)
 })
 
 test('ellipse visual gaps follow the pinned outward normal', () => {

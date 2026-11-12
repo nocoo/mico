@@ -13,6 +13,13 @@ export interface ConnectorVisualGeometry extends ConnectorGeometry {
 	showArrow: boolean
 }
 
+export interface ConnectorBounds {
+	left: number
+	right: number
+	top: number
+	bottom: number
+}
+
 const EPSILON = 1e-9
 const ENDPOINT_GAP = 4
 const ARROW_LENGTH = 9
@@ -178,6 +185,139 @@ export function getConnectorVisualGeometry(
 
 export function connectorPath({ start, controlStart, controlEnd, end }: ConnectorGeometry): string {
 	return `M${start.x} ${start.y}C${controlStart.x} ${controlStart.y} ${controlEnd.x} ${controlEnd.y} ${end.x} ${end.y}`
+}
+
+export function connectorHitPath(geometry: ConnectorVisualGeometry): string {
+	const path = connectorPath(geometry)
+	return geometry.showArrow ? `${path}L${geometry.arrowTip.x} ${geometry.arrowTip.y}` : path
+}
+
+function isFinitePoint(point: Point): boolean {
+	return Number.isFinite(point.x) && Number.isFinite(point.y)
+}
+
+function cubicValue(
+	start: number,
+	controlStart: number,
+	controlEnd: number,
+	end: number,
+	t: number,
+) {
+	const inverse = 1 - t
+	const first = inverse * start + t * controlStart
+	const second = inverse * controlStart + t * controlEnd
+	const third = inverse * controlEnd + t * end
+	const fourth = inverse * first + t * second
+	const fifth = inverse * second + t * third
+	return inverse * fourth + t * fifth
+}
+
+function cubicExtrema(start: number, controlStart: number, controlEnd: number, end: number) {
+	const values = [start, end]
+	const scale = Math.max(
+		Math.abs(start),
+		Math.abs(controlStart),
+		Math.abs(controlEnd),
+		Math.abs(end),
+	)
+	if (scale === 0) return values
+	const p0 = start / scale
+	const p1 = controlStart / scale
+	const p2 = controlEnd / scale
+	const p3 = end / scale
+	const d0 = p1 - p0
+	const d1 = p2 - p1
+	const d2 = p3 - p2
+	const a = d0 - 2 * d1 + d2
+	const b = 2 * (d1 - d0)
+	const c = d0
+	const roots: number[] = []
+
+	if (a === 0) {
+		if (b !== 0) roots.push(-c / b)
+	} else {
+		const discriminant = b * b - 4 * a * c
+		if (discriminant >= 0) {
+			const squareRoot = Math.sqrt(discriminant)
+			const q = -0.5 * (b + (b < 0 ? -squareRoot : squareRoot))
+			if (q === 0) roots.push(-b / (2 * a))
+			else roots.push(q / a, c / q)
+		}
+	}
+
+	for (const root of roots) {
+		if (Number.isFinite(root) && root > 0 && root < 1) {
+			values.push(cubicValue(start, controlStart, controlEnd, end, root))
+		}
+	}
+	return values
+}
+
+export function connectorVisualBounds(geometry: ConnectorVisualGeometry): ConnectorBounds | null {
+	if (
+		![
+			geometry.start,
+			geometry.controlStart,
+			geometry.controlEnd,
+			geometry.end,
+			geometry.arrowTip,
+		].every(isFinitePoint)
+	)
+		return null
+
+	const xValues = cubicExtrema(
+		geometry.start.x,
+		geometry.controlStart.x,
+		geometry.controlEnd.x,
+		geometry.end.x,
+	)
+	const yValues = cubicExtrema(
+		geometry.start.y,
+		geometry.controlStart.y,
+		geometry.controlEnd.y,
+		geometry.end.y,
+	)
+	let left = Math.min(...xValues)
+	let right = Math.max(...xValues)
+	let top = Math.min(...yValues)
+	let bottom = Math.max(...yValues)
+
+	if (geometry.showArrow) {
+		const angle = Math.atan2(
+			geometry.arrowTip.y - geometry.end.y,
+			geometry.arrowTip.x - geometry.end.x,
+		)
+		const cos = Math.cos(angle)
+		const sin = Math.sin(angle)
+		const strokePadding = 2.5 / 2
+		for (const [x, y] of [
+			[0, 0],
+			[-10, -5.5],
+			[-10, 5.5],
+		]) {
+			const arrowX = geometry.arrowTip.x + x * cos - y * sin
+			const arrowY = geometry.arrowTip.y + x * sin + y * cos
+			left = Math.min(left, arrowX - strokePadding)
+			right = Math.max(right, arrowX + strokePadding)
+			top = Math.min(top, arrowY - strokePadding)
+			bottom = Math.max(bottom, arrowY + strokePadding)
+		}
+	}
+
+	return [left, right, top, bottom].every(Number.isFinite) ? { left, right, top, bottom } : null
+}
+
+export function getConnectorVisualBounds(
+	shape: Connector,
+	from: CanvasShape,
+	to: CanvasShape,
+): ConnectorBounds | null {
+	try {
+		return connectorVisualBounds(getConnectorVisualGeometry(shape, from, to))
+	} catch (error) {
+		if (error instanceof RangeError) return null
+		throw error
+	}
 }
 
 export function getConnectorPath(shape: Connector, from: CanvasShape, to: CanvasShape): string {

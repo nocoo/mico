@@ -1,7 +1,7 @@
 import type React from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
 import { ConnectorHead } from './ConnectorHead'
-import { connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
+import { connectorHitPath, connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
 import { jellyStyle } from './jelly'
 import './canvas-entry.css'
 
@@ -46,7 +46,7 @@ export function ConnectorView({
 		>
 			<path
 				className="connector-hit e-hit"
-				d={path}
+				d={connectorHitPath(geometry)}
 				fill="none"
 				stroke="transparent"
 				strokeWidth={16}
