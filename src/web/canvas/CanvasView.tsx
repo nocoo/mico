@@ -58,28 +58,6 @@ export function CanvasView({
 			style={style}
 			onLostPointerCapture={onLostPointerCapture}
 		>
-			<defs>
-				<marker
-					id="arrow"
-					viewBox="-10 -5.5 10 11"
-					refX="-9"
-					refY="0"
-					markerWidth="10"
-					markerHeight="11"
-					markerUnits="userSpaceOnUse"
-					orient="auto-start-reverse"
-					overflow="visible"
-				>
-					<path
-						className="e-head"
-						d="M0 0L-10 -5.5L-10 5.5Z"
-						fill="context-stroke"
-						stroke="context-stroke"
-						strokeWidth="2.5"
-						strokeLinejoin="round"
-					/>
-				</marker>
-			</defs>
 			<g
 				data-world-layer="true"
 				transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.zoom})`}

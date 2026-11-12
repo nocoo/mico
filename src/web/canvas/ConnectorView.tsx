@@ -1,5 +1,6 @@
 import type React from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
+import { ConnectorHead } from './ConnectorHead'
 import { connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
 import { jellyStyle } from './jelly'
 
@@ -45,10 +46,9 @@ export function ConnectorView({
 				stroke="currentColor"
 				strokeWidth={selected ? 5 : 3}
 				strokeLinecap="round"
-				markerEnd={geometry.showArrow ? 'url(#arrow)' : undefined}
-				vectorEffect="non-scaling-stroke"
 				filter={selected ? 'drop-shadow(0 0 4px currentColor)' : undefined}
 			/>
+			<ConnectorHead geometry={geometry} />
 		</g>
 	)
 }

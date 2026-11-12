@@ -1,6 +1,7 @@
 import type React from 'react'
 import type { CanvasShape, Connector, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
+import { ConnectorHead } from './canvas/ConnectorHead'
 import {
 	connectorPath,
 	createConnectorGeometry,
@@ -81,22 +82,25 @@ export function ConnectionOverlay({
 	return (
 		<>
 			{previewGeometry && draft && (
-				<path
-					className="connection-preview e-line"
-					d={connectorPath(previewGeometry)}
-					fill="none"
-					stroke="currentColor"
-					strokeWidth={3}
-					strokeLinecap="round"
+				<g
+					className="connection-preview"
 					style={{
 						...jellyStyle(draft.original?.color ?? CANDY_LAYOUT.connector),
 						color: 'var(--j-edge)',
 					}}
-					strokeDasharray={draft.target ? undefined : '8 8'}
-					vectorEffect="non-scaling-stroke"
-					markerEnd={previewGeometry.showArrow ? 'url(#arrow)' : undefined}
 					pointerEvents="none"
-				/>
+				>
+					<path
+						className="e-line"
+						d={connectorPath(previewGeometry)}
+						fill="none"
+						stroke="currentColor"
+						strokeWidth={3}
+						strokeLinecap="round"
+						strokeDasharray={draft.target ? undefined : '8 8'}
+					/>
+					<ConnectorHead geometry={previewGeometry} />
+				</g>
 			)}
 			{target && draft && !draft.pending && (
 				<g className="snap-target" data-snap-target={target.id} pointerEvents="none">

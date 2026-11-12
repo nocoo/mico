@@ -139,6 +139,70 @@ for (const item of [
 	})
 }
 
+test('connector matches the original prototype between aligned nodes', async ({
+	page,
+	context,
+	request,
+	baseURL,
+}) => {
+	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	await resetBoard(request, [
+		{
+			id: 'from',
+			type: 'rectangle',
+			x: 560,
+			y: 130,
+			w: 196,
+			h: 66,
+			color: '#00a2e1',
+			text: 'Start',
+		},
+		{ id: 'to', type: 'rectangle', x: 790, y: 130, w: 196, h: 66, color: '#00a2e1', text: 'End' },
+		{
+			id: 'edge',
+			type: 'connector',
+			from: 'from',
+			to: 'to',
+			fromAnchor: 3,
+			toAnchor: 2,
+			color: '#00a2e1',
+		},
+	])
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await page.goto('/')
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	await page.addStyleTag({
+		content:
+			'.app, .canvas-backdrop { background: white !important; } .canvas-aurora, .canvas-grain { display: none !important; } svg.canvas { background-image: none !important; } .canvas-shape:not(.connector) { visibility: hidden !important; }',
+	})
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
+	await reference.goto(
+		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/teams-ai-whiteboard.html')).href,
+	)
+	try {
+		await reference.addStyleTag({
+			content:
+				'.aurora, .grain, #els, #ink, #aicur { display: none !important; } #stage { background: white !important; } #world { transform: translate(0, 0) scale(1) !important; }',
+		})
+		await reference.locator('#hero-skip').click()
+		await expect(reference.locator('#edges .edge')).not.toHaveCount(0)
+		const clip = { x: 748, y: 142, width: 54, height: 42 }
+		const expected = await reference.screenshot({ clip, animations: 'disabled' })
+		const actual = await page.screenshot({ clip, animations: 'disabled' })
+		const diff = await differingPixels(page, expected, actual)
+		expect(
+			diff.different / diff.total,
+			`${diff.different}/${diff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.001)
+	} finally {
+		await reference.close()
+	}
+})
+
 test('labelled flow node matches the original prototype', async ({
 	page,
 	context,
