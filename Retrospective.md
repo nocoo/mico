@@ -12,6 +12,7 @@
 
 ## Tool usage
 
+- Ran a full TypeScript check while a delegated view extraction was between edits, producing missing-prop errors from an uncommitted intermediate state. Wait for the worker's atomic commit before validating the integrated tree.
 - Started an isolated screenshot test while a worker was mid-editing `App.tsx`; Vite hot-reloaded an intermediate state and the test failed for an unrelated missing import. Freeze all production edits before browser probes, even for an expected-failure baseline, and rerun after workers commit.
 - A delegated canvas worker used `find` despite the machine's `fd` rule. Require `fd` and `rg` explicitly for all delegated file discovery and check worker command logs during execution.
 - A dropdown keyboard test sent ArrowDown before Radix finished moving focus into the menu, so Enter selected the original item. Wait for the focused option and its next focus transition before asserting the selected value.
