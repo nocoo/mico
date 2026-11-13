@@ -15,6 +15,8 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_SYSTEM_PROMPT, /subject-specific headings/)
 	assert.match(AI_SYSTEM_PROMPT, /Revise it with update_shapes/i)
 	assert.match(AI_SYSTEM_PROMPT, /Consolidate closely related facts of the same category/)
+	assert.match(AI_SYSTEM_PROMPT, /Set label to a concise category/)
+	assert.match(AI_SYSTEM_PROMPT, /purple region heading/)
 	assert.match(AI_SYSTEM_PROMPT, /preserving values, units, time periods and qualifiers/)
 	assert.match(AI_SYSTEM_PROMPT, /Prioritize a few meaningful relationships/)
 	assert.match(AI_SYSTEM_PROMPT, /Do not invent a link just to connect a node/)

@@ -248,6 +248,8 @@ test('MOSS compact context is deterministic and bounded for large boards and sel
 		/evidence, supported logic, and a final summary from left to right/,
 	)
 	assert.match(first.instructions, /pale category notes/)
+	assert.match(first.instructions, /note's label chip/)
+	assert.match(first.instructions, /purple region heading/)
 	assert.match(first.instructions, /call get_board with the target ids for full text/)
 	assert.match(first.instructions, /include_html: true/)
 	assert.match(first.instructions, /Reusable HTML card design/)
