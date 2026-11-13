@@ -22,6 +22,8 @@
 
 ## Tool usage
 
+- A multi-pattern `fd` invocation treated later patterns as search paths, and guessed global rule paths ignored the `AGENTS.md` symlink. Resolve that symlink first and use one explicit regex for filename discovery before opening the resulting paths.
+- The first copyable HTML template inherited Bootstrap's opaque body background, hiding the card's rounded surface, and its browser test was absent from the CI subset. Verify the actual sandbox cascade on a non-white canvas, assert key visual properties, and add new browser contracts to the gated command.
 - A canvas pan regression used the lower-left corner, which became an interactive minimap hit area. Keep canvas gestures outside fixed chrome rather than treating minimap navigation as a canvas-pan failure; retain the exact endpoint delta assertions. Bottom-aligning the minimap also requires reserving horizontal toolbar space, not just changing its bottom inset.
 - A minimap layout effect ran before a later sibling attached the canvas ref, so measurement never started and the viewport remained a tiny dot. Visibility-only navigation tests passed. Measure after sibling refs attach, observe frame layout changes after commit rather than reading stale DOM during render, and assert viewport dimensions and actual click centering; inspect screenshots in addition to test status.
 - A history shortcut test pressed Redo as soon as the board changed, before the queued request settled and enabled the control. Wait for the relevant history button's enabled state, not just the board response or another disabled button, before sending the next shortcut.
