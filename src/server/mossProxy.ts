@@ -18,6 +18,7 @@ export type MossUpstreamFactory = (url: string, options: MossUpstreamOptions) =>
 export interface MossRealtimeProxyOptions {
 	url: string
 	apiKey: string
+	allowedOrigin?: string
 	createUpstream?: MossUpstreamFactory
 	maxPayload?: number
 	maxBufferedBytes?: number
@@ -26,8 +27,20 @@ export interface MossRealtimeProxyOptions {
 export function isMossUpgradeAllowed(
 	originHeader: string | undefined,
 	hostHeader: string | undefined,
+	allowedOrigin?: string,
 ): boolean {
 	if (!originHeader || !hostHeader) return false
+	if (allowedOrigin) {
+		let allowed: URL
+		try {
+			allowed = new URL(allowedOrigin)
+		} catch {
+			return false
+		}
+		return (
+			originHeader === allowed.origin && hostHeader.toLowerCase() === allowed.host.toLowerCase()
+		)
+	}
 	let origin: URL
 	try {
 		origin = new URL(originHeader)
@@ -130,7 +143,7 @@ export function createMossProxy(options: MossRealtimeProxyOptions): {
 			return
 		}
 		if (pathname !== MOSS_LOCAL_PATH) return
-		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host)) {
+		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host, options.allowedOrigin)) {
 			socket.destroy()
 			return
 		}

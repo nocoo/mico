@@ -1,15 +1,18 @@
-import { statSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { LanguageModel } from 'ai'
+import type { JWTVerifyGetKey } from 'jose'
 import serveStatic from 'serve-static'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
+import { loadRuntimeConfig, publicRuntimeContract, type RuntimeConfig } from '../shared/runtime.ts'
 import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } from './ai.ts'
 import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
+import { AuthManager } from './auth.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
 import { createMaiProxy, MAI_CONFIG_PATH, MAI_LOCAL_PATH } from './maiProxy.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
@@ -77,6 +80,37 @@ function readJson(req: IncomingMessage, allowRestore = false): Promise<unknown> 
 						? error
 						: new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'),
 				)
+			}
+		})
+		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
+		req.on('error', (error) => reject(error))
+	})
+}
+
+const MAX_AUTH_JSON_BYTES = 64 * 1024
+
+function readAuthJson(req: IncomingMessage): Promise<unknown> {
+	return new Promise((resolveBody, reject) => {
+		const chunks: Buffer[] = []
+		let size = 0
+		let tooLarge = false
+		req.on('data', (chunk: Buffer) => {
+			if (tooLarge) return
+			size += chunk.length
+			if (size > MAX_AUTH_JSON_BYTES) {
+				tooLarge = true
+				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 64 KB'))
+				return
+			}
+			chunks.push(chunk)
+		})
+		req.on('end', () => {
+			if (tooLarge) return
+			try {
+				const text = Buffer.concat(chunks).toString('utf8')
+				resolveBody(text.length === 0 ? undefined : JSON.parse(text))
+			} catch {
+				reject(new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'))
 			}
 		})
 		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
@@ -189,6 +223,7 @@ function knownPath(pathname: string): boolean {
 	if (segments.length === 2) {
 		return [
 			'live',
+			'runtime',
 			'state',
 			'board',
 			'operations',
@@ -196,10 +231,12 @@ function knownPath(pathname: string): boolean {
 			'canvases',
 			'images',
 			'active-canvas',
+			'auth',
 		].includes(segments[1])
 	}
 	if (segments.length === 3) {
 		return (
+			(segments[1] === 'auth' && ['session', 'logout'].includes(segments[2])) ||
 			segments[1] === 'canvases' ||
 			segments[1] === 'images' ||
 			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
@@ -211,6 +248,7 @@ function knownPath(pathname: string): boolean {
 
 export interface Daemon {
 	server: ReturnType<typeof createServer>
+	runtimeConfig: RuntimeConfig
 	store: BoardStore
 	aiSettings: AiSettingsStore
 	imageGeneration: ImageGenerationService
@@ -228,9 +266,11 @@ export function createDaemon(
 		createAiModel?: (settings: ChatSettings) => LanguageModel
 		imageGenerator?: ImageGenerator
 		staticDir?: string
+		authJwksResolver?: JWTVerifyGetKey
 	} = {},
 ): Daemon {
 	const env = options.env ?? process.env
+	const runtimeConfig = loadRuntimeConfig(env)
 	const port = options.port ?? parsePort(env)
 	const config = loadAiConfig(env)
 	if (options.staticDir && !statSync(resolve(options.staticDir, 'index.html')).isFile()) {
@@ -243,8 +283,14 @@ export function createDaemon(
 				setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
 			})
 		: undefined
-	const mai = assets ? createMaiProxy(config.mai) : undefined
-	const moss = assets ? createMossProxy(config.moss) : undefined
+	const mai =
+		runtimeConfig.aiEnabled && assets
+			? createMaiProxy({ ...config.mai, allowedOrigin: runtimeConfig.publicOrigin })
+			: undefined
+	const moss =
+		runtimeConfig.aiEnabled && assets
+			? createMossProxy({ ...config.moss, allowedOrigin: runtimeConfig.publicOrigin })
+			: undefined
 	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
 	const settingsPath = options.settingsPath
@@ -252,10 +298,12 @@ export function createDaemon(
 		path: settingsPath ?? AI_SETTINGS_PATH,
 		config,
 		persist: settingsPath !== undefined || options.aiModel === undefined,
+		aiEnabled: runtimeConfig.aiEnabled,
 	})
 	const aiModel = options.aiModel
 	const modelFactory = options.createAiModel ?? createMagpieModel
 	const wss = new WebSocketServer({ noServer: true })
+	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
 
 	const broadcast = (event: unknown): void => {
 		const payload = JSON.stringify(event)
@@ -269,10 +317,34 @@ export function createDaemon(
 		env,
 	})
 
-	function isAllowedHost(host: string | undefined): boolean {
+	function isAllowedHost(host: string | undefined, pathname: string): boolean {
+		if (runtimeConfig.publicOrigin) {
+			const publicUrl = new URL(runtimeConfig.publicOrigin)
+			if (host?.toLowerCase() === publicUrl.host.toLowerCase()) return true
+			if (pathname === '/api/live' && host) {
+				const address = server.address()
+				const listeningPort = address && typeof address !== 'string' ? address.port : port
+				if (host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`)
+					return true
+			}
+			return false
+		}
 		const address = server.address()
 		const listeningPort = address && typeof address !== 'string' ? address.port : port
 		return host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`
+	}
+
+	function isAllowedOrigin(origin: string | undefined): boolean {
+		if (runtimeConfig.publicOrigin) return origin === runtimeConfig.publicOrigin
+		return origin !== undefined && ALLOWED_ORIGINS.has(origin)
+	}
+
+	function canonicalRequestOrigin(req: IncomingMessage): string | undefined {
+		return typeof req.headers.origin === 'string' ? req.headers.origin : undefined
+	}
+
+	function sendAiDisabled(res: ServerResponse, origin?: string): void {
+		sendError(res, 503, 'AI_DISABLED', 'AI features are disabled', origin)
 	}
 
 	const broadcastState = (state = store.getState()): void => {
@@ -289,24 +361,24 @@ export function createDaemon(
 	}
 
 	const server = createServer(async (req, res) => {
-		if (!isAllowedHost(req.headers.host)) {
-			sendError(res, 403, 'FORBIDDEN_HOST', 'Host is not allowed')
-			return
-		}
-
-		const origin = req.headers.origin
-		if (origin && !ALLOWED_ORIGINS.has(origin)) {
-			sendError(res, 403, 'FORBIDDEN_ORIGIN', 'Origin is not allowed', origin)
-			return
-		}
-
 		let pathname: string
 		let requestUrl: URL
 		try {
 			requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1')
 			pathname = requestUrl.pathname
 		} catch {
-			sendError(res, 400, 'INVALID_REQUEST', 'Invalid request URL', origin)
+			sendError(res, 400, 'INVALID_REQUEST', 'Invalid request URL')
+			return
+		}
+
+		if (!isAllowedHost(req.headers.host, pathname)) {
+			sendError(res, 403, 'FORBIDDEN_HOST', 'Host is not allowed')
+			return
+		}
+
+		const origin = canonicalRequestOrigin(req)
+		if (origin && !isAllowedOrigin(origin)) {
+			sendError(res, 403, 'FORBIDDEN_ORIGIN', 'Origin is not allowed', origin)
 			return
 		}
 		const includePreviews = requestUrl.searchParams.get('previews') !== '0'
@@ -324,7 +396,7 @@ export function createDaemon(
 				sendError(res, 404, 'NOT_FOUND', 'Endpoint not found', origin)
 				return
 			}
-			if (origin && ALLOWED_ORIGINS.has(origin)) {
+			if (origin && isAllowedOrigin(origin)) {
 				res.setHeader('Access-Control-Allow-Origin', origin)
 				res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
@@ -336,7 +408,189 @@ export function createDaemon(
 		}
 
 		try {
-			if (assets && pathname === MAI_CONFIG_PATH) {
+			if (isPath('api', 'runtime')) {
+				res.setHeader('Cache-Control', 'no-store')
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendJson(res, 200, publicRuntimeContract(runtimeConfig), origin)
+				return
+			}
+
+			if (isPath('api', 'auth', 'session')) {
+				res.setHeader('Cache-Control', 'no-store')
+				if (req.method === 'GET') {
+					if (runtimeConfig.auth.mode === 'entra') {
+						const session = auth.getSession(req)
+						if (!session) {
+							sendError(res, 401, 'UNAUTHENTICATED', 'Authentication required', origin)
+							return
+						}
+						sendJson(
+							res,
+							200,
+							{ user: { name: session.name, expiresAt: session.expiresAt } },
+							origin,
+						)
+						return
+					}
+					sendJson(res, 200, { user: null }, origin)
+					return
+				}
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'GET, POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				if (runtimeConfig.auth.mode !== 'entra') {
+					res.writeHead(204)
+					res.end()
+					return
+				}
+				if (!origin || !isAllowedOrigin(origin)) {
+					sendError(
+						res,
+						403,
+						'FORBIDDEN_ORIGIN',
+						'Origin is required and must match the public origin',
+						origin,
+					)
+					return
+				}
+				const contentType =
+					typeof req.headers['content-type'] === 'string'
+						? req.headers['content-type'].split(';', 1)[0].trim().toLowerCase()
+						: ''
+				if (contentType !== 'application/json') {
+					sendError(
+						res,
+						415,
+						'UNSUPPORTED_MEDIA_TYPE',
+						'Content-Type must be application/json',
+						origin,
+					)
+					return
+				}
+				const body = await readAuthJson(req)
+				if (
+					!isRecord(body) ||
+					Object.keys(body).length !== 1 ||
+					typeof body.id_token !== 'string'
+				) {
+					throw new OperationError(400, 'INVALID_REQUEST', 'id_token must be a string')
+				}
+				const user = await auth.verifyIdToken(body.id_token)
+				const token = auth.issueSession(user.name, user.expiresAt)
+				auth.setSessionCookie(res, token, user.expiresAt)
+				res.writeHead(204)
+				res.end()
+				return
+			}
+
+			if (isPath('api', 'auth', 'logout')) {
+				res.setHeader('Cache-Control', 'no-store')
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				if (
+					(runtimeConfig.auth.mode === 'entra' || runtimeConfig.publicOrigin) &&
+					(!origin || !isAllowedOrigin(origin))
+				) {
+					sendError(
+						res,
+						403,
+						'FORBIDDEN_ORIGIN',
+						'Origin is required and must match the public origin',
+						origin,
+					)
+					return
+				}
+				auth.revokeRequest(req)
+				auth.clearSessionCookie(res)
+				res.writeHead(204)
+				res.end()
+				return
+			}
+
+			if (
+				(runtimeConfig.auth.mode === 'entra' || runtimeConfig.publicOrigin) &&
+				(req.method === 'POST' ||
+					req.method === 'PUT' ||
+					req.method === 'PATCH' ||
+					req.method === 'DELETE') &&
+				(!origin || !isAllowedOrigin(origin))
+			) {
+				sendError(
+					res,
+					403,
+					'FORBIDDEN_ORIGIN',
+					'Origin is required and must match the canonical origin',
+					origin,
+				)
+				return
+			}
+
+			if (runtimeConfig.auth.mode === 'entra') {
+				const session = auth.getSession(req)
+				if (pathname !== '/api/live' && !session) {
+					if (
+						pathname.startsWith('/api/') ||
+						pathname.startsWith('/mai/') ||
+						pathname === '/moss'
+					) {
+						sendError(res, 401, 'UNAUTHENTICATED', 'Authentication required', origin)
+						return
+					}
+				}
+			}
+
+			if (
+				runtimeConfig.auth.mode === 'entra' &&
+				req.method === 'GET' &&
+				(pathname === '/login' || pathname === '/auth/callback')
+			) {
+				if (assets) {
+					res.writeHead(200, {
+						'Content-Type': 'text/html; charset=utf-8',
+						'Cache-Control': 'no-store',
+					})
+					res.end(readFileSync(resolve(options.staticDir as string, 'index.html')))
+					return
+				}
+				sendError(res, 404, 'NOT_FOUND', 'Built index.html is not configured', origin)
+				return
+			}
+
+			const publicAsset =
+				pathname.startsWith('/assets/') || /(?:^|\/)(?:favicon|logo)[^/]*$/i.test(pathname)
+			if (
+				runtimeConfig.auth.mode === 'entra' &&
+				assets &&
+				(req.method === 'GET' || req.method === 'HEAD') &&
+				!pathname.startsWith('/api/') &&
+				!publicAsset
+			) {
+				if (!auth.getSession(req)) {
+					res.writeHead(302, { Location: '/login', 'Cache-Control': 'no-store' })
+					res.end()
+					return
+				}
+			}
+
+			if (runtimeConfig.aiEnabled === false && pathname === MAI_CONFIG_PATH) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendAiDisabled(res, origin)
+				return
+			}
+			if (runtimeConfig.aiEnabled && assets && pathname === MAI_CONFIG_PATH) {
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -449,7 +703,7 @@ export function createDaemon(
 				if (!asset) {
 					throw new OperationError(404, 'NOT_FOUND', 'Image not found')
 				}
-				if (origin && ALLOWED_ORIGINS.has(origin)) {
+				if (origin && isAllowedOrigin(origin)) {
 					res.setHeader('Access-Control-Allow-Origin', origin)
 					res.setHeader('Vary', 'Origin')
 				}
@@ -527,6 +781,10 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'moss', 'session')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -543,6 +801,10 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'moss', 'tool')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -574,6 +836,10 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'ai', 'models')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -585,6 +851,10 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'ai', 'chat')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -651,23 +921,46 @@ export function createDaemon(
 	})
 
 	server.on('upgrade', (req, socket, head) => {
-		if (!isAllowedHost(req.headers.host)) {
+		let pathname: string
+		try {
+			pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
+		} catch {
+			socket.destroy()
+			return
+		}
+		if (!isAllowedHost(req.headers.host, pathname)) {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return
 		}
 
 		const origin = req.headers.origin
-		if (origin && !ALLOWED_ORIGINS.has(origin)) {
+		if (
+			(runtimeConfig.auth.mode === 'entra' || runtimeConfig.publicOrigin) &&
+			(!origin || !isAllowedOrigin(origin))
+		) {
+			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
+			socket.destroy()
+			return
+		}
+		if (origin && !isAllowedOrigin(origin)) {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return
 		}
 
-		let pathname: string
-		try {
-			pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
-		} catch {
+		if (runtimeConfig.auth.mode === 'entra') {
+			const session = auth.getSession(req)
+			if (!session) {
+				socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')
+				socket.destroy()
+				return
+			}
+			void session
+		}
+
+		if (!runtimeConfig.aiEnabled && (pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)) {
+			socket.write('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return
 		}
@@ -686,6 +979,7 @@ export function createDaemon(
 		}
 
 		wss.handleUpgrade(req, socket, head, (socket) => {
+			if (runtimeConfig.auth.mode === 'entra') auth.attachSocket(req, socket)
 			wss.emit('connection', socket, req)
 		})
 	})
@@ -693,12 +987,14 @@ export function createDaemon(
 	let closing: Promise<void> | undefined
 	return {
 		server,
+		runtimeConfig,
 		store,
 		aiSettings,
 		imageGeneration,
 		wss,
 		close(): Promise<void> {
 			closing ??= new Promise<void>((resolveClose) => {
+				auth.close()
 				const timeout = setTimeout(() => server.closeAllConnections(), 5000)
 				timeout.unref()
 				server.close(() => {

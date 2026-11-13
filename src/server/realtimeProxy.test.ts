@@ -7,7 +7,7 @@ import { test } from 'node:test'
 import WebSocket, { WebSocketServer } from 'ws'
 import { DEFAULT_MOSS_URL, loadAiConfig } from './aiConfig.ts'
 import { createMaiProxy, MAI_LOCAL_PATH } from './maiProxy.ts'
-import { createMossProxy, MOSS_LOCAL_PATH } from './mossProxy.ts'
+import { createMossProxy, isMossUpgradeAllowed, MOSS_LOCAL_PATH } from './mossProxy.ts'
 
 const ALLOWED_ORIGIN = 'http://127.0.0.1:7063'
 const ALLOWED_HOST = '127.0.0.1:7063'
@@ -48,6 +48,12 @@ async function expectRejectedUpgrade(url: string, path: string): Promise<void> {
 		client.once('error', () => resolve())
 	})
 }
+
+test('configured hosted origin is accepted while arbitrary origins are rejected', () => {
+	assert.equal(isMossUpgradeAllowed('https://mico.test', 'mico.test', 'https://mico.test'), true)
+	assert.equal(isMossUpgradeAllowed('https://evil.test', 'mico.test', 'https://mico.test'), false)
+	assert.equal(isMossUpgradeAllowed('https://mico.test', 'evil.test', 'https://mico.test'), false)
+})
 
 test('realtime factories are reusable outside Vite and reject missing credentials', async () => {
 	let maiUpstreamCalls = 0

@@ -94,6 +94,21 @@ export function loadRuntimeEnv(
 
 export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 	const runtime = runtimeMode(env)
+	const aiEnabledRaw = env.MICO_AI_ENABLED?.trim()
+	if (aiEnabledRaw && aiEnabledRaw !== 'true' && aiEnabledRaw !== 'false') {
+		throw new Error('MICO_AI_ENABLED must be true or false')
+	}
+	const aiEnabled = aiEnabledRaw !== 'false'
+	if (!aiEnabled) {
+		return {
+			runtime,
+			chat: { baseURL: '', model: '', apiKey: '' },
+			lectureReasoning: 'none',
+			mai: { host: '', apiKey: '', deployment: '' },
+			image: { endpoint: '', apiKey: '', model: DEFAULT_IMAGE_MODEL },
+			moss: { url: '', apiKey: '' },
+		}
+	}
 	const local = runtime === 'laptop'
 	const baseURL = env.MAGPIE_BASE_URL?.trim() || (local ? DEFAULT_CHAT_BASE_URL : '')
 	const model = env.MAGPIE_MODEL?.trim() || (local ? DEFAULT_CHAT_MODEL : '')

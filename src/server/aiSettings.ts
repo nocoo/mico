@@ -20,6 +20,7 @@ export interface AiSettingsStoreOptions {
 	path?: string
 	config?: AiConfig
 	persist?: boolean
+	aiEnabled?: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -68,15 +69,18 @@ export class AiSettingsStore {
 	private readonly readOnly: boolean
 	private readonly path: string
 	private readonly persist: boolean
+	private readonly aiEnabled: boolean
 	private loadError = false
 
 	constructor({
 		path = AI_SETTINGS_PATH,
 		config = loadAiConfig(),
 		persist = true,
+		aiEnabled = true,
 	}: AiSettingsStoreOptions = {}) {
 		this.path = path
-		this.readOnly = config.runtime === 'deploy'
+		this.aiEnabled = aiEnabled
+		this.readOnly = config.runtime === 'deploy' || !aiEnabled
 		this.persist = persist && !this.readOnly
 		this.settings = { ...config.chat }
 		if (!this.persist) return
@@ -133,9 +137,11 @@ export class AiSettingsStore {
 	async update(body: unknown): Promise<PublicAiSettings> {
 		if (this.readOnly) {
 			throw new OperationError(
-				403,
-				'AI_SETTINGS_READ_ONLY',
-				'AI settings are managed by the deployment environment',
+				this.aiEnabled ? 403 : 503,
+				this.aiEnabled ? 'AI_SETTINGS_READ_ONLY' : 'AI_DISABLED',
+				this.aiEnabled
+					? 'AI settings are managed by the deployment environment'
+					: 'AI features are disabled',
 			)
 		}
 		if (!isRecord(body)) invalid('request must be an object')

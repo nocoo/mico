@@ -12,6 +12,7 @@ export interface MaiProxyOptions {
 	host: string
 	apiKey: string
 	deployment: string
+	allowedOrigin?: string
 	createUpstream?: (url: string, options: { headers: { 'api-key': string } }) => WebSocket
 	onError?: (error: Error) => void
 }
@@ -40,7 +41,7 @@ export function createMaiProxy(options: MaiProxyOptions): {
 			return
 		}
 		if (pathname !== MAI_LOCAL_PATH) return
-		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host)) {
+		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host, options.allowedOrigin)) {
 			socket.destroy()
 			return
 		}
