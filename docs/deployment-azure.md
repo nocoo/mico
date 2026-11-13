@@ -19,21 +19,21 @@ The preview has **no durability promise**. Replacing the replica can erase every
 
 Keep configuration in a private file outside the repository, such as `$HOME/.config/mico/deploy/azure-preview.env`, with owner-only permissions. Export these values before invoking scripts; no default subscription, resource group or tenant is embedded in code.
 
-| Variable | Required value |
-| --- | --- |
-| `MICO_AZ_SUBSCRIPTION_ID` | Subscription that owns the existing resource group |
-| `MICO_AZ_TENANT_ID` | Tenant owning that subscription; used for preflight, not login |
-| `MICO_AZ_RESOURCE_GROUP` | Existing resource group name |
-| `MICO_AZ_LOCATION` | Resource group location; resources are created there |
-| `MICO_AZ_REGISTRY` | Globally unique lowercase alphanumeric ACR name |
-| `MICO_AZ_IDENTITY` | User-assigned managed identity name |
-| `MICO_AZ_ENVIRONMENT` | Container Apps environment name |
-| `MICO_AZ_APP` | Container App name |
-| `MICO_AUTH_MODE` | Explicitly `entra` or `none`; there is no implicit choice in the Azure adapter |
-| `MICO_AUTH_TENANT_ID` | With Entra: login tenant, which may differ from the resource tenant |
-| `MICO_AUTH_CLIENT_ID` | With Entra: SPA application client ID |
-| `MICO_AUTH_ALLOWED_OBJECT_IDS` | With Entra: comma-separated user object IDs from the login tenant |
-| `NPM_REGISTRY` | Optional reachable build registry; defaults to the Microsoft npm mirror |
+| Variable                       | Required value                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `MICO_AZ_SUBSCRIPTION_ID`      | Subscription that owns the existing resource group                             |
+| `MICO_AZ_TENANT_ID`            | Tenant owning that subscription; used for preflight, not login                 |
+| `MICO_AZ_RESOURCE_GROUP`       | Existing resource group name                                                   |
+| `MICO_AZ_LOCATION`             | Resource group location; resources are created there                           |
+| `MICO_AZ_REGISTRY`             | Globally unique lowercase alphanumeric ACR name                                |
+| `MICO_AZ_IDENTITY`             | User-assigned managed identity name                                            |
+| `MICO_AZ_ENVIRONMENT`          | Container Apps environment name                                                |
+| `MICO_AZ_APP`                  | Container App name                                                             |
+| `MICO_AUTH_MODE`               | Explicitly `entra` or `none`; there is no implicit choice in the Azure adapter |
+| `MICO_AUTH_TENANT_ID`          | With Entra: login tenant, which may differ from the resource tenant            |
+| `MICO_AUTH_CLIENT_ID`          | With Entra: SPA application client ID                                          |
+| `MICO_AUTH_ALLOWED_OBJECT_IDS` | With Entra: comma-separated user object IDs from the login tenant              |
+| `NPM_REGISTRY`                 | Optional reachable build registry; defaults to the Microsoft npm mirror        |
 
 Do not put real values in tracked `.env.example`, scripts or documentation. The build uses a Git archive of the committed revision, not the working directory; local environment files and untracked files never enter the image build context.
 

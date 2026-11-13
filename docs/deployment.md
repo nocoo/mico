@@ -4,13 +4,13 @@ Mico has one Node.js container runtime. Hosting provider, authentication and AI 
 
 ## Choose a host
 
-| Option | Current path | Data and operational trade-offs |
-| --- | --- | --- |
-| Local Docker | `docker compose up --build -d --wait`; [guide](docker.md) | Loopback only. Named volumes retain SQLite and local settings. |
-| Azure Container Apps | [Azure preview guide](deployment-azure.md), automated provision/build/deploy | HTTPS, ACR and managed-identity image pull. The first cloud preview intentionally uses ephemeral SQLite, one replica and no AI. |
-| VM or another container host | Run the same image behind an HTTPS reverse proxy; set the environment below | A local persistent disk can retain SQLite. Operator owns TLS termination, updates and backups. No Azure-specific application changes required. |
-| Cloudflare in front of a container | Proxy the public hostname to an existing container host, or use a Tunnel to that host | The container still runs Node and owns SQLite. Configure its canonical HTTPS origin; prevent any unintended alternate-origin access. No Cloudflare automation or acceptance test is included yet. |
-| Cloudflare-native runtime | Future adapter, not an available deployment command | Workers/Pages cannot run this Node HTTP/WebSocket server and `node:sqlite` unchanged. Workers + Durable Objects/D1 or Cloudflare Containers require separate lifecycle/storage integration and validation. |
+| Option                             | Current path                                                                          | Data and operational trade-offs                                                                                                                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local Docker                       | `docker compose up --build -d --wait`; [guide](docker.md)                             | Loopback only. Named volumes retain SQLite and local settings.                                                                                                                                             |
+| Azure Container Apps               | [Azure preview guide](deployment-azure.md), automated provision/build/deploy          | HTTPS, ACR and managed-identity image pull. The first cloud preview intentionally uses ephemeral SQLite, one replica and no AI.                                                                            |
+| VM or another container host       | Run the same image behind an HTTPS reverse proxy; set the environment below           | A local persistent disk can retain SQLite. Operator owns TLS termination, updates and backups. No Azure-specific application changes required.                                                             |
+| Cloudflare in front of a container | Proxy the public hostname to an existing container host, or use a Tunnel to that host | The container still runs Node and owns SQLite. Configure its canonical HTTPS origin; prevent any unintended alternate-origin access. No Cloudflare automation or acceptance test is included yet.          |
+| Cloudflare-native runtime          | Future adapter, not an available deployment command                                   | Workers/Pages cannot run this Node HTTP/WebSocket server and `node:sqlite` unchanged. Workers + Durable Objects/D1 or Cloudflare Containers require separate lifecycle/storage integration and validation. |
 
 A successful Azure deployment does not establish support for untested providers. Do not copy Azure infrastructure settings into application code to add another host.
 
@@ -18,16 +18,16 @@ A successful Azure deployment does not establish support for untested providers.
 
 The image serves UI, API and WebSocket traffic on one port. The reverse proxy must preserve the configured public `Host`, support WebSocket upgrades and stream responses without buffering. Terminate TLS at the hosting edge and keep the container port inaccessible except through that edge.
 
-| Variable | Meaning |
-| --- | --- |
-| `MICO_RUNTIME` | `laptop` (default): local environment/settings sources. `deploy`: process environment only; AI Settings are read-only. This does **not** select an authentication mode. |
-| `MICO_HOST` / `MICO_PORT` | Bind address and port. The image defaults to `0.0.0.0:47063`. |
-| `MICO_STATIC_DIR` | Built frontend directory; `/app/dist` in the image. |
-| `MICO_DB_PATH` | SQLite path; choose a writable local filesystem. The Azure preview uses `/tmp/mico/board.sqlite`. |
-| `MICO_PUBLIC_ORIGIN` | Exact canonical public HTTPS origin, with no path/query/fragment. Required for Entra login. Host/Origin checks use it rather than trusting forwarded headers. |
-| `MICO_AUTH_MODE` | `none` (default) or `entra`. Optional and independent of runtime/hosting provider. |
-| `MICO_AI_ENABLED` | `true` (default) or `false`. False disables AI/voice/image-generation entrypoints and removes the requirement for Chat provider configuration. Manual drawing and image uploads still work. |
-| `MICO_EPHEMERAL` | `true` displays the temporary-data warning. Default false. This is a notice, not a persistence implementation. |
+| Variable                  | Meaning                                                                                                                                                                                     |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MICO_RUNTIME`            | `laptop` (default): local environment/settings sources. `deploy`: process environment only; AI Settings are read-only. This does **not** select an authentication mode.                     |
+| `MICO_HOST` / `MICO_PORT` | Bind address and port. The image defaults to `0.0.0.0:47063`.                                                                                                                               |
+| `MICO_STATIC_DIR`         | Built frontend directory; `/app/dist` in the image.                                                                                                                                         |
+| `MICO_DB_PATH`            | SQLite path; choose a writable local filesystem. The Azure preview uses `/tmp/mico/board.sqlite`.                                                                                           |
+| `MICO_PUBLIC_ORIGIN`      | Exact canonical public HTTPS origin, with no path/query/fragment. Required for Entra login. Host/Origin checks use it rather than trusting forwarded headers.                               |
+| `MICO_AUTH_MODE`          | `none` (default) or `entra`. Optional and independent of runtime/hosting provider.                                                                                                          |
+| `MICO_AI_ENABLED`         | `true` (default) or `false`. False disables AI/voice/image-generation entrypoints and removes the requirement for Chat provider configuration. Manual drawing and image uploads still work. |
+| `MICO_EPHEMERAL`          | `true` displays the temporary-data warning. Default false. This is a notice, not a persistence implementation.                                                                              |
 
 AI configuration is documented separately in [ai-configuration.md](ai-configuration.md). With AI disabled, do not supply dummy provider credentials or a laptop gateway URL.
 

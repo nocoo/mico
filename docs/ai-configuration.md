@@ -21,7 +21,7 @@ The local Compose file still maps `MICO_DOCKER_MAGPIE_BASE_URL` to `MAGPIE_BASE_
 
 | Variable                   | Purpose                                                              | Default / requirement                                                 |
 | -------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| `MICO_AI_ENABLED`          | Enable AI/voice/generated-image entrypoints                           | `true`; set `false` for a provider-free preview                       |
+| `MICO_AI_ENABLED`          | Enable AI/voice/generated-image entrypoints                          | `true`; set `false` for a provider-free preview                       |
 | `MICO_RUNTIME`             | Configuration source policy                                          | `laptop` or `deploy`; other values fail startup                       |
 | `MAGPIE_BASE_URL`          | OpenAI-compatible Chat API base, including its `/v1` or other prefix | Laptop: `http://127.0.0.1:3425/v1`; deploy: required                  |
 | `MAGPIE_MODEL`             | Chat / canvas / summary model ID                                     | Laptop: `auto/gpt-6-luna`; deploy: required                           |

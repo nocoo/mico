@@ -7,6 +7,7 @@ const INTEGRATION = [
 	'src/server/ai.test.ts',
 	'src/server/aiConfig.integration.test.ts',
 	'src/server/api.test.ts',
+	'src/server/auth.integration.test.ts',
 	'src/server/imageGeneration.test.ts',
 	'src/server/index.test.ts',
 	'src/server/moss.test.ts',

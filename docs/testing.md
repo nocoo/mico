@@ -144,7 +144,7 @@ When reproducing CI locally, use the repository's Playwright version on Ubuntu w
 
 ## Hosted preview
 
-`src/shared/runtime.test.ts` and `src/server/auth.test.ts` cover independent hosting/auth/AI settings and session policy. `src/server/auth.integration.test.ts` verifies real HTTP and WebSocket authentication against temporary SQLite and synthetic identity keys. It must remain in the L3 list in `scripts/run-tests.ts`.
+`src/server/runtime.test.ts` covers independent hosting/auth/AI settings; `src/web/runtime.test.ts` and `src/web/msal.test.ts` cover browser session and callback policy. `src/server/auth.integration.test.ts` verifies real HTTP and WebSocket authentication against temporary SQLite and synthetic identity keys. It must remain in the L3 list in `scripts/run-tests.ts`.
 
 `tests/browser/hosted.spec.ts` belongs to the CI E2E subset. It checks fail-closed runtime bootstrap, optional login, callback/session handling, logout/expiry and manual drawing with AI disabled. Local identity doubles do not prove the real Entra redirect is registered.
 
