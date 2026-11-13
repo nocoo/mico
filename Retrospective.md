@@ -22,6 +22,10 @@
 
 ## Tool usage
 
+- A shell fixture embedded `${...}` in a TypeScript string, triggering Biome's template-placeholder lint only at commit time. Run the exact zero-warning linter after the final test edits, including fixture strings, before staging.
+- A pre-push worktree shared the main `node_modules`, but `pnpm run build` automatically relinked dependencies relative to that temporary worktree; deleting it left broken links. Run installed build binaries directly in the snapshot and test the hook without invoking pnpm.
+- The global `AGENTS.md` symlink moved between sessions; using its previously resolved directory failed. Resolve the real path again before loading rules.
+- Radix's segmented control renders its own indicator in addition to the selected item surface. Remove the duplicate visual layer, retain a separate forced-colors selection marker, and test keyboard focus without assuming arrow-key movement also selects an item.
 - A whole-suite visual failure exceeded the strict threshold by one pixel, but the next Playwright run cleared its trace. Preserve failing screenshots and traces before reruns; freeze fixture transitions explicitly and retain comparison images on failure instead of loosening the threshold.
 - An HTML-card drag probe assumed the card body was a drag handle; the documented behavior and the unchanged baseline both use the title. Compare the parent revision and documented interaction before treating a new probe as a product regression.
 - An HTML card reported `elementFromPoint` as the iframe before its selected state had been painted, while actual clicks still reached the parent. Capture events in both documents, wait for the rendered selection across animation frames, and repeat real input instead of trusting DOM state alone.
