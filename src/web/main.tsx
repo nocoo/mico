@@ -29,10 +29,18 @@ initializeCandyPalette(document.documentElement)
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element missing')
 
-ReactDOM.createRoot(root).render(
-	<React.StrictMode>
-		<Theme appearance="light" accentColor="blue" grayColor="slate" radius="medium" scaling="100%">
-			<BootGate />
-		</Theme>
-	</React.StrictMode>,
-)
+if (window.location.pathname === '/auth/callback' && (window.parent !== window || window.opener)) {
+	void import('@azure/msal-browser/redirect-bridge')
+		.then(({ broadcastResponseToMainFrame }) => broadcastResponseToMainFrame())
+		.catch(() => {
+			root.textContent = 'Microsoft sign-in could not be completed. Return to the main window.'
+		})
+} else {
+	ReactDOM.createRoot(root).render(
+		<React.StrictMode>
+			<Theme appearance="light" accentColor="blue" grayColor="slate" radius="medium" scaling="100%">
+				<BootGate />
+			</Theme>
+		</React.StrictMode>,
+	)
+}

@@ -30,12 +30,6 @@ export interface MsalLike {
 	}) => Promise<MsalRedirectResult>
 }
 
-declare global {
-	interface Window {
-		__micoMsalMock?: MsalLike
-	}
-}
-
 let instance: { key: string; ready: Promise<MsalLike> } | null = null
 let callbackCompletion: { key: string; promise: Promise<ServerSession> } | null = null
 
@@ -114,12 +108,7 @@ export function msalConfiguration(
 export function getMsal(auth: PublicRuntimeContract['auth']): Promise<MsalLike> {
 	const key = JSON.stringify(msalConfiguration(auth))
 	if (instance?.key === key) return instance.ready
-	let application: MsalLike
-	if (typeof window !== 'undefined' && window.__micoMsalMock) {
-		application = window.__micoMsalMock
-	} else {
-		application = new PublicClientApplication(msalConfiguration(auth)) as unknown as MsalLike
-	}
+	const application = new PublicClientApplication(msalConfiguration(auth)) as unknown as MsalLike
 	const ready = Promise.resolve(application.initialize?.())
 		.then(() => application)
 		.catch((error: unknown) => {

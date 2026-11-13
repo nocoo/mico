@@ -46,39 +46,30 @@ async function mockMsal(
 	page: import('@playwright/test').Page,
 	redirectResult: { idToken?: string; account?: { homeAccountId: string } } | null,
 ) {
-	await page.addInitScript((result) => {
-		const calls = {
-			redirect: 0,
-			redirectNavigateToLoginRequestUrl: null as boolean | null,
-			initialize: 0,
-			clear: 0,
-			silent: 0,
-		}
-		Object.assign(globalThis, { __micoMsalCalls: calls })
-		Object.assign(globalThis, {
-			__micoMsalMock: {
-				initialize: async () => {
-					calls.initialize++
-				},
-				handleRedirectPromise: async (options: { navigateToLoginRequestUrl: boolean }) => {
-					calls.redirect++
-					calls.redirectNavigateToLoginRequestUrl = options.navigateToLoginRequestUrl
-					return result
-				},
-				loginRedirect: async () => undefined,
-				clearCache: async () => {
-					calls.clear++
-				},
-				setActiveAccount: () => undefined,
-				getAllAccounts: () => (result?.account ? [result.account] : []),
-				getActiveAccount: () => result?.account ?? null,
-				acquireTokenSilent: async () => {
-					calls.silent++
-					return result ?? { idToken: '' }
-				},
-			},
-		})
-	}, redirectResult)
+	await page.route(/\/@azure_msal-browser\.js(?:\?|$)/, (route) =>
+		route.fulfill({
+			contentType: 'application/javascript',
+			body: `
+			const result = ${JSON.stringify(redirectResult)};
+			const record = (key, value) => sessionStorage.setItem('test-msal-' + key, String(value));
+			const count = (key) => record(key, Number(sessionStorage.getItem('test-msal-' + key) || 0) + 1);
+			export class PublicClientApplication {
+				async initialize() { count('initialize'); }
+				async handleRedirectPromise(options) {
+					count('redirect');
+					record('navigate', options.navigateToLoginRequestUrl);
+					return result;
+				}
+				async loginRedirect() {}
+				async clearCache() { count('clear'); }
+				setActiveAccount() {}
+				getAllAccounts() { return result?.account ? [result.account] : []; }
+				getActiveAccount() { return result?.account ?? null; }
+				async acquireTokenSilent() { return result ?? { idToken: '' }; }
+			}
+		`,
+		}),
+	)
 }
 
 test('runtime bootstrap failure closes the canvas', async ({ page }) => {
@@ -149,21 +140,13 @@ test('successful callback posts the ID token once and mounts only after session 
 	await expect(page.locator('.app')).toBeVisible()
 	await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
 	expect(sessionPosts).toBe(1)
-	const calls = await page.evaluate(
-		() =>
-			(
-				globalThis as typeof globalThis & {
-					__micoMsalCalls: {
-						redirect: number
-						redirectNavigateToLoginRequestUrl: boolean | null
-						initialize: number
-						clear: number
-					}
-				}
-			).__micoMsalCalls,
-	)
+	const calls = await page.evaluate(() => ({
+		redirect: Number(sessionStorage.getItem('test-msal-redirect')),
+		navigate: sessionStorage.getItem('test-msal-navigate'),
+		initialize: Number(sessionStorage.getItem('test-msal-initialize')),
+	}))
 	expect(calls.redirect).toBe(1)
-	expect(calls.redirectNavigateToLoginRequestUrl).toBe(false)
+	expect(calls.navigate).toBe('false')
 	expect(calls.initialize).toBeGreaterThanOrEqual(1)
 	await expect(page.locator('.app')).toBeVisible()
 })
@@ -194,19 +177,19 @@ test('AI disabled preview supports manual drawing with no assistant or provider 
 	await page.route('**/moss/**', (route) => route.abort())
 	let providerRequests = 0
 	page.on('request', (candidate) => {
-		const url = candidate.url()
+		const url = new URL(candidate.url()).pathname
 		if (
-			url.includes('/api/ai/') ||
-			url.includes('/api/moss/') ||
-			url.includes('/mai/') ||
-			url.includes('/moss')
+			url.startsWith('/api/ai/') ||
+			url.startsWith('/api/moss/') ||
+			url.startsWith('/mai/') ||
+			url === '/moss'
 		) {
 			providerRequests++
 		}
 	})
 	page.on('websocket', (socket) => {
-		const url = socket.url()
-		if (url.includes('/mai/') || url.includes('/moss')) providerRequests++
+		const url = new URL(socket.url()).pathname
+		if (url.startsWith('/mai/') || url === '/moss') providerRequests++
 	})
 	await page.goto('/?ai=draw%20a%20lesson')
 	await expect(page.locator('.app')).toBeVisible()
