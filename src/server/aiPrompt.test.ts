@@ -1,5 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import {
+	HTML_CARD_CSS,
+	HTML_CARD_DESIGN_INSTRUCTIONS,
+	HTML_CARD_FRAGMENTS,
+} from '../shared/htmlCardDesign.ts'
 import { POST_SESSION_SUMMARY_PROMPT, SUMMARY_CARD_INSTRUCTIONS } from '../shared/summaryPrompt.ts'
 import { AI_LECTURE_PROMPT, AI_SYSTEM_PROMPT } from './aiPrompt.ts'
 
@@ -26,6 +31,17 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_LECTURE_PROMPT, /a standalone fact can remain only in the evidence/)
 	assert.match(AI_LECTURE_PROMPT, /clearly enters a final summary/i)
 	assert.match(AI_LECTURE_PROMPT, /rightmost HTML summary/)
+})
+
+test('HTML cards share a copyable design system', () => {
+	assert.ok(AI_SYSTEM_PROMPT.includes(HTML_CARD_DESIGN_INSTRUCTIONS))
+	assert.ok(HTML_CARD_DESIGN_INSTRUCTIONS.includes(`<style>${HTML_CARD_CSS}</style>`))
+	assert.ok(HTML_CARD_DESIGN_INSTRUCTIONS.includes(HTML_CARD_FRAGMENTS))
+	for (const part of ['mico-panel', 'mico-hero', 'mico-list', 'mico-tile', 'mico-table']) {
+		assert.ok(HTML_CARD_CSS.includes(`.${part}`))
+		assert.ok(HTML_CARD_FRAGMENTS.includes(part))
+	}
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /reusable HTML card CSS/)
 })
 
 test('image generation is optional, asynchronous and respects board layout', () => {
