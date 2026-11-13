@@ -168,6 +168,41 @@ test('HTML card preserves content and interactions at its corners', async ({ pag
 	expect(pixel[2]).toBeLessThan(10)
 })
 
+test('an unselected HTML card selects first and then delivers iframe clicks', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [
+		{
+			id: 'interactive-card',
+			type: 'html',
+			x: 200,
+			y: 200,
+			w: 300,
+			h: 200,
+			color: '#00a2e1',
+			title: 'Card',
+			html: '<button id="target" onclick="this.dataset.clicked=\'yes\'">Activate</button>',
+		},
+	])
+	await openCanvas(page)
+	await resetView(page)
+	const target = page.frameLocator('[data-shape-id="interactive-card"] iframe').locator('#target')
+	const box = await target.boundingBox()
+	if (!box) throw new Error('Missing HTML button')
+	await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+	await expect(page.getByLabel('Card title')).toHaveValue('Card')
+	await expect(target).not.toHaveAttribute('data-clicked', 'yes')
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
+	await target.click()
+	await expect(target).toHaveAttribute('data-clicked', 'yes')
+})
+
 test('HTML card color updates its visible label', async ({ page, request }) => {
 	await resetBoard(request, [
 		{

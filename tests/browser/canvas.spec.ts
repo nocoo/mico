@@ -998,6 +998,12 @@ test('html cards render generated markup and expose only their title', async ({
 		'pointer-events',
 		'auto',
 	)
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) =>
+				requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+			),
+	)
 	await expect(frame.locator('#bootstrap-button')).toBeVisible()
 	await expect
 		.poll(() => frame.locator('html').evaluate(() => document.readyState))
@@ -1013,6 +1019,19 @@ test('html cards render generated markup and expose only their title', async ({
 		)
 		.toBe(true)
 	await expect(frame.locator('#bootstrap-panel')).not.toHaveClass(/(?:^|\s)show(?:\s|$)/)
+	await page.evaluate(() => {
+		const events: string[] = []
+		Object.assign(window, { __outerCardEvents: events })
+		for (const type of ['pointerdown', 'pointerup', 'click'])
+			document.addEventListener(
+				type,
+				(event) => {
+					const target = event.target as Element
+					events.push(`${event.type}:${target.tagName}:${target.getAttribute('class')}`)
+				},
+				true,
+			)
+	})
 	await frame.locator('html').evaluate(() => {
 		const events: string[] = []
 		Object.assign(window, { __cardEvents: events })
@@ -1039,7 +1058,12 @@ test('html cards render generated markup and expose only their title', async ({
 	const events = await frame
 		.locator('html')
 		.evaluate(() => (window as unknown as { __cardEvents?: string[] }).__cardEvents)
-	expect(events).toContain('click:bootstrap-button')
+	const outerEvents = await page.evaluate(
+		() => (window as unknown as { __outerCardEvents: string[] }).__outerCardEvents,
+	)
+	expect(events, `Outer document events: ${JSON.stringify(outerEvents)}`).toContain(
+		'click:bootstrap-button',
+	)
 	await expect(frame.locator('#bootstrap-panel')).toHaveClass(/(?:^|\s)show(?:\s|$)/)
 	await expect(frame.locator('#bootstrap-button')).toHaveAttribute('aria-expanded', 'true')
 
