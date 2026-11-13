@@ -22,6 +22,13 @@
 
 ## Tool usage
 
+- During the Audio empty-state investigation, file discovery used `find` three times despite the `fd`-only rule. The prohibited commands found screenshot candidates, ancestor instruction files, and image dimensions. Recheck the global discovery rule before every shell inspection and use `fd` for paths plus `rg` for content.
+- A delegated screenshot search used `find`, and a separate browser fixture was started outside Playwright's lifecycle. Use `fd` for discovery and capture inside the isolated Playwright-managed fixture so ports and temporary databases are released reliably.
+- AI frame growth may extend upward as well as downward, so asserting the frame height alone misidentified a correct bottom edge as a regression. Assert world-space edges and the intended clearance, not just width or height.
+- An additive AI write acknowledged an unread concurrent revision and allowed a later stale rewrite. Advance the observed revision only across the AI's own consecutive writes; verify interleaved writes before treating a green conflict test as complete.
+- Adding a note label consumed body space and a transparent frame-title hitbox blocked unrelated objects. Verify previously full notes, actual hit regions and frame containment whenever adding a visual header; reserve geometry atomically rather than hiding overflow.
+- An early action-card test treated overflowing content as success, and a retry could target another canvas after a switch. Check painted and persisted bounds together, pin retries to their original canvas, and exercise delayed conflicts with identical IDs on both canvases.
+- A summary recovery flag outlived its failed request, so continuing a later chat error could retry the wrong task. Scope recovery to the current request and test both immediate retry and a superseding request.
 - A multi-pattern `fd` invocation treated later patterns as search paths, and guessed global rule paths ignored the `AGENTS.md` symlink. Resolve that symlink first and use one explicit regex for filename discovery before opening the resulting paths.
 - The first copyable HTML template inherited Bootstrap's opaque body background, hiding the card's rounded surface, and its browser test was absent from the CI subset. Verify the actual sandbox cascade on a non-white canvas, assert key visual properties, and add new browser contracts to the gated command.
 - A canvas pan regression used the lower-left corner, which became an interactive minimap hit area. Keep canvas gestures outside fixed chrome rather than treating minimap navigation as a canvas-pan failure; retain the exact endpoint delta assertions. Bottom-aligning the minimap also requires reserving horizontal toolbar space, not just changing its bottom inset.
