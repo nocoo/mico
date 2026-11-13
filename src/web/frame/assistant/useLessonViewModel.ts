@@ -79,25 +79,25 @@ interface Runtime {
 }
 
 const PHASE_LABEL: Record<Phase, string> = {
-	idle: 'Ready',
+	idle: 'Ready to play',
 	loading: 'Loading recording…',
-	connecting: 'Connecting…',
-	ready: 'Session ready',
-	streaming: 'Live transcription',
+	connecting: 'Preparing transcription…',
+	ready: 'Ready to play',
+	streaming: 'Playing recording',
 	paused: 'Paused',
 	stopping: 'Finishing transcript…',
 	done: 'Recording complete',
-	closed: 'Disconnected',
-	error: 'Error',
+	closed: 'Session closed',
+	error: 'Playback error',
 }
 
 const PHASE_KIND: Record<Phase, string> = {
-	idle: 'idle',
+	idle: 'ok',
 	loading: 'busy',
 	connecting: 'busy',
 	ready: 'ok',
 	streaming: 'live',
-	paused: 'warn',
+	paused: 'ok',
 	stopping: 'busy',
 	done: 'ok',
 	closed: 'idle',
@@ -152,6 +152,7 @@ export function useLessonViewModel({
 	onSessionEndRef.current = onSessionEnd
 
 	const [clips, setClips] = useState<LessonClip[]>([])
+	const [catalogLoaded, setCatalogLoaded] = useState(false)
 	const [config, setConfig] = useState<MaiConfig | null>(null)
 	const [selectedId, setSelectedId] = useState(initialClipId ?? '')
 	const [phase, setPhase] = useState<Phase>('idle')
@@ -182,6 +183,7 @@ export function useLessonViewModel({
 				if (cancelled) return
 				setConfig(nextConfig)
 				setClips(manifest.evals)
+				setCatalogLoaded(true)
 				setSelectedId((current) =>
 					manifest.evals.some((clip) => clip.id === current)
 						? current
@@ -302,6 +304,8 @@ export function useLessonViewModel({
 		setStats({ played: 0, sent: 0, latency: null })
 		setVad({ db: -90, speaking: false })
 		setProgress(0)
+		setDetail('')
+		setPhase('idle')
 		onResetRef.current()
 	}
 
@@ -651,24 +655,97 @@ export function useLessonViewModel({
 
 	const playing = runtime.current.player?.playing === true
 	const totalSegments = segments.length
+	const preparing = phase === 'loading' || phase === 'connecting'
+	const finishing = phase === 'stopping'
+	const phaseLabel =
+		phase === 'idle' && !catalogLoaded
+			? 'Loading recordings…'
+			: phase === 'idle' && !selected
+				? 'No recordings available'
+				: PHASE_LABEL[phase]
+	const phaseKind =
+		phase === 'idle' && !catalogLoaded
+			? 'busy'
+			: phase === 'idle' && !selected
+				? 'idle'
+				: PHASE_KIND[phase]
+	const recordingMeta = selected
+		? `${selected.subject} · ${selected.voice}`
+		: phase === 'error'
+			? 'Recordings unavailable'
+			: catalogLoaded
+				? 'No recordings available'
+				: 'Loading recordings…'
+	const liveEmpty =
+		phase === 'streaming'
+			? 'Transcribing the recording…'
+			: phase === 'paused'
+				? segments.length > 0
+					? 'Playback paused. Confirmed sentences are shown below.'
+					: 'Playback paused. Resume to continue transcription.'
+				: phase === 'stopping'
+					? 'Finishing pending transcription…'
+					: phase === 'done'
+						? segments.length > 0
+							? 'Recording complete. Confirmed sentences are shown below.'
+							: 'No speech was confirmed in this recording.'
+						: phase === 'error'
+							? segments.length > 0
+								? 'Playback stopped. Confirmed sentences are shown below.'
+								: 'Playback stopped before a transcript was available.'
+							: !catalogLoaded
+								? 'Loading recording details…'
+								: !selected
+									? 'No recording is available for playback.'
+									: 'Press Play recording to begin transcription.'
+	const segmentEmpty =
+		phase === 'streaming' || phase === 'stopping'
+			? 'Confirmed sentences will appear here as transcription completes.'
+			: phase === 'paused'
+				? 'No confirmed sentences yet. Resume when you’re ready.'
+				: phase === 'done'
+					? 'No confirmed sentences were returned.'
+					: phase === 'error'
+						? 'No confirmed sentences were returned before playback stopped.'
+						: !catalogLoaded
+							? 'Recording segments will appear after the library loads.'
+							: !selected
+								? 'There are no recording segments to show.'
+								: 'Confirmed sentences will appear after playback starts.'
+	const primaryLabel = preparing
+		? 'Preparing…'
+		: finishing
+			? 'Finishing…'
+			: playing
+				? 'Pause'
+				: phase === 'paused'
+					? 'Resume'
+					: phase === 'done'
+						? 'Play again'
+						: phase === 'error'
+							? 'Retry recording'
+							: 'Play recording'
 	const aiLabel = aiError
 		? 'Mico needs attention'
 		: aiBusy
 			? 'Mico is drawing…'
 			: aiQueued > 0
 				? `${aiQueued} segment${aiQueued === 1 ? '' : 's'} queued`
-				: 'Mico is listening'
+				: null
 
 	return {
 		clips,
 		selected,
 		duration,
+		recordingMeta,
 		phase,
-		phaseLabel: PHASE_LABEL[phase],
-		phaseKind: PHASE_KIND[phase],
+		phaseLabel,
+		phaseKind,
 		detail,
 		live,
+		liveEmpty,
 		segments,
+		segmentEmpty,
 		stats,
 		vad,
 		progress,
@@ -676,8 +753,13 @@ export function useLessonViewModel({
 		rate,
 		waveRef,
 		playing,
+		preparing: preparing || finishing,
+		primaryLabel,
+		primaryDisabled: !selected || preparing || finishing,
+		restartDisabled: !selected || preparing || phase === 'idle' || phase === 'ready',
 		totalSegments,
 		aiBusy,
+		aiError,
 		aiLabel,
 		toggle,
 		resetAndStart,

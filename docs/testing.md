@@ -23,7 +23,7 @@ pnpm check              # Biome with zero warnings + TypeScript
 pnpm test               # every Node test file under src/ and scripts/
 pnpm test:unit          # L1: pure logic, store, STT and component logic
 pnpm test:integration   # L3: real daemon over HTTP/WebSocket, CLI, agent examples
-pnpm test:e2e           # L4: the browser subset gated in CI
+pnpm test:e2e           # L4: canvas/controls, overview, card/action/label and audio states
 pnpm test:browser       # L4: every Playwright spec
 pnpm build
 ```
@@ -42,9 +42,9 @@ pnpm build
 | G1 Secrets             | gitleaks 8.30.1 over the checkout       | tracked files                                               |
 | G2 Dependencies        | OSV Scanner over `pnpm-lock.yaml`       | single lockfile                                             |
 | B1 Build               | `pnpm build`                            | Vite production bundle                                      |
-| L1 Unit                | `pnpm test:unit`                        | 268 tests, no process or socket                             |
-| L3 Integration         | `pnpm test:integration`                 | 72 tests, real daemon and CLI                               |
-| L4 E2E                 | `pnpm test:e2e`                         | `canvas`, `canvases`, `controls` specs, 54 tests            |
+| L1 Unit                | `pnpm test:unit`                        | discovered non-integration tests                            |
+| L3 Integration         | `pnpm test:integration`                 | real daemon and CLI                                         |
+| L4 E2E                 | `pnpm test:e2e`                         | canvas, overview, cards, labels, actions and audio          |
 | L2 Runtime, P1 Package | —                                       | `na`: plain Node runtime, private package                   |
 | Z1 Gate                | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
 
@@ -87,7 +87,8 @@ L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minu
 
 - `create` carries a complete shape. `update` carries `{ id, patch }`; patch keys are scoped per shape type. `delete` removes the shape, its connectors and releases frame members.
 - `restore` carries a complete `{ shape, index }` and requires `expectedRevision`. It restores the exact shape and stacking position without delete cascades; the final board references, asset IDs and five-image limit are validated atomically. This supports browser history without storing history on the server.
-- Shape types: `rectangle`, `ellipse`, `text`, `line`, `note`, `path`, `frame`, `html`, `image`, `connector`.
+- Shape types: `rectangle`, `ellipse`, `text`, `line`, `note`, `path`, `frame`, `html`, `actions`, `image`, `connector`.
+- `note` accepts an optional `label`. Adding a label without explicit height reserves body space atomically; unsafe automatic growth is rejected. `actions` stores a title and stable `{id, text, done}` items. `set_action_done` updates one item and requires `expectedRevision`.
 - `POST /api/images` accepts raw PNG, JPEG, WebP or GIF bytes up to 10 MiB with a matching `Content-Type`, validates the signature and returns an asset ID. `GET /api/images/:id` serves the bytes. Images are stored separately from board JSON; uploads remain after shape deletion.
 - `image` needs an existing asset `imageId` and may be a frame member. A frame's optional `backgroundImageId` references an image shape on the same board; `backgroundFit` is `cover`, `contain` or `stretch`. Deleting the image clears frame references.
 - `frame` needs a title, has no `frameId` (no nesting) and only connects to other frames.
@@ -128,6 +129,6 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 ## Known gaps
 
 - Pixel comparisons cover the pinned prototype's light-theme backdrop, notes, shapes, text, ink, connector, selection marquee and HTML card shell. Other themes, arbitrary generated card contents and all animation frames are not exhaustively compared.
-- Browser tests run Chrome only. Safari/Firefox rendering of `foreignObject` and sandboxed iframes is unverified.
+- Browser tests run Chrome only. Safari/Firefox rendering of `foreignObject` and sandboxed iframes is unverified. MOSS Live does not automatically request a summary when stopped.
 - No load, soak or large-board performance tests; the 1 MB request limit is exercised for the 413 contract only.
 - Not yet supported by the product, so not tested: resizing, multi-user sessions, MCP, remote deployment.

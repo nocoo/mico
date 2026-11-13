@@ -14,7 +14,7 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 	const model = useLessonViewModel(viewModelProps)
 
 	return (
-		<div className="lesson">
+		<div className="lesson" data-phase={model.phase}>
 			<div className="lesson-clip">
 				<span className="lesson-rec-icon" aria-hidden="true">
 					<AudioLines size={18} strokeWidth={2} />
@@ -32,27 +32,26 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 						disabled={model.clips.length === 0}
 					/>
 					<div className="lesson-meta">
-						<span>
-							{model.selected
-								? `${model.selected.subject} · ${model.selected.voice}`
-								: 'Loading recordings…'}
-						</span>
+						<span>{model.recordingMeta}</span>
 					</div>
 				</div>
 				<span className="lesson-duration">{formatClock(model.duration)}</span>
 			</div>
 
-			<div className="lesson-status" data-kind={model.phaseKind}>
+			<div className="lesson-status" data-kind={model.phaseKind} role="status" aria-live="polite">
 				<span className="lesson-dot" data-kind={model.phaseKind} aria-hidden="true" />
 				<span>{model.detail || model.phaseLabel}</span>
-				<span className="lesson-ai">
-					<span
-						className="lesson-ai-dot"
-						data-busy={model.aiBusy ? 'true' : 'false'}
-						aria-hidden="true"
-					/>
-					{model.aiLabel}
-				</span>
+				{model.aiLabel && (
+					<span className="lesson-ai">
+						<span
+							className="lesson-ai-dot"
+							data-busy={model.aiBusy ? 'true' : 'false'}
+							data-error={model.aiError ? 'true' : 'false'}
+							aria-hidden="true"
+						/>
+						{model.aiLabel}
+					</span>
+				)}
 			</div>
 
 			<canvas ref={model.waveRef} className="lesson-wave" height={52} />
@@ -73,11 +72,11 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 					<div className="lesson-live" aria-live="polite">
 						<p>
 							{!model.live.confirmed && !model.live.hypothesis && (
-								<span className="lesson-live-empty">Waiting for speech…</span>
+								<span className="lesson-live-empty">{model.liveEmpty}</span>
 							)}
 							<span className="lesson-confirmed">{model.live.confirmed}</span>
 							<span className="lesson-hypothesis">{model.live.hypothesis}</span>
-							<span className="lesson-caret" aria-hidden="true" />
+							{model.phase === 'streaming' && <span className="lesson-caret" aria-hidden="true" />}
 						</p>
 					</div>
 					<div className="lesson-segments">
@@ -93,8 +92,10 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 							))}
 							{model.segments.length === 0 && (
 								<li className="lesson-seg-empty">
-									<LoaderCircle size={14} strokeWidth={2} aria-hidden="true" />
-									Play a recording to transcribe it sentence by sentence.
+									{(model.phase === 'streaming' || model.phase === 'stopping') && (
+										<LoaderCircle size={14} strokeWidth={2} aria-hidden="true" />
+									)}
+									{model.segmentEmpty}
 								</li>
 							)}
 						</ol>
@@ -103,15 +104,28 @@ export function LessonPanel({ onSummary, canSummarize, ...viewModelProps }: Less
 			</div>
 
 			<div className="lesson-controls">
-				<button type="button" className="lesson-primary" onClick={model.toggle}>
-					{model.playing ? (
+				<button
+					type="button"
+					className="lesson-primary"
+					disabled={model.primaryDisabled}
+					aria-pressed={model.playing}
+					onClick={model.toggle}
+				>
+					{model.preparing ? (
+						<LoaderCircle className="lesson-control-spinner" size={16} aria-hidden="true" />
+					) : model.playing ? (
 						<Pause size={16} strokeWidth={2} aria-hidden="true" />
 					) : (
 						<Play size={16} strokeWidth={2} aria-hidden="true" />
 					)}
-					{model.playing ? 'Pause' : model.phase === 'streaming' ? 'Resume' : 'Play recording'}
+					{model.primaryLabel}
 				</button>
-				<button type="button" className="lesson-button" onClick={() => void model.resetAndStart()}>
+				<button
+					type="button"
+					className="lesson-button"
+					disabled={model.restartDisabled}
+					onClick={() => void model.resetAndStart()}
+				>
 					<RotateCcw size={15} strokeWidth={2} aria-hidden="true" />
 					Restart
 				</button>
