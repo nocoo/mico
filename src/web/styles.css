@@ -997,3 +997,95 @@ svg {
 		display: none;
 	}
 }
+
+.gate-screen {
+	width: 100%;
+	height: 100%;
+	display: grid;
+	place-items: center;
+	padding: var(--space-4);
+	background: radial-gradient(circle at 50% 40%, var(--surface) 0, var(--canvas) 360px);
+}
+.gate-card {
+	width: min(420px, calc(100vw - var(--space-4)));
+	padding: var(--space-4);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--panel-radius);
+	background: var(--surface);
+	box-shadow: var(--shadow-panel);
+}
+.gate-brand {
+	color: var(--accent);
+	font-size: var(--type-brand);
+	font-weight: var(--weight-bold);
+	line-height: var(--line-heading);
+}
+.gate-card h1 {
+	margin: var(--space-2) 0 var(--space-1);
+	font-size: 24px;
+	line-height: 32px;
+}
+.gate-card p {
+	margin: 0 0 var(--space-3);
+	color: var(--ink-secondary);
+}
+.gate-action,
+.sign-out-button {
+	min-height: var(--control-standard);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-control);
+	background: var(--surface);
+	color: var(--ink);
+	font-weight: var(--weight-semibold);
+}
+.gate-action {
+	width: 100%;
+	padding: 0 var(--space-2);
+	background: var(--accent);
+	border-color: var(--accent);
+	color: var(--surface);
+}
+.gate-action:hover {
+	background: var(--accent-hover);
+	border-color: var(--accent-hover);
+}
+.cloud-chrome {
+	position: fixed;
+	top: calc(var(--frame-desktop-inset, var(--space-3)) + env(safe-area-inset-top, 0px));
+	right: calc(var(--frame-desktop-inset, var(--space-3)) + env(safe-area-inset-right, 0px));
+	z-index: 30;
+	display: flex;
+	align-items: stretch;
+	gap: var(--space-1);
+	pointer-events: none;
+}
+.preview-status,
+.ai-unavailable {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	min-height: var(--control-standard);
+	padding: var(--space-05) var(--space-1);
+	border: var(--hairline) solid var(--border);
+	border-radius: var(--radius-control);
+	background: color-mix(in srgb, var(--surface) 94%, transparent);
+	box-shadow: var(--shadow-panel);
+	line-height: 16px;
+	pointer-events: auto;
+}
+.preview-status strong,
+.ai-unavailable strong {
+	font-size: var(--type-caption);
+}
+.preview-status span,
+.ai-unavailable span {
+	font-size: var(--type-caption);
+	color: var(--ink-secondary);
+}
+.sign-out-button {
+	padding: 0 var(--space-1);
+	pointer-events: auto;
+}
+.sign-out-button:hover {
+	background: var(--surface-hover);
+}

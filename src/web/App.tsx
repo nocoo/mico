@@ -52,7 +52,19 @@ const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'co
 
 const randomId = () => crypto.randomUUID()
 
-export default function App() {
+export interface AppProps {
+	aiEnabled?: boolean
+	ephemeral?: boolean
+	user?: { name: string; expiresAt: number } | null
+	onSignOut?: () => void
+}
+
+export default function App({
+	aiEnabled = true,
+	ephemeral = false,
+	user = null,
+	onSignOut,
+}: AppProps = {}) {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -78,11 +90,11 @@ export default function App() {
 	const connectionResetRef = useRef<() => void>(() => {})
 	const cancelInteractionRef = useRef<() => void>(() => {})
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
-	const [aiPrompt, setAiPrompt] = useState(
-		() => new URLSearchParams(window.location.search).get('ai')?.trim() ?? '',
+	const [aiPrompt, setAiPrompt] = useState(() =>
+		aiEnabled ? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '') : '',
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(
-		() => aiPrompt.length > 0 || window.innerWidth >= 900,
+		() => aiEnabled && (aiPrompt.length > 0 || window.innerWidth >= 900),
 	)
 	const aiPanelOpenRef = useRef(aiPanelOpen)
 	aiPanelOpenRef.current = aiPanelOpen
@@ -957,6 +969,27 @@ export default function App() {
 				} as React.CSSProperties
 			}
 		>
+			{(ephemeral || user || !aiEnabled) && (
+				<aside className="cloud-chrome" aria-label="Workspace status">
+					{ephemeral && (
+						<div className="preview-status" role="status">
+							<strong>Preview</strong>
+							<span>Data may disappear</span>
+						</div>
+					)}
+					{!aiEnabled && (
+						<div className="ai-unavailable" role="status">
+							<strong>AI unavailable</strong>
+							<span>Manual drawing is available</span>
+						</div>
+					)}
+					{user && onSignOut && (
+						<button type="button" className="sign-out-button" onClick={onSignOut}>
+							Sign out
+						</button>
+					)}
+				</aside>
+			)}
 			<CanvasBackdrop />
 			<CanvasMinimap
 				shapes={visibleShapes}
@@ -1043,30 +1076,32 @@ export default function App() {
 					setTextWeight,
 				}}
 			/>
-			<AssistantFrame
-				state={{
-					connection: {
-						apiConnected,
-						wsConnected,
-						revision: board.revision,
-						objectCount: board.shapes.length,
-					},
-					open: aiPanelOpen,
-					canvasId: activeCanvasId,
-					selectedIds,
-					initialPrompt: aiPrompt,
-				}}
-				actions={{
-					close: closeAiPanel,
-					toggle: () => setAiPanelOpen((open) => !open),
-					clearSelection,
-					consumeInitialPrompt: consumeAiPrompt,
-					createCanvas: createLessonCanvas,
-					isGestureActive,
-				}}
-			/>
+			{aiEnabled && (
+				<AssistantFrame
+					state={{
+						connection: {
+							apiConnected,
+							wsConnected,
+							revision: board.revision,
+							objectCount: board.shapes.length,
+						},
+						open: aiPanelOpen,
+						canvasId: activeCanvasId,
+						selectedIds,
+						initialPrompt: aiPrompt,
+					}}
+					actions={{
+						close: closeAiPanel,
+						toggle: () => setAiPanelOpen((open) => !open),
+						clearSelection,
+						consumeInitialPrompt: consumeAiPrompt,
+						createCanvas: createLessonCanvas,
+						isGestureActive,
+					}}
+				/>
+			)}
 
-			{emptyState.visible && (
+			{aiEnabled && emptyState.visible && (
 				<EmptyState onOpenAssistant={emptyState.openAssistant} onDismiss={emptyState.dismiss} />
 			)}
 

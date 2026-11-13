@@ -1,7 +1,7 @@
 import { Theme } from '@radix-ui/themes'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App'
+import BootGate from './BootGate'
 import { initializeCandyPalette } from './design'
 import '@radix-ui/themes/styles.css'
 import './styles.css'
@@ -32,7 +32,7 @@ if (!root) throw new Error('Root element missing')
 ReactDOM.createRoot(root).render(
 	<React.StrictMode>
 		<Theme appearance="light" accentColor="blue" grayColor="slate" radius="medium" scaling="100%">
-			<App />
+			<BootGate />
 		</Theme>
 	</React.StrictMode>,
 )
