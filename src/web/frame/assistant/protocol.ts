@@ -1,4 +1,41 @@
+import { getToolName, isToolUIPart, type UIMessage } from 'ai'
+
 export type AssistantTab = 'chat' | 'audio' | 'live' | 'settings'
+
+export function summaryToolsCompleted(parts: UIMessage['parts']): boolean {
+	let htmlDone = false
+	let actionsDone = false
+	for (const part of parts) {
+		if (!isToolUIPart(part)) continue
+		const name = getToolName(part)
+		const updates =
+			name === 'update_shapes' &&
+			part.input &&
+			typeof part.input === 'object' &&
+			'updates' in part.input &&
+			Array.isArray(part.input.updates)
+				? part.input.updates
+				: []
+		const updatesHtml = updates.some(
+			(update: unknown) =>
+				typeof update === 'object' &&
+				update !== null &&
+				'patch' in update &&
+				typeof update.patch === 'object' &&
+				update.patch !== null &&
+				'html' in update.patch,
+		)
+		const succeeded =
+			part.state === 'output-available' &&
+			typeof part.output === 'object' &&
+			part.output !== null &&
+			'ok' in part.output &&
+			part.output.ok === true
+		if (name === 'add_html_cards' || updatesHtml) htmlDone = succeeded
+		if (name === 'upsert_action_card') actionsDone = succeeded
+	}
+	return htmlDone && actionsDone
+}
 
 export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
 export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'audio'

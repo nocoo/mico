@@ -1,4 +1,4 @@
-import type { Board, CanvasShape, Shape } from '../shared/types.ts'
+import type { ActionItem, Board, CanvasShape, Shape } from '../shared/types.ts'
 
 export interface BoardRect {
 	x: number
@@ -37,11 +37,14 @@ export interface ShapeDigest {
 	imageId?: string
 	backgroundImageId?: string
 	backgroundFit?: 'cover' | 'contain' | 'stretch'
+	items?: ActionItem[]
+	itemCount?: number
 }
 
 const MAX_TEXT = 180
 const MAX_HTML = 200000
 const MAX_SHAPES = 150
+const MAX_ACTION_PREVIEW_ITEMS = 3
 
 export function clip(value: string, limit: number): string {
 	return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
@@ -99,6 +102,15 @@ export function digestShape(shape: Shape, includeHtml = false, detailed = false)
 	}
 	if (shape.frameId !== undefined) digest.frameId = shape.frameId
 	if (shape.type === 'image' && shape.imageId) digest.imageId = shape.imageId
+	if (shape.type === 'actions') {
+		const items = shape.items ?? []
+		digest.itemCount = items.length
+		const visible = detailed ? items : items.slice(0, MAX_ACTION_PREVIEW_ITEMS)
+		digest.items = visible.map((item) => ({
+			...item,
+			text: clip(item.text, detailed ? 6000 : MAX_TEXT),
+		}))
+	}
 	if (shape.type === 'frame') {
 		if (shape.backgroundImageId) digest.backgroundImageId = shape.backgroundImageId
 		if (shape.backgroundFit) digest.backgroundFit = shape.backgroundFit
@@ -228,7 +240,9 @@ export function boardDigest(
 		bounds: boardBounds(board.shapes),
 		selection: liveSelection,
 		shapes: shapes.map((shape) => {
-			const detailed = liveSelection.includes(shape.id) || Boolean(wanted?.has(shape.id))
+			const detailed =
+				Boolean(wanted?.has(shape.id)) ||
+				(shape.type !== 'actions' && liveSelection.includes(shape.id))
 			return digestShape(shape, options.includeHtml === true && detailed, detailed)
 		}),
 		omitted,
@@ -240,7 +254,7 @@ export function selectedDigests(board: Board, selection: string[]): ShapeDigest[
 	const wanted = new Set(selection)
 	return board.shapes
 		.filter((shape) => wanted.has(shape.id))
-		.map((shape) => digestShape(shape, true, true))
+		.map((shape) => digestShape(shape, true, shape.type !== 'actions'))
 }
 
 export function formatBoardContext(board: Board, selection: string[]): string {

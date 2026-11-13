@@ -5,7 +5,11 @@ import {
 	HTML_CARD_DESIGN_INSTRUCTIONS,
 	HTML_CARD_FRAGMENTS,
 } from '../shared/htmlCardDesign.ts'
-import { POST_SESSION_SUMMARY_PROMPT, SUMMARY_CARD_INSTRUCTIONS } from '../shared/summaryPrompt.ts'
+import {
+	POST_SESSION_SUMMARY_PROMPT,
+	SUMMARY_ACTION_INSTRUCTIONS,
+	SUMMARY_CARD_INSTRUCTIONS,
+} from '../shared/summaryPrompt.ts'
 import { AI_LECTURE_PROMPT, AI_SYSTEM_PROMPT } from './aiPrompt.ts'
 
 test('live drawing instructions organize three semantic groups left to right', () => {
@@ -62,6 +66,11 @@ test('image generation is optional, asynchronous and respects board layout', () 
 test('live and post-session summaries share the same instructions', () => {
 	assert.ok(AI_LECTURE_PROMPT.includes(SUMMARY_CARD_INSTRUCTIONS))
 	assert.ok(POST_SESSION_SUMMARY_PROMPT.includes(SUMMARY_CARD_INSTRUCTIONS))
+	assert.ok(AI_LECTURE_PROMPT.includes(SUMMARY_ACTION_INSTRUCTIONS))
+	assert.ok(POST_SESSION_SUMMARY_PROMPT.includes(SUMMARY_ACTION_INSTRUCTIONS))
+	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /upsert_action_card/)
+	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /empty card rather than inventing tasks/)
+	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /user completion states must remain intact/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /data-lucide/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /update that same card in place/)
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /Bootstrap 5 CSS and JavaScript/)

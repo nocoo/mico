@@ -1,6 +1,14 @@
 import type { Shape, ShapeType } from './types.ts'
 
-const OVERVIEW_TYPES = new Set(['note', 'rectangle', 'ellipse', 'frame', 'html', 'image'])
+const OVERVIEW_TYPES = new Set([
+	'note',
+	'rectangle',
+	'ellipse',
+	'frame',
+	'html',
+	'image',
+	'actions',
+])
 export const OVERVIEW_WIDTH = 176
 export const OVERVIEW_HEIGHT = 116
 const DEFAULT_WIDTH = OVERVIEW_WIDTH
@@ -14,7 +22,7 @@ function isOverviewType(type: ShapeType): type is OverviewBlock['type'] {
 
 export interface OverviewBlock {
 	id: string
-	type: 'note' | 'rectangle' | 'ellipse' | 'frame' | 'html' | 'image'
+	type: 'note' | 'rectangle' | 'ellipse' | 'frame' | 'html' | 'image' | 'actions'
 	x: number
 	y: number
 	w: number

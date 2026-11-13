@@ -220,6 +220,103 @@ test('note labels persist and only apply to note shapes', () => {
 	}
 })
 
+test('action cards persist stable items and set_action_done is guarded and item-scoped', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	let store = new BoardStore(dbPath)
+	try {
+		const card = {
+			id: 'actions',
+			type: 'actions' as const,
+			x: 20,
+			y: 30,
+			w: 360,
+			h: 180,
+			color: '#00a2e1',
+			title: 'Next steps',
+			items: [
+				{ id: 'follow-up', text: 'Follow up', done: false },
+				{ id: 'review', text: 'Review results', done: true },
+			],
+		}
+		const created = store.apply({ operations: [{ type: 'create', shape: card }] })
+		assert.throws(
+			() =>
+				store.apply({
+					operations: [{ type: 'set_action_done', id: 'actions', itemId: 'follow-up', done: true }],
+				}),
+			/expectedRevision/,
+		)
+		const changed = store.apply({
+			expectedRevision: created.revision,
+			operations: [{ type: 'set_action_done', id: 'actions', itemId: 'follow-up', done: true }],
+		})
+		assert.deepEqual(changed.shapes[0].type === 'actions' ? changed.shapes[0].items : [], [
+			{ id: 'follow-up', text: 'Follow up', done: true },
+			{ id: 'review', text: 'Review results', done: true },
+		])
+		assert.throws(
+			() =>
+				store.apply({
+					expectedRevision: created.revision,
+					operations: [{ type: 'set_action_done', id: 'actions', itemId: 'review', done: false }],
+				}),
+			(error: unknown) => error instanceof OperationError && error.code === 'REVISION_CONFLICT',
+		)
+		assert.throws(() =>
+			store.apply({
+				expectedRevision: changed.revision,
+				operations: [{ type: 'set_action_done', id: 'actions', itemId: 'missing', done: true }],
+			}),
+		)
+		store.close()
+		store = new BoardStore(dbPath)
+		assert.deepEqual(store.getBoard(), changed)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('action cards reject malformed and duplicate item ids atomically', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const store = new BoardStore(join(directory, 'board.sqlite'))
+	try {
+		const shape = {
+			id: 'actions',
+			type: 'actions',
+			x: 0,
+			y: 0,
+			w: 300,
+			h: 160,
+			color: '#00a2e1',
+			title: 'Actions',
+			items: [{ id: 'one', text: 'One', done: false }],
+		}
+		store.apply({ operations: [{ type: 'create', shape }] })
+		const before = store.getBoard()
+		for (const patch of [
+			{ title: '' },
+			{
+				items: [
+					{ id: 'duplicate', text: 'One', done: false },
+					{ id: 'duplicate', text: 'Two', done: false },
+				],
+			},
+			{ items: [{ id: '', text: 'One', done: false }] },
+			{ items: [{ id: 'one', text: '', done: false }] },
+			{ items: [{ id: 'one', text: 'One' }] },
+			{ items: [{ id: 'one', text: 'One', done: false, owner: 'AI' }] },
+		]) {
+			assert.throws(() => store.apply({ operations: [{ type: 'update', id: 'actions', patch }] }))
+			assert.deepEqual(store.getBoard(), before)
+		}
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('connectors persist optional anchor pins within the referenced anchor range', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')

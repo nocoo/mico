@@ -8,12 +8,19 @@ export type ShapeType =
 	| 'note'
 	| 'html'
 	| 'image'
+	| 'actions'
 export type FontFamily = 'sans' | 'serif' | 'hand' | 'mono'
 export type BrushStyle = 'pencil' | 'marker' | 'brush'
 
 export interface Point {
 	x: number
 	y: number
+}
+
+export interface ActionItem {
+	id: string
+	text: string
+	done: boolean
 }
 
 export const ANCHOR_COUNTS: Record<ShapeType, number> = {
@@ -26,6 +33,7 @@ export const ANCHOR_COUNTS: Record<ShapeType, number> = {
 	note: 12,
 	html: 12,
 	image: 12,
+	actions: 12,
 }
 
 export const MEMBER_TYPES = [
@@ -37,6 +45,7 @@ export const MEMBER_TYPES = [
 	'note',
 	'html',
 	'image',
+	'actions',
 ] as const satisfies readonly ShapeType[]
 
 export function isMemberType(type: ShapeType): boolean {
@@ -69,6 +78,7 @@ export interface CanvasShape {
 	imageId?: string
 	backgroundImageId?: string
 	backgroundFit?: 'cover' | 'contain' | 'stretch'
+	items?: ActionItem[]
 }
 
 export interface Connector {
@@ -139,12 +149,14 @@ export type Operation =
 				imageId?: string
 				backgroundImageId?: string | null
 				backgroundFit?: 'cover' | 'contain' | 'stretch'
+				items?: ActionItem[]
 				from?: string
 				to?: string
 				fromAnchor?: number
 				toAnchor?: number
 			}
 	  }
+	| { type: 'set_action_done'; id: string; itemId: string; done: boolean }
 	| { type: 'delete'; id: string }
 
 export interface OperationRequest {

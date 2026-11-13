@@ -718,6 +718,74 @@ test('patch validation is scoped to the target shape type', async () => {
 	})
 })
 
+test('action done API updates one stable item with revision protection', async () => {
+	await withDaemon(async (url) => {
+		const createdWithFrame = await apply(url, [
+			{
+				type: 'create',
+				shape: {
+					id: 'api-frame',
+					type: 'frame',
+					x: -40,
+					y: -40,
+					w: 380,
+					h: 240,
+					color: '#00a2e1',
+					title: 'Frame',
+				},
+			},
+			{
+				type: 'create',
+				shape: {
+					id: 'api-actions',
+					type: 'actions',
+					x: 0,
+					y: 0,
+					w: 300,
+					h: 160,
+					color: '#f1fadc',
+					title: 'Actions',
+					frameId: 'api-frame',
+					items: [
+						{ id: 'one', text: 'One', done: false },
+						{ id: 'two', text: 'Two', done: false },
+					],
+				},
+			},
+		])
+		assert.equal(createdWithFrame.status, 200)
+		const board = createdWithFrame.body as Board
+		assert.equal(board.revision, 1)
+		assert.equal(canvasOf(board, 'api-actions').frameId, 'api-frame')
+		const unguarded = await apply(url, [
+			{ type: 'set_action_done', id: 'api-actions', itemId: 'one', done: true },
+		])
+		assertError(unguarded, 400, 'INVALID_REQUEST')
+		const changed = await apply(
+			url,
+			[{ type: 'set_action_done', id: 'api-actions', itemId: 'one', done: true }],
+			1,
+		)
+		assert.equal(changed.status, 200)
+		const changedBoard = changed.body as Board
+		const actions = shapeOf(changedBoard, 'api-actions')
+		assert.ok(actions.type === 'actions')
+		assert.deepEqual(actions.items, [
+			{ id: 'one', text: 'One', done: true },
+			{ id: 'two', text: 'Two', done: false },
+		])
+		assertError(
+			await apply(
+				url,
+				[{ type: 'set_action_done', id: 'api-actions', itemId: 'two', done: true }],
+				1,
+			),
+			409,
+			'REVISION_CONFLICT',
+		)
+	})
+})
+
 test('revision-guarded history restores accept atomic boards larger than the normal request limit', async () => {
 	await withDaemon(async (url) => {
 		const shapes = Array.from({ length: 6 }, (_, index) => ({

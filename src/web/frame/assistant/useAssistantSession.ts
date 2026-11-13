@@ -1,5 +1,5 @@
 import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport, getToolName, isToolUIPart } from 'ai'
+import { DefaultChatTransport } from 'ai'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
@@ -16,6 +16,7 @@ import {
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
+	summaryToolsCompleted,
 	takeLectureBatch,
 } from './protocol'
 
@@ -48,6 +49,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const [summaryRequesting, setSummaryRequesting] = useState(false)
 	const summaryAttempted = useRef(false)
 	const summaryInFlight = useRef(false)
+	const summaryNeedsRecovery = useRef(false)
 	const selectionRef = useRef(state.selectedIds)
 	selectionRef.current = state.selectedIds
 	const canvasIdRef = useRef(state.canvasId)
@@ -61,17 +63,12 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			if (!summaryInFlight.current) return
 			summaryInFlight.current = false
 			setSummaryRequesting(false)
-			const created = message.parts.some((part) => {
-				if (!isToolUIPart(part) || part.state !== 'output-available') return false
-				const name = getToolName(part)
-				if (name === 'add_html_cards') return true
-				return name === 'update_shapes' && JSON.stringify(part.input).includes('"html"')
-			})
-			if (created) setSummaryDone(true)
+			if (summaryToolsCompleted(message.parts)) setSummaryDone(true)
 		},
 		onError: () => {
 			if (!summaryInFlight.current) return
 			summaryInFlight.current = false
+			summaryNeedsRecovery.current = true
 			setSummaryRequesting(false)
 		},
 	})
@@ -92,6 +89,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		requestLock.current = false
 		summaryAttempted.current = false
 		summaryInFlight.current = false
+		summaryNeedsRecovery.current = false
 		setLectureQueued(0)
 		setSessionEnded(false)
 		setSummaryDone(false)
@@ -136,6 +134,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		(text: string) => {
 			const value = text.trim()
 			if (!value || requestLock.current || status === 'submitted' || status === 'streaming') return
+			summaryNeedsRecovery.current = false
 			requestLock.current = true
 			const seq = ++requestSeq.current
 			setDraft('')
@@ -181,6 +180,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		clearError()
 		requestLock.current = true
 		summaryInFlight.current = true
+		summaryNeedsRecovery.current = false
 		summaryAttempted.current = true
 		setSummaryRequesting(true)
 		const seq = ++requestSeq.current
@@ -201,6 +201,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		setSessionEnded(false)
 		setSummaryDone(false)
 		summaryAttempted.current = false
+		summaryNeedsRecovery.current = false
 	}, [clearError])
 
 	useEffect(() => {
@@ -312,6 +313,10 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 
 	const continueChat = useCallback(() => {
 		if (requestLock.current) return
+		if (summaryNeedsRecovery.current) {
+			requestSummary()
+			return
+		}
 		requestLock.current = true
 		const seq = ++requestSeq.current
 		clearError()
@@ -323,7 +328,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 				body: buildAssistantRequestBody(state.selectedIds, 'chat', state.canvasId),
 			},
 		).finally(() => releaseRequestRef.current(seq))
-	}, [sendMessage, state.selectedIds, state.canvasId, clearError])
+	}, [sendMessage, state.selectedIds, state.canvasId, clearError, requestSummary])
 
 	return {
 		tab,

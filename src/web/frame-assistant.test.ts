@@ -10,8 +10,46 @@ import {
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
+	summaryToolsCompleted,
 	takeLectureBatch,
 } from './frame/assistant/protocol.ts'
+
+test('summary requires successful HTML and action card results', () => {
+	const html = {
+		type: 'tool-add_html_cards' as const,
+		toolCallId: 'html',
+		state: 'output-available' as const,
+		input: { cards: [] },
+		output: { ok: true },
+	}
+	const actions = {
+		type: 'tool-upsert_action_card' as const,
+		toolCallId: 'actions',
+		state: 'output-available' as const,
+		input: { items: [] },
+		output: { ok: true },
+	}
+	assert.equal(summaryToolsCompleted([html]), false)
+	assert.equal(summaryToolsCompleted([actions]), false)
+	assert.equal(summaryToolsCompleted([html, actions]), true)
+	assert.equal(summaryToolsCompleted([html, { ...actions, output: { ok: false } }]), false)
+	assert.equal(summaryToolsCompleted([{ ...html, output: { ok: false } }, actions]), false)
+	assert.equal(summaryToolsCompleted([html, actions, { ...actions, output: { ok: false } }]), false)
+	assert.equal(
+		summaryToolsCompleted([
+			{ ...html, type: 'tool-update_shapes', input: { updates: [{ patch: { html: 'new' } }] } },
+			actions,
+		]),
+		true,
+	)
+	assert.equal(
+		summaryToolsCompleted([
+			{ ...html, type: 'tool-update_shapes', input: { updates: [{ patch: { title: 'html' } }] } },
+			actions,
+		]),
+		false,
+	)
+})
 
 test('assistant tab keyboard protocol opens recordings and reaches endpoints', () => {
 	assert.equal(DEFAULT_ASSISTANT_TAB, 'audio')

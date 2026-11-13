@@ -166,6 +166,92 @@ test('Audio defaults to a 500 ms silence cut and accepts 1000 in the range', asy
 	await expect(silence).toHaveValue('1000')
 })
 
+test('post-session recovery repeats both summary writes after a partial failure', async ({
+	page,
+}) => {
+	let summaries = 0
+	let retryMessage = ''
+	await page.route('**/api/ai/chat', async (route) => {
+		const request = route.request().postDataJSON() as {
+			mode: string
+			messages: { parts: { type: string; text?: string }[] }[]
+		}
+		if (request.mode !== 'chat') return route.continue()
+		summaries++
+		retryMessage = request.messages.at(-1)?.parts.find((part) => part.type === 'text')?.text ?? ''
+		const chunks: object[] = [
+			{ type: 'start', messageId: `summary-${summaries}` },
+			{ type: 'start-step' },
+			{
+				type: 'tool-input-available',
+				toolCallId: 'html',
+				toolName: 'add_html_cards',
+				input: { cards: [] },
+			},
+			{ type: 'tool-output-available', toolCallId: 'html', output: { ok: true } },
+		]
+		if (summaries === 1) chunks.push({ type: 'error', errorText: 'Summary interrupted' })
+		else {
+			chunks.push(
+				{
+					type: 'tool-input-available',
+					toolCallId: 'actions',
+					toolName: 'upsert_action_card',
+					input: { items: [] },
+				},
+				{ type: 'tool-output-available', toolCallId: 'actions', output: { ok: true } },
+				{ type: 'finish-step' },
+				{ type: 'finish', finishReason: 'stop' },
+			)
+		}
+		await route.fulfill({
+			status: 200,
+			headers: { 'content-type': 'text/event-stream', 'x-vercel-ai-ui-message-stream': 'v1' },
+			body: `${chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join('')}data: [DONE]\n\n`,
+		})
+	})
+	const { panel, prerecorded } = await openAudio(page, state())
+	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
+	await expect(prerecorded.getByText('Recording complete', { exact: true })).toBeVisible()
+	await expect.poll(() => summaries).toBe(1)
+	await panel.getByRole('tab', { name: 'Chat' }).click()
+	await expect(panel.getByRole('alert')).toContainText('Summary interrupted')
+	await panel.getByRole('button', { name: 'Continue' }).click()
+	await expect.poll(() => summaries).toBe(2)
+	expect(retryMessage).toContain('[Post-session summary]')
+	await expect(panel.getByRole('alert')).toHaveCount(0)
+	await expect(panel.getByRole('button', { name: 'Send message' })).toBeVisible()
+	await expect(panel.getByRole('button', { name: 'Create session summary' })).toBeDisabled()
+})
+
+test('post-session recovery does not override a newer chat error', async ({ page }) => {
+	const requests: string[] = []
+	await page.route('**/api/ai/chat', async (route) => {
+		const request = route.request().postDataJSON() as {
+			mode: string
+			messages: { parts: { type: string; text?: string }[] }[]
+		}
+		if (request.mode !== 'chat') return route.continue()
+		requests.push(request.messages.at(-1)?.parts.find((part) => part.type === 'text')?.text ?? '')
+		await route.fulfill({ status: 500, json: { error: 'INTERNAL_ERROR', message: 'gateway down' } })
+	})
+	const { panel, prerecorded } = await openAudio(page, state())
+	await prerecorded.getByRole('button', { name: 'Play recording', exact: true }).click()
+	await expect(prerecorded.getByText('Recording complete', { exact: true })).toBeVisible()
+	await expect.poll(() => requests.length).toBe(1)
+	await panel.getByRole('tab', { name: 'Chat' }).click()
+	await expect(panel.getByRole('alert')).toBeVisible()
+	const composer = panel.getByRole('textbox', { name: 'Message the assistant' })
+	await composer.fill('Draw a different diagram')
+	await composer.press('Enter')
+	await expect.poll(() => requests.length).toBe(2)
+	await expect(panel.getByRole('alert')).toBeVisible()
+	await panel.getByRole('button', { name: 'Continue' }).click()
+	await expect.poll(() => requests.length).toBe(3)
+	expect(requests[2]).toContain('Continue from the current board')
+	expect(requests[2]).not.toContain('[Post-session summary]')
+})
+
 test('Audio natural end preserves the final transcript and closes complete', async ({ page }) => {
 	const mock = state()
 	const { prerecorded } = await openAudio(page, mock)

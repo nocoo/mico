@@ -112,6 +112,14 @@ Run relevant `pnpm check`, `pnpm test`, `pnpm test:browser`, and `pnpm build` pe
 - Verification after bottom alignment: all 340 Node tests, 9 focused layout/navigation browser tests, 9 history browser tests, Biome/TypeScript and the production build passed. Screenshots confirm the aligned minimap and block-only canvas-list previews. The preceding complete browser run passed 147 of 148 tests; its sole failure used a pan coordinate occupied by the new minimap. That fixture was corrected and its endpoint assertions passed in the focused rerun. The entire browser suite was not rerun after the final alignment change. Existing lint and bundle-size warnings remain.
 - These additions do not implement theme switching, layer filtering, provenance, outline, AI follow, or meeting integration.
 
+## Region labels and action cards
+
+- Frame titles now use the prototype's purple region heading. Notes carry an optional editable label available to AI tools; adding a label reserves its body space with atomic geometry and collision checks.
+- Post-session requests ask for an HTML summary and a separate persistent action card. Stable item IDs retain completion state across AI updates; users can toggle items, undo changes and navigate them by keyboard. Summary completion requires successful writes for both cards, and recovery retries the same idempotent request.
+- Generated HTML can copy reusable card, list, tile and table fragments from `src/shared/htmlCardDesign.ts`. These are Mico-designed extensions, not pixel-exact copies of arbitrary generated content.
+- The light-theme Chrome prototype checks allow at most 0.2% differing pixels for action-card states and 0.6% for the SVG-hosted region label; the latter measured 0.48% in the recorded comparison. These are narrower claims than universal pixel equality across fonts, themes and browsers.
+- MOSS Live exposes the same tools and instructions but stopping MOSS does not trigger an automatic post-session summary. Actual provider behavior remains to be evaluated separately from mocks.
+
 ## Decisions required before the dependent slices
 
 - Meeting integration is explicitly deferred. Keep the meeting view and its ViewModel isolated from real meeting data and media controls.

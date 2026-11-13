@@ -13,6 +13,7 @@ import {
 	CodeXml,
 	Frame,
 	Image as ImageIcon,
+	ListTodo,
 	MousePointer2,
 	Palette,
 	Pipette,
@@ -22,7 +23,7 @@ import {
 	Type,
 	X,
 } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { CanvasShape, Operation, Shape, ShapeType } from '../shared/types'
 import { connectionCompatible } from '../shared/types'
 import {
@@ -59,6 +60,7 @@ const icons: Partial<Record<Shape['type'], typeof Square>> = {
 	frame: Frame,
 	html: CodeXml,
 	image: ImageIcon,
+	actions: ListTodo,
 	connector: ArrowUpRight,
 }
 
@@ -72,6 +74,7 @@ const labels: Partial<Record<Shape['type'], string>> = {
 	frame: 'Frame',
 	html: 'HTML card',
 	image: 'Image',
+	actions: 'Action items',
 	connector: 'Connector',
 }
 
@@ -79,8 +82,60 @@ function shapeLabel(shape: CanvasShape) {
 	if (shape.type === 'image') {
 		return shape.imageId || shape.id
 	}
-	if (shape.type === 'frame' || shape.type === 'html') return shape.title || shape.id
+	if (shape.type === 'frame' || shape.type === 'html' || shape.type === 'actions')
+		return shape.title || shape.id
 	return shape.text || shape.id
+}
+
+function NoteLabelField({
+	shape,
+	onPatch,
+}: {
+	shape: CanvasShape
+	onPatch: (patch: Patch) => void
+}) {
+	const external = shape.label ?? ''
+	const [draft, setDraft] = useState(external)
+	const [conflict, setConflict] = useState('')
+	const focused = useRef(false)
+	const editBase = useRef(external)
+
+	useEffect(() => {
+		if (!focused.current) setDraft(external)
+	}, [external])
+
+	return (
+		<Field id="note-label" label="Label">
+			<TextField.Root
+				id="note-label"
+				value={draft}
+				maxLength={120}
+				onFocus={() => {
+					focused.current = true
+					setConflict('')
+					editBase.current = external
+				}}
+				onChange={(event) => setDraft(event.target.value)}
+				onBlur={() => {
+					focused.current = false
+					if (editBase.current !== external) {
+						setDraft(external)
+						setConflict('Label changed elsewhere; your draft was not applied.')
+						return
+					}
+					if (draft !== external) onPatch({ label: draft })
+				}}
+				onKeyDown={(event) => {
+					if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.currentTarget.blur()
+				}}
+			/>
+			{conflict && (
+				<span role="status" aria-label="Label conflict">
+					{conflict}
+				</span>
+			)}
+		</Field>
+	)
 }
 
 function Field({ id, label, children }: { id?: string; label: string; children: ReactNode }) {
@@ -122,7 +177,9 @@ export function SelectionPanel({
 				? (shape.title ?? 'HTML card')
 				: shape.type === 'image'
 					? 'Image'
-					: (labels[shape.type] ?? shape.type)
+					: shape.type === 'actions'
+						? (shape.title ?? 'Action items')
+						: (labels[shape.type] ?? shape.type)
 		: `${count} objects selected`
 	const peerClass = shape ? connectorClass(shape, shapes) : 'rectangle'
 	const connectorPeers = shapes.filter(
@@ -224,18 +281,7 @@ export function SelectionPanel({
 
 				{shape?.type === 'note' && (
 					<>
-						<Field id="note-label" label="Label">
-							<TextField.Root
-								id="note-label"
-								key={`${shape.id}:${shape.label}`}
-								defaultValue={shape.label ?? ''}
-								maxLength={120}
-								onBlur={(event) => onPatch({ label: event.target.value })}
-								onKeyDown={(event) => {
-									if (event.key === 'Enter') event.currentTarget.blur()
-								}}
-							/>
-						</Field>
+						<NoteLabelField key={shape.id} shape={shape} onPatch={onPatch} />
 						<Field id="shape-text" label="Text">
 							<TextArea
 								id="shape-text"
@@ -345,6 +391,16 @@ export function SelectionPanel({
 							</Text>
 						</div>
 					</>
+				)}
+
+				{shape?.type === 'actions' && (
+					<div className="panel-hint">
+						<ListTodo size={14} strokeWidth={1.75} aria-hidden="true" />
+						<Text size="1" color="gray">
+							{shape.items?.filter((item) => item.done).length ?? 0} of {shape.items?.length ?? 0}{' '}
+							complete. Change status directly on the card.
+						</Text>
+					</div>
 				)}
 
 				{shape?.type === 'path' && (

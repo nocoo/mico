@@ -15,7 +15,7 @@ Mico 是一个本地优先的画布实验：人和本地 Agent 编辑同一批�
 
 画布支持多个命名画布、平移、缩放、矩形、椭圆、排版文字、直线、自由笔刷、便签、图片、框、HTML 卡片、连接线、拖动、吸附、框选、配色和删除。画板首次加载时适配视口；点 Fit 或按 F 可再次适配全部对象。
 
-The bottom-left minimap and canvas-list previews share a block-only overview: notes, rectangles, ellipses, frames, HTML cards and images contribute silhouettes; standalone text, lines, connectors and strokes are ignored, including their bounds. No labels, HTML or image bytes are embedded. Click or drag the minimap to navigate, or focus it and use the arrow keys. It shows the visible viewport, accounts for the open assistant, and hides at widths of 980px or less.
+The bottom-left minimap and canvas-list previews share a block-only overview: notes, rectangles, ellipses, frames, HTML cards, action cards and images contribute silhouettes; standalone text, lines, connectors and strokes are ignored, including their bounds. No labels, HTML or image bytes are embedded. Click or drag the minimap to navigate, or focus it and use the arrow keys. It shows the visible viewport, accounts for the open assistant, and hides at widths of 980px or less.
 
 The toolbar's Undo and Redo retain the last 20 successful manual edits per canvas in browser memory. A completed gesture or property submission is one step; pan/zoom and external AI/API edits are not recorded. Switching canvases retains each history; reloading clears them. A new edit clears redo. Use Cmd/Ctrl+Z to undo, Cmd/Ctrl+Shift+Z or Ctrl+Y to redo; text inputs retain native editing shortcuts. Undo restores deleted connectors, frame membership, image backgrounds and stacking order. Unrelated external edits survive; conflicting changes to affected objects block replay with a notice instead of overwriting them. History does not cover canvas creation, renaming or deletion. An unconfirmed replay pauses edits until a matching snapshot arrives; reloading discards the pending replay and local history.
 
@@ -24,6 +24,8 @@ Logo 旁的 Canvases 按钮打开面板，列出每个画布的名称、最后�
 用 Select 在空白处拖动可框选多个对象，按 Delete 会原子删除。Frame Selection 会把当前选择包进一个带 32px 内边距的命名容器。框只是容器：不能嵌套另一个框，不会成为普通图形的连接线端点，框体本身不可点击。通过左上角的标签选中并拖动它，成员会一起移动。在框内完整绘制图形、直线、笔刷、便签或 HTML 卡片会自动成为成员，把对象拖入框内会加入，完整拖出则脱离。删除框会释放成员，不删除内容。Sticky notes (N) support multiline text and seven palette choices. Text (T) supports Hand, Serif, Sans and Mono, sizes 16/18/24/32/48px and weights 300/400/500/600/700.
 
 图片工具（I）上传本地 PNG、JPEG、WebP 或 GIF，最大 10 MiB，并放到画布上。每个画布最多有五个图片形状，上传和 AI 生成的都算在内。图片字节与画布形状分开存放在本地 SQLite 里，由守护进程提供读取；画布同步只传素材 ID。选中框的标签后可以把已有图片设为背景，并选择 Cover（裁切）、Contain 或 Stretch。图片仍是独立的形状；删除它会清掉所有引用它的框背景。形状被删除后，上传的素材仍留在数据库里。画布列表的预览用图片占位符，不嵌入素材本身。
+
+Frame titles use the purple region heading. Sticky notes support an optional editable label; AI tools can create and update it. Adding a label reserves body space and rejects collisions atomically.
 
 HTML 卡片工具（W）先创建空卡片，再由 Agent 通过批量 API 填入内容。卡片里的 sandbox iframe 内联了 Bootstrap 5 的 CSS 和 JavaScript，可渲染内联 HTML、CSS、脚本和 data-URI 图片。沙箱不授予同源权限，内容安全策略会阻止外部资源。这个原型开启了脚本执行，不受信任的脚本仍可能占用浏览器资源。通过左上角的标题选中卡片才能操作控件，也可以拖标题移动它。卡片是叶子节点：可以放进框，但不能包含其他对象。界面上只能改标题，标记内容要通过 API 修改。 The rounded shell does not clip the sandboxed iframe, so saved content remains visible at its corners.
 
@@ -125,7 +127,7 @@ node src/cli/index.ts shape create '{"id":"photo","type":"image","imageId":"<upl
 node src/cli/index.ts shape update <frame-id> '{"backgroundImageId":"photo","backgroundFit":"cover"}'
 ```
 
-画布形状包含 `id`、`type`（`rectangle`、`ellipse`、`text`、`line`、`note`、`path`、`frame`、`html`、`image`）、`x`、`y`、`w`、`h`、`color`（六位十六进制）以及可选的 `text`。直线的 `w` 和 `h` 是指向端点的带符号偏移。`image` 通过 `imageId` 引用已上传素材，也可以成为框成员。`frame` 必须有非空 `title`（最多 120 字符），没有 `frameId`，不能嵌套；可选的 `backgroundImageId` 引用同一画布上的图片形状，`backgroundFit` 为 `cover`（默认）、`contain` 或 `stretch`，把 `backgroundImageId` 设为 `null` 可清除背景。`html` 卡片必须有 `title` 和 `html`（最多 200 000 字符），可以带 `frameId` 放进框里。普通形状和卡片都可以带 `frameId` 指向已有的框，且只能指向框。连接线有 `id`、`type: "connector"`、`from`、`to` 两个形状 ID 和 `color`；两端必须同为框或同为普通对象。`path` 形状有 `points`（相对 `x`/`y`、位于 `w`/`h` 范围内的 2–4096 个点）、`brush`（`pencil`、`marker`、`brush`）和 `strokeWidth`（1–64）。路径与其他形状共用锚点、拖动和吸附。越界点或未知笔刷会让整批操作原子失败。可选的 `fromAnchor` 和 `toAnchor` 把端点固定到确切的锚点序号：方框/文字/便签/HTML 卡片/框有 12 个锚点，直线有 5 个。序号必须是对应节点范围内的非负整数，非法值会让整批操作失败。未固定的端点自动选择最近的外侧路径，固定后的附着点会随节点移动。
+画布形状包含 `id`、`type`（`rectangle`、`ellipse`、`text`、`line`、`note`、`path`、`frame`、`html`、`actions`、`image`）、`x`、`y`、`w`、`h`、`color`（六位十六进制）以及可选的 `text`。直线的 `w` 和 `h` 是指向端点的带符号偏移。`image` 通过 `imageId` 引用已上传素材，也可以成为框成员。`frame` 必须有非空 `title`（最多 120 字符），没有 `frameId`，不能嵌套；可选的 `backgroundImageId` 引用同一画布上的图片形状，`backgroundFit` 为 `cover`（默认）、`contain` 或 `stretch`，把 `backgroundImageId` 设为 `null` 可清除背景。`html` 卡片必须有 `title` 和 `html`（最多 200 000 字符），可以带 `frameId` 放进框里。An `actions` card has a `title` and `items` containing stable `id`, `text`, and boolean `done` values; it may carry `frameId`. `set_action_done` updates one item and requires `expectedRevision`. 普通形状和卡片都可以带 `frameId` 指向已有的框，且只能指向框。连接线有 `id`、`type: "connector"`、`from`、`to` 两个形状 ID 和 `color`；两端必须同为框或同为普通对象。`path` 形状有 `points`（相对 `x`/`y`、位于 `w`/`h` 范围内的 2–4096 个点）、`brush`（`pencil`、`marker`、`brush`）和 `strokeWidth`（1–64）。路径与其他形状共用锚点、拖动和吸附。越界点或未知笔刷会让整批操作原子失败。可选的 `fromAnchor` 和 `toAnchor` 把端点固定到确切的锚点序号：方框/文字/便签/HTML 卡片/框有 12 个锚点，直线有 5 个。序号必须是对应节点范围内的非负整数，非法值会让整批操作失败。未固定的端点自动选择最近的外侧路径，固定后的附着点会随节点移动。
 
 ### 守护进程 API
 
@@ -154,6 +156,8 @@ History replay also uses `{type: "restore", shape, index}` operations: restore a
 Vite 会热更新前端改动；`pnpm daemon` 监视守护进程源码并自动重启。API 和 CLI 的写入通过 WebSocket 实时更新已打开的画布，支持自动重连，另有三秒轮询兜底。`MICO_PORT` 同时覆盖守护进程、CLI 和 Vite 代理的端口，两个终端要设成同一个值；`MICO_DB_PATH` 覆盖数据库路径。
 
 端口分配：开发 `7063`、E2E `17063`、浏览器/BDD `27063`、内部守护进程 `37063`。自动化测试必须使用隔离的数据库和回环端点，不能指向日常画板。共用的 Caddy 映射在 `workflow/caddy/Caddyfile` 和当前机器的 `/opt/homebrew/etc/Caddyfile`；已有的 `*.dev.hexly.ai` 证书覆盖这个主机名。
+
+After a recorded or MAI session ends, the summary request asks AI to create or update a separate action card after the HTML summary. Action items have stable IDs and persisted completion state; checkbox changes support undo. Empty sessions produce an empty card rather than invented tasks. AI-generated HTML can reuse the card, list, tile and table fragments in `src/shared/htmlCardDesign.ts`. MOSS Live has the same tools and instructions, but stopping MOSS does not automatically request a post-session summary.
 
 评估脚本 [`scripts/run-ai-cases.ts`](scripts/run-ai-cases.ts) 把案例脚本逐句喂给守护进程，然后请求会后摘要。轮次产物、画板快照和截图放在 [`evals/runs/`](evals/runs/)。经明确授权的实时案例运行器使用固定虚构稿 `evals/cases/c11-er-handover.zh.txt` 或 `evals/cases/c12-service-incident.zh.txt`：`pnpm eval:live-case 4 --case incident --confirm-live-canvas` 会为 incident 轮次创建并激活新画布，不会删除或恢复其他画布。
 

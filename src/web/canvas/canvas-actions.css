@@ -1,0 +1,159 @@
+.el-actions {
+	--r: 26px;
+	box-sizing: border-box;
+	inline-size: 100%;
+	block-size: 100%;
+	max-block-size: 100%;
+	padding: 16px;
+	overflow-x: hidden;
+	overflow-y: auto;
+	font-size: 13px;
+	line-height: 1.5;
+	font-family:
+		"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC",
+		"Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+	scrollbar-width: none;
+}
+
+.el-actions::-webkit-scrollbar {
+	display: none;
+}
+
+.el-actions h3 {
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	margin: 0 0 10px;
+	font-size: 14px;
+}
+
+.el-actions-title {
+	min-inline-size: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.el-actions h3 svg {
+	inline-size: 20px;
+	block-size: 20px;
+	flex: none;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+
+.el-actions .act {
+	position: relative;
+	display: flex;
+	align-items: flex-start;
+	gap: 9px;
+	box-sizing: border-box;
+	inline-size: 100%;
+	padding: 8px 9px;
+	margin-block-end: 6px;
+	border: 0;
+	border-radius: 14px;
+	color: var(--j-ink);
+	background: light-dark(oklch(1 0 0 / 0.55), oklch(1 0 0 / 0.08));
+	font: inherit;
+	font-size: 12.5px;
+	line-height: 1.45;
+	text-align: start;
+	cursor: pointer;
+	transition:
+		scale 0.4s var(--ui-spring),
+		background 0.2s,
+		opacity 0.2s;
+	appearance: none;
+}
+
+.el-actions .act:not(:disabled):active {
+	scale: 0.96;
+}
+
+.el-actions .act:focus-visible {
+	outline: 2px solid var(--j-edge);
+	outline-offset: 2px;
+}
+
+.el-actions .act:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.el-actions .act .box {
+	display: grid;
+	place-items: center;
+	inline-size: 20px;
+	block-size: 20px;
+	flex: none;
+	border-radius: 7px;
+	box-shadow: inset 0 0 0 1.6px var(--j-edge);
+	transition: background 0.2s;
+}
+
+.el-actions .act .box svg {
+	inline-size: 14px;
+	block-size: 14px;
+	fill: none;
+	stroke: oklch(1 0 0);
+	stroke-width: 2.6;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+	scale: 0;
+	transition: scale 0.45s var(--ui-spring);
+}
+
+.el-actions .act-text {
+	min-inline-size: 0;
+	overflow-wrap: anywhere;
+	white-space: normal;
+}
+
+.el-actions .act.done {
+	opacity: 0.62;
+}
+
+.el-actions .act.done .act-text {
+	text-decoration: line-through;
+}
+
+.el-actions .act.done .box {
+	background: var(--j-edge);
+}
+
+.el-actions .act.done .box svg {
+	scale: 1;
+}
+
+.el-actions .act.done:disabled {
+	opacity: 0.45;
+}
+
+.el-actions-empty {
+	margin: 0;
+	padding: 8px 9px;
+	border-radius: 14px;
+	color: var(--j-ink);
+	background: light-dark(oklch(1 0 0 / 0.55), oklch(1 0 0 / 0.08));
+	font-size: 12.5px;
+	line-height: 1.45;
+	overflow-wrap: anywhere;
+	opacity: 0.62;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.el-actions .act:not(:disabled):active {
+		scale: 1;
+	}
+
+	.el-actions .act,
+	.el-actions .act .box,
+	.el-actions .act .box svg {
+		transition-duration: 0.01ms;
+	}
+}

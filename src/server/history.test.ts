@@ -121,6 +121,36 @@ test('image undo restores frame backgrounds and enforces the five-image cap', ()
 		assert.equal(history.canUndo, true)
 	}))
 
+test('history restores action cards and their item completion state', () =>
+	withStore((store) => {
+		const before = store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'actions',
+						type: 'actions',
+						x: 10,
+						y: 20,
+						w: 300,
+						h: 160,
+						color: '#f1fadc',
+						title: 'Actions',
+						items: [{ id: 'stable', text: 'Follow up', done: false }],
+					},
+				},
+			],
+		})
+		const after = store.apply({
+			expectedRevision: before.revision,
+			operations: [{ type: 'set_action_done', id: 'actions', itemId: 'stable', done: true }],
+		})
+		const history = new CanvasHistory()
+		history.record(before, after)
+		assert.deepEqual(replay(store, history, 'undo').shapes, before.shapes)
+		assert.deepEqual(replay(store, history, 'redo').shapes, after.shapes)
+	}))
+
 test('restore validates exact keys, revision, index, shapes and final references without partial writes', () =>
 	withStore((store) => {
 		const before = store.apply({ operations: [{ type: 'create', shape: note('a') }] })

@@ -21,6 +21,17 @@ test('explicit object inspection returns complete text and HTML for safe updates
 				text,
 			},
 			{
+				id: 'actions',
+				type: 'actions',
+				x: 300,
+				y: 200,
+				w: 300,
+				h: 300,
+				color: '#f1fadc',
+				title: 'Actions',
+				items: [{ id: 'stable-action', text: 'Detailed action '.repeat(30), done: true }],
+			},
+			{
 				id: 'summary',
 				type: 'html',
 				x: 5000,
@@ -36,12 +47,20 @@ test('explicit object inspection returns complete text and HTML for safe updates
 	const context = boardDigest(board, [])
 	assert.notEqual(context.shapes[0].text, text)
 	assert.equal(context.shapes[0].label, 'Risk')
-	assert.equal(context.shapes[1].html, undefined)
+	assert.equal(context.shapes[1].itemCount, 1)
+	assert.equal(context.shapes[1].items?.[0].id, 'stable-action')
+	assert.equal(context.shapes[1].items?.[0].text.length, 180)
+	assert.equal(context.shapes[2].html, undefined)
 	assert.equal(
 		context.warnings.some((warning) => warning.includes('very large')),
 		false,
 	)
-	const inspected = boardDigest(board, [], { ids: ['note', 'summary'], includeHtml: true })
+	const inspected = boardDigest(board, [], {
+		ids: ['note', 'actions', 'summary'],
+		includeHtml: true,
+	})
 	assert.equal(inspected.shapes[0].text, text)
-	assert.equal(inspected.shapes[1].html, html)
+	assert.equal(inspected.shapes[1].items?.[0].text, 'Detailed action '.repeat(30))
+	assert.equal(inspected.shapes[1].items?.[0].done, true)
+	assert.equal(inspected.shapes[2].html, html)
 })

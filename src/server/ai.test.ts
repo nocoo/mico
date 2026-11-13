@@ -7,6 +7,7 @@ import test from 'node:test'
 import { simulateReadableStream } from 'ai'
 import { MockLanguageModelV4 } from 'ai/test'
 import { CANDY_COLORS, CANDY_TINTS } from '../shared/palette.ts'
+import { POST_SESSION_SUMMARY_PROMPT } from '../shared/summaryPrompt.ts'
 import {
 	MAGPIE_DEFAULT_BASE_URL,
 	MAGPIE_DEFAULT_MODEL,
@@ -83,6 +84,140 @@ test('AI tools create, inspect and update frame titles and note labels', async (
 		}
 		assert.equal(updated.shapes.find((shape) => shape.id === 'area')?.title, 'Resolved discussion')
 		assert.equal(updated.shapes.find((shape) => shape.id === 'left')?.label, 'Resolved')
+	})
+})
+
+test('upsert_action_card preserves completion, omissions and explicit deletes safely', async () => {
+	await withStore(async (store) => {
+		const canvasId = store.getActiveCanvasId()
+		const otherCanvas = store.createCanvas('Other canvas').canvas.id
+		const tools = createCanvasTools({ store, broadcast: () => {}, selection: [], canvasId })
+		const input = {
+			id: 'next-actions',
+			x: 80,
+			y: 160,
+			title: 'Next actions',
+			items: [
+				{ id: 'owner-a', text: 'Confirm owner' },
+				{ id: 'keep-me', text: 'Keep this item' },
+				{ id: 'remove-me', text: 'Remove explicitly' },
+			],
+		}
+		const created = (await run(tools.upsert_action_card, input)) as {
+			ok: boolean
+			revision: number
+			created: { id: string }[]
+		}
+		assert.equal(created.ok, true)
+		assert.equal(created.revision, 1)
+		assert.deepEqual(store.getBoard(otherCanvas).shapes, [])
+		const card = store.getBoard(canvasId).shapes[0]
+		assert.ok(card?.type === 'actions')
+		assert.equal(card.w, 300)
+		assert.equal(card.color, CANDY_TINTS.green)
+		assert.ok(card.items)
+		assert.ok(card.items.every((item) => item.done === false))
+		const initialHeight = card.h
+
+		store.applyRequest({
+			canvasId,
+			expectedRevision: 1,
+			operations: [{ type: 'set_action_done', id: 'next-actions', itemId: 'owner-a', done: true }],
+		})
+		const stale = (await run(tools.upsert_action_card, {
+			...input,
+			items: [{ id: 'owner-a', text: 'This stale update must not overwrite completion' }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(stale.ok, false)
+		assert.equal(stale.error, 'REVISION_CONFLICT')
+		const completedCard = store.getBoard(canvasId).shapes[0]
+		assert.ok(completedCard?.type === 'actions')
+		assert.equal(completedCard.items?.find((item) => item.id === 'owner-a')?.done, true)
+
+		const read = (await run(tools.get_board, { ids: ['next-actions'] })) as {
+			revision: number
+			shapes: { items: { id: string; text: string; done: boolean }[] }[]
+		}
+		assert.equal(read.revision, 2)
+		assert.equal(read.shapes[0].items.length, 3)
+		const longText = 'Detailed follow-up '.repeat(40)
+		const updated = (await run(tools.upsert_action_card, {
+			id: 'next-actions',
+			title: 'Updated actions',
+			items: [
+				{ id: 'owner-a', text: longText },
+				{ id: 'new-item', text: 'New explicit item' },
+			],
+			removeItemIds: ['remove-me'],
+		})) as { ok: boolean; revision: number; updated: string[] }
+		assert.equal(updated.ok, true)
+		assert.equal(updated.revision, 3)
+		const updatedCard = store.getBoard(canvasId).shapes[0]
+		assert.ok(updatedCard?.type === 'actions')
+		assert.deepEqual(
+			updatedCard.items?.map((item) => [item.id, item.done]),
+			[
+				['owner-a', true],
+				['keep-me', false],
+				['new-item', false],
+			],
+		)
+		assert.ok(updatedCard.h > initialHeight)
+
+		const longChinese = (await run(tools.upsert_action_card, {
+			id: 'long-chinese-actions',
+			x: 80,
+			y: 640,
+			title: '中文长行动项',
+			items: [{ id: 'long-zh', text: '确认中文行动项并跟进完整上下文'.repeat(12) }],
+		})) as { ok: boolean }
+		assert.equal(longChinese.ok, true)
+		const chineseCard = store
+			.getBoard(canvasId)
+			.shapes.find((shape) => shape.id === 'long-chinese-actions')
+		assert.ok(chineseCard?.type === 'actions')
+		assert.ok(chineseCard.h > 300)
+
+		const empty = (await run(tools.upsert_action_card, {
+			id: 'empty-actions',
+			x: 500,
+			y: 160,
+			title: 'No confirmed actions',
+			items: [],
+		})) as { ok: boolean }
+		assert.equal(empty.ok, true)
+		const emptyCard = store.getBoard(canvasId).shapes.find((shape) => shape.id === 'empty-actions')
+		assert.ok(emptyCard?.type === 'actions')
+		assert.deepEqual(emptyCard.items, [])
+
+		await run(tools.add_notes, { notes: [{ id: 'occupied', x: 900, y: 160, text: 'User note' }] })
+		const collision = (await run(tools.upsert_action_card, {
+			id: 'occupied',
+			x: 900,
+			y: 160,
+			title: 'Do not replace',
+			items: [],
+		})) as { ok: boolean; error?: string }
+		assert.equal(collision.ok, false)
+		assert.equal(collision.error, 'DUPLICATE_ID')
+		assert.equal(
+			store.getBoard(canvasId).shapes.find((shape) => shape.id === 'occupied')?.type,
+			'note',
+		)
+
+		const schema = tools.upsert_action_card.inputSchema as {
+			safeParse(value: unknown): { success: boolean }
+		}
+		assert.equal(
+			schema.safeParse({
+				id: 'bad',
+				x: 0,
+				y: 0,
+				title: 'Bad',
+				items: [{ id: 'x', text: 'x', done: true }],
+			}).success,
+			false,
+		)
 	})
 })
 
@@ -446,6 +581,108 @@ test('AI chat streams a tool loop and draws on the active board', async () => {
 	})
 })
 
+test('post-session summary writes a reusable HTML card and preserves action completion', async () => {
+	const usage = {
+		inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+		outputTokens: { total: 10, text: 10, reasoning: undefined },
+	}
+	let step = 0
+	const model = new MockLanguageModelV4({
+		doStream: async () => {
+			const phase = step++ % 3
+			const name = phase === 0 ? 'add_html_cards' : 'upsert_action_card'
+			const input = JSON.stringify(
+				phase === 0
+					? {
+							cards: [
+								{
+									id: 'summary',
+									x: 800,
+									y: 120,
+									w: 620,
+									h: 400,
+									title: 'Plan',
+									html: '<h1>Plan</h1>',
+								},
+							],
+						}
+					: {
+							id: 'actions',
+							x: 1460,
+							y: 120,
+							title: 'Next steps',
+							items: [{ id: 'timeline', text: 'Confirm the timeline' }],
+						},
+			)
+			const callId = `summary-step-${step}`
+			return {
+				stream: simulateReadableStream({
+					chunks: [
+						{ type: 'stream-start' as const, warnings: [] },
+						...(phase === 2
+							? []
+							: [
+									{ type: 'tool-input-start' as const, id: callId, toolName: name },
+									{ type: 'tool-input-delta' as const, id: callId, delta: input },
+									{ type: 'tool-input-end' as const, id: callId },
+									{ type: 'tool-call' as const, toolCallId: callId, toolName: name, input },
+								]),
+						{
+							type: 'finish' as const,
+							finishReason: {
+								unified: phase === 2 ? ('stop' as const) : ('tool-calls' as const),
+								raw: undefined,
+							},
+							usage,
+						},
+					],
+				}),
+			}
+		},
+	})
+	await withDaemon(async ({ daemon, url }) => {
+		const summarize = async () => {
+			const response = await fetch(`${url}/api/ai/chat`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					messages: [
+						{
+							id: 'u',
+							role: 'user',
+							parts: [
+								{
+									type: 'text',
+									text: `We will confirm the timeline. ${POST_SESSION_SUMMARY_PROMPT}`,
+								},
+							],
+						},
+					],
+					selection: [],
+				}),
+			})
+			assert.equal(response.status, 200)
+			const stream = await response.text()
+			assert.match(stream, /add_html_cards/)
+			assert.match(stream, /upsert_action_card/)
+		}
+		await summarize()
+		const initial = daemon.store.getBoard()
+		assert.ok(initial.shapes.some((shape) => shape.id === 'summary' && shape.type === 'html'))
+		assert.equal(initial.shapes.find((shape) => shape.id === 'actions')?.type, 'actions')
+		daemon.store.applyRequest({
+			expectedRevision: initial.revision,
+			operations: [{ type: 'set_action_done', id: 'actions', itemId: 'timeline', done: true }],
+		})
+		await summarize()
+		const shapes = daemon.store.getBoard().shapes
+		assert.equal(shapes.filter((shape) => shape.id === 'summary').length, 1)
+		const action = shapes.find((shape) => shape.id === 'actions')
+		if (action?.type !== 'actions') throw new Error('Missing action card')
+		assert.deepEqual(action.items, [{ id: 'timeline', text: 'Confirm the timeline', done: true }])
+	}, model)
+})
+
 test('AI settings updates create the model used by subsequent chats', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-settings-chat-'))
 	const seen: Array<{ baseURL: string; model: string; apiKey: string }> = []
@@ -604,7 +841,7 @@ test('update_shapes validates palette colors and normalizes notes only', async (
 	})
 })
 
-test('updates are rejected after a concurrent board change and recover after a re-read', async () => {
+test('unrelated creates cannot acknowledge unread concurrent edits', async () => {
 	await withStore(async (store) => {
 		const tools = createCanvasTools({
 			store,
@@ -631,20 +868,20 @@ test('updates are rejected after a concurrent board change and recover after a r
 		const label = store.getBoard().shapes.find((shape) => shape.id === 'label')
 		assert.equal(label?.type === 'text' ? label.text : null, 'Before')
 
-		await run(tools.add_notes, {
+		const added = (await run(tools.add_notes, {
 			notes: [{ id: 'unread', x: 600, y: 10, text: 'Unrelated addition' }],
-		})
-		const stillStale = (await run(tools.update_shapes, {
-			updates: [{ id: 'label', patch: { text: 'Still stale' } }],
-		})) as { ok: boolean; error?: string }
-		assert.equal(stillStale.ok, false)
-		assert.equal(stillStale.error, 'REVISION_CONFLICT')
-
-		await run(tools.get_board, {})
+		})) as { ok: boolean; revision: number }
+		assert.equal(added.ok, true)
+		assert.equal(added.revision, store.getBoard().revision)
 		const retried = (await run(tools.update_shapes, {
 			updates: [{ id: 'label', patch: { text: 'After' } }],
+		})) as { ok: boolean; error?: string }
+		assert.equal(retried.error, 'REVISION_CONFLICT')
+		await run(tools.get_board, {})
+		const refreshed = (await run(tools.update_shapes, {
+			updates: [{ id: 'label', patch: { text: 'After' } }],
 		})) as { ok: boolean }
-		assert.equal(retried.ok, true)
+		assert.equal(refreshed.ok, true)
 		const updated = store.getBoard().shapes.find((shape) => shape.id === 'label')
 		assert.equal(updated?.type === 'text' ? updated.text : null, 'After')
 	})

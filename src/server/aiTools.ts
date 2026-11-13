@@ -1,12 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { tool } from 'ai'
 import { z } from 'zod'
+import {
+	hasVisibleNoteLabel,
+	NOTE_LABEL_SPACE,
+	noteLabelHeightDelta,
+} from '../shared/noteLayout.ts'
 import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
 import type { CanvasShape, Operation, Point, Shape } from '../shared/types.ts'
 import { isMemberType } from '../shared/types.ts'
 import { boardDigest } from './aiBoard.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
-import { type BoardStore, OperationError } from './store.ts'
+import {
+	addedPlacement,
+	type BoardStore,
+	connectorPlacementBounds,
+	OperationError,
+} from './store.ts'
 import { expandLucideIcons } from './summaryIcons.ts'
 
 const idSchema = z
@@ -66,6 +76,21 @@ const NOTE_FILL: Record<string, string> = {
 function noteFill(color?: string): string {
 	if (!color) return CANDY_TINTS.yellow
 	return NOTE_FILL[color] ?? color
+}
+
+function actionCardHeight(items: { text: string }[], width: number): number {
+	const textWidth = Math.max(1, width - 80)
+	const contentHeight = items.reduce((height, item) => {
+		const lines = item.text.split('\n').reduce((count, line) => {
+			const pixels = Array.from(line).reduce(
+				(total, character) => total + ((character.codePointAt(0) ?? 0) <= 0x7f ? 7.28 : 13),
+				0,
+			)
+			return count + Math.max(1, Math.ceil(pixels / textWidth))
+		}, 0)
+		return height + Math.max(44, lines * 24 + 12)
+	}, 0)
+	return Math.max(120, 76 + contentHeight)
 }
 
 const generatedId = (kind: string): string => `${kind}-${randomUUID().slice(0, 8)}`
@@ -158,8 +183,14 @@ function projectOperations(current: Shape[], operations: Operation[]): Shape[] {
 			const index = projected.findIndex((shape) => shape.id === operation.id)
 			if (index < 0) continue
 			const target = projected[index]
-			if (target.type === 'connector') continue
 			const updated = { ...target, ...operation.patch } as Shape
+			if (target.type === 'connector') {
+				projected[index] = updated
+				continue
+			}
+			if (target.type === 'note' && updated.type === 'note' && operation.patch.h === undefined) {
+				updated.h += noteLabelHeightDelta(target.label, updated.label)
+			}
 			if (updated.type !== 'connector' && updated.frameId === null) {
 				const { frameId: _frameId, ...rest } = updated
 				projected[index] = rest as Shape
@@ -168,6 +199,20 @@ function projectOperations(current: Shape[], operations: Operation[]): Shape[] {
 				projected[index] = rest as Shape
 			} else {
 				projected[index] = updated
+			}
+			continue
+		}
+		if (operation.type === 'set_action_done') {
+			const index = projected.findIndex((shape) => shape.id === operation.id)
+			const target = projected[index]
+			if (target?.type === 'actions') {
+				projected[index] = {
+					...target,
+					items:
+						target.items?.map((item) =>
+							item.id === operation.itemId ? { ...item, done: operation.done } : item,
+						) ?? [],
+				}
 			}
 			continue
 		}
@@ -312,6 +357,32 @@ function apply(
 		for (const shape of projected) {
 			if (shape.id === frameId) continue
 			if (shape.type !== 'connector' && shape.frameId === frameId) continue
+			if (shape.type === 'connector') {
+				const from = projected.find((item) => item.id === shape.from)
+				const to = projected.find((item) => item.id === shape.to)
+				if (
+					from &&
+					from.type !== 'connector' &&
+					from.frameId === frameId &&
+					to &&
+					to.type !== 'connector' &&
+					to.frameId === frameId
+				)
+					continue
+				const bounds = connectorPlacementBounds(projected, shape)
+				const added = addedPlacement(
+					{ ...frameBounds, top: frameBounds.top - 40 },
+					{ ...candidate, top: candidate.top - 40 },
+				)
+				if (bounds && added.some((region) => touchOverlap(region, bounds))) {
+					return {
+						ok: false,
+						error: 'FRAME_COLLISION',
+						message: `Frame ${frameId} would touch unrelated connector ${shape.id}; growth is rejected without mutation.`,
+					}
+				}
+				continue
+			}
 			const bounds = shapeBounds(shape)
 			if (bounds && touchOverlap(candidate, bounds)) {
 				return {
@@ -413,7 +484,9 @@ export function createCanvasTools(
 	const applyOperations = (operations: Operation[]) => {
 		context.revision = observedRevision
 		const reply = apply(context, operations, observedRevision)
-		if (reply.ok) observedRevision += 1
+		if (reply.ok && operations.length > 0 && reply.revision === observedRevision + 1) {
+			observedRevision = reply.revision
+		}
 		return reply
 	}
 	return {
@@ -509,20 +582,40 @@ export function createCanvasTools(
 					.max(16),
 			}),
 			execute: async ({ notes }) => {
-				const operations: Operation[] = notes.map((note) => ({
-					type: 'create',
-					shape: {
-						...baseShape(note.id, 'note', noteFill(note.color)),
-						type: 'note',
-						x: note.x,
-						y: note.y,
-						w: note.w ?? 260,
-						h: note.h ?? 180,
-						text: note.text,
-						...(note.label !== undefined ? { label: note.label } : {}),
-						...(note.frameId ? { frameId: note.frameId } : {}),
-					},
-				}))
+				const current = new Map(store.getBoard(canvasId).shapes.map((shape) => [shape.id, shape]))
+				const operations: Operation[] = notes.map((note) => {
+					const existing = note.id ? current.get(note.id) : undefined
+					if (existing?.type === 'note') {
+						return {
+							type: 'update',
+							id: existing.id,
+							patch: {
+								x: note.x,
+								y: note.y,
+								text: note.text,
+								...(note.w === undefined ? {} : { w: note.w }),
+								...(note.h === undefined ? {} : { h: note.h }),
+								...(note.label === undefined ? {} : { label: note.label }),
+								...(note.color === undefined ? {} : { color: noteFill(note.color) }),
+								...(note.frameId === undefined ? {} : { frameId: note.frameId }),
+							},
+						}
+					}
+					return {
+						type: 'create',
+						shape: {
+							...baseShape(note.id, 'note', noteFill(note.color)),
+							type: 'note',
+							x: note.x,
+							y: note.y,
+							w: note.w ?? 260,
+							h: note.h ?? 180 + (hasVisibleNoteLabel(note.label) ? NOTE_LABEL_SPACE : 0),
+							text: note.text,
+							...(note.label !== undefined ? { label: note.label } : {}),
+							...(note.frameId ? { frameId: note.frameId } : {}),
+						},
+					}
+				})
 				return applyOperations(operations)
 			},
 		}),
@@ -971,6 +1064,149 @@ export function createCanvasTools(
 					},
 				}))
 				return applyOperations(operations)
+			},
+		}),
+
+		upsert_action_card: tool({
+			description:
+				'Create or update one action card. Supply stable card and item ids. On first create, provide x and y; an empty items array is valid when the source contains no real action items, and must not be filled with invented tasks. Later calls upsert only the returned items and must list deletions explicitly in removeItemIds; omitted existing items are preserved. Never send or change done; completion remains UI-controlled.',
+			inputSchema: z
+				.object({
+					id: idSchema,
+					title: z.string().min(1).max(120),
+					items: z
+						.array(
+							z
+								.object({
+									id: idSchema,
+									text: z.string().min(1).max(1000),
+								})
+								.strict(),
+						)
+						.max(200)
+						.superRefine((items, context) => {
+							const ids = new Set<string>()
+							for (const [index, item] of items.entries()) {
+								if (!ids.has(item.id)) {
+									ids.add(item.id)
+									continue
+								}
+								context.addIssue({
+									code: 'custom',
+									message: 'Action item ids must be unique within the card',
+									path: [index, 'id'],
+								})
+							}
+						}),
+					x: coord('Left edge on first create.').optional(),
+					y: coord('Top edge on first create.').optional(),
+					w: size('Width.').optional(),
+					h: size('Height.').optional(),
+					removeItemIds: z.array(idSchema).max(200).optional(),
+					color: z.enum([...Object.values(CANDY_COLORS), ...Object.values(CANDY_TINTS)]).optional(),
+					frameId: z.string().nullable().optional(),
+				})
+				.strict(),
+			execute: async (card) => {
+				const current = store.getBoard(canvasId)
+				const existing = current.shapes.find((shape) => shape.id === card.id)
+				if (existing && existing.type !== 'actions') {
+					return {
+						ok: false as const,
+						error: 'DUPLICATE_ID',
+						message: `shape id already exists with type ${existing.type}: ${card.id}`,
+					}
+				}
+				if (!existing && (card.x === undefined || card.y === undefined)) {
+					return {
+						ok: false as const,
+						error: 'INVALID_REQUEST',
+						message: 'x and y are required when creating an action card',
+					}
+				}
+				const previous = new Map(
+					existing?.type === 'actions' ? existing.items?.map((item) => [item.id, item]) : [],
+				)
+				const removeItemIds = new Set(card.removeItemIds ?? [])
+				if (!existing && removeItemIds.size > 0) {
+					return {
+						ok: false as const,
+						error: 'INVALID_REQUEST',
+						message: 'removeItemIds is only valid when updating an existing action card',
+					}
+				}
+				if (
+					existing?.type === 'actions' &&
+					[...removeItemIds].some((id) => !existing.items?.some((item) => item.id === id))
+				) {
+					return {
+						ok: false as const,
+						error: 'NOT_FOUND',
+						message: 'removeItemIds contains an action item that does not exist on this card',
+					}
+				}
+				for (const item of card.items) {
+					if (removeItemIds.has(item.id)) {
+						return {
+							ok: false as const,
+							error: 'INVALID_REQUEST',
+							message: `action item cannot be updated and removed in one call: ${item.id}`,
+						}
+					}
+				}
+				const updates = new Map(
+					card.items.map((item) => [
+						item.id,
+						{ ...item, done: previous.get(item.id)?.done ?? false },
+					]),
+				)
+				const items = [
+					...(existing?.type === 'actions' ? (existing.items ?? []) : []).flatMap((item) => {
+						if (removeItemIds.has(item.id)) return []
+						const update = updates.get(item.id)
+						if (update) {
+							updates.delete(item.id)
+							return [{ ...update }]
+						}
+						return [{ ...item }]
+					}),
+					...[...updates.values()],
+				]
+				const width = card.w ?? (existing?.type === 'actions' ? existing.w : undefined) ?? 300
+				if (!existing) {
+					return applyOperations([
+						{
+							type: 'create',
+							shape: {
+								...baseShape(card.id, 'actions', card.color ?? CANDY_TINTS.green),
+								type: 'actions',
+								x: card.x as number,
+								y: card.y as number,
+								w: width,
+								h: Math.max(card.h ?? 0, actionCardHeight(items, width)),
+								title: card.title,
+								items,
+								...(card.frameId ? { frameId: card.frameId } : {}),
+							},
+						},
+					])
+				}
+				return applyOperations([
+					{
+						type: 'update',
+						id: card.id,
+						patch: {
+							title: card.title,
+							items,
+							...(card.x === undefined ? {} : { x: card.x }),
+							...(card.y === undefined ? {} : { y: card.y }),
+							...(card.w === undefined ? {} : { w: card.w }),
+							h: Math.max(card.h ?? 0, existing.h, actionCardHeight(items, width)),
+							...(card.color === undefined ? {} : { color: card.color }),
+							...(card.frameId === undefined ? {} : { frameId: card.frameId }),
+						},
+					},
+				])
 			},
 		}),
 

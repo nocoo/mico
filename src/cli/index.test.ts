@@ -101,6 +101,38 @@ test('CLI drives the real daemon with create, update, delete and batches', async
 		const generatedShape = boardOf(generated.stdout).shapes.at(-1) as CanvasShape
 		assert.match(generatedShape.id, /^[0-9a-f-]{36}$/)
 
+		const actionCreated = await runCli(port, [
+			'shape',
+			'create',
+			JSON.stringify({
+				id: 'cli-actions',
+				type: 'actions',
+				x: 300,
+				y: 200,
+				w: 300,
+				h: 160,
+				color: '#f1fadc',
+				title: 'CLI actions',
+				items: [{ id: 'cli-item', text: 'CLI item', done: false }],
+			}),
+		])
+		assert.equal(actionCreated.code, 0)
+		const actionRevision = boardOf(actionCreated.stdout).revision
+		const actionDone = await runCli(
+			port,
+			['batch', '-'],
+			JSON.stringify({
+				expectedRevision: actionRevision,
+				operations: [
+					{ type: 'set_action_done', id: 'cli-actions', itemId: 'cli-item', done: true },
+				],
+			}),
+		)
+		assert.equal(actionDone.code, 0)
+		const cliAction = boardOf(actionDone.stdout).shapes.find((shape) => shape.id === 'cli-actions')
+		assert.ok(cliAction?.type === 'actions')
+		assert.equal(cliAction.items?.[0].done, true)
+
 		const updated = await runCli(port, ['shape', 'update', 'cli-rect', '{"text":"Renamed"}'])
 		assert.equal(updated.code, 0)
 		const renamed = boardOf(updated.stdout).shapes.find((shape) => shape.id === 'cli-rect')

@@ -22,15 +22,20 @@ test('overview extraction keeps only block silhouettes and puts frames behind th
 		shape('connector', 'edge', { from: 'note', to: 'frame' }),
 		frame,
 		shape('image', 'image', { imageId: 'secret-image-id' }),
+		shape('actions', 'actions', {
+			title: 'private action title',
+			items: [{ id: 'private-item', text: 'private action text', done: true }],
+		}),
 	])
 
 	assert.deepEqual(
 		blocks.map(({ type }) => type),
-		['frame', 'note', 'image'],
+		['frame', 'note', 'image', 'actions'],
 	)
 	assert.equal(Object.hasOwn(blocks[0], 'title'), false)
 	assert.equal(Object.hasOwn(blocks[1], 'text'), false)
 	assert.doesNotMatch(JSON.stringify(blocks), /private|asset-id|secret-image|standalone/)
+	assert.equal(Object.hasOwn(blocks[3], 'items'), false)
 })
 
 test('overview geometry normalizes signed dimensions and ignores invalid values', () => {

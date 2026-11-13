@@ -4,6 +4,7 @@ import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
 import type { Tool } from '../design'
 import { StickyNote } from '../StickyNote'
+import { CanvasActions } from './CanvasActions'
 import { CanvasFrame } from './CanvasFrame'
 import { CanvasImage } from './CanvasImage'
 import { CanvasText } from './CanvasText'
@@ -34,6 +35,8 @@ export interface ShapeViewProps extends ShapeCallbacks {
 	animatedObjectIds: ReadonlySet<string>
 	onEntryAnimationConsumed: (id: string) => void
 	editingId: string | null
+	onActionToggle: (shapeId: string, itemId: string, done: boolean) => void
+	actionsDisabled: boolean
 }
 
 export function ShapeView({
@@ -48,6 +51,8 @@ export function ShapeView({
 	animatedObjectIds,
 	onEntryAnimationConsumed,
 	editingId,
+	onActionToggle,
+	actionsDisabled,
 	onPointerDown,
 	onDoubleClick,
 }: ShapeViewProps) {
@@ -80,7 +85,11 @@ export function ShapeView({
 
 	const active = selectedIds.includes(shape.id)
 	const pop =
-		(shape.type === 'rectangle' || shape.type === 'ellipse' || shape.type === 'text') && animated
+		(shape.type === 'rectangle' ||
+			shape.type === 'ellipse' ||
+			shape.type === 'text' ||
+			shape.type === 'actions') &&
+		animated
 	const common = {
 		className: `canvas-shape${pop ? ' canvas-entry' : ''}`,
 		onAnimationEnd: (event: React.AnimationEvent<SVGGElement>) => {
@@ -97,6 +106,38 @@ export function ShapeView({
 		onPointerDown: (event: React.PointerEvent<SVGGElement>) => onPointerDown(event, shape),
 	}
 
+	if (shape.type === 'actions') {
+		return (
+			<g {...common}>
+				<rect
+					x={shape.x}
+					y={shape.y}
+					width={shape.w}
+					height={shape.h}
+					fill="transparent"
+					pointerEvents="all"
+				/>
+				<foreignObject
+					x={shape.x}
+					y={shape.y}
+					width={shape.w}
+					height={shape.h}
+					overflow="visible"
+					pointerEvents="auto"
+				>
+					<CanvasActions
+						color={shape.color}
+						items={shape.items ?? []}
+						title={shape.title}
+						onToggle={(itemId, done) => onActionToggle(shape.id, itemId, done)}
+						disabled={actionsDisabled}
+						interactive={tool === 'select' && !spacePressed && !isPanning}
+					/>
+				</foreignObject>
+				{active && <SelectionOutline shape={shape} zoom={zoom} />}
+			</g>
+		)
+	}
 	if (shape.type === 'rectangle' || shape.type === 'ellipse') {
 		return (
 			<g {...common}>

@@ -844,6 +844,29 @@ export default function App() {
 		void postOperations([{ type: 'update', id: selectedId, patch: { color } }])
 	}
 
+	const toggleActionDone = useCallback(
+		(shapeId: string, itemId: string, done: boolean) => {
+			const canvasId = getActiveCanvasId()
+			if (!canvasId) return
+			void (async () => {
+				for (let attempt = 0; attempt < 2; attempt++) {
+					if (!isCanvasTargetCurrent(canvasId)) return
+					const before = getCurrentBoard()
+					const shape = before.shapes.find((candidate) => candidate.id === shapeId)
+					if (shape?.type !== 'actions') return
+					const item = shape.items?.find((candidate) => candidate.id === itemId)
+					if (!item || item.done === done) return
+					const applied = await postOperations([
+						{ type: 'set_action_done', id: shapeId, itemId, done },
+					])
+					if (applied || !isCanvasTargetCurrent(canvasId)) return
+					if (getCurrentBoard().revision === before.revision) return
+				}
+			})()
+		},
+		[getActiveCanvasId, getCurrentBoard, isCanvasTargetCurrent, postOperations],
+	)
+
 	const changeEndpoint = (endpoint: 'from' | 'to', id: string) => {
 		if (!selected || !isConnector(selected)) return
 		const from = board.shapes.find(
@@ -913,6 +936,8 @@ export default function App() {
 		animatedObjectIds: animatedObjectsRef.current,
 		onEntryAnimationConsumed: consumeEntryAnimation,
 		editingId: editing?.id ?? null,
+		onActionToggle: toggleActionDone,
+		actionsDisabled: !apiConnected,
 		onPointerDown: onShapePointerDown,
 		onDoubleClick: onShapeDoubleClick,
 	}

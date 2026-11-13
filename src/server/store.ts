@@ -2,7 +2,13 @@ import { randomUUID } from 'node:crypto'
 import { mkdirSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
+import {
+	hasVisibleNoteLabel,
+	NOTE_MIN_LABELED_HEIGHT,
+	noteLabelHeightDelta,
+} from '../shared/noteLayout.ts'
 import type {
+	ActionItem,
 	Board,
 	BrushStyle,
 	CanvasDetail,
@@ -70,10 +76,13 @@ const SHAPE_TYPES = new Set<string>([
 	'note',
 	'html',
 	'image',
+	'actions',
 	'connector',
 ])
 export const MAX_CANVAS_IMAGES = 5
 const MAX_HTML_LENGTH = 200_000
+const MAX_ACTION_ITEMS = 200
+const MAX_ACTION_ITEM_TEXT = 6000
 
 function validTitle(value: unknown, label: string): void {
 	if (typeof value !== 'string' || value.trim().length === 0 || value.length > 120) {
@@ -90,6 +99,30 @@ function validHtml(value: unknown): void {
 function validLabel(value: unknown): void {
 	if (typeof value !== 'string' || value.length > 120) {
 		invalid('label must be a string of at most 120 characters')
+	}
+}
+
+function validateActionItems(value: unknown): asserts value is ActionItem[] {
+	if (!Array.isArray(value) || value.length > MAX_ACTION_ITEMS) {
+		invalid(`action items must be an array of at most ${MAX_ACTION_ITEMS} entries`)
+	}
+	const ids = new Set<string>()
+	for (const item of value) {
+		if (!isObject(item) || !hasExactKeys(item, ['id', 'text', 'done']))
+			invalid('invalid action item')
+		if (!validId(item.id) || item.id.length > 64) {
+			invalid('action item id must be a non-empty string of at most 64 characters')
+		}
+		if (ids.has(item.id)) invalid(`duplicate action item id: ${item.id}`)
+		ids.add(item.id)
+		if (
+			typeof item.text !== 'string' ||
+			item.text.trim().length === 0 ||
+			item.text.length > MAX_ACTION_ITEM_TEXT
+		) {
+			invalid(`action item text must be non-empty and at most ${MAX_ACTION_ITEM_TEXT} characters`)
+		}
+		if (typeof item.done !== 'boolean') invalid('action item done must be a boolean')
 	}
 }
 
@@ -154,6 +187,12 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		}
 		validTitle(value.title, 'html title')
 		validHtml(value.html)
+	} else if (value.type === 'actions') {
+		if (!hasExactKeys(value, [...base, 'title', 'items'], ['frameId'])) {
+			invalid('invalid actions shape')
+		}
+		validTitle(value.title, 'action card title')
+		validateActionItems(value.items)
 	} else if (value.type === 'note') {
 		if (!hasExactKeys(value, base, ['text', 'label', 'frameId'])) {
 			invalid('invalid note shape')
@@ -325,7 +364,10 @@ function migrateLegacyShapes(shapes: unknown): { shapes: unknown; changed: boole
 function cloneBoard(board: Board): Board {
 	return {
 		revision: board.revision,
-		shapes: board.shapes.map((shape) => ({ ...shape })) as Shape[],
+		shapes: board.shapes.map((shape) => ({
+			...shape,
+			...(shape.type === 'actions' ? { items: shape.items?.map((item) => ({ ...item })) } : {}),
+		})) as Shape[],
 	}
 }
 
@@ -343,6 +385,7 @@ const PATCH_KEYS: Record<ShapeType | 'connector', readonly string[]> = {
 	frame: ['x', 'y', 'w', 'h', 'color', 'title', 'backgroundImageId', 'backgroundFit'],
 	image: ['x', 'y', 'w', 'h', 'color', 'imageId', 'frameId'],
 	html: ['x', 'y', 'w', 'h', 'color', 'title', 'html', 'frameId'],
+	actions: ['x', 'y', 'w', 'h', 'color', 'title', 'items', 'frameId'],
 	connector: ['from', 'to', 'color', 'fromAnchor', 'toAnchor'],
 }
 
@@ -389,6 +432,7 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		}
 	}
 	if (Object.hasOwn(patch, 'title')) validTitle(patch.title, 'title')
+	if (Object.hasOwn(patch, 'items')) validateActionItems(patch.items)
 	if (Object.hasOwn(patch, 'backgroundImageId')) {
 		if (patch.backgroundImageId !== null && !validId(patch.backgroundImageId)) {
 			invalid('backgroundImageId must be a non-empty shape id or null')
@@ -505,7 +549,7 @@ function shapePlacementBounds(shape: Shape): PlacementBounds | undefined {
 	}
 }
 
-function connectorPlacementBounds(
+export function connectorPlacementBounds(
 	shapes: Shape[],
 	connector: Connector,
 ): PlacementBounds | undefined {
@@ -526,6 +570,147 @@ function connectorPlacementBounds(
 		}
 	} catch {
 		return undefined
+	}
+}
+
+function overlaps(a: PlacementBounds, b: PlacementBounds): boolean {
+	return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
+}
+
+export function addedPlacement(before: PlacementBounds, after: PlacementBounds): PlacementBounds[] {
+	const additions: PlacementBounds[] = []
+	if (after.top < before.top) {
+		additions.push({ left: after.left, top: after.top, right: after.right, bottom: before.top })
+	}
+	if (after.bottom > before.bottom) {
+		additions.push({
+			left: after.left,
+			top: before.bottom,
+			right: after.right,
+			bottom: after.bottom,
+		})
+	}
+	const verticalTop = Math.max(after.top, before.top)
+	const verticalBottom = Math.min(after.bottom, before.bottom)
+	if (after.left < before.left && verticalBottom > verticalTop) {
+		additions.push({
+			left: after.left,
+			top: verticalTop,
+			right: before.left,
+			bottom: verticalBottom,
+		})
+	}
+	if (after.right > before.right && verticalBottom > verticalTop) {
+		additions.push({
+			left: before.right,
+			top: verticalTop,
+			right: after.right,
+			bottom: verticalBottom,
+		})
+	}
+	return additions
+}
+
+function placementOf(shapes: Shape[], shape: Shape): PlacementBounds | undefined {
+	return shape.type === 'connector'
+		? connectorPlacementBounds(shapes, shape)
+		: shapePlacementBounds(shape)
+}
+
+function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, number>): void {
+	for (const [noteId, adjustment] of adjustments) {
+		if (adjustment <= 0) continue
+		const note = findShape(next, noteId)
+		if (note?.type !== 'note') continue
+		const after = shapePlacementBounds(note)
+		if (!after) continue
+		const before = { ...after, bottom: after.bottom - adjustment }
+		for (const shape of next.shapes) {
+			if (
+				shape.id === noteId ||
+				(note.type === 'note' && shape.id === note.frameId) ||
+				(shape.type === 'connector' && (shape.from === noteId || shape.to === noteId))
+			)
+				continue
+			const bounds = placementOf(next.shapes, shape)
+			if (bounds && addedPlacement(before, after).some((region) => overlaps(region, bounds))) {
+				throw new OperationError(
+					409,
+					'NOTE_LABEL_COLLISION',
+					`Label growth for note ${noteId} would cover shape ${shape.id}`,
+				)
+			}
+		}
+	}
+
+	const frameUpdates = new Map<string, { x: number; y: number; w: number; h: number }>()
+	for (const [noteId, adjustment] of adjustments) {
+		if (adjustment <= 0) continue
+		const note = findShape(next, noteId)
+		if (note?.type !== 'note' || !note.frameId) continue
+		const frame = findShape(next, note.frameId)
+		if (frame?.type !== 'frame') continue
+		const body = shapePlacementBounds(note)
+		if (!body) continue
+		const previous = frameUpdates.get(frame.id) ?? {
+			x: frame.x,
+			y: frame.y,
+			w: frame.w,
+			h: frame.h,
+		}
+		const left = body.left < previous.x ? Math.min(previous.x, body.left - 40) : previous.x
+		const top = body.top < previous.y ? Math.min(previous.y, body.top - 40) : previous.y
+		const right =
+			body.right > previous.x + previous.w
+				? Math.max(previous.x + previous.w, body.right + 40)
+				: previous.x + previous.w
+		const bottom =
+			body.bottom > previous.y + previous.h
+				? Math.max(previous.y + previous.h, body.bottom + 40)
+				: previous.y + previous.h
+		if (
+			left === frame.x &&
+			top === frame.y &&
+			right === frame.x + frame.w &&
+			bottom === frame.y + frame.h
+		) {
+			continue
+		}
+		frameUpdates.set(frame.id, { x: left, y: top, w: right - left, h: bottom - top })
+	}
+
+	for (const [frameId, patch] of frameUpdates) {
+		const frame = findShape(next, frameId)
+		if (frame?.type !== 'frame') continue
+		const before = shapePlacementBounds(frame)
+		const after = shapePlacementBounds({ ...frame, ...patch } as Shape)
+		if (!before || !after) continue
+		for (const shape of next.shapes) {
+			if (shape.id === frameId) continue
+			if (shape.type !== 'connector' && shape.frameId === frameId) continue
+			if (shape.type === 'connector') {
+				const from = findShape(next, shape.from)
+				const to = findShape(next, shape.to)
+				if (
+					from &&
+					from.type !== 'connector' &&
+					from.frameId === frameId &&
+					to &&
+					to.type !== 'connector' &&
+					to.frameId === frameId
+				)
+					continue
+			}
+			const bounds = placementOf(next.shapes, shape)
+			if (bounds && addedPlacement(before, after).some((region) => overlaps(region, bounds))) {
+				throw new OperationError(
+					409,
+					'FRAME_COLLISION',
+					`Frame ${frameId} would touch unrelated shape ${shape.id} while making room for a note label`,
+				)
+			}
+		}
+		Object.assign(frame, patch)
 	}
 }
 
@@ -983,6 +1168,7 @@ export class BoardStore {
 		}
 
 		const next = cloneBoard(board)
+		const labelHeightAdjustments = new Map<string, number>()
 		const cascaded = new Set<string>()
 		const assetIds = this.listImageAssetIds()
 		let createsImage = false
@@ -992,6 +1178,13 @@ export class BoardStore {
 			if (operation.type === 'create') {
 				if (!hasExactKeys(operation, ['type', 'shape'])) invalid('invalid create operation')
 				validateShapeShape(operation.shape)
+				if (
+					operation.shape.type === 'note' &&
+					hasVisibleNoteLabel(operation.shape.label) &&
+					operation.shape.h < NOTE_MIN_LABELED_HEIGHT
+				) {
+					invalid(`labeled note height must be at least ${NOTE_MIN_LABELED_HEIGHT}`)
+				}
 				if (operation.shape.type === 'image') createsImage = true
 				if (operation.shape.type === 'image' && !assetIds.has(operation.shape.imageId ?? '')) {
 					throw new OperationError(
@@ -1030,6 +1223,7 @@ export class BoardStore {
 					invalid('invalid restore index')
 				validateShapeShape(operation.shape)
 				if (operation.shape.type === 'image') createsImage = true
+				labelHeightAdjustments.delete(operation.shape.id)
 				next.shapes = next.shapes.filter((shape) => shape.id !== operation.shape.id)
 				next.shapes.splice(Math.min(operation.index, next.shapes.length), 0, operation.shape)
 				continue
@@ -1045,6 +1239,26 @@ export class BoardStore {
 				}
 				validatePatch(target, operation.patch)
 				const updated = { ...target, ...operation.patch } as Shape
+				if (target.type === 'note' && updated.type === 'note') {
+					if (Object.hasOwn(operation.patch, 'h')) {
+						labelHeightAdjustments.delete(target.id)
+						if (hasVisibleNoteLabel(updated.label) && updated.h < NOTE_MIN_LABELED_HEIGHT) {
+							invalid(`labeled note height must be at least ${NOTE_MIN_LABELED_HEIGHT}`)
+						}
+					} else {
+						const adjustment = noteLabelHeightDelta(target.label, updated.label)
+						if (adjustment !== 0) updated.h += adjustment
+						if (hasVisibleNoteLabel(updated.label) && updated.h < NOTE_MIN_LABELED_HEIGHT) {
+							invalid(`labeled note height must be at least ${NOTE_MIN_LABELED_HEIGHT}`)
+						}
+						if (adjustment !== 0) {
+							labelHeightAdjustments.set(
+								target.id,
+								(labelHeightAdjustments.get(target.id) ?? 0) + adjustment,
+							)
+						}
+					}
+				}
 				if (updated.type !== 'connector' && updated.frameId === null) {
 					delete updated.frameId
 				}
@@ -1069,6 +1283,43 @@ export class BoardStore {
 				continue
 			}
 
+			if (operation.type === 'set_action_done') {
+				if (!hasExactKeys(operation, ['type', 'id', 'itemId', 'done'])) {
+					invalid('invalid set_action_done operation')
+				}
+				if (!Object.hasOwn(request, 'expectedRevision')) {
+					invalid('set_action_done requires expectedRevision')
+				}
+				if (!validId(operation.id) || !validId(operation.itemId) || operation.itemId.length > 64) {
+					invalid(
+						'set_action_done id and itemId must be non-empty strings, with itemId at most 64 characters',
+					)
+				}
+				if (typeof operation.done !== 'boolean') invalid('set_action_done done must be a boolean')
+				const target = findShape(next, operation.id)
+				if (!target) {
+					throw new OperationError(404, 'NOT_FOUND', `shape not found: ${operation.id}`)
+				}
+				if (target.type !== 'actions') {
+					invalid('set_action_done target must be an actions shape')
+				}
+				const itemIndex = target.items?.findIndex((item) => item.id === operation.itemId) ?? -1
+				if (itemIndex < 0) {
+					throw new OperationError(
+						404,
+						'NOT_FOUND',
+						`action item not found: ${operation.id}/${operation.itemId}`,
+					)
+				}
+				const items = target.items?.map((item, index) =>
+					index === itemIndex ? { ...item, done: operation.done } : { ...item },
+				)
+				const updated: Shape = { ...target, items }
+				validateShapeShape(updated)
+				next.shapes[next.shapes.findIndex((shape) => shape.id === operation.id)] = updated
+				continue
+			}
+
 			if (operation.type === 'delete') {
 				if (!hasExactKeys(operation, ['type', 'id'])) invalid('invalid delete operation')
 				if (!validId(operation.id)) invalid('delete id must be a non-empty string')
@@ -1077,6 +1328,7 @@ export class BoardStore {
 					throw new OperationError(404, 'NOT_FOUND', `shape not found: ${operation.id}`)
 				}
 				const removed = findShape(next, operation.id)
+				labelHeightAdjustments.delete(operation.id)
 				next.shapes = next.shapes.filter((shape) => {
 					if (shape.id === operation.id) return false
 					if (
@@ -1108,6 +1360,7 @@ export class BoardStore {
 			invalid('invalid operation type')
 		}
 
+		validateAutomaticNoteGeometry(next, labelHeightAdjustments)
 		validateBoardState(next, assetIds)
 		if (
 			createsImage &&
