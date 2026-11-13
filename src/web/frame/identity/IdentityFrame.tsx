@@ -47,6 +47,7 @@ export function IdentityFrame({ state, actions, debug }: IdentityFrameProps) {
 			</header>
 			{identity.mounted && (
 				<section
+					id="canvas-panel"
 					ref={identity.panelRef}
 					className="canvas-panel floating-panel frame-identity identity-surface"
 					aria-label="Canvases"

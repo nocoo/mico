@@ -1,7 +1,7 @@
 import { Popover } from '@radix-ui/themes'
 import { Sparkles, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
-import packageJson from '../../../../package.json'
+import packageJson from '../../../../package.json' with { type: 'json' }
 import type { DebugUser } from './debugViewModel'
 import { createDebugViewModel } from './debugViewModel'
 import './debug.css'

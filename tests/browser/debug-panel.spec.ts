@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import packageJson from '../../package.json'
+import packageJson from '../../package.json' with { type: 'json' }
 import { board, ISOLATED_ORIGIN, resetBoard } from './support'
 
 function runtime(
@@ -90,7 +90,7 @@ test('debug entry is adjacent, focused, exclusive with Canvases, and dismisses o
 	page,
 	request,
 	baseURL,
-}) => {
+}, testInfo) => {
 	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
 	await resetBoard(request, [])
 	await openWorkspace(page)
@@ -126,6 +126,7 @@ test('debug entry is adjacent, focused, exclusive with Canvases, and dismisses o
 	await expect(panel.getByText('AI unavailable', { exact: true })).toBeVisible()
 	await expect(panel.getByText('Manual drawing is available', { exact: true })).toBeVisible()
 	await expect(panel.getByText(`Version ${packageJson.version}`, { exact: true })).toBeVisible()
+	await page.screenshot({ path: testInfo.outputPath('debug-desktop.png'), fullPage: true })
 	await page.keyboard.press('Escape')
 	await expect(panel).toHaveCount(0)
 	await expect(debug).toBeFocused()
@@ -186,6 +187,7 @@ test('debug panel fits a narrow viewport and visually shares the canvas glass to
 	expect(debugBox.y + debugBox.height).toBeLessThanOrEqual(626)
 	await expect(panel).toHaveCSS('animation-duration', '1ms')
 	await panel.screenshot({ path: testInfo.outputPath('debug-panel.png') })
+	await page.screenshot({ path: testInfo.outputPath('debug-mobile.png'), fullPage: true })
 	const debugStyles = await panel.evaluate((node) => {
 		const style = getComputedStyle(node)
 		const gloss = getComputedStyle(node, '::before')
