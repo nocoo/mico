@@ -90,6 +90,26 @@ With Entra enabled, the anonymous state request must return 401. Check the login
 
 The first preview intentionally does not configure Chat, MAI, MOSS or image generation. Do not copy the host's provider credentials or local gateway URL into the app. A future AI deployment must separately establish endpoint reachability, authentication and provider billing authorization.
 
+## Preview acceptance record
+
+Application commit `042682b` was built for `linux/amd64`, pushed to ACR and deployed by immutable digest. The actual origin, resource identifiers and digest are retained only in the operator's private deployment record, not this document.
+
+Verified locally:
+
+- TypeScript, zero-warning Biome, frozen dependency installation, Gitleaks and OSV checks passed.
+- All 408 Node tests passed on the application commit.
+- The gated browser suite passed 105 tests plus 2 audio-recovery tests before the final SSE cache-header fix; the final commit then passed 38 hosted-login, Chat and Audio browser regressions.
+- The final production image passed health, real Chrome manual drawing and reload checks with AI disabled and no page exceptions.
+- Three bounded review rounds closed the identified request-path, session-revocation, callback-retry and cache-policy issues.
+
+Verified on Azure:
+
+- One active Healthy revision, with the expected digest, login enabled, AI disabled and ephemeral storage declared.
+- Public health and login page work; anonymous canvas/image APIs and canvas WebSocket upgrades reject access.
+- The rendered sign-in button navigates to the configured login tenant and App ID using authorization code + S256 PKCE and the expected callback.
+
+Still pending: an operator must register the SPA callback and complete a real Microsoft account sign-in. Automated identity doubles and navigation to Microsoft's login page do not establish that round trip. Other hosting providers, paid AI providers and durable cloud storage are not accepted by this preview. GitHub CI was not triggered because this change did not push source or publish a GitHub release.
+
 ## Stop, update and recover
 
 A new code deployment replaces ephemeral state. Treat that loss as expected, not as a migration. Keep exact Git SHAs/digests in operator release records outside the repository. Redeploying a previous digest can restore its code but not an earlier canvas or in-memory session.

@@ -2,6 +2,8 @@
 
 ## Hosted preview integration
 
+- The first live browser probe waited for network idle and timed out even though direct login rendering succeeded. Use DOM readiness plus the actual sign-in control as acceptance criteria, preserve screenshots and pending requests on failure, and verify identity navigation separately from page loading.
+
 - Hosted auth initially classified raw path prefixes while API routing removed empty segments and the static server decoded paths. An independent review reproduced anonymous writes and encoded static traversal. Parse and validate one request target before HTTP/WS authorization; cover repeated separators, alternate authorities, encoded separators and traversal against real persisted data.
 - Voice proxies returned before registering their sockets with the session manager, so logout only closed canvas subscriptions. Register every upgraded client and test both client and mock upstream closure on logout and expiry. Mark authenticated responses `private, no-store`, including files served by middleware.
 - MSAL retains a rejected redirect promise on its instance even after clearing browser cache. Recreate that instance and clear the failed callback URL before retrying; exercise the rejection/cache lifecycle, not only a stub that returns null.
