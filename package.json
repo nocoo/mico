@@ -20,7 +20,7 @@
 		"test": "node scripts/run-tests.ts all",
 		"test:unit": "node scripts/run-tests.ts unit",
 		"test:integration": "node scripts/run-tests.ts integration",
-		"test:e2e": "playwright test tests/browser/canvas.spec.ts tests/browser/canvas-regressions.spec.ts tests/browser/frame-visual.spec.ts tests/browser/canvases.spec.ts tests/browser/controls.spec.ts tests/browser/html-card-design.spec.ts tests/browser/actions.spec.ts tests/browser/note-label.spec.ts tests/browser/minimap.spec.ts tests/browser/audio-empty.spec.ts tests/browser/selection-dialog.spec.ts tests/browser/assistant-dialog.spec.ts && playwright test tests/browser/audio.spec.ts -g 'post-session recovery'",
+		"test:e2e": "playwright test tests/browser/canvas.spec.ts tests/browser/canvas-regressions.spec.ts tests/browser/frame-visual.spec.ts tests/browser/canvases.spec.ts tests/browser/controls.spec.ts tests/browser/html-card-design.spec.ts tests/browser/actions.spec.ts tests/browser/note-label.spec.ts tests/browser/minimap.spec.ts tests/browser/audio-empty.spec.ts tests/browser/live-provider-design.spec.ts tests/browser/selection-dialog.spec.ts tests/browser/assistant-dialog.spec.ts && playwright test tests/browser/audio.spec.ts -g 'post-session recovery'",
 		"test:browser": "playwright test",
 		"hooks:install": "sh scripts/install-hooks.sh"
 	},
