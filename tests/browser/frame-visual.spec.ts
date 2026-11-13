@@ -9,7 +9,7 @@ test('reference glass, jelly orbs and active tool match at pixel level', async (
 	context,
 	request,
 	baseURL,
-}) => {
+}, testInfo) => {
 	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
 	await resetBoard(request, [])
 	await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -20,7 +20,7 @@ test('reference glass, jelly orbs and active tool match at pixel level', async (
 		content: `
 		.app { background: white !important; }
 		.canvas, .canvas-backdrop, .canvas-grain { visibility: hidden !important; }
-		.frame-empty { top: 200px !important; left: 0 !important; translate: none !important; }
+		.frame-empty { top: 200px !important; left: 0 !important; translate: none !important; transition: none !important; }
 		.ai-status-pill { top: 600px !important; left: 100px !important; bottom: auto !important; width: 160px !important; max-width: none !important; transform: none !important; }
 		.ai-status-pill > * { visibility: hidden !important; }
 		.toolbar-module.toolbar { background: white !important; backdrop-filter: none !important; box-shadow: none !important; }
@@ -44,6 +44,10 @@ test('reference glass, jelly orbs and active tool match at pixel level', async (
 				.screenshot({ animations: 'disabled' })
 			const actual = await page.locator(actualSelector).screenshot({ animations: 'disabled' })
 			const diff = await differingPixels(page, expected, actual)
+			if (diff.different / diff.total > 0.001) {
+				await testInfo.attach(`${label}-reference`, { body: expected, contentType: 'image/png' })
+				await testInfo.attach(`${label}-actual`, { body: actual, contentType: 'image/png' })
+			}
 			expect(
 				diff.different / diff.total,
 				`${label}: ${diff.different}/${diff.total} differing pixels`,
