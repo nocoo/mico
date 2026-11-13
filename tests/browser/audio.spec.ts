@@ -705,7 +705,8 @@ for (const fatal of ['error', 'close'] as const) {
 		await expect(prerecorded.getByText('Completed later audio', { exact: true })).toBeVisible()
 		await expect(prerecorded.locator('.lesson-segments li')).toHaveCount(1)
 		await expect(prerecorded.getByText('Recording complete', { exact: true })).not.toBeVisible()
-		await expect(prerecorded.getByText('Mico is listening', { exact: true })).toBeVisible()
+		await expect(prerecorded.getByText('Mico is listening', { exact: true })).toHaveCount(0)
+		await expect(prerecorded.locator('.lesson')).toHaveAttribute('data-phase', 'error')
 		await page.evaluate(
 			() =>
 				new Promise<void>((resolve) =>
