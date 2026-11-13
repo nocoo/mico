@@ -207,6 +207,10 @@ export function completeCallback(auth: PublicRuntimeContract['auth']): Promise<S
 
 export async function clearMsalCache(auth: PublicRuntimeContract['auth']): Promise<void> {
 	callbackCompletion = null
-	const msal = await getMsal(auth)
-	await msal.clearCache()
+	try {
+		const msal = await getMsal(auth)
+		await msal.clearCache()
+	} finally {
+		instance = null
+	}
 }

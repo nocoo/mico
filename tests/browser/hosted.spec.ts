@@ -151,6 +151,39 @@ test('successful callback posts the ID token once and mounts only after session 
 	await expect(page.locator('.app')).toBeVisible()
 })
 
+test('a rejected redirect can start a fresh Microsoft sign-in on retry', async ({ page }) => {
+	await mockRuntime(page, runtime('entra'))
+	await mockSession(page, 401)
+	await page.route(/\/@azure_msal-browser\.js(?:\?|$)/, (route) =>
+		route.fulfill({
+			contentType: 'application/javascript',
+			body: `
+			export class PublicClientApplication {
+				constructor() {
+					const count = Number(sessionStorage.getItem('test-instances') || 0) + 1;
+					sessionStorage.setItem('test-instances', String(count));
+					this.first = count === 1;
+				}
+				async initialize() {}
+				handleRedirectPromise() {
+					this.redirect ??= this.first ? Promise.reject(new Error('access_denied')) : Promise.resolve(null);
+					return this.redirect;
+				}
+				async clearCache() {}
+				async loginRedirect() { sessionStorage.setItem('test-login-started', location.pathname); }
+			}
+		`,
+		}),
+	)
+	await page.goto('/auth/callback?error=access_denied')
+	await expect(page.getByRole('heading', { name: 'Could not finish sign-in' })).toBeVisible()
+	await page.getByRole('button', { name: 'Try Microsoft sign-in again' }).click()
+	await expect
+		.poll(() => page.evaluate(() => sessionStorage.getItem('test-login-started')))
+		.toBe('/login')
+	expect(await page.evaluate(() => sessionStorage.getItem('test-instances'))).toBe('2')
+})
+
 test('AI disabled preview supports manual drawing with no assistant or provider requests', async ({
 	page,
 	request,

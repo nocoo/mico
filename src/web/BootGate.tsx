@@ -98,6 +98,7 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 		void clearMsalCache(runtime.auth)
 			.catch(() => undefined)
 			.finally(() => {
+				window.history.replaceState(null, '', '/login')
 				void loginWithMsal(runtime.auth).catch((cause: unknown) => {
 					setRetrying(false)
 					setError(cause instanceof Error ? cause.message : 'Microsoft sign-in could not start.')
