@@ -1,6 +1,6 @@
 # Azure Container Apps preview
 
-This is the first cloud adapter for the [provider-neutral deployment contract](deployment.md). It deploys a single disposable preview: optional authentication, no AI, no durable data. It does not create an Entra application or change its redirect URIs.
+This is the first cloud adapter for the [provider-neutral deployment contract](deployment.md). It deploys a single disposable preview: optional authentication, no AI, no durable data. It does not create an Entra application or change its redirect URIs. The project [mico-deploy skill](../.agents/skills/mico-deploy/SKILL.md) provides the repeatable preparation, publication and acceptance workflow.
 
 ## Resources and costs
 
@@ -108,7 +108,7 @@ Verified on Azure:
 - Public health and login page work; anonymous canvas/image APIs and canvas WebSocket upgrades reject access.
 - The rendered sign-in button navigates to the configured login tenant and App ID using authorization code + S256 PKCE and the expected callback.
 
-Still pending: an operator must register the SPA callback and complete a real Microsoft account sign-in. Automated identity doubles and navigation to Microsoft's login page do not establish that round trip. Other hosting providers, paid AI providers and durable cloud storage are not accepted by this preview. GitHub CI was not triggered because this change did not push source or publish a GitHub release.
+The operator subsequently confirmed successful real Microsoft account sign-in for this initial preview. This is operator-confirmed evidence, separate from the automated identity doubles and login-navigation checks. Other hosting providers, paid AI providers and durable cloud storage are not accepted by this preview. GitHub CI was not triggered because this change did not push source or publish a GitHub release.
 
 ## Stop, update and recover
 

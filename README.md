@@ -107,6 +107,8 @@ See [the Docker guide](docs/docker.md) for provider configuration, persistence, 
 
 Hosting, login and AI availability are independent settings. The [deployment guide](docs/deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](docs/deployment-azure.md): optional Microsoft SPA login, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** No real tenant, subscription, resource group, App ID or user ID belongs in the repository; supply them through operator environment configuration.
 
+For subsequent hosted updates, use the project [mico-deploy skill](.agents/skills/mico-deploy/SKILL.md) (`/skill:mico-deploy` in agents that expose skill commands). It keeps private deployment configuration outside Git and verifies the exact deployed image.
+
 ### Agent CLI
 
 命令把 JSON 写到标准输出，错误写到标准错误并返回非零退出码。CLI 直连本地守护进程，不经过模型服务或云服务。
