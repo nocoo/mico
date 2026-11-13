@@ -1,12 +1,13 @@
 export const HTML_CARD_CSS = `
 * { box-sizing: border-box; }
+html, body { background: transparent; }
 body { margin: 0; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: oklch(.27 .04 285); }
 .mico-report { padding: 24px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
 .mico-report h1 { margin: 2px 0 14px; font-size: 21px; line-height: 1.3; letter-spacing: -.01em; }
 .mico-report h2 { margin: 0 0 6px; font-size: 14px; line-height: 1.4; font-weight: 700; }
 .mico-report p { margin: 0 0 6px; }
 .mico-report p:last-child { margin-bottom: 0; }
-.mico-eyebrow { color: oklch(.63 .03 285); font-size: 11.5px; }
+.mico-eyebrow { color: oklch(.47 .035 285); font-size: 11.5px; }
 .mico-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .mico-full { grid-column: 1 / -1; }
 .mico-panel { min-width: 0; padding: 13px 15px; border-radius: 20px; background: oklch(.5 .07 285 / .06); box-shadow: inset 0 0 0 1px oklch(.4 .06 285 / .11); }

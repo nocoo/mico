@@ -36,7 +36,10 @@ test('copyable card fragments render inside the isolated HTML card', async ({
 		const doc = report.ownerDocument
 		const root = doc.documentElement
 		const panel = report.querySelector('.mico-panel')
-		if (!panel) throw new Error('Missing design panel')
+		const hero = report.querySelector('.mico-hero')
+		const tile = report.querySelector('.mico-tile')
+		const eyebrow = report.querySelector('.mico-eyebrow')
+		if (!panel || !hero || !tile || !eyebrow) throw new Error('Missing design fragment')
 		return {
 			scrollWidth: root.scrollWidth,
 			clientWidth: root.clientWidth,
@@ -44,12 +47,22 @@ test('copyable card fragments render inside the isolated HTML card', async ({
 			clientHeight: root.clientHeight,
 			reportBottom: report.getBoundingClientRect().bottom,
 			panelRadius: getComputedStyle(panel).borderRadius,
+			bodyBackground: getComputedStyle(doc.body).backgroundColor,
+			heroBackground: getComputedStyle(hero).backgroundImage,
+			tileBackground: getComputedStyle(tile).backgroundImage,
+			tileShadow: getComputedStyle(tile).boxShadow,
+			eyebrowColor: getComputedStyle(eyebrow).color,
 		}
 	})
 	expect(metrics.scrollWidth).toBe(metrics.clientWidth)
 	expect(metrics.scrollHeight).toBe(metrics.clientHeight)
 	expect(metrics.reportBottom).toBeLessThanOrEqual(metrics.clientHeight)
 	expect(metrics.panelRadius).toBe('20px')
+	expect(metrics.bodyBackground).toBe('rgba(0, 0, 0, 0)')
+	expect(metrics.heroBackground).toContain('linear-gradient')
+	expect(metrics.tileBackground).toContain('linear-gradient')
+	expect(metrics.tileShadow).not.toBe('none')
+	expect(metrics.eyebrowColor).toBe('oklch(0.47 0.035 285)')
 	await page.locator('[data-shape-id="design-card"]').screenshot({
 		path: testInfo.outputPath('html-card-design.png'),
 		animations: 'disabled',
