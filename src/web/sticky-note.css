@@ -14,6 +14,33 @@
 	box-sizing: border-box;
 }
 
+.sticky-jelly.sticky-has-label {
+	gap: 7px;
+	padding-top: 14px;
+}
+
+.sticky-head {
+	display: flex;
+	align-items: center;
+	font-size: 13px;
+	font-weight: 700;
+}
+
+.sticky-chip {
+	flex: none;
+	max-width: 100%;
+	padding: 1px 8px;
+	overflow: hidden;
+	border-radius: 99px;
+	background: light-dark(oklch(1 0 0 / 0.7), oklch(1 0 0 / 0.13));
+	box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--j-edge) 50%, transparent);
+	font-size: 10.5px;
+	font-weight: 700;
+	line-height: 1.6;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
 .sticky-body {
 	position: relative;
 	flex: 1;

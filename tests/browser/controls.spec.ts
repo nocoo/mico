@@ -60,6 +60,60 @@ test.beforeEach(async ({ page, request, baseURL }) => {
 	await resetView(page)
 })
 
+test('frame titles and sticky labels remain editable without changing layout', async ({
+	page,
+	request,
+}) => {
+	await seed(page, request, [
+		{
+			id: 'labelled-frame',
+			type: 'frame',
+			x: 240,
+			y: 220,
+			w: 520,
+			h: 300,
+			color: CANDY_COLORS.blue,
+			title: 'Initial area',
+		},
+		{
+			id: 'labelled-note',
+			type: 'note',
+			x: 320,
+			y: 300,
+			w: 260,
+			h: 150,
+			color: CANDY_TINTS.yellow,
+			text: 'Keep the body editable',
+			label: 'Risk',
+			frameId: 'labelled-frame',
+		},
+	])
+
+	await clickWorld(page, 450, 375)
+	await expect(page.getByLabel('Label', { exact: true })).toHaveValue('Risk')
+	await page.getByLabel('Label', { exact: true }).fill('Resolved')
+	await page.getByLabel('Label', { exact: true }).press('Enter')
+	await expect(page.locator('[data-shape-id="labelled-note"] .sticky-chip')).toHaveText('Resolved')
+	await expect.poll(async () => (await shapeOf(request, 'labelled-note')).label).toBe('Resolved')
+
+	const frameLabel = await pillBox(page, 'labelled-frame')
+	await page.mouse.click(frameLabel.x + frameLabel.width / 2, frameLabel.y + frameLabel.height / 2)
+	await expect(page.getByLabel('Frame title')).toHaveValue('Initial area')
+	await page.getByLabel('Frame title').fill('Review area')
+	await page.getByLabel('Frame title').press('Enter')
+	await expect(page.locator('[data-card-handle="labelled-frame"] .canvas-frame-label')).toHaveText(
+		'Review area',
+	)
+	await expect
+		.poll(async () => (await shapeOf(request, 'labelled-frame')).title)
+		.toBe('Review area')
+
+	const frame = await shapeOf(request, 'labelled-frame')
+	const note = await shapeOf(request, 'labelled-note')
+	expect(frame).toMatchObject({ x: 240, y: 220, w: 520, h: 300 })
+	expect(note).toMatchObject({ x: 320, y: 300, w: 260, h: 150, frameId: 'labelled-frame' })
+})
+
 test('image keeps its rounded border and clips its corners when selected and unselected', async ({
 	page,
 	request,

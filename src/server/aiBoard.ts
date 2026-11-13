@@ -16,6 +16,7 @@ export interface ShapeDigest {
 	h?: number
 	color?: string
 	text?: string
+	label?: string
 	title?: string
 	frameId?: string
 	font?: string
@@ -92,7 +93,7 @@ export function digestShape(shape: Shape, includeHtml = false, detailed = false)
 		return digest
 	}
 	Object.assign(digest, rectOf(shape), { color: shape.color })
-	for (const key of ['text', 'title'] as const) {
+	for (const key of ['text', 'label', 'title'] as const) {
 		const value = shape[key]
 		if (value !== undefined) digest[key] = clip(value, detailed ? 6000 : MAX_TEXT)
 	}

@@ -125,6 +125,113 @@ test('manual sticky note matches the original prototype', async ({
 	}
 })
 
+test('frame and sticky labels match the AI whiteboard prototype', async ({
+	page,
+	context,
+	request,
+	baseURL,
+}) => {
+	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	await resetBoard(request, [
+		{
+			id: 'reference-frame',
+			type: 'frame',
+			x: 400,
+			y: 300,
+			w: 440,
+			h: 260,
+			color: '#00a2e1',
+			title: '体验观察',
+		},
+		{
+			id: 'reference-labelled-note',
+			type: 'note',
+			x: 450,
+			y: 350,
+			w: 224,
+			h: 150,
+			color: '#e2f5fc',
+			label: '观察',
+			text: '会议结束后，另花约 2 分钟生成 HTML 总结。',
+			frameId: 'reference-frame',
+		},
+	])
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await page.goto('/')
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await page.getByRole('button', { name: 'Reset view' }).click()
+	await page.addStyleTag({
+		content:
+			'.app, .canvas-backdrop { background: white !important; } .canvas-aurora, .canvas-grain, .canvas-frame-surface, .frame-background-image { display: none !important; } svg.canvas { background-image: none !important; }',
+	})
+	const reference = await context.newPage()
+	await reference.setViewportSize({ width: 1440, height: 960 })
+	await reference.emulateMedia({ reducedMotion: 'reduce' })
+	await reference.goto(
+		pathToFileURL(resolve(process.cwd(), 'docs/prototypes/teams-ai-whiteboard.html')).href,
+	)
+	try {
+		await reference.addStyleTag({
+			content:
+				'.aurora, .grain, #hero, #ctx, #edges, #ink, #aicur { display: none !important; } #stage { background: white !important; } #world { transform: none !important; }',
+		})
+		await reference.locator('#els').evaluate((root) => {
+			root.replaceChildren()
+			const label = document.createElement('div')
+			label.className = 'el el-label'
+			label.style.cssText = 'left:400px;top:264px'
+			label.textContent = '体验观察'
+			const note = document.createElement('div')
+			note.className = 'el el-sticky jelly'
+			note.dataset.c = 'sky'
+			note.dataset.by = 'ai'
+			note.style.cssText = 'left:450px;top:350px;width:224px;min-height:150px'
+			note.innerHTML =
+				'<div class="st-head"><span class="st-chip">观察</span></div><div class="st-body">会议结束后，另花约 2 分钟生成 HTML 总结。</div>'
+			root.append(label, note)
+		})
+
+		const expectedFrameLabel = await screenshotElement(
+			reference,
+			reference.locator('#els .el-label'),
+			160,
+			26,
+		)
+		const actualFrameLabel = await screenshotElement(
+			page,
+			page.locator('[data-card-handle="reference-frame"] .canvas-frame-label'),
+			160,
+			26,
+		)
+		const frameDiff = await differingPixels(page, expectedFrameLabel, actualFrameLabel)
+		expect(
+			frameDiff.different / frameDiff.total,
+			`frame label: ${frameDiff.different}/${frameDiff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.006)
+
+		const expectedNote = await screenshotElement(
+			reference,
+			reference.locator('#els .el-sticky'),
+			224,
+			150,
+		)
+		const actualNote = await screenshotElement(
+			page,
+			page.locator('[data-shape-id="reference-labelled-note"] .sticky-jelly'),
+			224,
+			150,
+		)
+		const noteDiff = await differingPixels(page, expectedNote, actualNote)
+		expect(
+			noteDiff.different / noteDiff.total,
+			`sticky label: ${noteDiff.different}/${noteDiff.total} differing pixels`,
+		).toBeLessThanOrEqual(0.001)
+	} finally {
+		await reference.close()
+	}
+})
+
 for (const item of [
 	{ tool: 'rect', type: 'rectangle', color: '#00a2e1' },
 	{ tool: 'ellipse', type: 'ellipse', color: '#f69143' },

@@ -2,6 +2,44 @@
 	pointer-events: none;
 }
 
+.canvas-frame-label-handle {
+	cursor: move;
+}
+
+.canvas-frame-label {
+	display: inline-flex;
+	align-items: center;
+	max-width: 100%;
+	gap: 9px;
+	color: var(--ui-ink-2);
+	font-family:
+		"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC",
+		"Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+	font-size: 16px;
+	font-weight: 700;
+	white-space: nowrap;
+	pointer-events: none;
+}
+
+.canvas-frame-label::before {
+	width: 12px;
+	height: 12px;
+	flex: 0 0 12px;
+	rotate: 45deg;
+	border-radius: 5px;
+	background: linear-gradient(160deg, var(--ui-accent-hi), var(--ui-accent-lo));
+	box-shadow:
+		inset 0 1px 0 oklch(1 0 0 / 0.6),
+		0 4px 8px -3px var(--ui-accent);
+	content: "";
+}
+
+.canvas-frame-label-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .canvas-frame-surface {
 	fill: var(--j-a);
 	fill-opacity: 0.14;

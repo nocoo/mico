@@ -49,6 +49,43 @@ test('Magpie settings default to Luna and allow an optional key', () => {
 	)
 })
 
+test('AI tools create, inspect and update frame titles and note labels', async () => {
+	await withStore(async (store) => {
+		const tools = createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: store.getActiveCanvasId(),
+		})
+		await run(tools.add_notes, {
+			notes: [
+				{ id: 'left', x: 100, y: 140, text: 'Open question', label: 'Risk' },
+				{ id: 'right', x: 420, y: 140, text: 'Next step' },
+			],
+		})
+		await run(tools.add_frames, {
+			frames: [{ id: 'area', title: 'Discussion', memberIds: ['left', 'right'] }],
+		})
+		const initial = (await run(tools.get_board, { ids: ['area', 'left'] })) as {
+			shapes: { id: string; label?: string; title?: string }[]
+		}
+		assert.equal(initial.shapes.find((shape) => shape.id === 'area')?.title, 'Discussion')
+		assert.equal(initial.shapes.find((shape) => shape.id === 'left')?.label, 'Risk')
+
+		await run(tools.update_shapes, {
+			updates: [
+				{ id: 'area', patch: { title: 'Resolved discussion' } },
+				{ id: 'left', patch: { label: 'Resolved' } },
+			],
+		})
+		const updated = (await run(tools.get_board, { ids: ['area', 'left'] })) as {
+			shapes: { id: string; label?: string; title?: string }[]
+		}
+		assert.equal(updated.shapes.find((shape) => shape.id === 'area')?.title, 'Resolved discussion')
+		assert.equal(updated.shapes.find((shape) => shape.id === 'left')?.label, 'Resolved')
+	})
+})
+
 test('AI tools create a labelled lesson and connect existing ids', async () => {
 	await withStore(async (store) => {
 		const events: unknown[] = []

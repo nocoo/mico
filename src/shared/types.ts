@@ -56,6 +56,7 @@ export interface CanvasShape {
 	h: number
 	color: string
 	text?: string
+	label?: string
 	points?: Point[]
 	brush?: BrushStyle
 	strokeWidth?: number
@@ -125,6 +126,7 @@ export type Operation =
 				h?: number
 				color?: string
 				text?: string
+				label?: string
 				points?: Point[]
 				brush?: BrushStyle
 				strokeWidth?: number

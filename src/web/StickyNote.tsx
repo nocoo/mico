@@ -30,7 +30,15 @@ export function StickyNote({
 				overflow="visible"
 				pointerEvents="none"
 			>
-				<div className="sticky-jelly canvas-jelly" style={jellyStyle(shape.color)}>
+				<div
+					className={`sticky-jelly canvas-jelly${shape.label ? ' sticky-has-label' : ''}`}
+					style={jellyStyle(shape.color)}
+				>
+					{shape.label && (
+						<div className="sticky-head">
+							<span className="sticky-chip">{shape.label}</span>
+						</div>
+					)}
 					<div className={editing ? 'sticky-body sticky-body-editing' : 'sticky-body'}>
 						{shape.text || ''}
 					</div>

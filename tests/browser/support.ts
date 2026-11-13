@@ -307,7 +307,11 @@ export async function clickWorld(page: Page, x: number, y: number) {
 }
 
 export async function pillBox(page: Page, id: string) {
-	const box = await page.locator(`[data-card-handle="${id}"] .card-pill`).boundingBox()
+	const box = await page
+		.locator(
+			`[data-card-handle="${id}"] .canvas-frame-label, [data-card-handle="${id}"] .card-pill`,
+		)
+		.boundingBox()
 	if (!box) throw new Error(`Missing label for ${id}`)
 	return box
 }

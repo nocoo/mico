@@ -223,19 +223,33 @@ export function SelectionPanel({
 				)}
 
 				{shape?.type === 'note' && (
-					<Field id="shape-text" label="Text">
-						<TextArea
-							id="shape-text"
-							key={`${shape.id}:${shape.text}`}
-							defaultValue={shape.text ?? ''}
-							rows={4}
-							onBlur={(event) => onPatch({ text: event.target.value })}
-							onKeyDown={(event) => {
-								if (event.key === 'Enter' && (event.metaKey || event.ctrlKey))
-									event.currentTarget.blur()
-							}}
-						/>
-					</Field>
+					<>
+						<Field id="note-label" label="Label">
+							<TextField.Root
+								id="note-label"
+								key={`${shape.id}:${shape.label}`}
+								defaultValue={shape.label ?? ''}
+								maxLength={120}
+								onBlur={(event) => onPatch({ label: event.target.value })}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter') event.currentTarget.blur()
+								}}
+							/>
+						</Field>
+						<Field id="shape-text" label="Text">
+							<TextArea
+								id="shape-text"
+								key={`${shape.id}:${shape.text}`}
+								defaultValue={shape.text ?? ''}
+								rows={4}
+								onBlur={(event) => onPatch({ text: event.target.value })}
+								onKeyDown={(event) => {
+									if (event.key === 'Enter' && (event.metaKey || event.ctrlKey))
+										event.currentTarget.blur()
+								}}
+							/>
+						</Field>
+					</>
 				)}
 
 				{(shape?.type === 'rectangle' || shape?.type === 'ellipse') && (

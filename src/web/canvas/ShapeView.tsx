@@ -1,8 +1,7 @@
-import { Frame } from 'lucide-react'
 import type React from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
-import { CardHeaderPill } from '../CardHeaderPill'
 import type { Tool } from '../design'
 import { StickyNote } from '../StickyNote'
 import { CanvasFrame } from './CanvasFrame'
@@ -211,17 +210,32 @@ export interface FrameLabelProps extends ShapeCallbacks {
 }
 
 export function FrameLabel({ shape, onPointerDown, onDoubleClick }: FrameLabelProps) {
+	const width = Math.max(160, Math.min(shape.w, 360))
+	const labelRef = useRef<HTMLDivElement>(null)
+	const [hitWidth, setHitWidth] = useState(0)
+	useLayoutEffect(() => {
+		const label = labelRef.current
+		if (!label) return
+		const measure = () => setHitWidth(Math.min(width, label.offsetWidth))
+		measure()
+		const observer = new ResizeObserver(measure)
+		observer.observe(label)
+		return () => observer.disconnect()
+	}, [width])
+	const handlers = {
+		onPointerDown: (event: React.PointerEvent<SVGGElement>) => onPointerDown(event, shape),
+		onDoubleClick: (event: React.MouseEvent<SVGGElement>) => onDoubleClick(event, shape),
+	}
 	return (
-		<CardHeaderPill
-			x={shape.x}
-			y={shape.y}
-			width={Math.min(shape.w, 360)}
-			color={shape.color}
-			title={shape.title ?? 'Frame'}
-			icon={Frame}
-			handleId={shape.id}
-			onPointerDown={(event) => onPointerDown(event, shape)}
-			onDoubleClick={(event) => onDoubleClick(event, shape)}
-		/>
+		<g className="canvas-frame-label-handle" data-card-handle={shape.id} {...handlers}>
+			<foreignObject x={shape.x} y={shape.y - 36} width={width} height={28} pointerEvents="none">
+				<div className="canvas-frame-label" ref={labelRef}>
+					<span className="canvas-frame-label-text">{shape.title ?? 'Frame'}</span>
+				</div>
+			</foreignObject>
+			{hitWidth > 0 && (
+				<rect x={shape.x} y={shape.y - 36} width={hitWidth} height={28} fill="transparent" />
+			)}
+		</g>
 	)
 }

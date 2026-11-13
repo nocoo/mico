@@ -87,6 +87,12 @@ function validHtml(value: unknown): void {
 	}
 }
 
+function validLabel(value: unknown): void {
+	if (typeof value !== 'string' || value.length > 120) {
+		invalid('label must be a string of at most 120 characters')
+	}
+}
+
 function validateGeometry(value: Record<string, unknown>): void {
 	for (const key of ['x', 'y', 'w', 'h']) {
 		if (!validFiniteNumber(value[key])) invalid(`${key} must be a finite number`)
@@ -148,6 +154,10 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 		}
 		validTitle(value.title, 'html title')
 		validHtml(value.html)
+	} else if (value.type === 'note') {
+		if (!hasExactKeys(value, base, ['text', 'label', 'frameId'])) {
+			invalid('invalid note shape')
+		}
 	} else if (value.type === 'text') {
 		if (!hasExactKeys(value, base, ['text', 'frameId', 'font', 'fontSize', 'fontWeight'])) {
 			invalid('invalid text shape')
@@ -167,6 +177,7 @@ function validateShapeShape(value: unknown): asserts value is Shape {
 	if (Object.hasOwn(value, 'text') && typeof value.text !== 'string') {
 		invalid('shape text must be a string')
 	}
+	if (Object.hasOwn(value, 'label')) validLabel(value.label)
 	if (Object.hasOwn(value, 'frameId') && !validId(value.frameId)) {
 		invalid('frameId must be a non-empty shape id')
 	}
@@ -325,7 +336,7 @@ function findShape(board: Board, id: string): Shape | undefined {
 const PATCH_KEYS: Record<ShapeType | 'connector', readonly string[]> = {
 	rectangle: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
 	ellipse: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
-	note: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
+	note: ['x', 'y', 'w', 'h', 'color', 'text', 'label', 'frameId'],
 	line: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId'],
 	text: ['x', 'y', 'w', 'h', 'color', 'text', 'frameId', 'font', 'fontSize', 'fontWeight'],
 	path: ['x', 'y', 'w', 'h', 'color', 'frameId', 'points', 'brush', 'strokeWidth'],
@@ -371,6 +382,7 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		invalid('shape height must be non-negative')
 	if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
 		invalid('shape text must be a string')
+	if (Object.hasOwn(patch, 'label')) validLabel(patch.label)
 	if (Object.hasOwn(patch, 'frameId')) {
 		if (patch.frameId !== null && !validId(patch.frameId)) {
 			invalid('frameId must be a non-empty shape id or null')

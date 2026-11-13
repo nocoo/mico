@@ -165,6 +165,61 @@ test('board persists in sqlite', () => {
 	}
 })
 
+test('note labels persist and only apply to note shapes', () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	let store = new BoardStore(dbPath)
+	try {
+		store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'note',
+						type: 'note',
+						x: 10,
+						y: 20,
+						w: 200,
+						h: 130,
+						color: '#fff8d4',
+						text: 'Follow up',
+						label: 'Action',
+					},
+				},
+			],
+		})
+		store.apply({
+			operations: [{ type: 'update', id: 'note', patch: { label: 'Resolved' } }],
+		})
+		store.close()
+		store = new BoardStore(dbPath)
+		const persisted = store.getBoard().shapes[0]
+		assert.equal(persisted?.type === 'connector' ? undefined : persisted?.label, 'Resolved')
+		assert.throws(() =>
+			store.apply({
+				operations: [
+					{
+						type: 'create',
+						shape: {
+							id: 'box',
+							type: 'rectangle',
+							x: 0,
+							y: 0,
+							w: 100,
+							h: 80,
+							color: '#00a2e1',
+							label: 'Invalid',
+						},
+					},
+				],
+			}),
+		)
+	} finally {
+		store.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('connectors persist optional anchor pins within the referenced anchor range', () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')

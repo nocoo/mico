@@ -1161,9 +1161,9 @@ export default function App() {
 							: target.type === 'note'
 								? {
 										x: target.x + 15,
-										y: target.y + 21,
+										y: target.y + (target.label ? 40 : 21),
 										w: Math.max(0, target.w - 30),
-										h: Math.max(0, target.h - 31),
+										h: Math.max(0, target.h - (target.label ? 50 : 31)),
 									}
 								: jellyShape
 									? {

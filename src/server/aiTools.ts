@@ -496,6 +496,11 @@ export function createCanvasTools(
 							w: size('Width.').optional(),
 							h: size('Height.').optional(),
 							text: z.string().min(1).max(6000),
+							label: z
+								.string()
+								.max(120)
+								.optional()
+								.describe('Optional short chip above the note body.'),
 							color: anyColorSchema.optional(),
 							frameId: frameIdSchema,
 						}),
@@ -514,6 +519,7 @@ export function createCanvasTools(
 						w: note.w ?? 260,
 						h: note.h ?? 180,
 						text: note.text,
+						...(note.label !== undefined ? { label: note.label } : {}),
 						...(note.frameId ? { frameId: note.frameId } : {}),
 					},
 				}))
@@ -984,6 +990,7 @@ export function createCanvasTools(
 									h: z.number().optional(),
 									color: anyColorSchema.optional(),
 									text: z.string().max(6000).optional(),
+									label: z.string().max(120).optional(),
 									title: z.string().min(1).max(120).optional(),
 									html: z.string().min(1).max(200000).optional(),
 									frameId: z.string().nullable().optional(),
