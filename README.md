@@ -9,7 +9,7 @@
 
 Mico 是一个本地优先的画布实验：人和本地 Agent 编辑同一批画板。浏览器负责渲染画布，守护进程管理一组命名画布并存入 SQLite，CLI 与 HTTP API 让 Agent 能完整访问同一批画布和同一套操作。
 
-它是一台机器上的本地画布集合，不是多人服务器。除了限制浏览器来源和主机之外没有其他鉴权，本机运行的进程都被视为可信；不要把守护进程暴露到网络。调整尺寸、远程部署和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
+它默认是一台机器上的本地画布集合，不是多人服务器。本地模式信任本机进程。Cloud hosting uses the same container with a configured public origin and optional Entra login; the first Azure deployment is a disposable preview with AI disabled. See [deployment options](docs/deployment.md). A public deployment without login is accessible to every reachable caller. 调整尺寸和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
 
 ## 功能
 
@@ -102,6 +102,10 @@ docker compose up --build -d --wait
 Open <http://127.0.0.1:47063/>. One non-root container serves the production UI, API, canvas WebSocket and both voice proxies. Named volumes retain canvases, images and AI settings across container recreation without touching the host's daily board. Provider credentials are optional for ordinary drawing. The port is published on loopback only; Mico is not an authenticated public server.
 
 See [the Docker guide](docs/docker.md) for provider configuration, persistence, shutdown and the isolated Chrome acceptance check.
+
+### Cloud preview
+
+Hosting, login and AI availability are independent settings. The [deployment guide](docs/deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](docs/deployment-azure.md): optional Microsoft SPA login, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** No real tenant, subscription, resource group, App ID or user ID belongs in the repository; supply them through operator environment configuration.
 
 ### Agent CLI
 

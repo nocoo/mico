@@ -1,5 +1,7 @@
 # AI configuration
 
+`MICO_AI_ENABLED=false` disables AI, voice and image generation without disabling manual drawing or image uploads. Provider credentials and the deploy-mode Chat endpoint/model are then unnecessary. The public runtime contract tells the UI to show AI as unavailable. Authentication is independently selected with `MICO_AUTH_MODE`; see [deployment](deployment.md).
+
 `src/server/aiConfig.ts` is the server-only configuration boundary for Chat, MAI transcription, image generation and MOSS Live. The daemon, Vite proxy adapters and image subprocess use its typed configuration instead of reading provider variables independently.
 
 This follows wb-beacon's explicit `laptop` / `deploy` runtime distinction. It does not infer a hosted deployment from `NODE_ENV=production`: a production image running in local Docker still defaults to laptop behavior. No Azure resource or authentication infrastructure is provisioned by this refactor.
@@ -19,6 +21,7 @@ The local Compose file still maps `MICO_DOCKER_MAGPIE_BASE_URL` to `MAGPIE_BASE_
 
 | Variable                   | Purpose                                                              | Default / requirement                                                 |
 | -------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| `MICO_AI_ENABLED`          | Enable AI/voice/generated-image entrypoints                           | `true`; set `false` for a provider-free preview                       |
 | `MICO_RUNTIME`             | Configuration source policy                                          | `laptop` or `deploy`; other values fail startup                       |
 | `MAGPIE_BASE_URL`          | OpenAI-compatible Chat API base, including its `/v1` or other prefix | Laptop: `http://127.0.0.1:3425/v1`; deploy: required                  |
 | `MAGPIE_MODEL`             | Chat / canvas / summary model ID                                     | Laptop: `auto/gpt-6-luna`; deploy: required                           |
@@ -54,13 +57,13 @@ MOSS_REALTIME_URL=wss://api.mosi.cn/v1/realtime?model=moss-live-1.0
 
 Configure `MAGPIE_API_KEY`, `AZURE_OPENAI_API_KEY` and `MOSS_API_KEY` separately using Container Apps secret references. The example contains only non-secret URLs/models and runtime settings. Environment changes take effect after the process is restarted/recreated. Old Settings volumes cannot override or retain the effective cloud key after a new revision receives rotated environment credentials.
 
-Only Chat endpoint and model are required to start deploy mode. Voice and images remain optional and retain their existing missing-configuration error behavior. An empty Chat key is supported for a gateway whose authentication is handled separately; it is not application user authentication.
+When AI is enabled, only the Chat endpoint and model are required to start deploy mode. Voice and images remain optional and retain their existing missing-configuration error behavior. An empty Chat key is supported for a gateway whose authentication is handled separately; it is not application user authentication.
 
 ## Deliberate scope
 
 This change retains API-key/Bearer authentication. Unlike wb-beacon's Azure-specific identity path, it does not add Managed Identity, Azure CLI token acquisition, Entra login or token refresh. It also does not publish an image or change any Azure resources.
 
-Before exposing Mico publicly, separately implement user authentication/authorization, the public Host/Origin and ingress/WebSocket policy, and durable SQLite storage with an appropriate replica policy. The current server remains a local-first, single-user service; deploy-mode configuration alone does not make it safe to expose publicly.
+Public hosting uses the separate [deployment contract](deployment.md): optional Entra authentication/authorization, an explicit public Host/Origin and protected WebSocket upgrades. The Azure preview deliberately uses disposable storage and one replica. Authentication does not add per-user storage isolation. The `deploy` configuration source policy alone does not enable login or guarantee durable data.
 
 ## Verification
 

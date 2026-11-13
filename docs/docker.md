@@ -25,7 +25,7 @@ The image builds from the frozen lockfile using Node.js `26.13.0` and pnpm `12.1
 NPM_REGISTRY=https://your-npm-mirror.example/ docker compose build
 ```
 
-The runtime has a read-only root filesystem, a temporary `/tmp`, no Linux capabilities, and runs as UID `1000`. Only `127.0.0.1:47063` is published. Host/origin validation remains enabled. Mico has no user authentication: do not publish the port on a LAN or the internet. This is a local deployment, not a multi-user server.
+The runtime has a read-only root filesystem, a temporary `/tmp`, no Linux capabilities, and runs as UID `1000`. Only `127.0.0.1:47063` is published. Host/origin validation remains enabled. This local Compose profile defaults to no authentication: do not publish its port on a LAN or the internet. For a public origin and optional Entra login, use the separate [deployment contract](deployment.md) and [Azure preview](deployment-azure.md). Neither profile is a multi-user server.
 
 ## Data and settings
 

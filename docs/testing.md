@@ -142,9 +142,17 @@ The action-card pixel comparison retains its 0.002 mismatch limit and attaches b
 
 When reproducing CI locally, use the repository's Playwright version on Ubuntu with `fonts-dejavu-core` installed, matching the GitHub runner's system-font fallback. The stock Playwright Docker image alone can select a narrower fallback and miss these defects. Do not solve font-dependent layout failures by relaxing pixel thresholds or adding retries.
 
+## Hosted preview
+
+`src/shared/runtime.test.ts` and `src/server/auth.test.ts` cover independent hosting/auth/AI settings and session policy. `src/server/auth.integration.test.ts` verifies real HTTP and WebSocket authentication against temporary SQLite and synthetic identity keys. It must remain in the L3 list in `scripts/run-tests.ts`.
+
+`tests/browser/hosted.spec.ts` belongs to the CI E2E subset. It checks fail-closed runtime bootstrap, optional login, callback/session handling, logout/expiry and manual drawing with AI disabled. Local identity doubles do not prove the real Entra redirect is registered.
+
+`scripts/cloud/azure.test.ts` verifies environment-driven target selection, distinct login/resource tenants, explicit optional authentication, digest pinning, one replica and the ephemeral/AI-disabled deployment contract. Azure provisioning and actual image health are separate live acceptance steps, not mocked unit-test results. Provider-specific IDs and deployment URLs must stay in operator configuration outside Git.
+
 ## Known gaps
 
 - Pixel comparisons cover the pinned prototype's light-theme backdrop, notes, shapes, text, ink, connector, selection marquee and HTML card shell. Other themes, arbitrary generated card contents and all animation frames are not exhaustively compared.
 - Browser tests run Chrome only. Safari/Firefox rendering of `foreignObject` and sandboxed iframes is unverified. MOSS Live does not automatically request a summary when stopped.
 - No load, soak or large-board performance tests; the 1 MB request limit is exercised for the 413 contract only.
-- Not yet supported by the product, so not tested: resizing, multi-user sessions, MCP, remote deployment.
+- Not yet supported by the product, so not tested: resizing, multi-user sessions, MCP and durable managed-cloud storage. Azure is the first automated disposable preview; other cloud adapters and a real Entra login require separate acceptance.

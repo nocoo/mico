@@ -1,5 +1,11 @@
 # Retrospective
 
+## Hosted preview integration
+
+- Initial parallel auth drafts disagreed on session POST status and timestamp units, and the frontend memoized token redemption without memoizing session registration. Fix the HTTP contract before delegation, share its types, and test the complete callback transaction under React StrictMode rather than only testing MSAL initialization.
+- A dependency commit briefly collided with another process's Git index lock. Inspect ownership and retry after the lock disappears; do not delete a live lock or stage another worker's changes.
+- A pane output wait matched the echoed command instead of its completion marker. Anchor the completion regex to a full result line and inspect the process/log before declaring a long-running operation finished.
+
 ## Linux CI font regressions
 
 - A reviewer pane remained scrolled above its latest messages, and Herdr rejected the guessed `ctrl+end` key name. Check the registered agent state and read the completed reply from that agent's session when terminal output is stale; do not mistake an older visible finding for an unresolved latest review.

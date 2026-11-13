@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Add provider-neutral hosting configuration with independently optional Entra SPA login, AI availability and an ephemeral-preview notice.
+- Protect hosted canvas APIs and WebSocket connections with validated Microsoft identity and revocable server sessions when login is enabled; keep local unauthenticated drawing unchanged.
+- Add environment-driven Azure Container Apps preview provisioning and digest-pinned image deployment, without committed deployment identifiers, provider credentials or durable-data claims.
+
 - Add a top-right AI button and assistant panel with Chat and Audio tabs.
 - Connect Chat to the local Magpie gateway through the Vercel AI SDK with streaming responses, a stepwise canvas-agent prompt and a mock model for deterministic tests.
 - Give the assistant canvas tools for text, notes, boxes, lines, connectors, frames, strokes, HTML cards, updates and deletes; every call writes and broadcasts immediately.

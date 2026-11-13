@@ -9,7 +9,7 @@
 
 A local-first canvas experiment where people and local agents edit the same boards. The browser renders the canvas; the daemon owns a collection of named canvases and stores them in SQLite; the CLI and HTTP API give agents complete access to the same boards, canvases and operations.
 
-This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Resizing, remote deployment, and MCP are not implemented yet. Live microphone capture needs the selected provider's credentials and proxy. Chat and MAI drawing depend on the configured AI gateway; MOSS Live uses its own voice model and native tool calls.
+This is a single shared canvas collection, not a multi-user server. Local mode trusts processes running on the machine. Cloud hosting uses the same container with a configured public origin and optional Entra login; the first Azure deployment is a disposable preview with AI disabled. See [deployment options](deployment.md). A public deployment without login is accessible to every reachable caller. Resizing and MCP are not implemented yet. Live microphone capture needs the selected provider's credentials and proxy. Chat and MAI drawing depend on the configured AI gateway; MOSS Live uses its own voice model and native tool calls.
 
 ## Features
 
@@ -102,6 +102,10 @@ docker compose up --build -d --wait
 Open <http://127.0.0.1:47063/>. One non-root container serves the production UI, API, canvas WebSocket and both voice proxies. Named volumes retain canvases, images and AI settings across container recreation without touching the host's daily board. Provider credentials are optional for ordinary drawing. The port is published on loopback only; Mico is not an authenticated public server.
 
 See [the Docker guide](docker.md) for provider configuration, persistence, shutdown and the isolated Chrome acceptance check.
+
+### Cloud preview
+
+Hosting, login and AI availability are independent settings. The [deployment guide](deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](deployment-azure.md): optional Microsoft SPA login, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** Supply tenant, subscription, resource group, App ID and user IDs through operator environment configuration, never committed source.
 
 ### Agent CLI
 
