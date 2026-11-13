@@ -1,5 +1,11 @@
 # Retrospective
 
+## Hosted identity surface
+
+- The first cloud preview put status badges and sign-out in a separate generic overlay instead of extending the accepted glass identity surface. Functional checks proved availability but did not prove visual compliance. Place deployment controls beside the existing canvas-list entry, reuse its glass/jelly tokens, and compare the actual panel against the canvas manager at desktop/mobile sizes before accepting a new frame extension.
+- A popover height based on the full viewport ignored the space below its anchor and clipped sign-out in landscape. Bound it by Radix's available-height variable, give the last control scroll margin inside rounded corners, and verify an authenticated preview at a short landscape size with real pointer input.
+- The first browser run failed before tests because a manifest import lacked Node's JSON import attribute; a later assertion compared authored milliseconds with computed seconds. Follow the actual test runtime and compare normalized CSS values. Capture finite animations in their completed state so a mid-entrance screenshot is not mistaken for the final glass treatment.
+
 ## Hosted preview integration
 
 - The first live browser probe waited for network idle and timed out even though direct login rendering succeeded. Use DOM readiness plus the actual sign-in control as acceptance criteria, preserve screenshots and pending requests on failure, and verify identity navigation separately from page loading.

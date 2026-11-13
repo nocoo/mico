@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Move preview, AI and sign-out controls into a glass Debug panel beside Canvases, with optional Microsoft profile photos and accessible avatar fallbacks.
+- Add the project `mico-deploy` skill for repeatable environment-driven Azure publication and exact-image acceptance.
+
 - Add provider-neutral hosting configuration with independently optional Entra SPA login, AI availability and an ephemeral-preview notice.
 - Protect hosted canvas APIs and WebSocket connections with validated Microsoft identity and revocable server sessions when login is enabled; keep local unauthenticated drawing unchanged.
 - Add environment-driven Azure Container Apps preview provisioning and digest-pinned image deployment, without committed deployment identifiers, provider credentials or durable-data claims.

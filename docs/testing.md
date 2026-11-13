@@ -148,6 +148,8 @@ When reproducing CI locally, use the repository's Playwright version on Ubuntu w
 
 `tests/browser/hosted.spec.ts` belongs to the CI E2E subset. It checks fail-closed runtime bootstrap, optional login, callback/session handling, logout/expiry and manual drawing with AI disabled. Local identity doubles do not prove the real Entra redirect is registered.
 
+`tests/browser/debug-panel.spec.ts` and `avatar.spec.ts` also run in that subset. They cover the identity-entry order, Canvas List/Debug mutual exclusion, keyboard focus, outside pointer gestures, glass-token parity, 320px portrait and authenticated 812×375 landscape layout, optional photo display and object-URL revocation. Screenshots are captured after entrance animations complete. MSAL and Graph are intercepted only by the browser fixture; no production mock hook or real profile request is used. Missing photos, permission errors and invalid image bytes must leave a usable fallback. `src/web/avatar.test.ts` and `frame-debug.test.ts` cover the bounded photo request, cancellation, account choice and pure display state in L1.
+
 `scripts/cloud/azure.test.ts` verifies environment-driven target selection, distinct login/resource tenants, explicit optional authentication, digest pinning, one replica and the ephemeral/AI-disabled deployment contract. Azure provisioning and actual image health are separate live acceptance steps, not mocked unit-test results. Provider-specific IDs and deployment URLs must stay in operator configuration outside Git.
 
 ## Known gaps
