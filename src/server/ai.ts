@@ -165,7 +165,7 @@ export async function streamAiChat({
 	const board = store.getBoard(canvasId)
 	const abort = new AbortController()
 	res.on('close', () => abort.abort())
-	const headers: Record<string, string> = {}
+	const headers: Record<string, string> = { 'Cache-Control': 'private, no-store' }
 	if (origin && ALLOWED_ORIGINS.has(origin)) {
 		headers['Access-Control-Allow-Origin'] = origin
 		headers.Vary = 'Origin'

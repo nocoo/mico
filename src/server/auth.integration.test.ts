@@ -8,6 +8,7 @@ import { test } from 'node:test'
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
+import { createMockAiModel } from './aiMock.ts'
 import { createDaemon, type Daemon } from './index.ts'
 
 const ORIGIN = 'https://mico.test'
@@ -127,6 +128,7 @@ async function withHostedDaemon(
 	try {
 		daemon = createDaemon({
 			port: 0,
+			aiModel: createMockAiModel(),
 			dbPath: join(directory, 'board.sqlite'),
 			settingsPath: join(directory, 'ai-settings.json'),
 			staticDir,
@@ -262,6 +264,26 @@ test('hosted auth verifies Entra claims, uses opaque sessions and returns 204 fo
 		assert.equal(privateRecording.headers['cache-control'], 'private, no-store')
 		const privateState = await httpRequest(port, '/api/state', { host: HOST, cookie })
 		assert.equal(privateState.headers['cache-control'], 'private, no-store')
+		const stream = await httpRequest(port, '/api/ai/chat', {
+			method: 'POST',
+			host: HOST,
+			origin: ORIGIN,
+			cookie,
+			contentType: 'application/json',
+			body: JSON.stringify({
+				messages: [
+					{
+						id: 'auth-stream',
+						role: 'user',
+						parts: [{ type: 'text', text: 'Draw projectile motion' }],
+					},
+				],
+				selection: [],
+			}),
+		})
+		assert.equal(stream.status, 200)
+		assert.match(String(stream.headers['content-type']), /text\/event-stream/)
+		assert.equal(stream.headers['cache-control'], 'private, no-store')
 		const sessionBody = JSON.parse(session.body) as {
 			user: { name: string; expiresAt: number }
 		}
