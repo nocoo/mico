@@ -129,6 +129,27 @@ test('click, drag and keyboard navigation move the viewport without creating his
 	await expect(map.locator('.canvas-minimap-viewport')).toBeVisible()
 })
 
+test('minimap drag preserves a wheel zoom made during pointer capture', async ({ page }) => {
+	const map = page.locator('.canvas-minimap-map')
+	const box = await map.boundingBox()
+	if (!box) throw new Error('Missing minimap')
+	await page.mouse.move(box.x + 80, box.y + 55)
+	await page.mouse.down()
+	await page.mouse.move(700, 400)
+	await page.mouse.wheel(0, -200)
+	await expect.poll(async () => (await worldView(page)).zoom).toBeGreaterThan(1)
+	const zoomed = await worldView(page)
+	await page.mouse.move(701, 400)
+	await expect.poll(async () => (await worldView(page)).zoom).toBeCloseTo(zoomed.zoom, 4)
+	const rebased = await worldView(page)
+	expect(rebased.x).toBeCloseTo(zoomed.x, 3)
+	expect(rebased.y).toBeCloseTo(zoomed.y, 3)
+	await page.mouse.move(box.x + 120, box.y + 65)
+	await expect.poll(async () => (await worldView(page)).x).not.toBe(rebased.x)
+	expect((await worldView(page)).zoom).toBeCloseTo(zoomed.zoom, 4)
+	await page.mouse.up()
+})
+
 test('minimap keeps the active pointer anchor during a concurrent pointerdown', async ({
 	page,
 }) => {

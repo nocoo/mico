@@ -198,6 +198,14 @@ export function CanvasMinimap({
 					const activeProjection = frozenProjection.current
 					const start = dragStart.current
 					if (event.pointerId !== pointerId.current || !activeProjection || !start) return
+					if (viewport.zoom !== start.viewport.zoom) {
+						start.viewport = { ...viewport }
+						start.point = pointInOverview(event)
+						start.clientX = event.clientX
+						start.clientY = event.clientY
+						start.moved = true
+						return
+					}
 					if (
 						!start.moved &&
 						Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) < 3
