@@ -22,6 +22,7 @@
 
 ## Tool usage
 
+- A whole-suite visual failure exceeded the strict threshold by one pixel, but the next Playwright run cleared its trace. Preserve failing screenshots and traces before reruns; freeze fixture transitions explicitly and retain comparison images on failure instead of loosening the threshold.
 - An HTML-card drag probe assumed the card body was a drag handle; the documented behavior and the unchanged baseline both use the title. Compare the parent revision and documented interaction before treating a new probe as a product regression.
 - An HTML card reported `elementFromPoint` as the iframe before its selected state had been painted, while actual clicks still reached the parent. Capture events in both documents, wait for the rendered selection across animation frames, and repeat real input instead of trusting DOM state alone.
 - Dialog workers again used `find` and manually started a browser fixture despite the existing guidance. Include the `fd` and Playwright-managed fixture requirements directly in delegated prompts, and preserve screenshots before subsequent runs clear `test-results`.
