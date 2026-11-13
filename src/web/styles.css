@@ -1029,8 +1029,7 @@ svg {
 	margin: 0 0 var(--space-3);
 	color: var(--ink-secondary);
 }
-.gate-action,
-.sign-out-button {
+.gate-action {
 	min-height: var(--control-standard);
 	border: var(--hairline) solid var(--border);
 	border-radius: var(--radius-control);
@@ -1048,46 +1047,4 @@ svg {
 .gate-action:hover {
 	background: var(--accent-hover);
 	border-color: var(--accent-hover);
-}
-.cloud-chrome {
-	position: fixed;
-	top: calc(82px + env(safe-area-inset-top, 0px));
-	left: calc(14px + env(safe-area-inset-left, 0px));
-	max-width: min(420px, calc(100vw - 28px));
-	z-index: 30;
-	display: flex;
-	flex-wrap: wrap;
-	align-items: stretch;
-	gap: var(--space-1);
-	pointer-events: none;
-}
-.preview-status,
-.ai-unavailable {
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	min-height: var(--control-standard);
-	padding: var(--space-05) var(--space-1);
-	border: var(--hairline) solid var(--border);
-	border-radius: var(--radius-control);
-	background: color-mix(in srgb, var(--surface) 94%, transparent);
-	box-shadow: var(--shadow-panel);
-	line-height: 16px;
-	pointer-events: auto;
-}
-.preview-status strong,
-.ai-unavailable strong {
-	font-size: var(--type-caption);
-}
-.preview-status span,
-.ai-unavailable span {
-	font-size: var(--type-caption);
-	color: var(--ink-secondary);
-}
-.sign-out-button {
-	padding: 0 var(--space-1);
-	pointer-events: auto;
-}
-.sign-out-button:hover {
-	background: var(--surface-hover);
 }

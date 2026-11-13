@@ -56,6 +56,7 @@ export interface AppProps {
 	aiEnabled?: boolean
 	ephemeral?: boolean
 	user?: { name: string; expiresAt: number } | null
+	avatarUrl?: string | null
 	onSignOut?: () => void
 }
 
@@ -63,6 +64,7 @@ export default function App({
 	aiEnabled = true,
 	ephemeral = false,
 	user = null,
+	avatarUrl = null,
 	onSignOut,
 }: AppProps = {}) {
 	const svgRef = useRef<SVGSVGElement>(null)
@@ -89,7 +91,9 @@ export default function App({
 	const imageInputRef = useRef<HTMLInputElement>(null)
 	const connectionResetRef = useRef<() => void>(() => {})
 	const cancelInteractionRef = useRef<() => void>(() => {})
-	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
+	const [identityPanelOpen, setIdentityPanelOpen] = useState<'canvases' | 'debug' | null>(null)
+	const canvasPanelOpen = identityPanelOpen === 'canvases'
+	const debugPanelOpen = identityPanelOpen === 'debug'
 	const [aiPrompt, setAiPrompt] = useState(() =>
 		aiEnabled ? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '') : '',
 	)
@@ -391,23 +395,23 @@ export default function App({
 		connectionResetRef.current = connection.reset
 	}, [connection.reset])
 
-	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
+	const closeCanvasPanel = useCallback(() => setIdentityPanelOpen(null), [])
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
 	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
 
 	const toggleCanvasPanel = () => {
-		setCanvasPanelOpen((open) => {
-			if (!open) void refreshCanvases()
-			return !open
-		})
+		const open = !canvasPanelOpen
+		if (open) void refreshCanvases()
+		setIdentityPanelOpen(open ? 'canvases' : null)
 	}
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
 			if (event.key === 'Escape') {
+				if (debugPanelOpen) return
 				cancelInteraction()
 				setTool('select')
 				return
@@ -438,7 +442,7 @@ export default function App({
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction])
+	}, [cancelInteraction, debugPanelOpen])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
@@ -969,27 +973,6 @@ export default function App({
 				} as React.CSSProperties
 			}
 		>
-			{(ephemeral || user || !aiEnabled) && (
-				<aside className="cloud-chrome" aria-label="Workspace status">
-					{ephemeral && (
-						<div className="preview-status" role="status">
-							<strong>Preview</strong>
-							<span>Data may disappear</span>
-						</div>
-					)}
-					{!aiEnabled && (
-						<div className="ai-unavailable" role="status">
-							<strong>AI unavailable</strong>
-							<span>Manual drawing is available</span>
-						</div>
-					)}
-					{user && onSignOut && (
-						<button type="button" className="sign-out-button" onClick={onSignOut}>
-							Sign out
-						</button>
-					)}
-				</aside>
-			)}
 			<CanvasBackdrop />
 			<CanvasMinimap
 				shapes={visibleShapes}
@@ -1026,6 +1009,15 @@ export default function App({
 					switchCanvas,
 					renameCanvas,
 					deleteCanvas,
+				}}
+				debug={{
+					open: debugPanelOpen,
+					onOpenChange: (open) => setIdentityPanelOpen(open ? 'debug' : null),
+					user,
+					avatarUrl,
+					ephemeral,
+					aiEnabled,
+					onSignOut,
 				}}
 			/>
 			<Toolbar

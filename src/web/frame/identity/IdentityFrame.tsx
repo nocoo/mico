@@ -1,6 +1,8 @@
 import { Check, Layers, Pencil, Plus, Trash2 } from 'lucide-react'
 import { IconButton } from '../../IconButton'
 import type { IdentityActions, IdentityState } from '../contracts'
+import { DebugPanel, type DebugPanelProps } from '../debug/DebugPanel'
+import { shouldShowDebug } from '../debug/debugViewModel'
 import { MeetingFrame } from '../meeting/MeetingFrame'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
@@ -9,15 +11,20 @@ import './identity.css'
 export interface IdentityFrameProps {
 	state: IdentityState
 	actions: IdentityActions
+	debug: DebugPanelProps
 }
 
-export function IdentityFrame({ state, actions }: IdentityFrameProps) {
+export function IdentityFrame({ state, actions, debug }: IdentityFrameProps) {
 	const identity = useIdentityViewModel({ state, actions })
+	const showDebug = shouldShowDebug(debug)
 
 	return (
 		<>
 			<header className="topbar frame-identity">
-				<div className="identity-panel floating-panel">
+				<div
+					className="identity-panel floating-panel"
+					data-debug-available={showDebug ? 'true' : undefined}
+				>
 					<div className="brand">
 						<span className="brand-mark">
 							<img className="brand-mark-icon" src="/logo.png" alt="" aria-hidden="true" />
@@ -30,16 +37,18 @@ export function IdentityFrame({ state, actions }: IdentityFrameProps) {
 						active={identity.canvasesOpen}
 						aria-pressed={identity.canvasesOpen}
 						aria-expanded={identity.canvasesOpen}
+						aria-controls="canvas-panel"
 						onClick={identity.toggleCanvases}
 						data-canvas-toggle="true"
 					/>
+					{showDebug && <DebugPanel {...debug} />}
 				</div>
 				<MeetingFrame />
 			</header>
 			{identity.mounted && (
 				<section
 					ref={identity.panelRef}
-					className="canvas-panel floating-panel frame-identity"
+					className="canvas-panel floating-panel frame-identity identity-surface"
 					aria-label="Canvases"
 					aria-hidden={!identity.canvasesOpen || undefined}
 					data-state={identity.canvasesOpen ? 'open' : 'closed'}
