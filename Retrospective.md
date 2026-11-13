@@ -2,6 +2,11 @@
 
 ## Hosted preview integration
 
+- Hosted auth initially classified raw path prefixes while API routing removed empty segments and the static server decoded paths. An independent review reproduced anonymous writes and encoded static traversal. Parse and validate one request target before HTTP/WS authorization; cover repeated separators, alternate authorities, encoded separators and traversal against real persisted data.
+- Voice proxies returned before registering their sockets with the session manager, so logout only closed canvas subscriptions. Register every upgraded client and test both client and mock upstream closure on logout and expiry. Mark authenticated responses `private, no-store`, including files served by middleware.
+- MSAL retains a rejected redirect promise on its instance even after clearing browser cache. Recreate that instance and clear the failed callback URL before retrying; exercise the rejection/cache lifecycle, not only a stub that returns null.
+- The first hosted browser run found sign-out hidden under the assistant, callback counters lost on navigation, and a provider-request matcher counting Vite source-module paths. Keep controls outside panel hit areas, persist test counters across navigation, and match endpoint paths exactly. Mock MSAL at the test module boundary instead of shipping a global production mock hook. Check existing API status and body-size contracts before writing boundary assertions.
+
 - Initial parallel auth drafts disagreed on session POST status and timestamp units, and the frontend memoized token redemption without memoizing session registration. Fix the HTTP contract before delegation, share its types, and test the complete callback transaction under React StrictMode rather than only testing MSAL initialization.
 - A dependency commit briefly collided with another process's Git index lock. Inspect ownership and retry after the lock disappears; do not delete a live lock or stage another worker's changes.
 - A pane output wait matched the echoed command instead of its completion marker. Anchor the completion regex to a full result line and inspect the process/log before declaring a long-running operation finished.
