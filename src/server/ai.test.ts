@@ -8,12 +8,7 @@ import { simulateReadableStream } from 'ai'
 import { MockLanguageModelV4 } from 'ai/test'
 import { CANDY_COLORS, CANDY_TINTS } from '../shared/palette.ts'
 import { POST_SESSION_SUMMARY_PROMPT } from '../shared/summaryPrompt.ts'
-import {
-	MAGPIE_DEFAULT_BASE_URL,
-	MAGPIE_DEFAULT_MODEL,
-	magpieSettings,
-	sanitizeInterruptedMessages,
-} from './ai.ts'
+import { sanitizeInterruptedMessages } from './ai.ts'
 import { boardDigest, digestShape } from './aiBoard.ts'
 import { createMockAiModel } from './aiMock.ts'
 import { buildInstructions } from './aiPrompt.ts'
@@ -33,22 +28,6 @@ function withStore(runTest: (store: BoardStore, broadcast: unknown[]) => Promise
 		rmSync(directory, { recursive: true, force: true })
 	})
 }
-
-test('Magpie settings default to Luna and allow an optional key', () => {
-	assert.deepEqual(magpieSettings({}), {
-		baseURL: MAGPIE_DEFAULT_BASE_URL,
-		model: MAGPIE_DEFAULT_MODEL,
-		apiKey: 'magpie',
-	})
-	assert.equal(magpieSettings({ MAGPIE_API_KEY: '' }).apiKey, '')
-	assert.equal(
-		magpieSettings({
-			MAGPIE_BASE_URL: 'http://127.0.0.1:9999/v1/',
-			MAGPIE_MODEL: 'group/coding',
-		}).baseURL,
-		'http://127.0.0.1:9999/v1',
-	)
-})
 
 test('AI tools create, inspect and update frame titles and note labels', async () => {
 	await withStore(async (store) => {
@@ -511,6 +490,7 @@ async function withDaemon(
 		port: 0,
 		dbPath: join(directory, 'board.sqlite'),
 		settingsPath: join(directory, 'ai-settings', 'settings.json'),
+		env: {},
 		aiModel: model,
 	})
 	daemon.server.listen(0, '127.0.0.1')
@@ -690,6 +670,7 @@ test('AI settings updates create the model used by subsequent chats', async () =
 		port: 0,
 		dbPath: join(directory, 'board.sqlite'),
 		settingsPath: join(directory, 'ai-settings', 'settings.json'),
+		env: {},
 		createAiModel: (settings) => {
 			seen.push(settings)
 			return createMockAiModel()
@@ -1041,7 +1022,7 @@ test('lecture mode can answer WAIT without forcing a tool call', async () => {
 		const streamed = await response.text()
 		assert.match(streamed, /WAIT/)
 		assert.deepEqual(model.doStreamCalls[0]?.providerOptions, {
-			magpie: { reasoningEffort: process.env.MAGPIE_LECTURE_REASONING || 'none' },
+			magpie: { reasoningEffort: 'none' },
 		})
 		assert.equal(daemon.store.getBoard().shapes.length, 0)
 	}, model)

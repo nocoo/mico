@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { type ImageProviderConfig, loadImageConfig } from '../src/server/aiConfig.ts'
 
 const INPUT_LIMIT = 64 * 1024
 const PROMPT_LIMIT = 16 * 1024
@@ -156,13 +157,12 @@ async function readResponseBody(response: Response, limit: number): Promise<Buff
 
 export async function generateImage(
 	requestValue: unknown,
-	endpoint: string,
-	apiKey: string,
+	config: ImageProviderConfig,
 	timeoutMs = REQUEST_TIMEOUT_MS,
 ): Promise<Buffer> {
 	const request = validateImageRequest(requestValue)
-	if (apiKey.trim().length === 0) throw new ScriptError('configuration')
-	const url = buildGenerationUrl(endpoint)
+	if (config.apiKey.trim().length === 0) throw new ScriptError('configuration')
+	const url = buildGenerationUrl(config.endpoint)
 	const size = SIZES[request.aspect]
 
 	let response: Response
@@ -170,12 +170,12 @@ export async function generateImage(
 		response = await fetch(url, {
 			method: 'POST',
 			headers: {
-				'api-key': apiKey,
+				'api-key': config.apiKey,
 				'content-type': 'application/json',
 				accept: 'application/json',
 			},
 			body: JSON.stringify({
-				model: 'gpt-image-2.5-flare',
+				model: config.model,
 				prompt: request.prompt,
 				n: 1,
 				quality: 'high',
@@ -220,11 +220,15 @@ async function writePng(png: Buffer): Promise<void> {
 async function main(): Promise<void> {
 	let png: Buffer
 	try {
-		const endpoint = process.env.AZURE_OPENAI_ENDPOINT
-		const apiKey = process.env.AZURE_OPENAI_API_KEY
-		if (!endpoint || apiKey === undefined) throw new ScriptError('configuration')
+		let config: ImageProviderConfig
+		try {
+			config = loadImageConfig()
+		} catch {
+			throw new ScriptError('configuration')
+		}
+		if (!config.endpoint || !config.apiKey) throw new ScriptError('configuration')
 		const request = await readRequest()
-		png = await generateImage(request, endpoint, apiKey)
+		png = await generateImage(request, config)
 		await writePng(png)
 	} catch (error) {
 		if (error instanceof ScriptError) {

@@ -8,7 +8,7 @@
 	},
 	"scripts": {
 		"dev": "vite",
-		"daemon": "node --env-file-if-exists=.env --watch src/server/index.ts",
+		"daemon": "node --watch src/server/index.ts",
 		"eval:server": "node scripts/eval-server.ts",
 		"eval:capture": "node scripts/eval-capture.ts",
 		"eval:live-case": "node scripts/run-live-case.ts",

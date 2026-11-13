@@ -5,6 +5,7 @@ import { connect as connectSocket } from 'node:net'
 import type { Duplex } from 'node:stream'
 import { test } from 'node:test'
 import WebSocket, { WebSocketServer } from 'ws'
+import { DEFAULT_MOSS_URL, loadAiConfig } from './aiConfig.ts'
 import { createMaiProxy, MAI_LOCAL_PATH } from './maiProxy.ts'
 import { createMossProxy, MOSS_LOCAL_PATH } from './mossProxy.ts'
 
@@ -61,6 +62,7 @@ test('realtime factories are reusable outside Vite and reject missing credential
 	})
 	let mossUpstreamCalls = 0
 	const moss = createMossProxy({
+		url: DEFAULT_MOSS_URL,
 		apiKey: '',
 		createUpstream() {
 			mossUpstreamCalls++
@@ -115,7 +117,11 @@ test('realtime factories isolate malformed frames on missing-key and failed-upst
 				MAI_LOCAL_PATH,
 			],
 			[
-				createMossProxy({ apiKey: configured ? 'test' : '', createUpstream: fail }),
+				createMossProxy({
+					url: DEFAULT_MOSS_URL,
+					apiKey: configured ? 'test' : '',
+					createUpstream: fail,
+				}),
 				MOSS_LOCAL_PATH,
 			],
 		] as const) {
@@ -150,11 +156,15 @@ test('MAI forwards frames and safely closes on long Unicode upstream errors', {
 	const address = upstreamServer.address()
 	assert.ok(address && typeof address !== 'string')
 	let upstream: WebSocket | undefined
+	const config = loadAiConfig({
+		AZURE_MAI_HOST: 'mai.example',
+		AZURE_OPENAI_API_KEY: 'test',
+		AZURE_OPENAI_DEPLOYMENT: 'custom-transcription',
+	})
 	const proxy = createMaiProxy({
-		host: 'mai.example',
-		apiKey: 'test',
-		deployment: 'test',
-		createUpstream(_url, options) {
+		...config.mai,
+		createUpstream(url, options) {
+			assert.equal(url, 'wss://mai.example/mai/v1/realtime?intent=transcription')
 			assert.equal(options.headers['api-key'], 'test')
 			upstream = new WebSocket(`ws://127.0.0.1:${address.port}`)
 			return upstream
@@ -196,6 +206,7 @@ test('realtime factories reject foreign origins before creating upstreams', asyn
 		},
 	})
 	const moss = createMossProxy({
+		url: DEFAULT_MOSS_URL,
 		apiKey: 'secret',
 		createUpstream() {
 			upstreamCalls++
@@ -249,9 +260,14 @@ test('MOSS factory forwards frames with auth and terminates active sockets on cl
 
 	let upstream: MockUpstream | undefined
 	let authorization: string | undefined
+	const config = loadAiConfig({
+		MOSS_REALTIME_URL: 'wss://voice.example/custom?model=cloud-voice',
+		MOSS_API_KEY: 'test-key',
+	})
 	const proxy = createMossProxy({
-		apiKey: 'test-key',
-		createUpstream(_url, options) {
+		...config.moss,
+		createUpstream(url, options) {
+			assert.equal(url, 'wss://voice.example/custom?model=cloud-voice')
 			authorization = options.headers.Authorization
 			upstream = new MockUpstream()
 			queueMicrotask(() => {

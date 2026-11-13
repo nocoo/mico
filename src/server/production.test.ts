@@ -6,6 +6,7 @@ import { createServer, request } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
+import { fileURLToPath } from 'node:url'
 import WebSocket from 'ws'
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
 import { createDaemon, type Daemon } from './index.ts'
@@ -172,7 +173,8 @@ test('SIGTERM drains an in-flight write before closing SQLite', { timeout: 10_00
 	assert.ok(address && typeof address !== 'string')
 	await new Promise<void>((resolve) => reservation.close(() => resolve()))
 	const dbPath = join(directory, 'board.sqlite')
-	const child = spawn(process.execPath, ['src/server/index.ts'], {
+	const child = spawn(process.execPath, [fileURLToPath(new URL('./index.ts', import.meta.url))], {
+		cwd: directory,
 		env: { HOME: directory, MICO_PORT: String(address.port), MICO_DB_PATH: dbPath },
 		stdio: ['ignore', 'pipe', 'pipe'],
 	})

@@ -5,7 +5,6 @@ import WebSocket, { WebSocketServer } from 'ws'
 import { ALLOWED_ORIGINS, DEV_HOST } from '../shared/config.ts'
 
 export const MOSS_LOCAL_PATH = '/moss'
-export const MOSS_UPSTREAM_URL = 'wss://api.mosi.cn/v1/realtime?model=moss-live-1.0'
 export const MOSS_MAX_PAYLOAD = 1024 * 1024
 export const MOSS_MAX_BUFFERED_BYTES = 4 * 1024 * 1024
 
@@ -17,6 +16,7 @@ export interface MossUpstreamOptions {
 export type MossUpstreamFactory = (url: string, options: MossUpstreamOptions) => WebSocket
 
 export interface MossRealtimeProxyOptions {
+	url: string
 	apiKey: string
 	createUpstream?: MossUpstreamFactory
 	maxPayload?: number
@@ -151,7 +151,7 @@ export function createMossProxy(options: MossRealtimeProxyOptions): {
 
 			let upstream: WebSocket
 			try {
-				upstream = createUpstream(MOSS_UPSTREAM_URL, {
+				upstream = createUpstream(options.url, {
 					headers: { Authorization: `Bearer ${options.apiKey}` },
 					maxPayload,
 				})

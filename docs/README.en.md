@@ -39,6 +39,8 @@ The identity panel holds the logo and Canvases button. A separate AI button in t
 
 ### AI gateway
 
+The server uses one [AI configuration contract](ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration, ignores saved Settings files and makes the Settings UI/API read-only.
+
 The assistant uses the OpenAI-compatible Chat Completions API. Open **AI → Settings** to set the endpoint, model and API key. Changes apply to the next request and persist in `~/.config/mico/settings.json` (owner-only permissions). The key is stored as plaintext on the local machine and is never returned to the browser. Leave the key field blank to keep the current key, or select **Remove current API key** to send requests without one. Use HTTPS for remote endpoints.
 
 Until settings are saved, the daemon uses these environment variables and defaults:
@@ -152,7 +154,7 @@ A canvas shape has `id`, `type` (`rectangle`, `ellipse`, `text`, `line`, `note`,
 - `GET /api/board` — the active canvas's `{revision, shapes}`.
 - `POST /api/images` — upload raw PNG, JPEG, WebP or GIF bytes with the matching `Content-Type`, up to 10 MiB; returns `{id}`. `GET /api/images/:id` serves the stored bytes. Remote image URLs are not fetched.
 - `POST /api/operations` — `{operations, expectedRevision?, canvasId?}`; defaults to the active canvas and can target any canvas without switching. Returns that canvas's board.
-- `GET /api/ai/settings` / `PUT /api/ai/settings` — read or update `{baseURL, model, apiKey?}`. Reads return `{baseURL, model, hasApiKey}` without the key; omit `apiKey` on update to keep it, or send an empty string to remove it.
+- `GET /api/ai/settings` / `PUT /api/ai/settings` — read or update `{baseURL, model, apiKey?}`. Reads return `{baseURL, model, hasApiKey, readOnly}` without the key; omit `apiKey` on local updates to keep it, or send an empty string to remove it. Deploy mode rejects updates with `403 AI_SETTINGS_READ_ONLY`.
 - `GET /api/ai/models` — `{models: string[]}`. Fetches the OpenAI-compatible `/models` endpoint from the currently saved effective `baseURL` with the server-side API key; the key is never returned or sent to the browser. The configured baseURL prefix is preserved, for example `/v1/models`.
 - `POST /api/ai/chat` — `{messages, selection}`; streams Vercel AI SDK UI message chunks. Server-side tools read and mutate the active canvas and broadcast the same `board` events as `POST /api/operations`. `selection` is an array of shape ids that the user marqueed; the assistant receives their geometry and labels as primary context.
 - `GET /api/events` — WebSocket events. On connect and after canvas create/rename/delete/switch the daemon sends `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`; after operations it sends `{type: "board", canvasId, canvas, board}`. `stateVersion` increases on canvas metadata changes so clients can ignore delayed snapshots; clients update preview metadata from `canvas` and only apply `board` when `canvasId` is their active canvas.

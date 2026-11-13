@@ -3,7 +3,7 @@ import { chmodSync, readFileSync } from 'node:fs'
 import { chmod, mkdir, open, rename, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { type MagpieSettings, magpieSettings } from './ai.ts'
+import { type AiConfig, type ChatSettings, loadAiConfig } from './aiConfig.ts'
 import { OperationError } from './store.ts'
 
 export const AI_SETTINGS_DIRECTORY = join(homedir(), '.config', 'mico')
@@ -13,11 +13,12 @@ export interface PublicAiSettings {
 	baseURL: string
 	model: string
 	hasApiKey: boolean
+	readOnly: boolean
 }
 
 export interface AiSettingsStoreOptions {
 	path?: string
-	env?: NodeJS.ProcessEnv
+	config?: AiConfig
 	persist?: boolean
 }
 
@@ -63,20 +64,22 @@ function validateApiKey(value: unknown): string {
 }
 
 export class AiSettingsStore {
-	private settings: MagpieSettings
+	private settings: ChatSettings
+	private readonly readOnly: boolean
 	private readonly path: string
 	private readonly persist: boolean
 	private loadError = false
 
 	constructor({
 		path = AI_SETTINGS_PATH,
-		env = process.env,
+		config = loadAiConfig(),
 		persist = true,
 	}: AiSettingsStoreOptions = {}) {
 		this.path = path
-		this.persist = persist
-		this.settings = magpieSettings(env)
-		if (!persist) return
+		this.readOnly = config.runtime === 'deploy'
+		this.persist = persist && !this.readOnly
+		this.settings = { ...config.chat }
+		if (!this.persist) return
 		try {
 			const text = readFileSync(path, 'utf8')
 			if (text.length === 0) {
@@ -116,10 +119,11 @@ export class AiSettingsStore {
 			baseURL: this.settings.baseURL,
 			model: this.settings.model,
 			hasApiKey: this.settings.apiKey.length > 0,
+			readOnly: this.readOnly,
 		}
 	}
 
-	getEffective(): MagpieSettings {
+	getEffective(): ChatSettings {
 		if (this.loadError) {
 			throw new OperationError(500, 'AI_SETTINGS_LOAD_FAILED', 'Could not load AI settings')
 		}
@@ -127,6 +131,13 @@ export class AiSettingsStore {
 	}
 
 	async update(body: unknown): Promise<PublicAiSettings> {
+		if (this.readOnly) {
+			throw new OperationError(
+				403,
+				'AI_SETTINGS_READ_ONLY',
+				'AI settings are managed by the deployment environment',
+			)
+		}
 		if (!isRecord(body)) invalid('request must be an object')
 		const keys = Object.keys(body)
 		if (!keys.every((key) => key === 'baseURL' || key === 'model' || key === 'apiKey')) {
@@ -153,10 +164,11 @@ export class AiSettingsStore {
 			baseURL: next.baseURL,
 			model: next.model,
 			hasApiKey: next.apiKey.length > 0,
+			readOnly: this.readOnly,
 		}
 	}
 
-	private async persistSettings(settings: MagpieSettings): Promise<void> {
+	private async persistSettings(settings: ChatSettings): Promise<void> {
 		const directory = dirname(this.path)
 		await mkdir(directory, { recursive: true, mode: 0o700 })
 		await chmod(directory, 0o700)

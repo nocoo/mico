@@ -1,5 +1,15 @@
 # Retrospective
 
+## AI configuration refactor
+
+- Non-literal secret-reference assignments in the deployment example triggered the staged secret scanner, and shortening the angle-bracket placeholder did not fix the cross-line match. Document secret variables separately instead of mixing placeholder assignments into the non-secret environment example. Run the staged scan on docs before committing; do not add an allowlist.
+
+- Existing local test fixtures inherited `MICO_RUNTIME` from the shell, so deploy mode could turn editable Settings read-only or fail startup. Inject an explicit empty environment into laptop daemon fixtures and use scratch settings paths; exercise the suite with deploy mode in the parent environment.
+- Selecting laptop mode before loading `.env` was insufficient: a file could contain `MICO_RUNTIME=deploy` and switch policy after its credentials had already been imported. Reject file-driven runtime switching, and disable Vite's own implicit env loading with `envDir: false` in deploy mode. Test the actual Vite resolver as well as the application helper.
+
+- A worker prompt was sent before Pi had registered its agent and was rejected. Wait for the actual model-status footer, not merely the echoed launch command, before delivering a task.
+- Moving local `.env` loading into the daemon entrypoint also changes direct child-process tests. Run those entrypoints from a scratch working directory with an absolute script path, so fixtures cannot ingest the developer's provider credentials while testing shutdown or deploy-mode isolation.
+
 ## Docker packaging verification
 
 - The first runtime image copied only `src/server`, `src/shared` and `src/cli`; `store.ts` imports geometry from `src/web`, so the image built successfully but the container crashed on startup. Copy the complete source tree (excluding tests) and require health plus browser acceptance against the final image, not just a successful frontend build. Static serving remains restricted to `dist`.

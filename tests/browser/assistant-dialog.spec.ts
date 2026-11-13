@@ -24,6 +24,7 @@ test.beforeEach(async ({ page, request }) => {
 				baseURL: 'https://api.example.test/v1',
 				model: 'model/demo',
 				hasApiKey: true,
+				readOnly: false,
 			},
 		})
 	})
@@ -161,6 +162,7 @@ test('Settings controls remain usable on a narrow assistant panel', async ({ pag
 				baseURL: 'https://new.example.test/v1',
 				model: 'model/custom',
 				hasApiKey: true,
+				readOnly: false,
 			},
 		})
 	})
@@ -171,6 +173,50 @@ test('Settings controls remain usable on a narrow assistant panel', async ({ pag
 		model: 'model/custom',
 		apiKey: 'new-key',
 	})
+})
+
+test('deployment-managed AI settings are read-only without provider requests', async ({ page }) => {
+	await page.unroute('**/api/ai/settings')
+	await page.unroute('**/api/ai/models')
+	let modelRequests = 0
+	let putRequests = 0
+	await page.route('**/api/ai/settings', async (route) => {
+		if (route.request().method() === 'PUT') {
+			putRequests++
+			await route.fulfill({ status: 403, json: { error: 'AI_SETTINGS_READ_ONLY' } })
+			return
+		}
+		await route.fulfill({
+			json: {
+				baseURL: 'https://deployment.example.test/v1',
+				model: 'deployment/model',
+				hasApiKey: true,
+				readOnly: true,
+			},
+		})
+	})
+	await page.route('**/api/ai/models', async (route) => {
+		modelRequests++
+		await route.fulfill({ json: { models: ['must-not-load'] } })
+	})
+	await page.reload()
+
+	const panel = await openAssistant(page, 'Settings')
+	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
+	await expect(
+		settings.getByText('AI settings are managed by this deployment and cannot be changed here.'),
+	).toBeVisible()
+	await expect(settings.getByLabel('Endpoint')).toBeDisabled()
+	await expect(settings.getByLabel('Model', { exact: true })).toBeDisabled()
+	await expect(settings.getByRole('combobox', { name: 'Choose model' })).toBeDisabled()
+	await expect(settings.getByLabel('API key', { exact: true })).toBeDisabled()
+	await expect(settings.getByRole('checkbox', { name: 'Remove current API key' })).toBeDisabled()
+	await expect(settings.getByRole('button', { name: 'Save settings' })).toBeDisabled()
+
+	await settings.locator('form').evaluate((form) => (form as HTMLFormElement).requestSubmit())
+	await page.waitForTimeout(100)
+	expect(putRequests).toBe(0)
+	expect(modelRequests).toBe(0)
 })
 
 test('the mobile status pill yields to the open panel and returns when closed', async ({

@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
+import { type ImageProviderConfig, loadImageConfig } from './aiConfig.ts'
 import type { BoardStore, GeneratedImagePlacement } from './store.ts'
 import { MAX_CANVAS_IMAGES, OperationError } from './store.ts'
 
@@ -73,6 +74,7 @@ interface Job {
 
 interface ImageGenerationOptions {
 	generator?: ImageGenerator
+	config?: ImageProviderConfig
 	env?: NodeJS.ProcessEnv
 	scriptPath?: string
 	timeoutMs?: number
@@ -103,7 +105,13 @@ export class ImageGenerationService {
 		this.store = store
 		this.broadcast = broadcast
 		this.generator = options.generator
-		this.env = options.env ?? process.env
+		const config = options.config ?? loadImageConfig()
+		this.env = {
+			...(options.env ?? process.env),
+			AZURE_OPENAI_ENDPOINT: config.endpoint,
+			AZURE_OPENAI_API_KEY: config.apiKey,
+			AZURE_OPENAI_IMAGE_MODEL: config.model,
+		}
 		this.scriptPath =
 			options.scriptPath ??
 			fileURLToPath(new URL('../../scripts/generate-image.ts', import.meta.url))

@@ -49,6 +49,8 @@ docker compose down
 
 ## Optional AI and voice services
 
+The default runtime is `laptop`, even inside the production image. See [AI configuration](ai-configuration.md) for the `MICO_RUNTIME=deploy` environment-only policy intended for Container Apps; saved Settings files are ignored and the Settings UI becomes read-only in that mode.
+
 Drawing, canvas management, image uploads and local persistence work without provider credentials. Compose reads the root `.env` for interpolation and passes only the provider variables declared in `compose.yaml`. `.env`, local databases, host dependencies, test artifacts and Git history never enter the Docker build context.
 
 Copy `.env.example` to `.env` only if a file does not already exist. Supply the actual provider settings there, then recreate the container with `docker compose up -d --wait`.
@@ -56,8 +58,8 @@ Copy `.env.example` to `.env` only if a file does not already exist. Supply the 
 - **Chat gateway:** the container default is `http://host.docker.internal:3425/v1`, not `127.0.0.1`, which would refer to the container itself. Override it with `MICO_DOCKER_MAGPIE_BASE_URL` or **AI → Settings**. Compose deliberately does not inherit the host development `MAGPIE_BASE_URL`. `MAGPIE_MODEL`, `MAGPIE_API_KEY` and `MAGPIE_LECTURE_REASONING` are passed through. Saved UI settings take precedence over environment defaults.
 - **Docker Desktop:** `host.docker.internal` reaches the host. On native Linux the gateway must listen on an interface reachable from the Docker bridge; Compose supplies the `host-gateway` mapping. Alternatively use a reachable HTTPS endpoint.
 - **MAI:** set `AZURE_MAI_HOST`, `AZURE_OPENAI_API_KEY` and `AZURE_OPENAI_DEPLOYMENT`. `/mai/config` exposes only host, deployment and local route; the key remains server-side.
-- **Image generation:** set `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY`. The image-generation subprocess is included in the runtime image.
-- **MOSS Live:** set `MOSS_API_KEY`; `/moss` adds authorization server-side. Both voice routes reject foreign origins and report missing credentials without attempting an upstream connection.
+- **Image generation:** set `AZURE_OPENAI_ENDPOINT` and `AZURE_OPENAI_API_KEY`; `AZURE_OPENAI_IMAGE_MODEL` overrides the model/deployment. The image-generation subprocess is included in the runtime image.
+- **MOSS Live:** set `MOSS_API_KEY`; `MOSS_REALTIME_URL` overrides the complete upstream URL and model query. `/moss` adds authorization server-side. Both voice routes reject foreign origins and report missing credentials without attempting an upstream connection.
 
 AI, generated images and voice sessions can incur provider charges. The automated Docker check does not invoke them.
 

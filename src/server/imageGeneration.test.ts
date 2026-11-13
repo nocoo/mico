@@ -5,6 +5,7 @@ import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { loadImageConfig } from './aiConfig.ts'
 import { createCanvasTools } from './aiTools.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
@@ -65,10 +66,11 @@ test('the real script inserts a generated image using a local mock provider', as
 		await withStore(async (store) => {
 			const events: unknown[] = []
 			const service = new ImageGenerationService(store, (event) => events.push(event), {
-				env: {
+				config: loadImageConfig({
 					AZURE_OPENAI_ENDPOINT: `http://127.0.0.1:${address.port}/openai/v1`,
 					AZURE_OPENAI_API_KEY: 'fake-key',
-				},
+					AZURE_OPENAI_IMAGE_MODEL: 'custom-image-deployment',
+				}),
 			})
 			try {
 				const job = service.start({
@@ -82,7 +84,7 @@ test('the real script inserts a generated image using a local mock provider', as
 				const result = await waitForStatus(service, job.jobId)
 				assert.equal(result.status, 'completed')
 				assert.deepEqual(received, {
-					model: 'gpt-image-2.5-flare',
+					model: 'custom-image-deployment',
 					prompt: 'A calm blue horizon',
 					n: 1,
 					quality: 'high',

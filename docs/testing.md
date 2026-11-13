@@ -126,6 +126,10 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 - `src/web/canvas/history.test.ts` and `src/server/history.test.ts` cover the fixed 20-step limit, branching, exact optional fields, delete cascades, frame/image references, stacking order, image limits and conflicts with external work.
 - `tests/browser/minimap.spec.ts` and `tests/browser/history.spec.ts` cover real pointer/keyboard navigation, canvas-list previews, responsive placement, undo/redo buttons and shortcuts, native text editing, canvas switching, refresh, request rejection and unrelated/concurrent API edits.
 
+## AI runtime configuration
+
+`src/server/aiConfig.test.ts` and `aiSettings.test.ts` cover the laptop/deploy source policy, environment validation and isolation from saved credentials. `src/server/aiConfig.integration.test.ts` runs in L3 and verifies deploy startup never imports local `.env` values, HTTP updates are blocked, and environment credentials reach mock model requests. Realtime and image tests check configured endpoints, headers and image model forwarding. `tests/browser/assistant-dialog.spec.ts` verifies the read-only UI without upstream model requests; editable local settings remain covered in `tests/browser/ai.spec.ts`.
+
 ## Docker acceptance
 
 `docker compose --env-file /dev/null build && node scripts/docker-smoke.ts` checks the actual production image on `127.0.0.1:47063` using a unique Compose project, isolated volumes, empty provider credentials and headless Chrome. It covers UI drawing, API/WebSocket synchronization, audio ranges, image storage, CLI access, security boundaries and persistence after container recreation. It cleans up only its own containers and volumes, retaining screenshots and logs in the OS temporary directory. See [docker.md](docker.md).

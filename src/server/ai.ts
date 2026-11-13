@@ -10,30 +10,13 @@ import {
 	type UIMessage,
 } from 'ai'
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
+import type { ChatSettings } from './aiConfig.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
 import { type BoardStore, OperationError } from './store.ts'
 
-export const MAGPIE_DEFAULT_BASE_URL = 'http://127.0.0.1:3425/v1'
-export const MAGPIE_DEFAULT_MODEL = 'auto/gpt-6-luna'
-export const MAGPIE_DEFAULT_API_KEY = 'magpie'
-
-export interface MagpieSettings {
-	baseURL: string
-	apiKey: string
-	model: string
-}
-
-export function magpieSettings(env: NodeJS.ProcessEnv = process.env): MagpieSettings {
-	return {
-		baseURL: (env.MAGPIE_BASE_URL?.trim() || MAGPIE_DEFAULT_BASE_URL).replace(/\/+$/, ''),
-		model: env.MAGPIE_MODEL?.trim() || MAGPIE_DEFAULT_MODEL,
-		apiKey: env.MAGPIE_API_KEY === undefined ? MAGPIE_DEFAULT_API_KEY : env.MAGPIE_API_KEY,
-	}
-}
-
-export function createMagpieModel(settings = magpieSettings()): LanguageModel {
+export function createMagpieModel(settings: ChatSettings): LanguageModel {
 	const provider = createOpenAICompatible({
 		name: 'magpie',
 		baseURL: settings.baseURL,
@@ -42,7 +25,7 @@ export function createMagpieModel(settings = magpieSettings()): LanguageModel {
 	return provider.chatModel(settings.model)
 }
 
-export async function fetchAiModels(settings: MagpieSettings, timeoutMs = 5000): Promise<string[]> {
+export async function fetchAiModels(settings: ChatSettings, timeoutMs = 5000): Promise<string[]> {
 	const unavailable = () =>
 		new OperationError(502, 'AI_MODELS_UNAVAILABLE', 'Could not fetch AI models')
 
@@ -165,6 +148,7 @@ interface AiResponseOptions {
 	request: AiChatRequest
 	origin?: string
 	imageGeneration?: ImageGenerationService
+	lectureReasoning: string
 }
 
 export async function streamAiChat({
@@ -175,6 +159,7 @@ export async function streamAiChat({
 	request,
 	origin,
 	imageGeneration,
+	lectureReasoning,
 }: AiResponseOptions): Promise<void> {
 	const canvasId = request.canvasId ?? store.getActiveCanvasId()
 	const board = store.getBoard(canvasId)
@@ -209,8 +194,7 @@ export async function streamAiChat({
 		abortSignal: abort.signal,
 		providerOptions: {
 			magpie: {
-				reasoningEffort:
-					request.mode === 'lecture' ? process.env.MAGPIE_LECTURE_REASONING || 'none' : 'low',
+				reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low',
 			},
 		},
 		prepareStep:

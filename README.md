@@ -39,6 +39,8 @@ Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.
 
 ### AI 网关
 
+The server uses one [AI configuration contract](docs/ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration, ignores saved Settings files and makes the Settings UI/API read-only.
+
 助手使用兼容 OpenAI 的 Chat Completions API。打开 **AI → Settings** 设置端点、模型和 API Key。改动在下一次请求生效，并保存到 `~/.config/mico/settings.json`（仅所有者可读写）。密钥以明文存在本机，不会返回给浏览器。密钥输入框留空表示保留当前值，也可以选 **Remove current API key** 让后续请求不带密钥。远端端点请用 HTTPS。
 
 在保存设置之前，守护进程读取以下环境变量和默认值：
@@ -152,7 +154,7 @@ node src/cli/index.ts shape update <frame-id> '{"backgroundImageId":"photo","bac
 - `GET /api/board` — 活动画布的 `{revision, shapes}`。
 - `POST /api/images` — 上传 PNG、JPEG、WebP 或 GIF 原始字节，需带匹配的 `Content-Type`，最大 10 MiB；返回 `{id}`。`GET /api/images/:id` 读取已存字节。不会抓取远端图片 URL。
 - `POST /api/operations` — `{operations, expectedRevision?, canvasId?}`；默认作用于活动画布，也可以指定其他画布而不切换。返回该画布的画板。
-- `GET /api/ai/settings` / `PUT /api/ai/settings` — 读取或更新 `{baseURL, model, apiKey?}`。读取结果只返回 `{baseURL, model, hasApiKey}`，不含密钥；更新时省略 `apiKey` 表示保留，传空字符串表示移除。
+- `GET /api/ai/settings` / `PUT /api/ai/settings` — 读取或更新 `{baseURL, model, apiKey?}`。Reads return `{baseURL, model, hasApiKey, readOnly}` without the key. Local updates preserve an omitted key and remove an empty key; deploy mode rejects updates with `403 AI_SETTINGS_READ_ONLY`.
 - `GET /api/ai/models` — `{models: string[]}`。用服务端密钥访问当前生效 `baseURL` 下兼容 OpenAI 的 `/models` 端点；密钥不会返回或发给浏览器，配置的前缀会保留，例如 `/v1/models`。
 - `POST /api/ai/chat` — `{messages, selection}`；流式返回 Vercel AI SDK 的 UI 消息块。服务端工具读取并修改活动画布，广播与 `POST /api/operations` 相同的 `board` 事件。`selection` 是用户框选的形状 ID 数组，助手会把它们的几何信息和标签作为主要上下文。
 - `GET /api/events` — WebSocket 事件。连接时以及画布创建/重命名/删除/切换后，守护进程发送 `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`；操作后发送 `{type: "board", canvasId, canvas, board}`。画布元数据变化时 `stateVersion` 递增，客户端可据此忽略延迟到达的快照；客户端从 `canvas` 更新预览元数据，并且只在 `canvasId` 是自己的活动画布时应用 `board`。

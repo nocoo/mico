@@ -10,6 +10,7 @@ services:
     ports:
       - "127.0.0.1:47063:47063"
     environment:
+      MICO_RUNTIME: ${MICO_RUNTIME:-laptop}
       MAGPIE_BASE_URL: ${MICO_DOCKER_MAGPIE_BASE_URL:-http://host.docker.internal:3425/v1}
       MAGPIE_MODEL: ${MAGPIE_MODEL:-auto/gpt-6-luna}
       MAGPIE_API_KEY: ${MAGPIE_API_KEY-magpie}
@@ -18,6 +19,8 @@ services:
       AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
       AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
       AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
+      AZURE_OPENAI_IMAGE_MODEL: ${AZURE_OPENAI_IMAGE_MODEL:-gpt-image-2.5-flare}
+      MOSS_REALTIME_URL: ${MOSS_REALTIME_URL:-wss://api.mosi.cn/v1/realtime?model=moss-live-1.0}
       MOSS_API_KEY: ${MOSS_API_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"

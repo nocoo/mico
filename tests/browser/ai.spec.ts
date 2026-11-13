@@ -249,6 +249,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		baseURL: 'https://example.test/v1',
 		model: 'example-model',
 		hasApiKey: false,
+		readOnly: false,
 	})
 })
 

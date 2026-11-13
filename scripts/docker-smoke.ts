@@ -17,6 +17,7 @@ const envFile = join(artifacts, 'empty.env')
 writeFileSync(envFile, '')
 const env = {
 	...process.env,
+	MICO_RUNTIME: 'laptop',
 	MICO_DOCKER_MAGPIE_BASE_URL: 'http://127.0.0.1:9/v1',
 	MAGPIE_API_KEY: '',
 	AZURE_MAI_HOST: '',

@@ -8,6 +8,7 @@ import { test } from 'node:test'
 import WebSocket from 'ws'
 import { DEV_ORIGIN } from '../shared/config.ts'
 import type { Board, Operation, Shape } from '../shared/types.ts'
+import { DEFAULT_MOSS_URL } from './aiConfig.ts'
 import { createDaemon, type Daemon } from './index.ts'
 import {
 	createMossSession,
@@ -20,7 +21,6 @@ import {
 	forwardMossFrame,
 	isMossUpgradeAllowed,
 	MOSS_MAX_PAYLOAD,
-	MOSS_UPSTREAM_URL,
 	pipeMossSockets,
 } from './mossProxy.ts'
 import { OperationError } from './store.ts'
@@ -82,6 +82,7 @@ async function withDaemon(run: (url: string, daemon: Daemon) => Promise<void>): 
 			port: 0,
 			dbPath: join(directory, 'board.sqlite'),
 			settingsPath: join(directory, 'ai-settings', 'settings.json'),
+			env: {},
 		})
 		daemon.server.listen(0, '127.0.0.1')
 		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
@@ -499,7 +500,7 @@ test('MOSS proxy origin checks use same-origin loopback or mico.dev.hexly.ai', (
 	assert.equal(isMossUpgradeAllowed('https://evil.example', 'evil.example'), false)
 	assert.equal(isMossUpgradeAllowed(undefined, '127.0.0.1:7063'), false)
 	assert.equal(MOSS_MAX_PAYLOAD, 1024 * 1024)
-	assert.doesNotMatch(MOSS_UPSTREAM_URL, /Bearer|MOSS_API_KEY|api[_-]?key/i)
+	assert.doesNotMatch(DEFAULT_MOSS_URL, /Bearer|MOSS_API_KEY|api[_-]?key/i)
 })
 
 test('MOSS proxy forwards binary and text frames and applies buffered backpressure', () => {

@@ -15,6 +15,7 @@ const daemon = createDaemon({
 	port,
 	dbPath: join(directory, 'board.sqlite'),
 	settingsPath: join(directory, 'ai-settings', 'settings.json'),
+	env: {},
 	aiModel: process.env.MICO_AI_MOCK === '1' ? createMockAiModel() : undefined,
 })
 const base = micoViteConfig()

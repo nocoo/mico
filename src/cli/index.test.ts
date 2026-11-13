@@ -39,7 +39,12 @@ async function withDaemon(run: (port: number, directory: string) => Promise<void
 	const directory = mkdtempSync(join(tmpdir(), 'mico-cli-'))
 	let daemon: Daemon | undefined
 	try {
-		daemon = createDaemon({ port: 0, dbPath: join(directory, 'board.sqlite') })
+		daemon = createDaemon({
+			port: 0,
+			dbPath: join(directory, 'board.sqlite'),
+			settingsPath: join(directory, 'settings.json'),
+			env: {},
+		})
 		daemon.server.listen(0, '127.0.0.1')
 		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
 		const address = daemon.server.address()

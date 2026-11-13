@@ -7,13 +7,8 @@ import serveStatic from 'serve-static'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
-import {
-	createMagpieModel,
-	fetchAiModels,
-	type MagpieSettings,
-	parseAiChatRequest,
-	streamAiChat,
-} from './ai.ts'
+import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } from './ai.ts'
+import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
 import { createMaiProxy, MAI_CONFIG_PATH, MAI_LOCAL_PATH } from './maiProxy.ts'
@@ -21,8 +16,8 @@ import { createMossSession, executeMossTool } from './mossApi.ts'
 import { createMossProxy, MOSS_LOCAL_PATH } from './mossProxy.ts'
 import { BoardStore, OperationError } from './store.ts'
 
-function parsePort(): number {
-	const raw = process.env.MICO_PORT
+function parsePort(env: NodeJS.ProcessEnv): number {
+	const raw = env.MICO_PORT
 	if (!raw) return DAEMON_PORT
 	const port = Number(raw)
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -230,13 +225,14 @@ export function createDaemon(
 		aiModel?: LanguageModel
 		settingsPath?: string
 		env?: NodeJS.ProcessEnv
-		createAiModel?: (settings: MagpieSettings) => LanguageModel
+		createAiModel?: (settings: ChatSettings) => LanguageModel
 		imageGenerator?: ImageGenerator
 		staticDir?: string
 	} = {},
 ): Daemon {
-	const port = options.port ?? parsePort()
 	const env = options.env ?? process.env
+	const port = options.port ?? parsePort(env)
+	const config = loadAiConfig(env)
 	if (options.staticDir && !statSync(resolve(options.staticDir, 'index.html')).isFile()) {
 		throw new Error('MICO_STATIC_DIR must contain a built index.html')
 	}
@@ -247,19 +243,14 @@ export function createDaemon(
 				setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
 			})
 		: undefined
-	const maiOptions = {
-		host: env.AZURE_MAI_HOST ?? '',
-		apiKey: env.AZURE_OPENAI_API_KEY ?? '',
-		deployment: env.AZURE_OPENAI_DEPLOYMENT ?? '',
-	}
-	const mai = assets ? createMaiProxy(maiOptions) : undefined
-	const moss = assets ? createMossProxy({ apiKey: env.MOSS_API_KEY ?? '' }) : undefined
-	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
+	const mai = assets ? createMaiProxy(config.mai) : undefined
+	const moss = assets ? createMossProxy(config.moss) : undefined
+	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
 	const settingsPath = options.settingsPath
 	const aiSettings = new AiSettingsStore({
 		path: settingsPath ?? AI_SETTINGS_PATH,
-		env: options.env ?? process.env,
+		config,
 		persist: settingsPath !== undefined || options.aiModel === undefined,
 	})
 	const aiModel = options.aiModel
@@ -274,7 +265,8 @@ export function createDaemon(
 	}
 	const imageGeneration = new ImageGenerationService(store, broadcast, {
 		generator: options.imageGenerator,
-		env: options.env ?? process.env,
+		config: config.image,
+		env,
 	})
 
 	function isAllowedHost(host: string | undefined): boolean {
@@ -354,8 +346,8 @@ export function createDaemon(
 					res,
 					200,
 					{
-						host: maiOptions.host,
-						deployment: maiOptions.deployment,
+						host: config.mai.host,
+						deployment: config.mai.deployment,
 						localPath: MAI_LOCAL_PATH,
 					},
 					origin,
@@ -600,7 +592,16 @@ export function createDaemon(
 				}
 				const request = await parseAiChatRequest(await readJson(req))
 				const model = aiModel ?? modelFactory(aiSettings.getEffective())
-				await streamAiChat({ res, store, broadcast, model, request, origin, imageGeneration })
+				await streamAiChat({
+					res,
+					store,
+					broadcast,
+					model,
+					request,
+					origin,
+					imageGeneration,
+					lectureReasoning: config.lectureReasoning,
+				})
 				return
 			}
 
@@ -717,9 +718,10 @@ export function createDaemon(
 }
 
 export function startDaemon(): Daemon {
-	const port = parsePort()
-	const host = process.env.MICO_HOST || '127.0.0.1'
-	const daemon = createDaemon({ port, staticDir: process.env.MICO_STATIC_DIR })
+	const env = loadRuntimeEnv()
+	const port = parsePort(env)
+	const host = env.MICO_HOST || '127.0.0.1'
+	const daemon = createDaemon({ port, staticDir: env.MICO_STATIC_DIR, env })
 	daemon.server.listen(port, host, () => {
 		console.log(`MICO daemon listening on http://${host}:${port}`)
 	})

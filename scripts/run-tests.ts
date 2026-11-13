@@ -5,6 +5,7 @@ import { join } from 'node:path'
 const INTEGRATION = [
 	'src/cli/index.test.ts',
 	'src/server/ai.test.ts',
+	'src/server/aiConfig.integration.test.ts',
 	'src/server/api.test.ts',
 	'src/server/imageGeneration.test.ts',
 	'src/server/index.test.ts',

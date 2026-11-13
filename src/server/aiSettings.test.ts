@@ -1,8 +1,17 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import {
+	existsSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { loadAiConfig } from './aiConfig.ts'
 import { AiSettingsStore } from './aiSettings.ts'
 
 test('AI settings use environment defaults, saved-file precedence, and atomic file modes', async () => {
@@ -22,11 +31,11 @@ test('AI settings use environment defaults, saved-file precedence, and atomic fi
 
 		const store = new AiSettingsStore({
 			path: settingsPath,
-			env: {
+			config: loadAiConfig({
 				MAGPIE_BASE_URL: 'https://env.example/v1/',
 				MAGPIE_MODEL: 'env-model',
 				MAGPIE_API_KEY: 'env-secret',
-			},
+			}),
 		})
 		assert.deepEqual(store.getEffective(), {
 			baseURL: 'https://saved.example/v1',
@@ -37,6 +46,7 @@ test('AI settings use environment defaults, saved-file precedence, and atomic fi
 			baseURL: 'https://saved.example/v1',
 			model: 'saved-model',
 			hasApiKey: true,
+			readOnly: false,
 		})
 		assert.equal(statSync(settingsPath).mode & 0o777, 0o600)
 
@@ -46,9 +56,60 @@ test('AI settings use environment defaults, saved-file precedence, and atomic fi
 		assert.equal(statSync(join(directory, 'mico')).mode & 0o777, 0o700)
 
 		await store.update({ baseURL: 'https://next.example/v2', model: 'next-model', apiKey: '' })
-		const cleared = new AiSettingsStore({ path: settingsPath, env: {} })
+		const cleared = new AiSettingsStore({ path: settingsPath, config: loadAiConfig({}) })
 		assert.equal(cleared.getEffective().apiKey, '')
 		assert.equal(cleared.getPublic().hasApiKey, false)
+	} finally {
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('deploy ignores saved credentials and refuses all settings writes without touching disk', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-deploy-'))
+	const config = loadAiConfig({
+		MICO_RUNTIME: 'deploy',
+		MAGPIE_BASE_URL: 'https://cloud.example/v1',
+		MAGPIE_MODEL: 'cloud-model',
+		MAGPIE_API_KEY: 'cloud-secret',
+	})
+	try {
+		for (const content of [
+			undefined,
+			'{broken',
+			JSON.stringify({
+				baseURL: 'https://old.example/v1',
+				model: 'old-model',
+				apiKey: 'old-secret',
+			}),
+		]) {
+			const path = join(directory, 'settings.json')
+			if (content !== undefined) writeFileSync(path, content, { mode: 0o644 })
+			for (const persist of [true, false]) {
+				const store = new AiSettingsStore({ path, config, persist })
+				assert.deepEqual(store.getEffective(), config.chat)
+				assert.deepEqual(store.getPublic(), {
+					baseURL: 'https://cloud.example/v1',
+					model: 'cloud-model',
+					hasApiKey: true,
+					readOnly: true,
+				})
+				assert.equal(JSON.stringify(store.getPublic()).includes('cloud-secret'), false)
+				await assert.rejects(
+					store.update({
+						baseURL: 'https://other.example/v1',
+						model: 'other',
+						apiKey: 'other-secret',
+					}),
+					{ code: 'AI_SETTINGS_READ_ONLY', status: 403 },
+				)
+				assert.deepEqual(store.getEffective(), config.chat)
+				if (content === undefined) assert.equal(existsSync(path), false)
+				else {
+					assert.equal(readFileSync(path, 'utf8'), content)
+					assert.equal(statSync(path).mode & 0o777, 0o644)
+				}
+			}
+		}
 	} finally {
 		rmSync(directory, { recursive: true, force: true })
 	}
@@ -59,7 +120,7 @@ test('corrupt settings block chat fallback and persist-false mode never reads di
 	const settingsPath = join(directory, 'settings.json')
 	try {
 		writeFileSync(settingsPath, '{broken', { mode: 0o600 })
-		const corrupt = new AiSettingsStore({ path: settingsPath })
+		const corrupt = new AiSettingsStore({ path: settingsPath, config: loadAiConfig({}) })
 		assert.throws(
 			() => corrupt.getPublic(),
 			(error: unknown) => {
@@ -92,7 +153,7 @@ test('corrupt settings block chat fallback and persist-false mode never reads di
 
 		const memoryOnly = new AiSettingsStore({
 			path: settingsPath,
-			env: { MAGPIE_API_KEY: '' },
+			config: loadAiConfig({ MAGPIE_API_KEY: '' }),
 			persist: false,
 		})
 		assert.equal(memoryOnly.getPublic().hasApiKey, false)

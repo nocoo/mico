@@ -8,12 +8,18 @@ export function AiSettings({ active }: { active: boolean }) {
 		<Theme className="ai-settings" hasBackground={false}>
 			{model.settings ? (
 				<form onSubmit={model.save} className="ai-settings-form">
+					{model.settings.readOnly && (
+						<p className="ai-settings-note" role="status">
+							AI settings are managed by this deployment and cannot be changed here.
+						</p>
+					)}
 					<label className="ai-settings-field" htmlFor="ai-settings-endpoint">
 						<span>Endpoint</span>
 						<TextField.Root
 							id="ai-settings-endpoint"
 							type="url"
 							required
+							disabled={model.settings.readOnly}
 							value={model.baseURL}
 							onChange={(event) => model.setBaseURL(event.target.value)}
 						/>
@@ -23,11 +29,13 @@ export function AiSettings({ active }: { active: boolean }) {
 						<Select.Root
 							value={model.models.includes(model.model) ? model.model : ''}
 							onValueChange={model.setModel}
+							disabled={model.settings.readOnly}
 						>
 							<TextField.Root
 								id="ai-settings-model"
-								aria-describedby="ai-settings-model-note"
+								aria-describedby={model.settings.readOnly ? undefined : 'ai-settings-model-note'}
 								required
+								disabled={model.settings.readOnly}
 								value={model.model}
 								onChange={(event) => model.setModel(event.target.value)}
 							>
@@ -36,7 +44,7 @@ export function AiSettings({ active }: { active: boolean }) {
 										aria-label="Choose model"
 										className="ai-model-select"
 										variant="ghost"
-										disabled={model.models.length === 0}
+										disabled={model.settings.readOnly || model.models.length === 0}
 									/>
 								</TextField.Slot>
 							</TextField.Root>
@@ -54,9 +62,11 @@ export function AiSettings({ active }: { active: boolean }) {
 							</Select.Content>
 						</Select.Root>
 					</div>
-					<p id="ai-settings-model-note" className="ai-settings-note" aria-live="polite">
-						{model.modelNote}
-					</p>
+					{!model.settings.readOnly && (
+						<p id="ai-settings-model-note" className="ai-settings-note" aria-live="polite">
+							{model.modelNote}
+						</p>
+					)}
 					<label className="ai-settings-field" htmlFor="ai-settings-key">
 						<span>API key</span>
 						<TextField.Root
@@ -65,9 +75,15 @@ export function AiSettings({ active }: { active: boolean }) {
 							autoComplete="new-password"
 							value={model.apiKey}
 							onChange={(event) => model.setApiKey(event.target.value)}
-							disabled={model.clearKey}
+							disabled={model.settings.readOnly || model.clearKey}
 							placeholder={
-								model.settings.hasApiKey ? 'Leave blank to keep current key' : 'Optional'
+								model.settings.readOnly
+									? model.settings.hasApiKey
+										? 'Configured by deployment'
+										: 'Not configured'
+									: model.settings.hasApiKey
+										? 'Leave blank to keep current key'
+										: 'Optional'
 							}
 						/>
 					</label>
@@ -76,16 +92,19 @@ export function AiSettings({ active }: { active: boolean }) {
 							<Checkbox
 								id="ai-settings-clear-key"
 								checked={model.clearKey}
+								disabled={model.settings.readOnly}
 								onCheckedChange={(checked) => model.setClearKey(checked === true)}
 							/>
 							Remove current API key
 						</label>
 					)}
-					<p className="ai-settings-note">
-						The key is stored locally in ~/.config/mico and is never displayed again. Use HTTPS for
-						remote endpoints.
-					</p>
-					<Button type="submit" disabled={model.saving}>
+					{!model.settings.readOnly && (
+						<p className="ai-settings-note">
+							The key is stored locally in ~/.config/mico and is never displayed again. Use HTTPS
+							for remote endpoints.
+						</p>
+					)}
+					<Button type="submit" disabled={model.settings.readOnly || model.saving}>
 						{model.saving ? 'Saving…' : 'Save settings'}
 					</Button>
 				</form>

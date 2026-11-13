@@ -4,6 +4,7 @@ export interface AiSettingsData {
 	baseURL: string
 	model: string
 	hasApiKey: boolean
+	readOnly: boolean
 }
 
 export function parseAiModels(body: unknown): string[] {
@@ -71,7 +72,7 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 	}, [load])
 
 	useEffect(() => {
-		if (!active || !settings) return
+		if (!active || !settings || settings.readOnly) return
 		const controller = new AbortController()
 		setModels([])
 		setModelList('loading')
@@ -91,6 +92,7 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 
 	const save = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
+		if (!settings || settings.readOnly) return
 		setSaving(true)
 		setMessage('')
 		try {
