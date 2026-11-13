@@ -40,20 +40,32 @@ async function openWorkspace(page: import('@playwright/test').Page) {
 	await expect(page.locator('.app')).toBeVisible()
 }
 
-async function mockAvatarSession(page: import('@playwright/test').Page) {
+async function mockAvatarSession(
+	page: import('@playwright/test').Page,
+	options: { ephemeral?: boolean; aiEnabled?: boolean } = {},
+) {
+	let authenticated = true
 	await page.route('**/api/runtime', (route) =>
 		route.fulfill({
 			contentType: 'application/json',
-			body: JSON.stringify(runtime({ auth: 'entra', ephemeral: false, aiEnabled: true })),
+			body: JSON.stringify(
+				runtime({ auth: 'entra', ephemeral: false, aiEnabled: true, ...options }),
+			),
 		}),
 	)
 	await page.route('**/api/auth/session', (route) =>
 		route.fulfill({
-			status: 200,
+			status: authenticated ? 200 : 401,
 			contentType: 'application/json',
-			body: JSON.stringify({ user: { name: 'Ada', expiresAt: Date.now() + 3_600_000 } }),
+			body: JSON.stringify({
+				user: authenticated ? { name: 'Ada', expiresAt: Date.now() + 3_600_000 } : null,
+			}),
 		}),
 	)
+	await page.route('**/api/auth/logout', (route) => {
+		authenticated = false
+		return route.fulfill({ status: 204 })
+	})
 	await page.route(/\/@azure_msal-browser\.js(?:\?|$)/, (route) =>
 		route.fulfill({
 			contentType: 'application/javascript',
@@ -126,7 +138,11 @@ test('debug entry is adjacent, focused, exclusive with Canvases, and dismisses o
 	await expect(panel.getByText('AI unavailable', { exact: true })).toBeVisible()
 	await expect(panel.getByText('Manual drawing is available', { exact: true })).toBeVisible()
 	await expect(panel.getByText(`Version ${packageJson.version}`, { exact: true })).toBeVisible()
-	await page.screenshot({ path: testInfo.outputPath('debug-desktop.png'), fullPage: true })
+	await page.screenshot({
+		path: testInfo.outputPath('debug-desktop.png'),
+		fullPage: true,
+		animations: 'disabled',
+	})
 	await page.keyboard.press('Escape')
 	await expect(panel).toHaveCount(0)
 	await expect(debug).toBeFocused()
@@ -185,9 +201,13 @@ test('debug panel fits a narrow viewport and visually shares the canvas glass to
 	expect(debugBox.x + debugBox.width).toBeLessThanOrEqual(306)
 	expect(debugBox.y).toBeGreaterThanOrEqual(14)
 	expect(debugBox.y + debugBox.height).toBeLessThanOrEqual(626)
-	await expect(panel).toHaveCSS('animation-duration', '1ms')
-	await panel.screenshot({ path: testInfo.outputPath('debug-panel.png') })
-	await page.screenshot({ path: testInfo.outputPath('debug-mobile.png'), fullPage: true })
+	await expect(panel).toHaveCSS('animation-duration', '0.001s')
+	await panel.screenshot({ path: testInfo.outputPath('debug-panel.png'), animations: 'disabled' })
+	await page.screenshot({
+		path: testInfo.outputPath('debug-mobile.png'),
+		fullPage: true,
+		animations: 'disabled',
+	})
 	const debugStyles = await panel.evaluate((node) => {
 		const style = getComputedStyle(node)
 		const gloss = getComputedStyle(node, '::before')
@@ -206,7 +226,10 @@ test('debug panel fits a narrow viewport and visually shares the canvas glass to
 	await toggle.click()
 	const canvasPanel = page.getByRole('region', { name: 'Canvases' })
 	await expect(canvasPanel).toBeVisible()
-	await canvasPanel.screenshot({ path: testInfo.outputPath('canvas-panel.png') })
+	await canvasPanel.screenshot({
+		path: testInfo.outputPath('canvas-panel.png'),
+		animations: 'disabled',
+	})
 	const canvasStyles = await canvasPanel.evaluate((node) => {
 		const style = getComputedStyle(node)
 		const gloss = getComputedStyle(node, '::before')
@@ -223,6 +246,34 @@ test('debug panel fits a narrow viewport and visually shares the canvas glass to
 	expect(debugStyles).toEqual(canvasStyles)
 	expect(debugStyles.glassToken).toContain('light-dark(')
 	await expect(canvasPanel).toHaveCSS('color-scheme', 'dark')
+})
+
+test('signed-in preview keeps sign-out reachable in a short landscape viewport', async ({
+	page,
+}, testInfo) => {
+	await mockAvatarSession(page, { ephemeral: true, aiEnabled: false })
+	await page.setViewportSize({ width: 812, height: 375 })
+	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.goto('/')
+	await page.getByRole('button', { name: 'Debug', exact: true }).click()
+	const panel = page.getByRole('dialog', { name: 'Debug', exact: true })
+	await expect(panel).toBeVisible()
+	const signOut = panel.getByRole('button', { name: 'Sign out', exact: true })
+	await signOut.scrollIntoViewIfNeeded()
+	const panelBox = await panel.boundingBox()
+	const buttonBox = await signOut.boundingBox()
+	if (!panelBox || !buttonBox) throw new Error('Expected panel and sign-out geometry')
+	expect(panelBox.y).toBeGreaterThanOrEqual(14)
+	expect(panelBox.y + panelBox.height).toBeLessThanOrEqual(361)
+	expect(buttonBox.y).toBeGreaterThanOrEqual(panelBox.y)
+	expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(panelBox.y + panelBox.height - 10)
+	await page.screenshot({
+		path: testInfo.outputPath('debug-landscape.png'),
+		fullPage: true,
+		animations: 'disabled',
+	})
+	await signOut.click()
+	await expect(page.getByRole('heading', { name: 'Sign in to Mico' })).toBeVisible()
 })
 
 test('provided avatar image failures fall back to the signed-in user initial', async ({ page }) => {

@@ -89,11 +89,9 @@
 		356px,
 		calc(100vw - 28px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px))
 	);
-	max-height: calc(
-		100dvh -
-		28px -
-		env(safe-area-inset-top, 0px) -
-		env(safe-area-inset-bottom, 0px)
+	max-height: min(
+		var(--radix-popover-content-available-height),
+		calc(100dvh - 28px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))
 	);
 	padding: 0;
 	overflow: hidden;
@@ -244,6 +242,7 @@
 }
 
 .debug-panel .debug-sign-out {
+	scroll-margin-block: 12px;
 	min-height: var(--control-standard);
 	padding-inline: 12px;
 	border: 1px solid var(--ui-hair);
