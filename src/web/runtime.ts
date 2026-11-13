@@ -1,16 +1,6 @@
-export interface RuntimeAuthConfig {
-	mode: 'none' | 'entra'
-	clientId?: string
-	tenantId?: string
-	authority?: string
-	redirectUri?: string
-}
+import type { PublicRuntimeContract } from '../shared/runtime'
 
-export interface RuntimeConfig {
-	auth: RuntimeAuthConfig
-	aiEnabled: boolean
-	ephemeral: boolean
-}
+export type RuntimeConfig = PublicRuntimeContract
 
 export interface ServerSession {
 	user: { name: string; expiresAt: number } | null
@@ -37,7 +27,7 @@ export async function fetchSession(): Promise<ServerSession> {
 }
 
 export function expiresAtMilliseconds(expiresAt: number): number {
-	return expiresAt < 1_000_000_000_000 ? expiresAt * 1000 : expiresAt
+	return expiresAt
 }
 
 export function sessionExpired(session: ServerSession, now = Date.now()): boolean {

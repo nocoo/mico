@@ -82,24 +82,7 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 			return
 		}
 		void completeCallback(runtime.auth)
-			.then(async (result) => {
-				const response = await fetch('/api/auth/session', {
-					method: 'POST',
-					credentials: 'same-origin',
-					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ id_token: result.idToken }),
-				})
-				if (response.status !== 204) {
-					throw new Error(
-						response.status >= 500
-							? 'Sign-in succeeded, but the workspace could not verify the session. Try again in a moment.'
-							: 'Your Microsoft session could not be verified. Please sign in again.',
-					)
-				}
-				const session = await fetchSession()
-				if (!session.user || sessionExpired(session)) {
-					throw new Error('Your workspace session was not established. Please sign in again.')
-				}
+			.then(() => {
 				window.location.replace('/')
 			})
 			.catch((cause: unknown) => {
@@ -142,6 +125,8 @@ export default function BootGate() {
 	const [loading, setLoading] = useState(true)
 	const [runtimeError, setRuntimeError] = useState(false)
 	const [loginRequired, setLoginRequired] = useState(false)
+	const [loggingOut, setLoggingOut] = useState(false)
+	const [logoutError, setLogoutError] = useState('')
 
 	const load = () => {
 		setLoading(true)
@@ -206,21 +191,44 @@ export default function BootGate() {
 
 	const signOut = () => {
 		if (!runtime) return
-		void fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
-			.catch(() => undefined)
-			.finally(() => {
+		setLoggingOut(true)
+		setLogoutError('')
+		setSession(null)
+		setLoginRequired(false)
+		void (async () => {
+			try {
+				const response = await fetch('/api/auth/logout', {
+					method: 'POST',
+					credentials: 'same-origin',
+				})
+				if (response.status !== 204) {
+					throw new Error(
+						response.status >= 500
+							? 'Sign-out is temporarily unavailable. Please try again.'
+							: 'The workspace could not confirm sign-out. Please try again.',
+					)
+				}
 				if (runtime.auth.mode === 'entra') {
-					void clearMsalCache(runtime.auth)
-						.catch(() => undefined)
-						.finally(() => {
-							window.location.assign('/login')
-						})
-					return
+					await clearMsalCache(runtime.auth)
 				}
 				window.location.assign('/login')
-			})
+			} catch (cause) {
+				setLoggingOut(false)
+				setLogoutError(cause instanceof Error ? cause.message : 'Sign-out could not be completed.')
+			}
+		})()
 	}
 
+	if (loggingOut) return <GateScreen title="Signing out" message="Closing the workspace session…" />
+	if (logoutError) {
+		return (
+			<GateScreen
+				title="Could not sign out"
+				message={logoutError}
+				action={{ label: 'Try sign-out again', onClick: signOut }}
+			/>
+		)
+	}
 	if (loading) return <GateScreen title="Opening Mico" message="Loading workspace settings…" />
 	if (runtimeError) {
 		return (
