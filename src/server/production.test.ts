@@ -96,7 +96,6 @@ test('production serves built assets, conditional requests and audio ranges with
 		for (const path of [
 			'/.env',
 			'/secret.txt',
-			'/%2e%2e%2fsecret.txt',
 			'/src/server/index.ts',
 			'/package.json',
 			'/assets/missing.js',
@@ -106,6 +105,9 @@ test('production serves built assets, conditional requests and audio ranges with
 			assert.equal(response.status, 404, path)
 			assert.doesNotMatch(await response.text(), /private|<title>/)
 		}
+		const traversal = await fetch(`${url}/%2e%2e%2fsecret.txt`)
+		assert.equal(traversal.status, 400)
+		assert.doesNotMatch(await traversal.text(), /private|<title>/)
 		assert.equal((await fetch(url, { method: 'POST' })).status, 404)
 		assert.equal((await fetch(url, { headers: { Origin: 'https://evil.example' } })).status, 403)
 		const forbiddenHost = await new Promise<number>((resolve, reject) => {
