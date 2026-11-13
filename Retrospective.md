@@ -22,6 +22,11 @@
 
 ## Tool usage
 
+- Dialog workers again used `find` and manually started a browser fixture despite the existing guidance. Include the `fd` and Playwright-managed fixture requirements directly in delegated prompts, and preserve screenshots before subsequent runs clear `test-results`.
+- A tab's right-edge hit test passed before press, but scaling the button during `:active` moved its hit target away before release. Keep interactive hit geometry stable and test a held pointer down/up, not only an instantaneous click or `elementFromPoint`.
+- Tab padding assertions passed even though the Settings tab overlapped the independently positioned close button. Check the tablist's total width and real edge hit target at desktop breakpoints, not only each tab's internal padding.
+- Allowing a rounded panel's overflow restored outlines but made its transparent header corners intercept the canvas. Round the header hit area and test outside clicks as well as visible focus rings.
+- A rounded selection card still clipped its close focus ring despite `overflow: visible`: Radix also applies `contain: paint`. Inspect the rendered pixels as well as computed overflow, and prove the visual regression test fails when the containment is restored.
 - The complete browser suite still expected “Mico is listening” after a fatal Audio error even after idle-status behavior changed. Re-run the entire suite when changing shared status language, and assert the actual error phase rather than retaining stale wording.
 - A minimap zoom regression probe tried to continue dragging while both pointer positions were clamped outside the overview. Move the pointer back into its projected bounds when testing resumed movement, and separately assert that zooming itself does not jump.
 - During the Audio empty-state investigation, file discovery used `find` three times despite the `fd`-only rule. The prohibited commands found screenshot candidates, ancestor instruction files, and image dimensions. Recheck the global discovery rule before every shell inspection and use `fd` for paths plus `rg` for content.
