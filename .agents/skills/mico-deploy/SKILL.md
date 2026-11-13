@@ -48,7 +48,7 @@ For an **existing app**, inspect it read-only and compare actual auth/runtime/st
 node scripts/deploy-azure.ts provision
 ```
 
-That creates the dedicated identity, registry and environment and prints the future origin/callback. With Entra enabled, the operator adds the printed `/auth/callback` URI under **Single-page application**, retaining other redirects. No client secret is needed. The current login flow requests delegated `User.Read` for an optional profile photo; failure to obtain a photo must not prevent login or drawing.
+That creates the dedicated identity, registry and environment and prints the future origin/callback. With Entra enabled, the operator adds the printed `/auth/callback` URI under **Single-page application**, retaining other redirects. No client secret is needed. An optional profile-photo request uses delegated `User.Read` through silent MSAL acquisition; base login scopes stay unchanged. Missing consent or a missing photo must not prevent login or drawing, and deployment must not trigger extra consent automatically.
 
 ## Validate a frozen source tree
 

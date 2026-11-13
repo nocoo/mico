@@ -47,6 +47,8 @@ Use the browser's MSAL authorization-code flow with PKCE. Register `${MICO_PUBLI
 
 The resource tenant and login tenant may be different. Neither the Azure CLI default tenant nor the managed identity determines the login issuer. Keep both sets of configuration outside the repository. Do not commit deployment IDs, user IDs, resource names or the real public origin to source, examples or acceptance reports.
 
+The Debug entry sits immediately after Canvases in the identity bar when hosted status or a signed-in user is present. The panel contains deployment/AI status and sign-out instead of separate floating badges. Signed-in users can display their Microsoft profile photo: the browser silently requests delegated `User.Read` and fetches the fixed Graph photo endpoint, without broadening the base login scopes. Tokens and photo bytes are not sent to the canvas server or stored in SQLite. Missing consent, a missing photo or a failed request leaves a styled initial/icon entry without blocking the canvas; no extra sign-in prompt opens just to load a photo. Photo object URLs are released when the session/view changes.
+
 The service validates token signature, issuer, audience, tenant, expiry and allowed object ID. Sessions are opaque, server-side, bounded and held in memory; cookies are Secure, HttpOnly and SameSite=Lax. Restarting a preview requires signing in again. All canvas/image APIs and WebSocket upgrades are protected when login is enabled; state-changing browser requests require the configured Origin. Health and login bootstrap remain public. Invalid configuration stops startup instead of silently turning authentication off.
 
 ## Preview storage contract

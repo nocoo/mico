@@ -10,6 +10,7 @@ export interface MsalAccount {
 }
 
 export interface MsalRedirectResult {
+	accessToken?: string
 	idToken?: string
 	account?: MsalAccount
 }

@@ -9,6 +9,7 @@ import {
 	type ServerSession,
 	sessionExpired,
 } from './runtime'
+import { useUserAvatar } from './useUserAvatar'
 
 function GateScreen({
 	title,
@@ -128,6 +129,7 @@ export default function BootGate() {
 	const [loginRequired, setLoginRequired] = useState(false)
 	const [loggingOut, setLoggingOut] = useState(false)
 	const [logoutError, setLogoutError] = useState('')
+	const avatarUrl = useUserAvatar(runtime?.auth, loggingOut ? null : (session?.user ?? null))
 
 	const load = () => {
 		setLoading(true)
@@ -255,6 +257,7 @@ export default function BootGate() {
 			aiEnabled={runtime.aiEnabled}
 			ephemeral={runtime.ephemeral}
 			user={session?.user ?? null}
+			avatarUrl={avatarUrl}
 			onSignOut={signOut}
 		/>
 	)
