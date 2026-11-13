@@ -22,6 +22,8 @@
 
 ## Tool usage
 
+- An HTML-card drag probe assumed the card body was a drag handle; the documented behavior and the unchanged baseline both use the title. Compare the parent revision and documented interaction before treating a new probe as a product regression.
+- An HTML card reported `elementFromPoint` as the iframe before its selected state had been painted, while actual clicks still reached the parent. Capture events in both documents, wait for the rendered selection across animation frames, and repeat real input instead of trusting DOM state alone.
 - Dialog workers again used `find` and manually started a browser fixture despite the existing guidance. Include the `fd` and Playwright-managed fixture requirements directly in delegated prompts, and preserve screenshots before subsequent runs clear `test-results`.
 - A tab's right-edge hit test passed before press, but scaling the button during `:active` moved its hit target away before release. Keep interactive hit geometry stable and test a held pointer down/up, not only an instantaneous click or `elementFromPoint`.
 - Tab padding assertions passed even though the Settings tab overlapped the independently positioned close button. Check the tablist's total width and real edge hit target at desktop breakpoints, not only each tab's internal padding.
