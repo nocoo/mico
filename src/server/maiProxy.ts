@@ -13,6 +13,7 @@ export interface MaiProxyOptions {
 	apiKey: string
 	deployment: string
 	allowedOrigin?: string
+	onConnection?: (req: IncomingMessage, client: WebSocket) => void
 	createUpstream?: (url: string, options: { headers: { 'api-key': string } }) => WebSocket
 	onError?: (error: Error) => void
 }
@@ -48,6 +49,7 @@ export function createMaiProxy(options: MaiProxyOptions): {
 
 		wss.handleUpgrade(req, socket, head, (client) => {
 			client.on('error', () => client.terminate())
+			options.onConnection?.(req, client)
 
 			if (!options.host || !options.apiKey || !options.deployment) {
 				client.send(

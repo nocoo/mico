@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose'
-import WebSocket from 'ws'
+import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { createDaemon, type Daemon } from './index.ts'
 
@@ -108,6 +108,7 @@ async function withHostedDaemon(
 		directory: string
 	}) => Promise<void>,
 	envOverrides: NodeJS.ProcessEnv = {},
+	createVoiceUpstream?: () => WebSocket,
 ): Promise<void> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-auth-'))
 	const staticDir = join(directory, 'dist')
@@ -130,6 +131,8 @@ async function withHostedDaemon(
 			settingsPath: join(directory, 'ai-settings.json'),
 			staticDir,
 			authJwksResolver: jwksResolver,
+			createMaiUpstream: createVoiceUpstream,
+			createMossUpstream: createVoiceUpstream,
 			env: {
 				MICO_AUTH_MODE: 'entra',
 				MICO_PUBLIC_ORIGIN: ORIGIN,
@@ -249,6 +252,16 @@ test('hosted auth verifies Entra claims, uses opaque sessions and returns 204 fo
 			cookie,
 		})
 		assert.equal(session.status, 200)
+		const privatePage = await httpRequest(port, '/', { host: HOST, cookie })
+		assert.equal(privatePage.headers['cache-control'], 'private, no-store')
+		const privateRecording = await httpRequest(port, '/evals/logo-recording.mp3', {
+			host: HOST,
+			cookie,
+		})
+		assert.equal(privateRecording.status, 200)
+		assert.equal(privateRecording.headers['cache-control'], 'private, no-store')
+		const privateState = await httpRequest(port, '/api/state', { host: HOST, cookie })
+		assert.equal(privateState.headers['cache-control'], 'private, no-store')
 		const sessionBody = JSON.parse(session.body) as {
 			user: { name: string; expiresAt: number }
 		}
@@ -479,6 +492,95 @@ test('hosted protection covers APIs, assets, mutations and all WebSocket handsha
 		)
 		assert.equal((await httpRequest(port, '/api/state', { host: HOST, cookie })).status, 401)
 	})
+})
+
+test('non-canonical paths cannot bypass API or static authentication', async () => {
+	await withHostedDaemon(async ({ port, daemon }) => {
+		const count = daemon.store.listCanvases().length
+		for (const path of ['//ignored//api/canvases', '/api//canvases', '/api/../api/canvases']) {
+			const response = await httpRequest(port, path, {
+				method: 'POST',
+				host: HOST,
+				origin: ORIGIN,
+				contentType: 'application/json',
+				body: JSON.stringify({ name: 'Must not exist' }),
+			})
+			assert.equal(response.status, 400, path)
+		}
+		for (const path of [
+			'/assets/..%2fevals/logo-recording.mp3',
+			'/assets/%2e%2e/evals/logo-recording.mp3',
+			'/assets/..%5cevals/logo-recording.mp3',
+			'/assets/%252e%252e%252fevals/logo-recording.mp3',
+		]) {
+			assert.equal((await httpRequest(port, path, { host: HOST })).status, 400, path)
+		}
+		assert.equal((await httpRequest(port, '/%61pi/state', { host: HOST })).status, 401)
+		assert.equal(daemon.store.listCanvases().length, count)
+	})
+})
+
+test('logout and expiration revoke both voice clients and their mock upstreams', async () => {
+	const upstream = new WebSocketServer({ host: '127.0.0.1', port: 0 })
+	await once(upstream, 'listening', { signal: AbortSignal.timeout(5000) })
+	const address = upstream.address()
+	assert.ok(address && typeof address !== 'string')
+	try {
+		await withHostedDaemon(
+			async ({ port, privateKey }) => {
+				for (const mode of ['logout', 'expire']) {
+					const idToken = await signToken(privateKey, {
+						expiresAt: Math.floor(Date.now() / 1000) + (mode === 'expire' ? 3 : 60),
+					})
+					const posted = await httpRequest(port, '/api/auth/session', {
+						method: 'POST',
+						host: HOST,
+						origin: ORIGIN,
+						contentType: 'application/json',
+						body: JSON.stringify({ id_token: idToken }),
+					})
+					assert.equal(posted.status, 204)
+					const cookie = cookieFrom(posted)
+					const closures: Promise<unknown>[] = []
+					for (const path of ['/moss', '/mai/realtime']) {
+						const connection = once(upstream, 'connection', { signal: AbortSignal.timeout(5000) })
+						const client = new WebSocket(`ws://127.0.0.1:${port}${path}`, {
+							headers: { host: HOST, origin: ORIGIN, cookie },
+						})
+						client.on('error', () => {})
+						closures.push(once(client, 'close', { signal: AbortSignal.timeout(7000) }))
+						const [remote] = await connection
+						closures.push(once(remote, 'close', { signal: AbortSignal.timeout(7000) }))
+					}
+					if (mode === 'logout') {
+						assert.equal(
+							(
+								await httpRequest(port, '/api/auth/logout', {
+									method: 'POST',
+									host: HOST,
+									origin: ORIGIN,
+									cookie,
+								})
+							).status,
+							204,
+						)
+					}
+					await Promise.all(closures)
+					assert.equal((await httpRequest(port, '/api/state', { host: HOST, cookie })).status, 401)
+				}
+			},
+			{
+				MOSS_API_KEY: 'test',
+				AZURE_MAI_HOST: 'voice.example',
+				AZURE_OPENAI_API_KEY: 'test',
+				AZURE_OPENAI_DEPLOYMENT: 'transcription',
+			},
+			() => new WebSocket(`ws://127.0.0.1:${address.port}`),
+		)
+	} finally {
+		for (const socket of upstream.clients) socket.terminate()
+		await new Promise<void>((resolve) => upstream.close(() => resolve()))
+	}
 })
 
 test('AI-disabled daemon blocks every AI route and provider-backed WebSocket without credentials', async () => {

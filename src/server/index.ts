@@ -14,9 +14,15 @@ import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { AuthManager } from './auth.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
-import { createMaiProxy, MAI_CONFIG_PATH, MAI_LOCAL_PATH } from './maiProxy.ts'
+import {
+	createMaiProxy,
+	MAI_CONFIG_PATH,
+	MAI_LOCAL_PATH,
+	type MaiProxyOptions,
+} from './maiProxy.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
-import { createMossProxy, MOSS_LOCAL_PATH } from './mossProxy.ts'
+import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
+import { parseRequestTarget } from './requestTarget.ts'
 import { BoardStore, OperationError } from './store.ts'
 
 function parsePort(env: NodeJS.ProcessEnv): number {
@@ -267,6 +273,8 @@ export function createDaemon(
 		imageGenerator?: ImageGenerator
 		staticDir?: string
 		authJwksResolver?: JWTVerifyGetKey
+		createMaiUpstream?: MaiProxyOptions['createUpstream']
+		createMossUpstream?: MossRealtimeProxyOptions['createUpstream']
 	} = {},
 ): Daemon {
 	const env = options.env ?? process.env
@@ -280,16 +288,30 @@ export function createDaemon(
 		? serveStatic(options.staticDir, {
 				etag: true,
 				maxAge: 0,
-				setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+				setHeaders: (res) => {
+					res.setHeader('X-Content-Type-Options', 'nosniff')
+					if (runtimeConfig.auth.mode === 'entra')
+						res.setHeader('Cache-Control', 'private, no-store')
+				},
 			})
 		: undefined
 	const mai =
 		runtimeConfig.aiEnabled && assets
-			? createMaiProxy({ ...config.mai, allowedOrigin: runtimeConfig.publicOrigin })
+			? createMaiProxy({
+					...config.mai,
+					allowedOrigin: runtimeConfig.publicOrigin,
+					createUpstream: options.createMaiUpstream,
+					onConnection: (req, client) => auth.attachSocket(req, client),
+				})
 			: undefined
 	const moss =
 		runtimeConfig.aiEnabled && assets
-			? createMossProxy({ ...config.moss, allowedOrigin: runtimeConfig.publicOrigin })
+			? createMossProxy({
+					...config.moss,
+					allowedOrigin: runtimeConfig.publicOrigin,
+					createUpstream: options.createMossUpstream,
+					onConnection: (req, client) => auth.attachSocket(req, client),
+				})
 			: undefined
 	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
@@ -361,11 +383,13 @@ export function createDaemon(
 	}
 
 	const server = createServer(async (req, res) => {
+		if (runtimeConfig.auth.mode === 'entra') res.setHeader('Cache-Control', 'private, no-store')
 		let pathname: string
 		let requestUrl: URL
 		try {
-			requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1')
-			pathname = requestUrl.pathname
+			const target = parseRequestTarget(req.url)
+			requestUrl = target.url
+			pathname = target.pathname
 		} catch {
 			sendError(res, 400, 'INVALID_REQUEST', 'Invalid request URL')
 			return
@@ -923,8 +947,9 @@ export function createDaemon(
 	server.on('upgrade', (req, socket, head) => {
 		let pathname: string
 		try {
-			pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
+			pathname = parseRequestTarget(req.url).pathname
 		} catch {
+			socket.write('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return
 		}
@@ -965,10 +990,12 @@ export function createDaemon(
 			return
 		}
 		if (mai && pathname === MAI_LOCAL_PATH) {
+			req.url = pathname
 			mai.upgrade(req, socket, head)
 			return
 		}
 		if (moss && pathname === MOSS_LOCAL_PATH) {
+			req.url = pathname
 			moss.upgrade(req, socket, head)
 			return
 		}

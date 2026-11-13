@@ -19,6 +19,7 @@ export interface MossRealtimeProxyOptions {
 	url: string
 	apiKey: string
 	allowedOrigin?: string
+	onConnection?: (req: IncomingMessage, client: WebSocket) => void
 	createUpstream?: MossUpstreamFactory
 	maxPayload?: number
 	maxBufferedBytes?: number
@@ -150,6 +151,7 @@ export function createMossProxy(options: MossRealtimeProxyOptions): {
 
 		wss.handleUpgrade(req, socket, head, (client) => {
 			client.on('error', () => client.terminate())
+			options.onConnection?.(req, client)
 
 			if (!options.apiKey) {
 				client.send(
