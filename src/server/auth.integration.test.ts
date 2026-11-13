@@ -66,6 +66,7 @@ function httpRequest(
 				port,
 				path,
 				method: options.method ?? 'GET',
+				timeout: 5000,
 				headers: {
 					host: options.host ?? `127.0.0.1:${port}`,
 					...(options.origin ? { origin: options.origin } : {}),
@@ -86,6 +87,7 @@ function httpRequest(
 			},
 		)
 		req.on('error', reject)
+		req.on('timeout', () => req.destroy(new Error('HTTP probe timed out')))
 		if (options.body !== undefined) req.write(options.body)
 		req.end()
 	})
@@ -112,6 +114,8 @@ async function withHostedDaemon(
 	mkdirSync(join(staticDir, 'assets'), { recursive: true })
 	writeFileSync(join(staticDir, 'index.html'), '<!doctype html><title>Mico</title>')
 	writeFileSync(join(staticDir, 'assets', 'app.js'), 'console.log("mico")')
+	mkdirSync(join(staticDir, 'evals'))
+	writeFileSync(join(staticDir, 'evals', 'logo-recording.mp3'), 'private recording')
 	const keyPair = await generateKeyPair('RS256')
 	const publicJwk = await exportJWK(keyPair.publicKey)
 	publicJwk.kid = 'integration-key'
@@ -305,6 +309,175 @@ test('hosted auth verifies Entra claims, uses opaque sessions and returns 204 fo
 		assert.deepEqual(JSON.parse(health.body), { status: 'ok', version: manifest.version })
 		const internalApi = await httpRequest(port, '/api/state', { host: `127.0.0.1:${port}` })
 		assert.equal(internalApi.status, 403)
+	})
+})
+
+test('hosted protection covers APIs, assets, mutations and all WebSocket handshakes', async () => {
+	await withHostedDaemon(async ({ port, privateKey }) => {
+		for (const path of [
+			'/api/state',
+			'/api/board',
+			'/api/canvases',
+			'/api/images/missing',
+			'/api/ai/settings',
+			'/api/ai/models',
+			'/mai/config',
+		]) {
+			const response = await httpRequest(port, path, { host: HOST, origin: ORIGIN })
+			assert.equal(response.status, 401, path)
+		}
+		const protectedRecording = await httpRequest(port, '/evals/manifest.json', { host: HOST })
+		assert.equal(protectedRecording.status, 302)
+		assert.equal(protectedRecording.headers.location, '/login')
+		assert.equal((await httpRequest(port, '/evals/logo-recording.mp3', { host: HOST })).status, 302)
+		const idToken = await signToken(privateKey)
+		const loginOptions = {
+			method: 'POST',
+			host: HOST,
+			origin: ORIGIN,
+			contentType: 'application/json',
+			body: JSON.stringify({ id_token: idToken }),
+		}
+		assert.equal(
+			(await httpRequest(port, '/api/auth/session', { ...loginOptions, origin: undefined })).status,
+			403,
+		)
+		assert.equal(
+			(await httpRequest(port, '/api/auth/session', { ...loginOptions, contentType: 'text/plain' }))
+				.status,
+			415,
+		)
+		const otherKeys = await generateKeyPair('RS256')
+		const forged = await signToken(otherKeys.privateKey)
+		assert.equal(
+			(
+				await httpRequest(port, '/api/auth/session', {
+					...loginOptions,
+					body: JSON.stringify({ id_token: forged }),
+				})
+			).status,
+			401,
+		)
+		assert.equal(
+			(
+				await httpRequest(port, '/api/auth/session', {
+					...loginOptions,
+					body: JSON.stringify({ code: 'not-an-id-token' }),
+				})
+			).status,
+			400,
+		)
+		assert.equal(
+			(
+				await httpRequest(port, '/api/auth/session', {
+					...loginOptions,
+					body: JSON.stringify({ id_token: 'x'.repeat(70 * 1024) }),
+				})
+			).status,
+			413,
+		)
+		const posted = await httpRequest(port, '/api/auth/session', loginOptions)
+		assert.equal(posted.status, 204)
+		const header = String(posted.headers['set-cookie'])
+		assert.match(header, /; Secure;/)
+		assert.match(header, /; HttpOnly;/)
+		assert.match(header, /; SameSite=Lax;/)
+		assert.ok(!header.includes(idToken))
+		const cookie = cookieFrom(posted)
+		assert.equal(
+			(await httpRequest(port, '/api/state', { host: HOST, origin: ORIGIN, cookie })).status,
+			200,
+		)
+		assert.equal(
+			(await httpRequest(port, '/api/state', { host: HOST, cookie: '__Host-mico-session=unknown' }))
+				.status,
+			401,
+		)
+		for (const origin of [undefined, 'https://evil.test']) {
+			assert.equal(
+				(
+					await httpRequest(port, '/api/canvases', {
+						method: 'POST',
+						host: HOST,
+						origin,
+						cookie,
+						contentType: 'application/json',
+						body: JSON.stringify({ name: 'Rejected' }),
+					})
+				).status,
+				403,
+			)
+			assert.equal(
+				(
+					await httpRequest(port, '/api/auth/logout', {
+						method: 'POST',
+						host: HOST,
+						origin,
+						cookie,
+					})
+				).status,
+				403,
+			)
+		}
+		const created = await httpRequest(port, '/api/canvases', {
+			method: 'POST',
+			host: HOST,
+			origin: ORIGIN,
+			cookie,
+			contentType: 'application/json',
+			body: JSON.stringify({ name: 'Authorized' }),
+		})
+		assert.equal(created.status, 200)
+		const canvases = await httpRequest(port, '/api/canvases', { host: HOST, cookie })
+		assert.ok(
+			JSON.parse(canvases.body).canvases.some(
+				(canvas: { name: string }) => canvas.name === 'Authorized',
+			),
+		)
+		for (const path of ['/api/events', '/mai/realtime', '/moss']) {
+			for (const [headers, expected] of [
+				[{ host: HOST, origin: ORIGIN }, 401],
+				[{ host: HOST, cookie }, 403],
+				[{ host: HOST, origin: 'https://evil.test', cookie }, 403],
+			] as const) {
+				await new Promise<void>((resolve, reject) => {
+					const socket = new WebSocket(`ws://127.0.0.1:${port}${path}`, { headers })
+					const timer = setTimeout(() => {
+						socket.terminate()
+						reject(new Error('WebSocket probe timed out'))
+					}, 5000)
+					socket.on('error', () => {})
+					socket.once('unexpected-response', (req, res) => {
+						clearTimeout(timer)
+						res.resume()
+						req.destroy()
+						try {
+							assert.equal(res.statusCode, expected, path)
+							resolve()
+						} catch (error) {
+							reject(error)
+						}
+					})
+					socket.once('open', () => {
+						clearTimeout(timer)
+						socket.terminate()
+						reject(new Error('Unauthorized socket opened'))
+					})
+				})
+			}
+		}
+		assert.equal(
+			(
+				await httpRequest(port, '/api/auth/logout', {
+					method: 'POST',
+					host: HOST,
+					origin: ORIGIN,
+					cookie,
+				})
+			).status,
+			204,
+		)
+		assert.equal((await httpRequest(port, '/api/state', { host: HOST, cookie })).status, 401)
 	})
 })
 

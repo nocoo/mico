@@ -566,7 +566,7 @@ export function createDaemon(
 			}
 
 			const publicAsset =
-				pathname.startsWith('/assets/') || /(?:^|\/)(?:favicon|logo)[^/]*$/i.test(pathname)
+				pathname.startsWith('/assets/') || pathname === '/favicon.ico' || pathname === '/logo.png'
 			if (
 				runtimeConfig.auth.mode === 'entra' &&
 				assets &&
