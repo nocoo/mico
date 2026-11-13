@@ -22,6 +22,7 @@
 
 ## Tool usage
 
+- A minimap zoom regression probe tried to continue dragging while both pointer positions were clamped outside the overview. Move the pointer back into its projected bounds when testing resumed movement, and separately assert that zooming itself does not jump.
 - During the Audio empty-state investigation, file discovery used `find` three times despite the `fd`-only rule. The prohibited commands found screenshot candidates, ancestor instruction files, and image dimensions. Recheck the global discovery rule before every shell inspection and use `fd` for paths plus `rg` for content.
 - A delegated screenshot search used `find`, and a separate browser fixture was started outside Playwright's lifecycle. Use `fd` for discovery and capture inside the isolated Playwright-managed fixture so ports and temporary databases are released reliably.
 - AI frame growth may extend upward as well as downward, so asserting the frame height alone misidentified a correct bottom edge as a regression. Assert world-space edges and the intended clearance, not just width or height.
