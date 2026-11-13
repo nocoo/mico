@@ -95,6 +95,8 @@ export function containerApp(
 		failureThreshold: 3,
 	}
 	return {
+		name: target.app,
+		type: 'Microsoft.App/containerApps',
 		location: target.location,
 		identity: { type: 'UserAssigned', userAssignedIdentities: { [input.identityId]: {} } },
 		properties: {
