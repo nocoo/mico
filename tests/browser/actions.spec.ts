@@ -653,7 +653,7 @@ test('unchecked and checked action cards match the original prototype pixels', a
 	page,
 	context,
 	request,
-}) => {
+}, testInfo) => {
 	const reference = await context.newPage()
 	await reference.setViewportSize({ width: 1440, height: 960 })
 	await reference.emulateMedia({ reducedMotion: 'reduce' })
@@ -688,9 +688,20 @@ test('unchecked and checked action cards match the original prototype pixels', a
 		if (!actualBox) throw new Error('Missing rendered action card')
 		expect(Math.round(actualBox.width)).toBe(width)
 		expect(Math.round(actualBox.height)).toBe(height)
+		await expect(actualCard.locator('h3')).toHaveCSS(
+			'font-synthesis-weight',
+			await referenceCard
+				.locator('h3')
+				.evaluate((element) => getComputedStyle(element).getPropertyValue('font-synthesis-weight')),
+		)
 
 		const expectedUnchecked = await screenshotElement(referenceCard, width, height)
 		const actualUnchecked = await screenshotElement(actualCard, width, height)
+		await testInfo.attach('unchecked-reference', {
+			body: expectedUnchecked,
+			contentType: 'image/png',
+		})
+		await testInfo.attach('unchecked-actual', { body: actualUnchecked, contentType: 'image/png' })
 		const unchecked = await differingPixels(page, expectedUnchecked, actualUnchecked)
 		expect(
 			unchecked.different / unchecked.total,
@@ -702,6 +713,8 @@ test('unchecked and checked action cards match the original prototype pixels', a
 		await expect(actionButton(page, 'demo')).toHaveAttribute('aria-checked', 'true')
 		const expectedChecked = await screenshotElement(referenceCard, width, height)
 		const actualChecked = await screenshotElement(actualCard, width, height)
+		await testInfo.attach('checked-reference', { body: expectedChecked, contentType: 'image/png' })
+		await testInfo.attach('checked-actual', { body: actualChecked, contentType: 'image/png' })
 		const checked = await differingPixels(page, expectedChecked, actualChecked)
 		expect(
 			checked.different / checked.total,

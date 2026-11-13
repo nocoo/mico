@@ -69,7 +69,7 @@ test('the assistant tabs keep content padding and the close control clear of the
 		expect(geometry.rightGap).toBeGreaterThanOrEqual(minimumPadding)
 	}
 
-	for (const width of [1440, 920, 769]) {
+	for (const width of [1440, 920, 769, 401, 400, 391]) {
 		await page.setViewportSize({ width, height: 960 })
 		const list = panel.locator('.ai-tabs')
 		await expect

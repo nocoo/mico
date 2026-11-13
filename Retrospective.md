@@ -1,5 +1,13 @@
 # Retrospective
 
+## Linux CI font regressions
+
+- A reviewer pane remained scrolled above its latest messages, and Herdr rejected the guessed `ctrl+end` key name. Check the registered agent state and read the completed reply from that agent's session when terminal output is stale; do not mistake an older visible finding for an unresolved latest review.
+
+- Runs `43370670697`, `43379712887` and `43392182362` failed with the same action-card pixel count (`401/89080`) and tab overflow (`19px`). These were deterministic font-dependent UI defects, not timing flakes. The stock Playwright 1.64.1 Ubuntu image passed; adding the runner's `fonts-dejavu-core` reproduced both failures. Match the runner's font set as well as browser version when reproducing visual CI failures.
+- The action-card reference allowed synthesized bold CJK fallback glyphs while the app inherited `font-synthesis: none`. The recovered trace PNGs localized 400 differing pixels to the three heading glyphs. Enable weight synthesis only on the card heading, assert that policy against the reference, and attach both comparison images before pixel assertions. Keep the existing 0.002 threshold.
+- DejaVu Sans Bold made the assistant tabs require about 305px in a 286px slot. Widen the panel from 348px to 372px together with its reserved canvas inset, and switch to icon-only tabs at 400px. Preserve padding, full desktop labels and the zero-overflow assertion; exercise 401/400/391px as well as desktop widths rather than shrinking fonts or increasing timeouts. The first geometry update missed the empty-state, status, toolbar and minimap assertions; their expected centers also move left by 12px. Search for the old reserved width as well as the old panel width, preserve failed artifacts and update the complete dependent geometry contract before rerunning.
+
 ## AI configuration refactor
 
 - Non-literal secret-reference assignments in the deployment example triggered the staged secret scanner, and shortening the angle-bracket placeholder did not fix the cross-line match. Document secret variables separately instead of mixing placeholder assignments into the non-secret environment example. Run the staged scan on docs before committing; do not add an allowlist.

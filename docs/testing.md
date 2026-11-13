@@ -136,6 +136,12 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 
 `src/server/production.test.ts` and `src/server/realtimeProxy.test.ts` run in L3 without Docker. They cover production asset serving, HTTP caching/ranges, missing-file and source-file rejection, same-origin API/events, provider upgrade routing, missing credentials and mock upstream forwarding.
 
+## Linux visual parity
+
+The action-card pixel comparison retains its 0.002 mismatch limit and attaches both reference and actual images for each checkbox state. Its heading must allow synthesized weight, like the frozen prototype, when Linux falls back to a CJK font without a bold face. Assistant geometry checks retain zero horizontal overflow and cover desktop plus the 401/400/391px label-to-icon boundary.
+
+When reproducing CI locally, use the repository's Playwright version on Ubuntu with `fonts-dejavu-core` installed, matching the GitHub runner's system-font fallback. The stock Playwright Docker image alone can select a narrower fallback and miss these defects. Do not solve font-dependent layout failures by relaxing pixel thresholds or adding retries.
+
 ## Known gaps
 
 - Pixel comparisons cover the pinned prototype's light-theme backdrop, notes, shapes, text, ink, connector, selection marquee and HTML card shell. Other themes, arbitrary generated card contents and all animation frames are not exhaustively compared.

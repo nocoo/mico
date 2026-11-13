@@ -188,10 +188,10 @@ test('minimap remeasures the visible viewport when the assistant opens and close
 	await openAssistant(page, 'Chat')
 	await expect
 		.poll(async () => Number(await outline.getAttribute('width')))
-		.toBeCloseTo((1440 - 376) * scale, 3)
+		.toBeCloseTo((1440 - 400) * scale, 3)
 	await page.locator('.canvas-minimap-map').click({ position: { x: 140, y: 80 } })
 	const worldX = (140 - (88 - 400 * scale)) / scale
-	await expect.poll(async () => (await worldView(page)).x).toBeCloseTo((1440 - 376) / 2 - worldX, 3)
+	await expect.poll(async () => (await worldView(page)).x).toBeCloseTo((1440 - 400) / 2 - worldX, 3)
 	await closeAssistant(page)
 	await expect.poll(async () => Number(await outline.getAttribute('width'))).toBeGreaterThan(60)
 })
