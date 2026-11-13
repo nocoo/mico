@@ -35,6 +35,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
 	const composerRef = useRef<HTMLTextAreaElement>(null)
+	const keyboardTabSelection = useRef(false)
 	const pointerInside = useRef(false)
 	const wasOpen = useRef(false)
 	const lastCanvasId = useRef(state.canvasId)
@@ -289,6 +290,10 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 
 	useEffect(() => {
 		if (!state.open || tab !== 'chat') return
+		if (keyboardTabSelection.current) {
+			keyboardTabSelection.current = false
+			return
+		}
 		const field = composerRef.current
 		if (!field) return
 		const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 560
@@ -301,6 +306,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 			event.preventDefault()
 			const next = nextAssistantTab(tab, event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End')
+			keyboardTabSelection.current = next !== tab && next === 'chat'
 			setTab(next)
 			document.getElementById(`ai-tab-${next}`)?.focus()
 		},

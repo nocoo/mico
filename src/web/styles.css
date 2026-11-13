@@ -801,7 +801,8 @@ svg {
 	--card-border-width: 0;
 	--card-padding: 0;
 	padding: 0;
-	overflow: hidden;
+	overflow: visible;
+	contain: none;
 	border: 0;
 	border-radius: 26px;
 	color: var(--ui-ink);
@@ -815,7 +816,7 @@ svg {
 		0 3px 8px -3px var(--ui-shadow);
 }
 .app.ai-open .selection-panel {
-	right: calc(var(--frame-panel-reserved) + 14px);
+	right: var(--frame-panel-reserved);
 }
 .image-file-input {
 	display: none;
@@ -844,6 +845,7 @@ svg {
 	gap: var(--space-1);
 	padding: var(--space-15) var(--space-15) var(--space-1);
 	border-bottom: 1px solid var(--ui-hair);
+	border-radius: 26px 26px 0 0;
 }
 .selection-panel-heading {
 	display: flex;
@@ -858,6 +860,7 @@ svg {
 	gap: var(--space-2);
 	padding: var(--space-15);
 	overflow-y: auto;
+	border-radius: 0 0 25px 25px;
 }
 .panel-field {
 	display: flex;
@@ -984,23 +987,12 @@ svg {
 	cursor: pointer;
 }
 
-.app {
-	--ai-panel-width: min(380px, calc(100vw - var(--frame-inset) * 2));
-}
-@media (min-width: 769px) {
-	.app.ai-open .selection-panel {
-		right: calc(var(--frame-inset) + var(--ai-panel-width) + var(--space-2));
-	}
-}
 @media (min-width: 769px) and (max-width: 940px) {
 	.app.ai-open .selection-panel {
 		--selection-panel-top: calc(var(--frame-inset) + var(--control-standard) + var(--space-3));
 	}
 }
 @media (max-width: 768px) {
-	.app {
-		--ai-panel-width: calc(100vw - var(--frame-inset) * 2);
-	}
 	.app.ai-open .selection-panel {
 		display: none;
 	}

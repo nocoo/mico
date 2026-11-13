@@ -217,7 +217,8 @@
 	transition:
 		left 600ms var(--ui-spring),
 		max-width 600ms var(--ui-spring),
-		background 200ms var(--ui-ease);
+		background 200ms var(--ui-ease),
+		opacity 200ms var(--ui-ease);
 	pointer-events: none;
 }
 
@@ -307,7 +308,7 @@
 	justify-content: space-between;
 	gap: 4px;
 	flex: 0 0 auto;
-	padding: 10px 10px 8px;
+	padding: 10px 10px 8px 14px;
 	border-bottom: 1px solid var(--ui-hair);
 }
 
@@ -316,18 +317,18 @@
 	flex: 1;
 	align-items: center;
 	min-width: 0;
-	gap: 2px;
+	gap: 4px;
 }
 
 .ai-assistant .ai-tab[data-compact="true"] {
 	display: inline-flex;
-	flex: 1;
+	flex: 1 1 auto;
 	align-items: center;
 	justify-content: center;
-	min-width: 0;
+	min-width: max-content;
 	width: auto;
 	height: 36px;
-	padding: 0 5px;
+	padding: 0 6px;
 	gap: 4px;
 	border: 0;
 	border-radius: 13px;
@@ -338,8 +339,11 @@
 	white-space: nowrap;
 	transition:
 		background 200ms var(--ui-ease),
-		color 200ms var(--ui-ease),
-		scale 450ms var(--ui-spring);
+		color 200ms var(--ui-ease);
+}
+
+.ai-assistant #ai-tab-settings[data-compact="true"] {
+	padding-inline: 8px;
 }
 
 .ai-assistant .ai-tab[data-compact="true"]:hover {
@@ -348,7 +352,7 @@
 }
 
 .ai-assistant .ai-tab[data-compact="true"]:active {
-	scale: 0.92;
+	background: var(--ui-well-2);
 }
 
 .ai-assistant .ai-tab svg {
@@ -1895,6 +1899,10 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 
 	.ai-assistant .ai-status-pill {
 		left: 50%;
+	}
+
+	.ai-assistant:has(.ai-panel.is-open) .ai-status-pill {
+		opacity: 0;
 	}
 }
 

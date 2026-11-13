@@ -23,7 +23,7 @@ pnpm check              # Biome with zero warnings + TypeScript
 pnpm test               # every Node test file under src/ and scripts/
 pnpm test:unit          # L1: pure logic, store, STT and component logic
 pnpm test:integration   # L3: real daemon over HTTP/WebSocket, CLI, agent examples
-pnpm test:e2e           # L4: canvas/controls, overview, card/action/label and audio states
+pnpm test:e2e           # L4: canvas, overview, cards, audio and dialog geometry
 pnpm test:browser       # L4: every Playwright spec
 pnpm build
 ```
@@ -44,7 +44,7 @@ pnpm build
 | B1 Build               | `pnpm build`                            | Vite production bundle                                      |
 | L1 Unit                | `pnpm test:unit`                        | discovered non-integration tests                            |
 | L3 Integration         | `pnpm test:integration`                 | real daemon and CLI                                         |
-| L4 E2E                 | `pnpm test:e2e`                         | canvas, overview, cards, labels, actions and audio          |
+| L4 E2E                 | `pnpm test:e2e`                         | canvas, overview, cards, audio and dialog geometry          |
 | L2 Runtime, P1 Package | —                                       | `na`: plain Node runtime, private package                   |
 | Z1 Gate                | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
 
