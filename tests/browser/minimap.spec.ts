@@ -87,6 +87,8 @@ test('click, drag and keyboard navigation move the viewport without creating his
 	const outline = map.locator('.canvas-minimap-viewport')
 	await expect.poll(async () => Number(await outline.getAttribute('width'))).toBeGreaterThan(50)
 	await expect.poll(async () => Number(await outline.getAttribute('height'))).toBeGreaterThan(40)
+	await map.hover({ position: { x: 80, y: 55 } })
+	await expect(map).toHaveCSS('cursor', 'grab')
 	const initial = await worldView(page)
 	await map.click({ position: { x: 140, y: 80 } })
 	await expect.poll(() => worldView(page)).not.toEqual(initial)
@@ -96,17 +98,62 @@ test('click, drag and keyboard navigation move the viewport without creating his
 	const world = { x: (140 - (88 - 400 * scale)) / scale, y: (80 - (58 - 280 * scale)) / scale }
 	expect(clicked.x).toBeCloseTo(1440 / 2 - world.x, 3)
 	expect(clicked.y).toBeCloseTo(960 / 2 - world.y, 3)
+	const visible = {
+		left: Math.min(-1000, -clicked.x / clicked.zoom),
+		top: Math.min(-400, -clicked.y / clicked.zoom),
+		right: Math.max(1800, (1440 - clicked.x) / clicked.zoom),
+		bottom: Math.max(700, (960 - clicked.y) / clicked.zoom),
+	}
+	const dragScale = Math.min(
+		(176 - 24) / (visible.right - visible.left),
+		(116 - 24) / (visible.bottom - visible.top),
+	)
 	await page.mouse.move(box.x + 80, box.y + 55)
 	await page.mouse.down()
+	await expect(map).toHaveCSS('cursor', 'grabbing')
+	expect(await worldView(page)).toEqual(clicked)
 	await page.mouse.move(box.x + 120, box.y + 75, { steps: 5 })
 	await page.mouse.up()
-	await expect.poll(() => worldView(page)).not.toEqual(clicked)
+	await expect(map).toHaveCSS('cursor', 'grab')
+	await expect
+		.poll(async () => (await worldView(page)).x)
+		.toBeCloseTo(clicked.x - 40 / dragScale, 3)
+	await expect
+		.poll(async () => (await worldView(page)).y)
+		.toBeCloseTo(clicked.y - 20 / dragScale, 3)
 	const dragged = await worldView(page)
 	await page.locator('.canvas-minimap').focus()
 	await page.keyboard.press('ArrowRight')
 	await expect.poll(async () => (await worldView(page)).x).toBeLessThan(dragged.x)
 	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeDisabled()
 	await expect(map.locator('.canvas-minimap-viewport')).toBeVisible()
+})
+
+test('minimap keeps the active pointer anchor during a concurrent pointerdown', async ({
+	page,
+}) => {
+	const map = page.locator('.canvas-minimap-map')
+	const box = await map.boundingBox()
+	if (!box) throw new Error('Missing minimap')
+	const initial = await worldView(page)
+
+	await page.mouse.move(box.x + 60, box.y + 40)
+	await page.mouse.down()
+	await expect(map).toHaveCSS('cursor', 'grabbing')
+	await map.dispatchEvent('pointerdown', {
+		button: 0,
+		clientX: box.x + 140,
+		clientY: box.y + 80,
+		pointerId: 99,
+		pointerType: 'touch',
+		isPrimary: false,
+	})
+	expect(await worldView(page)).toEqual(initial)
+
+	await page.mouse.move(box.x + 100, box.y + 55, { steps: 3 })
+	await expect.poll(() => worldView(page)).not.toEqual(initial)
+	await page.mouse.up()
+	await expect(map).toHaveCSS('cursor', 'grab')
 })
 
 test('minimap remeasures the visible viewport when the assistant opens and closes', async ({

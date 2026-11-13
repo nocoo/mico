@@ -13,6 +13,7 @@ import {
 import type { Shape } from '../../shared/types.ts'
 import { panelViewportInset } from '../viewport.ts'
 import { jellyStyle } from './jelly.ts'
+import { viewportAfterOverviewDrag } from './minimap.ts'
 import './canvas-minimap.css'
 
 export interface CanvasMinimapProps {
@@ -57,6 +58,13 @@ export function CanvasMinimap({
 	const [canvas, setCanvas] = useState<OverviewCanvasSize>({ width: 1, height: 1, rightInset: 0 })
 	const [dragging, setDragging] = useState(false)
 	const frozenProjection = useRef<OverviewProjection | null>(null)
+	const dragStart = useRef<{
+		point: { x: number; y: number }
+		viewport: CanvasMinimapProps['viewport']
+		clientX: number
+		clientY: number
+		moved: boolean
+	} | null>(null)
 	const pointerId = useRef<number | null>(null)
 	const pointerTarget = useRef<SVGSVGElement | null>(null)
 	const renderedCanvasId = useRef(canvasId)
@@ -101,6 +109,7 @@ export function CanvasMinimap({
 		pointerTarget.current = null
 		pointerId.current = null
 		frozenProjection.current = null
+		dragStart.current = null
 		setDragging(false)
 	}, [canvasId])
 
@@ -123,25 +132,32 @@ export function CanvasMinimap({
 
 	const finishDrag = (target = pointerTarget.current) => {
 		const activePointer = pointerId.current
-		if (target && activePointer !== null && target.hasPointerCapture(activePointer)) {
-			target.releasePointerCapture(activePointer)
-		}
 		pointerTarget.current = null
 		pointerId.current = null
 		frozenProjection.current = null
+		dragStart.current = null
 		setDragging(false)
+		if (target && activePointer !== null && target.hasPointerCapture(activePointer)) {
+			target.releasePointerCapture(activePointer)
+		}
 	}
 
 	const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
-		if (event.button !== 0) return
+		if (event.button !== 0 || pointerId.current !== null) return
 		event.preventDefault()
 		event.currentTarget.parentElement?.focus()
 		frozenProjection.current = projection
+		dragStart.current = {
+			point: pointInOverview(event),
+			viewport: { ...viewport },
+			clientX: event.clientX,
+			clientY: event.clientY,
+			moved: false,
+		}
 		pointerId.current = event.pointerId
 		pointerTarget.current = event.currentTarget
 		setDragging(true)
 		event.currentTarget.setPointerCapture(event.pointerId)
-		navigate(event, projection)
 	}
 
 	const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -179,12 +195,31 @@ export function CanvasMinimap({
 				data-canvas-id={canvasId}
 				onPointerDown={onPointerDown}
 				onPointerMove={(event) => {
-					if (event.pointerId === pointerId.current && frozenProjection.current) {
-						navigate(event, frozenProjection.current)
+					const activeProjection = frozenProjection.current
+					const start = dragStart.current
+					if (event.pointerId !== pointerId.current || !activeProjection || !start) return
+					if (
+						!start.moved &&
+						Math.hypot(event.clientX - start.clientX, event.clientY - start.clientY) < 3
+					) {
+						return
 					}
+					start.moved = true
+					onViewportChange(
+						viewportAfterOverviewDrag(
+							activeProjection,
+							start.viewport,
+							canvas,
+							start.point,
+							pointInOverview(event),
+						),
+					)
 				}}
 				onPointerUp={(event) => {
-					if (event.pointerId === pointerId.current) finishDrag(event.currentTarget)
+					if (event.pointerId !== pointerId.current) return
+					const activeProjection = frozenProjection.current
+					if (activeProjection && !dragStart.current?.moved) navigate(event, activeProjection)
+					finishDrag(event.currentTarget)
 				}}
 				onPointerCancel={(event) => {
 					if (event.pointerId === pointerId.current) finishDrag(event.currentTarget)

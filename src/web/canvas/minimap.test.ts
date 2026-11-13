@@ -7,6 +7,7 @@ import {
 	projectOverviewRect,
 	viewportCenteredOn,
 } from '../../shared/overview.ts'
+import { viewportAfterOverviewDrag } from './minimap.ts'
 
 const projection: OverviewProjection = {
 	width: 176,
@@ -36,6 +37,19 @@ test('minimap navigation centers the visible canvas within reserved assistant wi
 		right: 406,
 		bottom: 160,
 	})
+})
+
+test('minimap drag moves the starting viewport by the pointer displacement', () => {
+	assert.deepEqual(
+		viewportAfterOverviewDrag(
+			projection,
+			{ x: 100, y: 60, zoom: 2 },
+			{ width: 1200, height: 800, rightInset: 200 },
+			{ x: 20, y: 30 },
+			{ x: 40, y: 60 },
+		),
+		{ x: 20, y: -60, zoom: 2 },
+	)
 })
 
 test('viewport outline projection clamps to finite minimap bounds', () => {

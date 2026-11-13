@@ -38,7 +38,7 @@
 	overflow: hidden;
 	border-radius: 16px;
 	background: light-dark(oklch(0.98 0.008 285 / 0.52), oklch(0.2 0.025 285 / 0.56));
-	cursor: crosshair;
+	cursor: grab;
 	outline: 0;
 	touch-action: none;
 	user-select: none;
