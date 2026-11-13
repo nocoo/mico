@@ -55,9 +55,9 @@ No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). T
 `pnpm hooks:install` points Git at `.githooks/` (`core.hooksPath`); run it once per clone. Both hooks are check-only and never rewrite the index or the working tree.
 
 - `pre-commit` runs S2, S1 and L1 inside a snapshot of the index (`git checkout-index` into a temporary directory with `node_modules` symlinked), then G1 with `gitleaks git --staged`. An unstaged fix cannot hide a staged defect.
-- `pre-push` walks the refs on stdin, creates a detached worktree for each pushed OID, and runs B1 build, L3 integration and G2 `osv-scanner` against that OID's lockfile. Deletions are skipped.
+- `pre-push` walks the refs on stdin, creates a detached worktree for each pushed OID, and runs B1 build, L3 integration and G2 `osv-scanner` against that OID's lockfile. It verifies that the installed lockfile matches the pushed OID, then invokes the installed build binaries directly so pnpm cannot relink the shared `node_modules` from the temporary worktree. Deletions are skipped.
 
-L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minute pre-push target. A missing `pnpm`, `gitleaks` or `osv-scanner` fails the gate with a message; never bypass it with `--no-verify`.
+L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minute pre-push target. Missing build binaries, `gitleaks` or `osv-scanner` fail the gate; never bypass it with `--no-verify`.
 
 ## Isolation
 

@@ -6,7 +6,7 @@ set -eu
 repo=$(git rev-parse --show-toplevel)
 cd "$repo"
 
-for tool in node pnpm osv-scanner; do
+for tool in node osv-scanner; do
 	command -v "$tool" >/dev/null 2>&1 || {
 		echo "pre-push: $tool is missing; install it instead of bypassing the gate" >&2
 		exit 1
@@ -22,13 +22,15 @@ check() {
 	echo "pre-push: $local_ref ($local_oid)"
 	git worktree add --detach "$directory/tree" "$local_oid" >/dev/null
 	ln -s "$repo/node_modules" "$directory/tree/node_modules"
+	git show "$local_oid:pnpm-lock.yaml" >"$directory/pnpm-lock.yaml"
 
-	if ! (cd "$directory/tree" && pnpm run build && node scripts/run-tests.ts integration); then
+	if ! cmp -s "$directory/pnpm-lock.yaml" "$repo/node_modules/.pnpm/lock.yaml"; then
+		echo "pre-push: installed dependencies do not match $local_oid; install its lockfile first" >&2
+		failed=1
+	elif ! (cd "$directory/tree" && node_modules/.bin/tsc --noEmit && node_modules/.bin/vite build && node scripts/run-tests.ts integration); then
 		echo "pre-push: build or integration failed for $local_oid" >&2
 		failed=1
 	fi
-
-	git show "$local_oid:pnpm-lock.yaml" >"$directory/pnpm-lock.yaml"
 	if ! osv-scanner scan --lockfile="$directory/pnpm-lock.yaml" >/dev/null; then
 		echo "pre-push: dependency scan failed for $local_oid" >&2
 		failed=1
