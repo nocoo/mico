@@ -48,6 +48,7 @@ test('copyable card fragments render inside the isolated HTML card', async ({
 			reportBottom: report.getBoundingClientRect().bottom,
 			panelRadius: getComputedStyle(panel).borderRadius,
 			bodyBackground: getComputedStyle(doc.body).backgroundColor,
+			bodyColor: getComputedStyle(doc.body).color,
 			heroBackground: getComputedStyle(hero).backgroundImage,
 			tileBackground: getComputedStyle(tile).backgroundImage,
 			tileShadow: getComputedStyle(tile).boxShadow,
@@ -59,9 +60,14 @@ test('copyable card fragments render inside the isolated HTML card', async ({
 	expect(metrics.reportBottom).toBeLessThanOrEqual(metrics.clientHeight)
 	expect(metrics.panelRadius).toBe('20px')
 	expect(metrics.bodyBackground).toBe('rgba(0, 0, 0, 0)')
-	expect(metrics.heroBackground).toContain('linear-gradient')
-	expect(metrics.tileBackground).toContain('linear-gradient')
-	expect(metrics.tileShadow).not.toBe('none')
+	expect(metrics.bodyColor).toBe('oklch(0.27 0.04 285)')
+	expect(metrics.heroBackground).toBe(
+		'linear-gradient(135deg, oklch(0.42 0.13 285), oklch(0.3 0.09 262))',
+	)
+	expect(metrics.tileBackground).toBe(
+		'linear-gradient(158deg, oklch(0.968 0.0425 236 / 0.92), oklch(0.9 0.085 236 / 0.92))',
+	)
+	expect(metrics.tileShadow).toContain('oklch(0.7 0.1275 236 / 0.45)')
 	expect(metrics.eyebrowColor).toBe('oklch(0.47 0.035 285)')
 	await page.locator('[data-shape-id="design-card"]').screenshot({
 		path: testInfo.outputPath('html-card-design.png'),
