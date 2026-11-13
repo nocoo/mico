@@ -66,7 +66,7 @@ async function withLiveDaemon(run: (context: LiveContext) => Promise<void>): Pro
 	} finally {
 		if (daemon) {
 			for (const client of daemon.wss.clients) client.terminate()
-			daemon.close()
+			await daemon.close()
 		}
 		rmSync(directory, { recursive: true, force: true })
 	}

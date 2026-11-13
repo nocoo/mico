@@ -1,0 +1,37 @@
+services:
+  mico:
+    build:
+      context: .
+      args:
+        NPM_REGISTRY: ${NPM_REGISTRY:-https://packagefeedproxy.microsoft.io/npm/}
+    image: mico:local
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:47063:47063"
+    environment:
+      MAGPIE_BASE_URL: ${MICO_DOCKER_MAGPIE_BASE_URL:-http://host.docker.internal:3425/v1}
+      MAGPIE_MODEL: ${MAGPIE_MODEL:-auto/gpt-6-luna}
+      MAGPIE_API_KEY: ${MAGPIE_API_KEY-magpie}
+      MAGPIE_LECTURE_REASONING: ${MAGPIE_LECTURE_REASONING:-none}
+      AZURE_MAI_HOST: ${AZURE_MAI_HOST:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-}
+      MOSS_API_KEY: ${MOSS_API_KEY:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - mico-data:/data
+      - mico-settings:/home/node/.config/mico
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  mico-data:
+  mico-settings:

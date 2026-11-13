@@ -1,5 +1,14 @@
 # Retrospective
 
+## Docker packaging verification
+
+- The first runtime image copied only `src/server`, `src/shared` and `src/cli`; `store.ts` imports geometry from `src/web`, so the image built successfully but the container crashed on startup. Copy the complete source tree (excluding tests) and require health plus browser acceptance against the final image, not just a successful frontend build. Static serving remains restricted to `dist`.
+- Static serving initially used `sirv`; review found its unchecked range parsing could throw after response headers and mishandle zero/suffix ranges. Replace it with `serve-static`, test zero/suffix/invalid/oversized ranges, and preserve the error callback. Voice proxy early returns also needed error listeners before credential checks; long Unicode upstream errors now use a bounded generic close reason. Docker signals now drain in-flight requests before closing SQLite, with a real SIGTERM/write regression.
+- Replacing the static-serving dependency while a chained browser run was still active let the first 94 tests pass but broke the next fixture startup. Finish dependency changes before starting final validation, and rerun the entire command against one stable tree. Browser screenshots must also wait for loaded Audio controls and disable entrance animation rather than treating an in-progress frame as a rendering defect.
+- Updating test assertions revealed that `assert.deepEqual(errors, [])` narrows a later mutable error list to `never[]`, and Node fetch adds cache-bypass headers to conditional requests. Check the error count before later listeners and explicitly send revalidation cache headers when testing HTTP 304.
+- Adding static-serving dependencies through the local npm mirror rewrote unrelated lockfile resolutions with mirror tarball URLs. Restore those existing entries, retain only the new dependency entries, and verify a frozen install plus Docker build before committing. Registry selection belongs in the build argument, not the lockfile.
+- A Herdr prompt supplied `--timeout` without `--wait` and was rejected before delivery. Use the supported paired flags and inspect the pane after a bounded timeout. The proxy worker also hit an ambiguous edit anchor and a mock WebSocket timing/type assumption; anchor edits on the containing block, and wait for an explicit event rather than one event-loop turn.
+
 ## MOSS Live verification
 
 - Real two-speaker meetings confirmed acknowledged native tool continuations but not reliable meeting capture: later provider responses failed or were never generated, leaving decisions and owners uncaptured. A recorder completing without JavaScript errors is not a successful meeting evaluation; count provider failure events and inspect actual content before publishing.

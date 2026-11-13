@@ -104,68 +104,94 @@ export function pipeMossSockets(
 	})
 }
 
-export function mossRealtimeProxy(options: MossRealtimeProxyOptions): Plugin {
+export function createMossProxy(options: MossRealtimeProxyOptions): {
+	upgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void
+	close(): void
+} {
 	const maxPayload = options.maxPayload ?? MOSS_MAX_PAYLOAD
 	const maxBufferedBytes = options.maxBufferedBytes ?? MOSS_MAX_BUFFERED_BYTES
 	const createUpstream =
 		options.createUpstream ?? ((url, upstreamOptions) => new WebSocket(url, upstreamOptions))
+	const wss = new WebSocketServer({ noServer: true, maxPayload })
+	const upstreams = new Set<WebSocket>()
+	let closed = false
 
-	const attach = (server: ViteDevServer | PreviewServer) => {
-		const wss = new WebSocketServer({ noServer: true, maxPayload })
-
-		const onUpgrade = (req: IncomingMessage, socket: Duplex, head: Buffer) => {
-			let pathname: string
-			try {
-				pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
-			} catch {
-				socket.destroy()
-				return
-			}
-			if (pathname !== MOSS_LOCAL_PATH) return
-			if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host)) {
-				socket.destroy()
-				return
-			}
-
-			wss.handleUpgrade(req, socket, head, (client) => {
-				if (!options.apiKey) {
-					client.send(
-						JSON.stringify({
-							action: 'proxy.error',
-							message: 'MOSS_API_KEY is missing from server environment',
-						}),
-					)
-					client.close(1008, 'MOSS key unavailable')
-					return
-				}
-
-				let upstream: WebSocket
-				try {
-					upstream = createUpstream(MOSS_UPSTREAM_URL, {
-						headers: { Authorization: `Bearer ${options.apiKey}` },
-						maxPayload,
-					})
-				} catch {
-					client.send(
-						JSON.stringify({ action: 'proxy.error', message: 'Could not connect to MOSS Live.' }),
-					)
-					client.close(1011, 'MOSS upstream unavailable')
-					return
-				}
-
-				pipeMossSockets(client, upstream, maxBufferedBytes)
-				upstream.on('open', () => {
-					if (client.readyState === WebSocket.OPEN) {
-						client.send(JSON.stringify({ action: 'proxy.ready' }))
-					}
-				})
-			})
+	const upgrade = (req: IncomingMessage, socket: Duplex, head: Buffer) => {
+		if (closed) {
+			socket.destroy()
+			return
 		}
 
-		server.httpServer?.on('upgrade', onUpgrade)
-		server.httpServer?.once('close', () => {
-			server.httpServer?.off('upgrade', onUpgrade)
+		let pathname: string
+		try {
+			pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
+		} catch {
+			socket.destroy()
+			return
+		}
+		if (pathname !== MOSS_LOCAL_PATH) return
+		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host)) {
+			socket.destroy()
+			return
+		}
+
+		wss.handleUpgrade(req, socket, head, (client) => {
+			client.on('error', () => client.terminate())
+
+			if (!options.apiKey) {
+				client.send(
+					JSON.stringify({
+						action: 'proxy.error',
+						message: 'MOSS_API_KEY is missing from server environment',
+					}),
+				)
+				client.close(1008, 'MOSS key unavailable')
+				return
+			}
+
+			let upstream: WebSocket
+			try {
+				upstream = createUpstream(MOSS_UPSTREAM_URL, {
+					headers: { Authorization: `Bearer ${options.apiKey}` },
+					maxPayload,
+				})
+			} catch {
+				client.send(
+					JSON.stringify({ action: 'proxy.error', message: 'Could not connect to MOSS Live.' }),
+				)
+				client.close(1011, 'MOSS upstream unavailable')
+				return
+			}
+
+			upstreams.add(upstream)
+			upstream.once('close', () => upstreams.delete(upstream))
+			pipeMossSockets(client, upstream, maxBufferedBytes)
+			upstream.on('open', () => {
+				if (client.readyState === WebSocket.OPEN) {
+					client.send(JSON.stringify({ action: 'proxy.ready' }))
+				}
+			})
+		})
+	}
+
+	return {
+		upgrade,
+		close() {
+			closed = true
+			for (const upstream of upstreams) upstream.terminate()
+			for (const client of wss.clients) client.terminate()
 			wss.close()
+		},
+	}
+}
+
+export function mossRealtimeProxy(options: MossRealtimeProxyOptions): Plugin {
+	const attach = (server: ViteDevServer | PreviewServer) => {
+		const proxy = createMossProxy(options)
+		server.httpServer?.on('upgrade', proxy.upgrade)
+		server.httpServer?.once('close', () => {
+			server.httpServer?.off('upgrade', proxy.upgrade)
+			proxy.close()
 		})
 	}
 

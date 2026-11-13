@@ -525,7 +525,7 @@ async function withDaemon(
 		})
 	} finally {
 		for (const client of daemon.wss.clients) client.terminate()
-		daemon.close()
+		await daemon.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
@@ -728,7 +728,7 @@ test('AI settings updates create the model used by subsequent chats', async () =
 		})
 	} finally {
 		for (const client of daemon.wss.clients) client.terminate()
-		daemon.close()
+		await daemon.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })

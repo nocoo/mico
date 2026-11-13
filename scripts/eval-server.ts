@@ -192,7 +192,7 @@ export async function startEvalServer(dbPathValue: string | undefined, identityV
 			},
 		})
 	} catch (error) {
-		daemon.close()
+		await daemon.close()
 		rmSync(cacheDirectory, { recursive: true, force: true })
 		throw error
 	}
@@ -203,7 +203,7 @@ export async function startEvalServer(dbPathValue: string | undefined, identityV
 		stopping = true
 		await vite.close()
 		for (const client of daemon.wss.clients) client.terminate()
-		daemon.close()
+		await daemon.close()
 		rmSync(cacheDirectory, { recursive: true, force: true })
 	}
 

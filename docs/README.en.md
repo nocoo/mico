@@ -91,6 +91,16 @@ pnpm dev
 
 Open <https://mico.dev.hexly.ai/>. Caddy proxies to Vite on `127.0.0.1:7063`; Vite proxies `/api` (including WebSocket upgrades) to the loopback-only daemon on `127.0.0.1:37063`. The browser uses same-origin HTTPS/WSS, never mixed-content loopback requests. The daemon stores all canvases in `.mico/board.sqlite`; a database created by an older single-board version is migrated to a canvas named “My canvas” on first start.
 
+### Local Docker deployment
+
+```sh
+docker compose up --build -d --wait
+```
+
+Open <http://127.0.0.1:47063/>. One non-root container serves the production UI, API, canvas WebSocket and both voice proxies. Named volumes retain canvases, images and AI settings across container recreation without touching the host's daily board. Provider credentials are optional for ordinary drawing. The port is published on loopback only; Mico is not an authenticated public server.
+
+See [the Docker guide](docker.md) for provider configuration, persistence, shutdown and the isolated Chrome acceptance check.
+
 ### Agent CLI
 
 Commands write JSON to standard output; errors go to standard error and return a nonzero exit code. The CLI talks directly to the local daemon without a model provider or cloud service.
@@ -161,7 +171,7 @@ After a recorded or MAI session ends, the summary request asks AI to create or u
 
 The evaluation harness [`../scripts/run-ai-cases.ts`](../scripts/run-ai-cases.ts) feeds the case scripts to the daemon sentence by sentence, then requests the post-session summary. Round artifacts, board snapshots and screenshots live under [`../evals/runs/`](../evals/runs/). The explicitly authorized live-case runner uses fixed fictional transcripts in `evals/cases/c11-er-handover.zh.txt` or `evals/cases/c12-service-incident.zh.txt`: `pnpm eval:live-case 4 --case incident --confirm-live-canvas` creates and activates a new canvas for the incident round; it never deletes or restores another canvas.
 
-The MOSS and MAI proxies run through Vite. A static production build needs equivalent server-side WebSocket proxies for either live provider.
+Development uses the Vite adapters for MOSS and MAI. The [Docker runtime](docker.md) serves the built frontend and reuses the same server-side proxies without Vite.
 
 ## Tests
 
@@ -198,6 +208,8 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 | Playwright    | Browser interaction tests                           |
 
 ## Documentation
+
+- [`docker.md`](docker.md) — Local Docker deployment, persistence and acceptance checks.
 
 - [`testing.md`](testing.md) — testing layers, isolation and the agent API contract.
 - [`prototypes/`](prototypes/) — standalone interface prototypes.

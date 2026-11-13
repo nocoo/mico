@@ -44,7 +44,7 @@ const shutdown = async () => {
 	stopping = true
 	await vite.close()
 	for (const client of daemon.wss.clients) client.terminate()
-	daemon.close()
+	await daemon.close()
 	rmSync(directory, { recursive: true, force: true })
 }
 

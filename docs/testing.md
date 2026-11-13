@@ -126,6 +126,12 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 - `src/web/canvas/history.test.ts` and `src/server/history.test.ts` cover the fixed 20-step limit, branching, exact optional fields, delete cascades, frame/image references, stacking order, image limits and conflicts with external work.
 - `tests/browser/minimap.spec.ts` and `tests/browser/history.spec.ts` cover real pointer/keyboard navigation, canvas-list previews, responsive placement, undo/redo buttons and shortcuts, native text editing, canvas switching, refresh, request rejection and unrelated/concurrent API edits.
 
+## Docker acceptance
+
+`docker compose --env-file /dev/null build && node scripts/docker-smoke.ts` checks the actual production image on `127.0.0.1:47063` using a unique Compose project, isolated volumes, empty provider credentials and headless Chrome. It covers UI drawing, API/WebSocket synchronization, audio ranges, image storage, CLI access, security boundaries and persistence after container recreation. It cleans up only its own containers and volumes, retaining screenshots and logs in the OS temporary directory. See [docker.md](docker.md).
+
+`src/server/production.test.ts` and `src/server/realtimeProxy.test.ts` run in L3 without Docker. They cover production asset serving, HTTP caching/ranges, missing-file and source-file rejection, same-origin API/events, provider upgrade routing, missing credentials and mock upstream forwarding.
+
 ## Known gaps
 
 - Pixel comparisons cover the pinned prototype's light-theme backdrop, notes, shapes, text, ink, connector, selection marquee and HTML card shell. Other themes, arbitrary generated card contents and all animation frames are not exhaustively compared.

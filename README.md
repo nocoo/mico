@@ -91,6 +91,16 @@ pnpm dev
 
 打开 <https://mico.dev.hexly.ai/>。Caddy 把请求代理到 `127.0.0.1:7063` 的 Vite；Vite 把 `/api`（含 WebSocket 升级）代理到只监听回环地址的 `127.0.0.1:37063` 守护进程。浏览器始终用同源 HTTPS/WSS，不会向回环地址发混合内容请求。所有画布保存在 `.mico/board.sqlite`；旧的单画板版本创建的数据库会在首次启动时迁移成名为「My canvas」的画布。
 
+### Local Docker deployment
+
+```sh
+docker compose up --build -d --wait
+```
+
+Open <http://127.0.0.1:47063/>. One non-root container serves the production UI, API, canvas WebSocket and both voice proxies. Named volumes retain canvases, images and AI settings across container recreation without touching the host's daily board. Provider credentials are optional for ordinary drawing. The port is published on loopback only; Mico is not an authenticated public server.
+
+See [the Docker guide](docs/docker.md) for provider configuration, persistence, shutdown and the isolated Chrome acceptance check.
+
 ### Agent CLI
 
 命令把 JSON 写到标准输出，错误写到标准错误并返回非零退出码。CLI 直连本地守护进程，不经过模型服务或云服务。
@@ -161,7 +171,7 @@ After a recorded or MAI session ends, the summary request asks AI to create or u
 
 评估脚本 [`scripts/run-ai-cases.ts`](scripts/run-ai-cases.ts) 把案例脚本逐句喂给守护进程，然后请求会后摘要。轮次产物、画板快照和截图放在 [`evals/runs/`](evals/runs/)。经明确授权的实时案例运行器使用固定虚构稿 `evals/cases/c11-er-handover.zh.txt` 或 `evals/cases/c12-service-incident.zh.txt`：`pnpm eval:live-case 4 --case incident --confirm-live-canvas` 会为 incident 轮次创建并激活新画布，不会删除或恢复其他画布。
 
-MOSS 和 MAI 代理走 Vite。静态生产构建需要为这两个实时服务各配一个等价的服务端 WebSocket 代理。
+Development uses the Vite adapters for MOSS and MAI. The [Docker runtime](docs/docker.md) serves the built frontend and reuses the same server-side proxies without Vite.
 
 ## 测试
 
@@ -199,6 +209,7 @@ pnpm hooks:install    # 一次性：把 core.hooksPath 指向 .githooks
 
 ## 文档
 
+- [`docs/docker.md`](docs/docker.md) — Local Docker deployment, persistence and acceptance checks.
 - [`docs/testing.md`](docs/testing.md) — 测试分层、隔离与 Agent API 契约。
 - [`docs/prototypes/`](docs/prototypes/) — 独立界面原型。
 - [`examples/`](examples/) — Agent 批量示例和 TypeScript 生成器。

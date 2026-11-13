@@ -1,7 +1,9 @@
+import { statSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { LanguageModel } from 'ai'
+import serveStatic from 'serve-static'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
@@ -14,7 +16,9 @@ import {
 } from './ai.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
+import { createMaiProxy, MAI_CONFIG_PATH, MAI_LOCAL_PATH } from './maiProxy.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
+import { createMossProxy, MOSS_LOCAL_PATH } from './mossProxy.ts'
 import { BoardStore, OperationError } from './store.ts'
 
 function parsePort(): number {
@@ -216,7 +220,7 @@ export interface Daemon {
 	aiSettings: AiSettingsStore
 	imageGeneration: ImageGenerationService
 	wss: WebSocketServer
-	close(): void
+	close(): Promise<void>
 }
 
 export function createDaemon(
@@ -228,9 +232,28 @@ export function createDaemon(
 		env?: NodeJS.ProcessEnv
 		createAiModel?: (settings: MagpieSettings) => LanguageModel
 		imageGenerator?: ImageGenerator
+		staticDir?: string
 	} = {},
 ): Daemon {
 	const port = options.port ?? parsePort()
+	const env = options.env ?? process.env
+	if (options.staticDir && !statSync(resolve(options.staticDir, 'index.html')).isFile()) {
+		throw new Error('MICO_STATIC_DIR must contain a built index.html')
+	}
+	const assets = options.staticDir
+		? serveStatic(options.staticDir, {
+				etag: true,
+				maxAge: 0,
+				setHeaders: (res) => res.setHeader('X-Content-Type-Options', 'nosniff'),
+			})
+		: undefined
+	const maiOptions = {
+		host: env.AZURE_MAI_HOST ?? '',
+		apiKey: env.AZURE_OPENAI_API_KEY ?? '',
+		deployment: env.AZURE_OPENAI_DEPLOYMENT ?? '',
+	}
+	const mai = assets ? createMaiProxy(maiOptions) : undefined
+	const moss = assets ? createMossProxy({ apiKey: env.MOSS_API_KEY ?? '' }) : undefined
 	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
 	const store = new BoardStore(dbPath)
 	const settingsPath = options.settingsPath
@@ -321,6 +344,37 @@ export function createDaemon(
 		}
 
 		try {
+			if (assets && pathname === MAI_CONFIG_PATH) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendJson(
+					res,
+					200,
+					{
+						host: maiOptions.host,
+						deployment: maiOptions.deployment,
+						localPath: MAI_LOCAL_PATH,
+					},
+					origin,
+				)
+				return
+			}
+			if (assets && (req.method === 'GET' || req.method === 'HEAD') && segments[0] !== 'api') {
+				assets(req, res, (error) => {
+					if (res.headersSent) {
+						res.destroy()
+						return
+					}
+					res.removeHeader('Content-Length')
+					const status = error?.statusCode ?? 404
+					sendError(res, status, 'STATIC_FILE_ERROR', 'Could not serve file', origin)
+				})
+				return
+			}
+
 			if (isPath('api', 'live')) {
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET, OPTIONS')
@@ -616,6 +670,14 @@ export function createDaemon(
 			socket.destroy()
 			return
 		}
+		if (mai && pathname === MAI_LOCAL_PATH) {
+			mai.upgrade(req, socket, head)
+			return
+		}
+		if (moss && pathname === MOSS_LOCAL_PATH) {
+			moss.upgrade(req, socket, head)
+			return
+		}
 		if (pathname !== '/api/events') {
 			socket.write('HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n')
 			socket.destroy()
@@ -627,26 +689,39 @@ export function createDaemon(
 		})
 	})
 
+	let closing: Promise<void> | undefined
 	return {
 		server,
 		store,
 		aiSettings,
 		imageGeneration,
 		wss,
-		close(): void {
-			imageGeneration.close()
-			wss.close()
-			store.close()
-			server.close()
+		close(): Promise<void> {
+			closing ??= new Promise<void>((resolveClose) => {
+				const timeout = setTimeout(() => server.closeAllConnections(), 5000)
+				timeout.unref()
+				server.close(() => {
+					clearTimeout(timeout)
+					store.close()
+					resolveClose()
+				})
+				imageGeneration.close()
+				mai?.close()
+				moss?.close()
+				for (const client of wss.clients) client.terminate()
+				wss.close()
+			})
+			return closing
 		},
 	}
 }
 
 export function startDaemon(): Daemon {
 	const port = parsePort()
-	const daemon = createDaemon({ port })
-	daemon.server.listen(port, '127.0.0.1', () => {
-		console.log(`MICO daemon listening on http://127.0.0.1:${port}`)
+	const host = process.env.MICO_HOST || '127.0.0.1'
+	const daemon = createDaemon({ port, staticDir: process.env.MICO_STATIC_DIR })
+	daemon.server.listen(port, host, () => {
+		console.log(`MICO daemon listening on http://${host}:${port}`)
 	})
 	return daemon
 }
@@ -655,8 +730,8 @@ const entry = process.argv[1] ? resolve(process.argv[1]) : undefined
 if (entry === fileURLToPath(import.meta.url)) {
 	const daemon = startDaemon()
 	const shutdown = (): void => {
-		daemon.close()
-		process.exit(0)
+		console.log('MICO daemon stopping')
+		void daemon.close().then(() => process.exit(0))
 	}
 	process.on('SIGINT', shutdown)
 	process.on('SIGTERM', shutdown)

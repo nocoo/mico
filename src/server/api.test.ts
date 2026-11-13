@@ -33,7 +33,7 @@ async function withDaemon(run: (url: string, daemon: Daemon) => Promise<void>): 
 	} finally {
 		if (daemon) {
 			for (const client of daemon.wss.clients) client.terminate()
-			daemon.close()
+			await daemon.close()
 		}
 		rmSync(directory, { recursive: true, force: true })
 	}
