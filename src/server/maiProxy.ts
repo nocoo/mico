@@ -79,7 +79,7 @@ export function createMaiProxy(options: MaiProxyOptions): {
 			let upstream: WebSocket | undefined
 
 			client.on('message', (data, isBinary) => {
-				if (clientClosed) return
+				if (clientClosed || client.readyState !== WebSocket.OPEN) return
 				if (upstream?.readyState === WebSocket.OPEN) {
 					if (upstream.bufferedAmount >= maxBytes) {
 						client.close(1013, 'MAI upstream backpressure exceeded')
@@ -162,7 +162,11 @@ export function createMaiProxy(options: MaiProxyOptions): {
 				upstreams.add(upstream)
 				const activeUpstream = upstream
 				activeUpstream.on('open', () => {
-					if (closed || clientClosed || activeUpstream.readyState !== WebSocket.OPEN) return
+					if (closed || clientClosed || client.readyState !== WebSocket.OPEN) {
+						activeUpstream.close()
+						return
+					}
+					if (activeUpstream.readyState !== WebSocket.OPEN) return
 					for (const [data, isBinary] of backlog.splice(0)) {
 						activeUpstream.send(data, { binary: isBinary })
 					}

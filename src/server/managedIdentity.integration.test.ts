@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { once } from 'node:events'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -51,6 +52,10 @@ test('MAI queues session.update before async bearer retrieval and forwards Autho
 	})
 	const upstreamAddress = upstreamServer.address() as AddressInfo
 	let bearerCalls = 0
+	let releaseBearer: (token: string) => void = () => {}
+	const bearer = new Promise<string>((resolve) => {
+		releaseBearer = resolve
+	})
 	let upstreamAuthorization: string | undefined
 	const httpServer = createServer()
 	await new Promise<void>((resolve) => httpServer.listen(0, '127.0.0.1', resolve))
@@ -63,8 +68,10 @@ test('MAI queues session.update before async bearer retrieval and forwards Autho
 		allowedOrigin,
 		bearerProvider: async () => {
 			bearerCalls++
-			await new Promise((resolve) => setTimeout(resolve, 20))
-			return 'fresh-token'
+			return bearer
+		},
+		onConnection: (_request, client) => {
+			client.once('message', () => releaseBearer('fresh-token'))
 		},
 		createUpstream(url, options) {
 			upstreamAuthorization =
@@ -74,21 +81,12 @@ test('MAI queues session.update before async bearer retrieval and forwards Autho
 		},
 	})
 	httpServer.on('upgrade', proxy.upgrade)
-	const peerConnected = new Promise<WebSocket>((resolve) => {
-		upstreamServer.once('connection', resolve)
-	})
+	const peerConnected = once(upstreamServer, 'connection', { signal: AbortSignal.timeout(5000) })
 	const client = new WebSocket(`ws://127.0.0.1:${address.port}${MAI_LOCAL_PATH}`, {
 		origin: `http://127.0.0.1:${address.port}`,
 	})
 	try {
-		await new Promise<void>((resolve, reject) => {
-			const onError = (error: Error) => reject(error)
-			client.once('error', onError)
-			client.once('open', () => {
-				client.off('error', onError)
-				resolve()
-			})
-		})
+		await once(client, 'open', { signal: AbortSignal.timeout(5000) })
 		const sessionUpdate = JSON.stringify({
 			type: 'session.update',
 			session: {
@@ -97,21 +95,61 @@ test('MAI queues session.update before async bearer retrieval and forwards Autho
 			},
 		})
 		client.send(sessionUpdate)
-		const peer = await peerConnected
-		const forwarded = await new Promise<string>((resolve, reject) => {
-			peer.once('message', (data) => resolve(data.toString()))
-			peer.once('error', reject)
-		})
-		assert.equal(forwarded, sessionUpdate)
+		const [peer] = (await peerConnected) as [WebSocket, unknown]
+		const [forwarded] = await once(peer, 'message', { signal: AbortSignal.timeout(5000) })
+		assert.equal(forwarded.toString(), sessionUpdate)
 		assert.equal(bearerCalls, 1)
 		assert.equal(upstreamAuthorization, 'Bearer fresh-token')
 	} finally {
-		client.removeAllListeners('error')
+		client.on('error', () => {})
 		client.terminate()
 		proxy.close()
 		await new Promise<void>((resolve) => httpServer.close(() => resolve()))
 		for (const peer of upstreamServer.clients) peer.terminate()
 		await new Promise<void>((resolve) => upstreamServer.close(() => resolve()))
+	}
+})
+
+test('MAI closes a bounded pre-auth queue and never connects after client cancellation', async () => {
+	let release: (token: string) => void = () => {}
+	const bearer = new Promise<string>((resolve) => {
+		release = resolve
+	})
+	let upstreams = 0
+	const server = createServer()
+	await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+	const port = (server.address() as AddressInfo).port
+	const origin = `http://127.0.0.1:${port}`
+	const proxy = createMaiProxy({
+		host: 'resource.services.ai.azure.com',
+		apiKey: '',
+		deployment: 'speech',
+		allowedOrigin: origin,
+		maxBacklogFrames: 1,
+		bearerProvider: () => bearer,
+		createUpstream() {
+			upstreams++
+			throw new Error('Unexpected upstream')
+		},
+	})
+	server.on('upgrade', proxy.upgrade)
+	const client = new WebSocket(`ws://127.0.0.1:${port}/mai/realtime`, { origin })
+	client.on('error', () => {})
+	try {
+		await once(client, 'open', { signal: AbortSignal.timeout(5000) })
+		const closed = once(client, 'close', { signal: AbortSignal.timeout(5000) })
+		client.send('{"type":"session.update"}')
+		client.send('{"type":"input_audio_buffer.append"}')
+		const [code] = await closed
+		assert.equal(code, 1013)
+		release('late-token')
+		await bearer
+		await new Promise<void>((resolve) => setImmediate(resolve))
+		assert.equal(upstreams, 0)
+	} finally {
+		client.terminate()
+		proxy.close()
+		await new Promise<void>((resolve) => server.close(() => resolve()))
 	}
 })
 
