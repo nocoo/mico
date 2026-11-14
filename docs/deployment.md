@@ -7,7 +7,7 @@ Mico has one Node.js container runtime. Hosting provider, authentication and AI 
 | Option                             | Current path                                                                          | Data and operational trade-offs                                                                                                                                                                            |
 | ---------------------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Local Docker                       | `docker compose up --build -d --wait`; [guide](docker.md)                             | Loopback only. Named volumes retain SQLite and local settings.                                                                                                                                             |
-| Azure Container Apps               | [Azure preview guide](deployment-azure.md), automated provision/build/deploy          | HTTPS, ACR and managed-identity image pull. The first cloud preview intentionally uses ephemeral SQLite, one replica and no AI.                                                                            |
+| Azure Container Apps               | [Azure preview guide](deployment-azure.md), automated provision/build/deploy          | HTTPS, ACR and managed-identity image pull. The cloud preview uses ephemeral SQLite and one replica; Chat/MAI can be enabled with managed identity, while MOSS stays disabled.                             |
 | VM or another container host       | Run the same image behind an HTTPS reverse proxy; set the environment below           | A local persistent disk can retain SQLite. Operator owns TLS termination, updates and backups. No Azure-specific application changes required.                                                             |
 | Cloudflare in front of a container | Proxy the public hostname to an existing container host, or use a Tunnel to that host | The container still runs Node and owns SQLite. Configure its canonical HTTPS origin; prevent any unintended alternate-origin access. No Cloudflare automation or acceptance test is included yet.          |
 | Cloudflare-native runtime          | Future adapter, not an available deployment command                                   | Workers/Pages cannot run this Node HTTP/WebSocket server and `node:sqlite` unchanged. Workers + Durable Objects/D1 or Cloudflare Containers require separate lifecycle/storage integration and validation. |
@@ -29,7 +29,7 @@ The image serves UI, API and WebSocket traffic on one port. The reverse proxy mu
 | `MICO_AI_ENABLED`         | `true` (default) or `false`. False disables AI/voice/image-generation entrypoints and removes the requirement for Chat provider configuration. Manual drawing and image uploads still work. |
 | `MICO_EPHEMERAL`          | `true` displays the temporary-data warning. Default false. This is a notice, not a persistence implementation.                                                                              |
 
-AI configuration is documented separately in [ai-configuration.md](ai-configuration.md). With AI disabled, do not supply dummy provider credentials or a laptop gateway URL.
+AI configuration is documented separately in [ai-configuration.md](ai-configuration.md). `MICO_AI_AUTH_MODE` independently selects API-key or managed-identity provider authentication; it does not alter user login. `MICO_MOSS_ENABLED=false` disables MOSS even when Chat/MAI are enabled. With AI disabled, do not supply dummy provider credentials or a laptop gateway URL.
 
 ### Authentication is optional, not implicit
 
@@ -72,7 +72,7 @@ The application still has one shared workspace and active canvas. Authentication
 2. With Entra enabled, anonymous `/` opens the sign-in flow; `/api/state`, images and WebSocket upgrades reject anonymous callers.
 3. Sign-in reaches the registered SPA callback, establishes a server session and opens the canvas. Logout revokes the session.
 4. Draw a note, edit it and refresh; verify WebSocket synchronization in the same live replica.
-5. Open Debug beside Canvases to inspect the preview notice, AI availability, account and application version. Opening the app does not contact AI providers or request the microphone.
+5. Open Debug beside Canvases to inspect the preview notice, AI availability, account and application version. Disabled AI must not contact providers or request the microphone. For a managed-AI profile, validate Chat and MAI only after explicit usage authorization and verify MOSS remains disabled.
 6. Foreign Origin and forged/expired sessions are rejected.
 
 Local automated tests use mock identity keys and isolated databases; they do not prove the live Entra callback is registered. Record real browser sign-in as a separate manual acceptance step.

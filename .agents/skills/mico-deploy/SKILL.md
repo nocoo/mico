@@ -17,7 +17,7 @@ Resolve the repository root as `../../..` from this skill directory. Run command
 
 1. Distinguish **local preparation**, **hosted deployment**, and **GitHub release**. A request to document or prepare a release does not authorize changing Azure. An explicit deployment request authorizes the selected hosted update, not unrelated resources or Git publication.
 2. Default to the existing Azure preview only when that is the user's intended target. Other container hosts can use the same runtime; Cloudflare-native deployment is not implemented. Do not invent commands or silently provision another provider.
-3. The Azure adapter deliberately deploys **one replica, ephemeral SQLite and AI disabled**. Auth is independently `none` or `entra`; preserve the operator's explicit choice. Recreating the replica can erase boards/images and invalidate sessions. Surface this consequence before a first deployment or a change from durable storage.
+3. The Azure adapter deliberately deploys **one replica and ephemeral SQLite**. AI defaults off; an explicitly enabled profile uses Managed Identity for Chat and MAI and keeps MOSS disabled. User auth is independently `none` or `entra`; preserve the operator's explicit choices. Recreating the replica can erase boards/images and invalidate sessions. Surface this consequence before a first deployment or a change from durable storage.
 4. Never commit actual tenant/subscription IDs, resource group/name values, App IDs, user IDs, deployment origins, access tokens or environment files. Keep operator configuration and deployment records outside the repository. Never read or package the daily `.mico/board.sqlite`.
 5. Do not change Entra app registration, callbacks, consent, certificates, provider credentials or existing resource access without explicit authorization. Reusing an App ID does not authorize editing the other application's settings.
 6. Commit completed logical changes atomically, stage explicit paths and do not bypass hooks. Do not push Git, create tags or publish GitHub Releases unless requested. This skill deploys the current committed application version; use the repository's versioning procedure if a version bump/release is requested, rather than inventing a second version source.
@@ -26,11 +26,13 @@ Resolve the repository root as `../../..` from this skill directory. Run command
 
 Inspect `git status --short`, `package.json`, the lockfile and the intended change range. Preserve unrelated work, including untracked alternative lockfiles. The project uses **pnpm**, not Bun.
 
-Load only the operator-selected, trusted environment file. A conventional local path is:
+Load only the operator-selected, trusted environment file in a deployment-only shell or subshell. Keep local tests, commits and pushes in the clean parent shell so deployed auth/provider variables cannot contaminate isolated fixtures. A conventional local path is:
 
 ```sh
-source "${MICO_DEPLOY_ENV_FILE:-$HOME/.config/mico/deploy/azure-preview.env}"
-node scripts/deploy-azure.ts plan
+(
+  source "${MICO_DEPLOY_ENV_FILE:-$HOME/.config/mico/deploy/azure-preview.env}"
+  node scripts/deploy-azure.ts plan
+)
 ```
 
 `plan` validates environment values without touching Azure. Review the intended subscription, RG, region, registry, identity, environment, app and auth mode. Do not dump the full shell environment or any tokens.
@@ -45,10 +47,15 @@ They may differ. Never infer one from the other or change the Azure CLI default 
 For an **existing app**, inspect it read-only and compare actual auth/runtime/storage settings with the template before replacing them. Do not run `provision` on every update. For an authorized **first deployment** only:
 
 ```sh
-node scripts/deploy-azure.ts provision
+(
+  source "${MICO_DEPLOY_ENV_FILE:-$HOME/.config/mico/deploy/azure-preview.env}"
+  node scripts/deploy-azure.ts provision
+)
 ```
 
 That creates the dedicated identity, registry and environment and prints the future origin/callback. With Entra enabled, the operator adds the printed `/auth/callback` URI under **Single-page application**, retaining other redirects. No client secret is needed. An optional profile-photo request uses delegated `User.Read` through silent MSAL acquisition; base login scopes stay unchanged. Missing consent or a missing photo must not prevent login or drawing, and deployment must not trigger extra consent automatically.
+
+For managed AI, additionally verify the selected Foundry region supports both model deployments and has quota. Do not silently substitute non-streaming transcription for MAI Streaming. The attached Container App identity needs resource-scoped `Cognitive Services User`; retain registry-scoped `AcrPull` and keep local key authentication disabled. `AZURE_CLIENT_ID` must match `MICO_AZ_IDENTITY`, not the login App ID. Provisioning/deleting an AI resource or reallocating another project's quota requires explicit authorization. Actual IDs, names, model deployment values and endpoints remain in private/ignored configuration. See `docs/ai-configuration.md` for the validated token audience and reasoning settings.
 
 ## Validate a frozen source tree
 
@@ -76,9 +83,20 @@ Commit all intended tracked changes, then freeze the revision:
 
 ```sh
 RELEASE_SHA=$(git rev-parse HEAD)
-node scripts/deploy-azure.ts build
-[ "$(git rev-parse HEAD)" = "$RELEASE_SHA" ] || exit 1
-node scripts/deploy-azure.ts deploy
+(
+  source "${MICO_DEPLOY_ENV_FILE:-$HOME/.config/mico/deploy/azure-preview.env}"
+  node scripts/deploy-azure.ts build
+)
+```
+
+When push is authorized, push from the clean parent shell through normal hooks. Wait for the required CI gate on `RELEASE_SHA` before updating Azure; a workflow's summary alone is insufficient if the gate check is still pending. Check the commit's actual status-check rollup when Actions job metadata is stale.
+
+```sh
+(
+  source "${MICO_DEPLOY_ENV_FILE:-$HOME/.config/mico/deploy/azure-preview.env}"
+  [ "$(git rev-parse HEAD)" = "$RELEASE_SHA" ] || exit 1
+  node scripts/deploy-azure.ts deploy
+)
 ```
 
 - `build` archives the committed SHA into its own temporary directory, builds `linux/amd64`, authenticates to ACR through Azure CLI and pushes `mico:<full-sha>`. Untracked files, local environment and the daily database are excluded.
@@ -91,6 +109,8 @@ node scripts/deploy-azure.ts deploy
 Derive the live origin from the resource, not a copied URL:
 
 ```sh
+(
+source "${MICO_DEPLOY_ENV_FILE:-$HOME/.config/mico/deploy/azure-preview.env}"
 MICO_PUBLIC_ORIGIN="https://$(az containerapp show \
   --subscription "$MICO_AZ_SUBSCRIPTION_ID" \
   --resource-group "$MICO_AZ_RESOURCE_GROUP" --name "$MICO_AZ_APP" \
@@ -100,6 +120,8 @@ az containerapp revision list \
   --subscription "$MICO_AZ_SUBSCRIPTION_ID" \
   --resource-group "$MICO_AZ_RESOURCE_GROUP" --name "$MICO_AZ_APP" \
   --query '[].{name:name,active:properties.active,health:properties.healthState}'
+printf 'Origin: %s\n' "$MICO_PUBLIC_ORIGIN"
+)
 ```
 
 Confirm the active ready revision's digest equals ACR's `mico:$RELEASE_SHA` digest, the replica policy is unchanged, and the health version matches `package.json`. Check runtime capabilities and auth values against the private operator configuration without recording them in Git.
@@ -111,7 +133,9 @@ Then verify:
 3. An operator completes real sign-in; mark this pending if only the login page/navigation was checked. Existing callback registration need not change for an ordinary update at the same origin.
 4. Create a test note, edit it and refresh in an explicitly disposable test canvas. Verify WebSocket synchronization and sign-out. Never clear or seed the user's live board for acceptance.
 5. Open Debug from the avatar/placeholder next to Canvases. Verify the preview warning, AI state, user identity and sign-out; missing photo/consent must leave a usable fallback. Preserve screenshots outside Git when they contain personal information or deployment identifiers.
-6. AI remains unavailable for the preview. Do not call paid model/voice/image providers as a deployment smoke test.
+6. A provider-free preview must keep AI unavailable. For an enabled managed profile, verify read-only Managed identity Settings, Chat tool writes, MAI partial/final transcription and disabled MOSS. Paid inference requires explicit user authorization; use short synthetic input, never user data or a full evaluation campaign. Image generation is outside this managed Chat/MAI profile.
+
+With authorized provider usage, run `node scripts/verify-managed-ai.ts --confirm-provider-usage --audio <pcm16-file>` inside the actual managed-identity container. It creates a separate loopback-only daemon and temporary database, invokes the real SDK-backed Chat/MAI paths and checks MOSS denial, then removes only its test data. Input is at most 20 seconds of 16 kHz mono PCM16. The script is not a public endpoint and never disables authentication on the production daemon. A developer's Azure CLI token or a successful bare provider request does not replace this integrated managed-identity check. Use short console startup commands and stream large inputs through stdin, not Azure exec command URLs.
 
 A local check of the final production image should also prove manual drawing and reload without provider credentials. Keep that container's database/ports isolated and remove only its own resources afterward.
 

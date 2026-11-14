@@ -9,7 +9,7 @@
 
 Mico 是一个本地优先的画布实验：人和本地 Agent 编辑同一批画板。浏览器负责渲染画布，守护进程管理一组命名画布并存入 SQLite，CLI 与 HTTP API 让 Agent 能完整访问同一批画布和同一套操作。
 
-它默认是一台机器上的本地画布集合，不是多人服务器。本地模式信任本机进程。Cloud hosting uses the same container with a configured public origin and optional Entra login; the first Azure deployment is a disposable preview with AI disabled. See [deployment options](docs/deployment.md). A public deployment without login is accessible to every reachable caller. 调整尺寸和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
+它默认是一台机器上的本地画布集合，不是多人服务器。本地模式信任本机进程。Cloud hosting uses the same container with a configured public origin and optional Entra login; Azure supports a disposable preview with optional managed-identity Chat and MAI transcription; MOSS is disabled in that profile. See [deployment options](docs/deployment.md). A public deployment without login is accessible to every reachable caller. 调整尺寸和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
 
 ## 功能
 
@@ -39,7 +39,7 @@ Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.
 
 ### AI 网关
 
-The server uses one [AI configuration contract](docs/ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration, ignores saved Settings files and makes the Settings UI/API read-only.
+The server uses one [AI configuration contract](docs/ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration. `MICO_AI_AUTH_MODE=managed-identity` uses the attached Azure identity for Chat and MAI, ignores saved keys and makes Settings read-only. User login remains independent. `MICO_MOSS_ENABLED=false` disables MOSS in both the UI and server; Live then uses MAI.
 
 助手使用兼容 OpenAI 的 Chat Completions API。打开 **AI → Settings** 设置端点、模型和 API Key。改动在下一次请求生效，并保存到 `~/.config/mico/settings.json`（仅所有者可读写）。密钥以明文存在本机，不会返回给浏览器。密钥输入框留空表示保留当前值，也可以选 **Remove current API key** 让后续请求不带密钥。远端端点请用 HTTPS。
 
@@ -105,7 +105,7 @@ See [the Docker guide](docs/docker.md) for provider configuration, persistence, 
 
 ### Cloud preview
 
-Hosting, login and AI availability are independent settings. The [deployment guide](docs/deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](docs/deployment-azure.md): optional Microsoft SPA login, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** No real tenant, subscription, resource group, App ID or user ID belongs in the repository; supply them through operator environment configuration.
+Hosting, login and AI availability are independent settings. The [deployment guide](docs/deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](docs/deployment-azure.md): optional Microsoft SPA login, optional managed-identity Chat/MAI, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** No real tenant, subscription, resource group, App ID or user ID belongs in the repository; supply them through operator environment configuration.
 
 For subsequent hosted updates, use the project [mico-deploy skill](.agents/skills/mico-deploy/SKILL.md) (`/skill:mico-deploy` in agents that expose skill commands). It keeps private deployment configuration outside Git and verifies the exact deployed image.
 

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+## v0.8.0
+
+- Add explicit Managed Identity authentication for Foundry Chat and MAI streaming, with SDK token caching/refresh and no API-key or developer-credential fallback.
+- Keep managed settings read-only and isolated from saved keys; identify the authentication mode in Settings.
+- Add independent MOSS availability across the runtime, API, WebSocket proxy and UI. Managed Azure profiles disable MOSS and select MAI for Live.
+- Protect asynchronous provider authentication with cancellation checks, bounded early-audio queues, frame/backpressure limits and redirect rejection.
+- Extend the Azure adapter with environment-driven managed model settings and attached-identity validation, while retaining optional user login and ephemeral preview storage.
+- Add an explicitly authorized, synthetic-audio verification command that exercises real Chat tools, MAI transcription and lecture handling in an isolated loopback daemon/database.
+- Expand managed-provider unit, HTTP/WebSocket and browser contracts; preserve local API-key behavior without adding alternate environment-variable aliases.
+
 ## v0.7.0
 
 ### Hosted preview

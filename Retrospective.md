@@ -1,5 +1,13 @@
 # Retrospective
 
+## Managed Foundry integration
+
+- The streaming and non-streaming MAI models have different regional catalogs and quotas. Inspect the exact streaming model rather than treating a non-streaming quota result as proof that the realtime path is blocked. Resource-specific names, IDs, endpoints and validation receipts stay in private operator configuration.
+- The published realtime sample's Cognitive Services audience was rejected by the selected Foundry endpoint, while the AI audience succeeded with the same identity/resource and synthetic audio. Verify audiences through the actual container identity, then use one tested contract instead of adding credential or audience fallback. GPT reasoning support also needed a real check: the selected model rejected `none`, so the deployment profile explicitly uses `low`.
+- Azure console commands are URL parameters; a long inline script produced an IIS handshake error, not an inference failure. Use a short shell/receiver, send larger inputs over stdin with bounded pacing, and preserve console evidence without tokens. Unpaced large input was truncated by the console transport.
+- Parallel UI work was committed before its backend contract and one worker used a scoped commit message. Reorder only owned, unpublished commits and verify the final tree is identical; land shared contracts first and validate staged snapshots plus exact commit messages before accepting worker completion.
+- New public Settings/runtime fields require updating all real HTTP fixtures, not just the nearest unit tests. Browser geometry checks must wait for finite panel motion to finish; keep exact geometry assertions and match the actual UI copy rather than treating serialization or capitalization differences as product defects.
+
 ## Hosted bootstrap race during v0.7.0 verification
 
 - CI run `43533325846` caught two Graph photo requests where local runs saw one. The retained trace showed two Strict Mode runtime reads followed by two session reads; both bootstrap continuations were allowed to replace identity objects and restart the avatar effect. A local probe that delayed the retired runtime response until the active photo request reproduced the duplicate session request deterministically. Cancel retired bootstrap requests and guard every asynchronous state update against its aborted signal, including already-buffered responses. Keep the one-request assertions and add the controlled ordering regression instead of adding retries or relaxing the count. The Azure rollout remained blocked behind the failed CI gate.
