@@ -9,7 +9,7 @@
 
 Mico 是一个本地优先的画布实验：人和本地 Agent 编辑同一批画板。浏览器负责渲染画布，守护进程管理一组命名画布并存入 SQLite，CLI 与 HTTP API 让 Agent 能完整访问同一批画布和同一套操作。
 
-它默认是一台机器上的本地画布集合，不是多人服务器。本地模式信任本机进程。Cloud hosting uses the same container with a configured public origin and optional Entra login; Azure supports a disposable preview with optional managed-identity Chat and MAI transcription; MOSS is disabled in that profile. See [deployment options](docs/deployment.md). A public deployment without login is accessible to every reachable caller. 调整尺寸和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
+它默认是一台机器上的本地画布集合，不是多人服务器。本地模式信任本机进程，所有请求落在同一个 `local` 租户。开启 Entra 登录后，每个身份（object id）有独立租户：各自的画布列表、活动画布和图片素材互不可见，请求只能读到自己的租户。租户之间目前没有共享或协作入口。Cloud hosting uses the same container with a configured public origin and optional Entra login; Azure supports a disposable preview with optional managed-identity Chat and MAI transcription; MOSS is disabled in that profile. See [deployment options](docs/deployment.md). A public deployment without login is accessible to every reachable caller. 调整尺寸和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
 
 ## 功能
 

@@ -101,30 +101,35 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 
 ## Coverage map
 
-| Area                                | Primary coverage                                                                                                             |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Tool buttons and shortcuts          | `controls.spec.ts` keyboard/tool tests, `canvas.spec.ts` toolbar test                                                        |
-| Shape creation by drag/click        | `controls.spec.ts` primitive tests, `canvas.spec.ts` note/text/brush tests                                                   |
-| Dock options (colors, brush, fonts) | `controls.spec.ts` option and panel tests                                                                                    |
-| Selection, marquee, delete          | `canvas.spec.ts` marquee/snap tests, `controls.spec.ts` keyboard test                                                        |
-| Properties panel                    | `controls.spec.ts` panel test, `canvas.spec.ts` note/text/html/frame edits                                                   |
-| Frame label, membership, travel     | `canvas.spec.ts` frame tests, `controls.spec.ts` membership test, `containers.test.ts`                                       |
-| Connector creation/rebind/classes   | `canvas.spec.ts` connector tests, `connections.test.ts`, `api.test.ts`                                                       |
-| HTML cards                          | `controls.spec.ts`, `canvas.spec.ts` HTML test, `store.test.ts`, `api.test.ts`, examples test                                |
-| Pan/zoom/fit                        | `controls.spec.ts` zoom test, `canvas.spec.ts` grid/viewport test                                                            |
-| Canvas management and previews      | `canvases.spec.ts`, `canvasState.test.ts`, `store.test.ts`, `preview.test.ts`, `api.test.ts`, `index.test.ts` (HTTP and CLI) |
-| AI assistant panel                  | `ai.spec.ts`, `ai.test.ts`, `aiAudio.test.ts`                                                                                |
-| Palette and tokens                  | `design.test.ts`, `controls.spec.ts` panel/default-colour checks                                                             |
-| Store schema and atomicity          | `store.test.ts`, `api.test.ts`                                                                                               |
-| HTTP/WebSocket contract             | `api.test.ts`, `index.test.ts`                                                                                               |
-| CLI                                 | `src/cli/index.test.ts`                                                                                                      | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures. |
-| Agent examples                      | `examples.test.ts`                                                                                                           |
+| Area                                | Primary coverage                                                                                                                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tool buttons and shortcuts          | `controls.spec.ts` keyboard/tool tests, `canvas.spec.ts` toolbar test                                                                                                                                  |
+| Shape creation by drag/click        | `controls.spec.ts` primitive tests, `canvas.spec.ts` note/text/brush tests                                                                                                                             |
+| Dock options (colors, brush, fonts) | `controls.spec.ts` option and panel tests                                                                                                                                                              |
+| Selection, marquee, delete          | `canvas.spec.ts` marquee/snap tests, `controls.spec.ts` keyboard test                                                                                                                                  |
+| Properties panel                    | `controls.spec.ts` panel test, `canvas.spec.ts` note/text/html/frame edits                                                                                                                             |
+| Frame label, membership, travel     | `canvas.spec.ts` frame tests, `controls.spec.ts` membership test, `containers.test.ts`                                                                                                                 |
+| Connector creation/rebind/classes   | `canvas.spec.ts` connector tests, `connections.test.ts`, `api.test.ts`                                                                                                                                 |
+| HTML cards                          | `controls.spec.ts`, `canvas.spec.ts` HTML test, `store.test.ts`, `api.test.ts`, examples test                                                                                                          |
+| Pan/zoom/fit                        | `controls.spec.ts` zoom test, `canvas.spec.ts` grid/viewport test                                                                                                                                      |
+| Canvas management and previews      | `canvases.spec.ts`, `canvasState.test.ts`, `store.test.ts`, `preview.test.ts`, `api.test.ts`, `index.test.ts` (HTTP and CLI)                                                                           |
+| AI assistant panel                  | `ai.spec.ts`, `ai.test.ts`, `aiAudio.test.ts`                                                                                                                                                          |
+| Palette and tokens                  | `design.test.ts`, `controls.spec.ts` panel/default-colour checks                                                                                                                                       |
+| Store schema and atomicity          | `store.test.ts`, `api.test.ts`                                                                                                                                                                         |
+| Tenant isolation                    | `tenant.test.ts` (separate lists, canvases, active canvas, state version, images; cross-tenant 404), `auth.integration.test.ts` (a signed-in identity edits a workspace the `local` tenant cannot see) |
+| HTTP/WebSocket contract             | `api.test.ts`, `index.test.ts`                                                                                                                                                                         |
+| CLI                                 | `src/cli/index.test.ts`                                                                                                                                                                                | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures. |
+| Agent examples                      | `examples.test.ts`                                                                                                                                                                                     |
 
 ## Overview and browser history
 
 - `src/shared/overview.test.ts`, `src/web/canvas/minimap.test.ts` and `src/server/preview.test.ts` cover shared block extraction, ignored text/line bounds, projection, negative/empty/extreme geometry, navigation and bounded SVG output.
 - `src/web/canvas/history.test.ts` and `src/server/history.test.ts` cover the fixed 20-step limit, branching, exact optional fields, delete cascades, frame/image references, stacking order, image limits and conflicts with external work.
 - `tests/browser/minimap.spec.ts` and `tests/browser/history.spec.ts` cover real pointer/keyboard navigation, canvas-list previews, responsive placement, undo/redo buttons and shortcuts, native text editing, canvas switching, refresh, request rejection and unrelated/concurrent API edits.
+
+## Tenancy
+
+`src/server/tenant.test.ts` covers the resolver (anonymous requests map to `local`, each identity to its own stable opaque tenant) and storage isolation: separate canvas lists, defaults, active canvas, `stateVersion` and image assets, plus not-found answers for another tenant's canvas id and image id. `src/server/auth.integration.test.ts` proves a signed-in user's workspace stays invisible to the `local` tenant through the real HTTP API. Tenants are not shared yet, so there is no membership or workspace-switching coverage.
 
 ## AI runtime configuration
 

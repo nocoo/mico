@@ -64,7 +64,9 @@ The first Azure target is a **disposable preview**, not durable hosting:
 
 Durable deployment is a separate change: use a local disk on a single host with verified backups, or move authoritative data to a managed database. Do not treat copying a live SQLite file to Blob or mounting it over a network filesystem as a persistence guarantee.
 
-The application still has one shared workspace and active canvas. Authentication does not add per-user storage isolation or multi-tenant collaboration.
+Each signed-in identity gets its own workspace: a personal tenant with its own canvas list, active canvas and image assets, derived from the verified object id. A signed-in user never sees another user's canvases, and no request can reach a canvas belonging to a different tenant. Anonymous mode (`MICO_AUTH_MODE=none`) keeps one `local` tenant for the whole instance, so a public deployment without login still shares every canvas with every caller.
+
+Tenants are not shared: there is no collaboration surface for two identities on one workspace, and no UI to switch workspaces because each user has exactly one.
 
 ## Acceptance
 

@@ -828,6 +828,7 @@ export class BoardStore {
 	private readonly driver: Sql
 	private readonly ready: Promise<void>
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
+	private readonly tenants = new Map<string, TenantStore>()
 
 	constructor(dbPath: string) {
 		this.driver = createSqliteSql(dbPath)
@@ -842,7 +843,12 @@ export class BoardStore {
 	}
 
 	forTenant(scope: TenantScope): TenantStore {
-		return new TenantStore(this.exclusive, this.driver, validTenantId(scope.tenantId))
+		const tenantId = validTenantId(scope.tenantId)
+		const existing = this.tenants.get(tenantId)
+		if (existing) return existing
+		const created = new TenantStore(this.exclusive, this.driver, tenantId)
+		this.tenants.set(tenantId, created)
+		return created
 	}
 
 	get sql(): Sql {

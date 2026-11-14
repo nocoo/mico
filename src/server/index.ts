@@ -10,7 +10,6 @@ import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
 import { loadRuntimeConfig, publicRuntimeContract, type RuntimeConfig } from '../shared/runtime.ts'
-import type { CanvasSnapshot } from '../shared/types.ts'
 import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } from './ai.ts'
 import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
@@ -27,6 +26,7 @@ import { createMossSession, executeMossTool } from './mossApi.ts'
 import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
 import { parseRequestTarget } from './requestTarget.ts'
 import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
+import { tenantScopeFor } from './tenant.ts'
 
 function parsePort(env: NodeJS.ProcessEnv): number {
 	const raw = env.MICO_PORT
@@ -341,17 +341,33 @@ export function createDaemon(
 	const wss = new WebSocketServer({ noServer: true })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
 
-	const broadcast = (event: unknown): void => {
+	const socketTenant = new WeakMap<WebSocket, string>()
+
+	const broadcast = (event: unknown, tenantId: string): void => {
 		const payload = JSON.stringify(event)
 		for (const client of wss.clients) {
-			if (client.readyState === WebSocket.OPEN) client.send(payload)
+			if (client.readyState !== WebSocket.OPEN) continue
+			if ((socketTenant.get(client) ?? LOCAL_TENANT.tenantId) !== tenantId) continue
+			client.send(payload)
 		}
 	}
-	const imageGeneration = new ImageGenerationService(store, broadcast, {
-		generator: options.imageGenerator,
-		config: config.image,
-		env,
-	})
+	const imageGenerators = new Map<string, ImageGenerationService>()
+	const imageGenerationFor = (tenantId: string): ImageGenerationService => {
+		const existing = imageGenerators.get(tenantId)
+		if (existing) return existing
+		const created = new ImageGenerationService(
+			boards.forTenant({ tenantId }),
+			(event) => broadcast(event, tenantId),
+			{
+				generator: options.imageGenerator,
+				config: config.image,
+				env,
+			},
+		)
+		imageGenerators.set(tenantId, created)
+		return created
+	}
+	const imageGeneration = imageGenerationFor(LOCAL_TENANT.tenantId)
 
 	function isAllowedHost(host: string | undefined, pathname: string): boolean {
 		if (runtimeConfig.publicOrigin) {
@@ -381,10 +397,6 @@ export function createDaemon(
 
 	function sendAiDisabled(res: ServerResponse, origin?: string): void {
 		sendError(res, 503, 'AI_DISABLED', 'AI features are disabled', origin)
-	}
-
-	const broadcastState = (state: CanvasSnapshot): void => {
-		broadcast({ type: 'snapshot', ...state })
 	}
 
 	const replyError = (res: ServerResponse, error: unknown, origin?: string): void => {
@@ -572,18 +584,24 @@ export function createDaemon(
 				return
 			}
 
-			if (runtimeConfig.auth.mode === 'entra') {
-				const session = auth.getSession(req)
-				if (pathname !== '/api/live' && !session) {
-					if (
-						pathname.startsWith('/api/') ||
-						pathname.startsWith('/mai/') ||
-						pathname === '/moss'
-					) {
-						sendError(res, 401, 'UNAUTHENTICATED', 'Authentication required', origin)
-						return
-					}
-				}
+			const session = runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined
+			if (
+				runtimeConfig.auth.mode === 'entra' &&
+				pathname !== '/api/live' &&
+				!session &&
+				(pathname.startsWith('/api/') || pathname.startsWith('/mai/') || pathname === '/moss')
+			) {
+				sendError(res, 401, 'UNAUTHENTICATED', 'Authentication required', origin)
+				return
+			}
+
+			const tenantId = tenantScopeFor(session).tenantId
+			const store = boards.forTenant({ tenantId })
+			const send = (event: unknown): void => broadcast(event, tenantId)
+			let tenantImages: ImageGenerationService | undefined
+			const images = (): ImageGenerationService => {
+				tenantImages ??= imageGenerationFor(tenantId)
+				return tenantImages
 			}
 
 			if (
@@ -774,7 +792,7 @@ export function createDaemon(
 					invalid('activate must be a boolean')
 				}
 				const created = await store.createCanvas(record.name, record.activate === true)
-				broadcastState(created.state)
+				send({ type: 'snapshot', ...created.state })
 				sendJson(res, 200, { ...created.state, createdCanvasId: created.canvas.id }, origin)
 				return
 			}
@@ -788,13 +806,13 @@ export function createDaemon(
 					const body = await readJson(req)
 					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('invalid canvas request')
 					const state = await store.renameCanvas(canvasId, body.name)
-					broadcastState(state)
+					send({ type: 'snapshot', ...state })
 					sendJson(res, 200, state, origin)
 					return
 				}
 				if (req.method === 'DELETE') {
 					const state = await store.deleteCanvas(canvasId)
-					broadcastState(state)
+					send({ type: 'snapshot', ...state })
 					sendJson(res, 200, state, origin)
 					return
 				}
@@ -813,7 +831,7 @@ export function createDaemon(
 				if (!isRecord(body) || !exactKeys(body, ['id'])) invalid('invalid active canvas request')
 				if (typeof body.id !== 'string') invalid('canvas id must be a string')
 				const state = await store.activateCanvas(body.id)
-				broadcastState(state)
+				send({ type: 'snapshot', ...state })
 				sendJson(res, 200, state, origin)
 				return
 			}
@@ -832,12 +850,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await createMossSession(
-					store,
-					broadcast,
-					await readJson(req),
-					imageGeneration,
-				)
+				const response = await createMossSession(store, send, await readJson(req), images())
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -856,12 +869,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await executeMossTool(
-					store,
-					broadcast,
-					await readJson(req),
-					imageGeneration,
-				)
+				const response = await executeMossTool(store, send, await readJson(req), images())
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -915,11 +923,11 @@ export function createDaemon(
 				await streamAiChat({
 					res,
 					store,
-					broadcast,
+					broadcast: send,
 					model,
 					request,
 					origin,
-					imageGeneration,
+					imageGeneration: images(),
 					lectureReasoning: config.lectureReasoning,
 				})
 				return
@@ -932,7 +940,7 @@ export function createDaemon(
 					return
 				}
 				const result = await store.applyRequest(await readJson(req, true))
-				broadcast({
+				send({
 					type: 'board',
 					canvasId: result.canvasId,
 					canvas: result.canvas,
@@ -962,7 +970,9 @@ export function createDaemon(
 
 	wss.on('connection', (socket: WebSocket) => {
 		socket.on('error', () => socket.terminate())
-		store
+		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
+		boards
+			.forTenant(socketScope)
 			.getState()
 			.then((state) => socket.send(JSON.stringify({ type: 'snapshot', ...state })))
 			.catch((error: unknown) => {
@@ -1001,15 +1011,13 @@ export function createDaemon(
 			return
 		}
 
-		if (runtimeConfig.auth.mode === 'entra') {
-			const session = auth.getSession(req)
-			if (!session) {
-				socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')
-				socket.destroy()
-				return
-			}
-			void session
+		const session = runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined
+		if (runtimeConfig.auth.mode === 'entra' && !session) {
+			socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')
+			socket.destroy()
+			return
 		}
+		const tenantId = tenantScopeFor(session).tenantId
 
 		if (!runtimeConfig.aiEnabled && (pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)) {
 			socket.write(
@@ -1041,9 +1049,10 @@ export function createDaemon(
 			return
 		}
 
-		wss.handleUpgrade(req, socket, head, (socket) => {
-			if (runtimeConfig.auth.mode === 'entra') auth.attachSocket(req, socket)
-			wss.emit('connection', socket, req)
+		wss.handleUpgrade(req, socket, head, (client) => {
+			socketTenant.set(client, tenantId)
+			if (runtimeConfig.auth.mode === 'entra') auth.attachSocket(req, client)
+			wss.emit('connection', client, req)
 		})
 	})
 
@@ -1065,7 +1074,7 @@ export function createDaemon(
 					clearTimeout(timeout)
 					boards.close().finally(resolveClose)
 				})
-				imageGeneration.close()
+				for (const service of imageGenerators.values()) service.close()
 				mai?.close()
 				moss?.close()
 				for (const client of wss.clients) client.terminate()

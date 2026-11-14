@@ -10,6 +10,7 @@ import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { createMockAiModel } from './aiMock.ts'
 import { createDaemon, type Daemon } from './index.ts'
+import { tenantScopeFor } from './tenant.ts'
 
 const ORIGIN = 'https://mico.test'
 const HOST = 'mico.test'
@@ -520,7 +521,10 @@ test('hosted protection covers APIs, assets, mutations and all WebSocket handsha
 
 test('non-canonical paths cannot bypass API or static authentication', async () => {
 	await withHostedDaemon(async ({ port, daemon }) => {
-		const count = (await daemon.store.listCanvases()).length
+		const tenant = daemon.boards.forTenant(
+			tenantScopeFor({ identity: `${TENANT_ID}:${ALLOWED_OID}` }),
+		)
+		const count = (await tenant.listCanvases()).length
 		for (const path of ['//ignored//api/canvases', '/api//canvases', '/api/../api/canvases']) {
 			const response = await httpRequest(port, path, {
 				method: 'POST',
@@ -540,7 +544,7 @@ test('non-canonical paths cannot bypass API or static authentication', async () 
 			assert.equal((await httpRequest(port, path, { host: HOST })).status, 400, path)
 		}
 		assert.equal((await httpRequest(port, '/%61pi/state', { host: HOST })).status, 401)
-		assert.equal((await daemon.store.listCanvases()).length, count)
+		assert.equal((await tenant.listCanvases()).length, count)
 	})
 })
 
@@ -668,4 +672,49 @@ test('AI-disabled daemon blocks every AI route and provider-backed WebSocket wit
 			MICO_PUBLIC_ORIGIN: '',
 		},
 	)
+})
+
+test('a signed-in identity edits a workspace the local tenant cannot see', async () => {
+	await withHostedDaemon(async ({ port, daemon, privateKey }) => {
+		const idToken = await signToken(privateKey)
+		const posted = await httpRequest(port, '/api/auth/session', {
+			method: 'POST',
+			host: HOST,
+			origin: ORIGIN,
+			contentType: 'application/json',
+			body: JSON.stringify({ id_token: idToken }),
+		})
+		const cookie = cookieFrom(posted)
+
+		const created = await httpRequest(port, '/api/canvases', {
+			method: 'POST',
+			host: HOST,
+			origin: ORIGIN,
+			cookie,
+			contentType: 'application/json',
+			body: JSON.stringify({ name: 'Integration workspace', activate: true }),
+		})
+		assert.equal(created.status, 200)
+		const createdId = (JSON.parse(created.body) as { createdCanvasId: string }).createdCanvasId
+
+		const listed = await httpRequest(port, '/api/canvases', {
+			host: HOST,
+			origin: ORIGIN,
+			cookie,
+		})
+		assert.equal(listed.status, 200)
+		const names = (JSON.parse(listed.body) as { canvases: { name: string }[] }).canvases.map(
+			(canvas) => canvas.name,
+		)
+		assert.ok(names.includes('Integration workspace'))
+
+		const local = await daemon.store.listCanvases()
+		assert.ok(local.every((canvas) => canvas.id !== createdId))
+		assert.ok(local.every((canvas) => canvas.name !== 'Integration workspace'))
+
+		const tenant = daemon.boards.forTenant(
+			tenantScopeFor({ identity: `${TENANT_ID}:${ALLOWED_OID}` }),
+		)
+		assert.ok((await tenant.listCanvases()).some((canvas) => canvas.id === createdId))
+	})
 })
