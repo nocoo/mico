@@ -6,8 +6,8 @@ export interface ServerSession {
 	user: { name: string; expiresAt: number } | null
 }
 
-export async function fetchRuntime(): Promise<RuntimeConfig> {
-	const response = await fetch('/api/runtime', { cache: 'no-store' })
+export async function fetchRuntime(signal?: AbortSignal): Promise<RuntimeConfig> {
+	const response = await fetch('/api/runtime', { cache: 'no-store', signal })
 	if (!response.ok) throw new Error('Runtime configuration could not be loaded.')
 	const runtime = (await response.json()) as RuntimeConfig
 	if (!runtime.auth || (runtime.auth.mode !== 'none' && runtime.auth.mode !== 'entra')) {
@@ -19,8 +19,8 @@ export async function fetchRuntime(): Promise<RuntimeConfig> {
 	return runtime
 }
 
-export async function fetchSession(): Promise<ServerSession> {
-	const response = await fetch('/api/auth/session', { cache: 'no-store' })
+export async function fetchSession(signal?: AbortSignal): Promise<ServerSession> {
+	const response = await fetch('/api/auth/session', { cache: 'no-store', signal })
 	if (response.status === 401) return { user: null }
 	if (!response.ok) throw new Error('Session could not be verified.')
 	return (await response.json()) as ServerSession

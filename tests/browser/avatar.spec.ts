@@ -101,6 +101,75 @@ test('Microsoft photo becomes the Debug entry and its object URL is released on 
 	expect(await page.evaluate(() => sessionStorage.getItem('test-avatar-revoked'))).toBe(blobUrl)
 })
 
+test('a retired Strict Mode bootstrap cannot replace the active avatar session', async ({
+	page,
+}) => {
+	await signedIn(page)
+	await page.addInitScript(() => {
+		const original = window.fetch.bind(window)
+		let releaseRuntime: () => void = () => {}
+		const photoStarted = new Promise<void>((resolve) => {
+			releaseRuntime = resolve
+		})
+		let runtimeCalls = 0
+		window.fetch = async (input, options) => {
+			const url = new URL(
+				input instanceof Request ? input.url : String(input),
+				window.location.href,
+			)
+			if (url.pathname === '/api/runtime') {
+				const first = ++runtimeCalls === 1
+				sessionStorage.setItem('test-runtime-attempts', String(runtimeCalls))
+				try {
+					// Model a response already buffered before cleanup can cancel its transport.
+					const response = await original(
+						input,
+						first ? { ...options, signal: undefined } : options,
+					)
+					if (first) await photoStarted
+					return response
+				} finally {
+					if (first) sessionStorage.setItem('test-retired-runtime-settled', 'true')
+				}
+			}
+			const response = await original(input, options)
+			if (url.hostname === 'graph.microsoft.com') releaseRuntime()
+			return response
+		}
+	})
+	let photos = 0
+	let sessions = 0
+	page.on('request', (request) => {
+		if (new URL(request.url()).pathname === '/api/auth/session') sessions++
+	})
+	await page.route(PHOTO, (route) => {
+		if (route.request().method() === 'OPTIONS')
+			return route.fulfill({
+				status: 204,
+				headers: {
+					'access-control-allow-origin': '*',
+					'access-control-allow-headers': 'authorization',
+				},
+			})
+		photos++
+		return route.fulfill({
+			contentType: 'image/png',
+			body: PNG,
+			headers: { 'access-control-allow-origin': '*' },
+		})
+	})
+	await page.goto('/')
+	const photo = page.getByRole('button', { name: 'Debug', exact: true }).locator('img')
+	await expect(photo).toBeVisible()
+	await expect
+		.poll(() => page.evaluate(() => sessionStorage.getItem('test-retired-runtime-settled')))
+		.toBe('true')
+	await page.waitForLoadState('networkidle')
+	expect(await page.evaluate(() => sessionStorage.getItem('test-runtime-attempts'))).toBe('2')
+	expect(sessions).toBe(1)
+	expect(photos).toBe(1)
+})
+
 for (const status of [403, 404]) {
 	test(`missing or unavailable Graph photo (${status}) keeps the identity entry usable`, async ({
 		page,

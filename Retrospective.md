@@ -1,5 +1,9 @@
 # Retrospective
 
+## Hosted bootstrap race during v0.7.0 verification
+
+- CI run `43533325846` caught two Graph photo requests where local runs saw one. The retained trace showed two Strict Mode runtime reads followed by two session reads; both bootstrap continuations were allowed to replace identity objects and restart the avatar effect. A local probe that delayed the retired runtime response until the active photo request reproduced the duplicate session request deterministically. Cancel retired bootstrap requests and guard every asynchronous state update against its aborted signal, including already-buffered responses. Keep the one-request assertions and add the controlled ordering regression instead of adding retries or relaxing the count. The Azure rollout remained blocked behind the failed CI gate.
+
 ## Hosted identity surface
 
 - The first cloud preview put status badges and sign-out in a separate generic overlay instead of extending the accepted glass identity surface. Functional checks proved availability but did not prove visual compliance. Place deployment controls beside the existing canvas-list entry, reuse its glass/jelly tokens, and compare the actual panel against the canvas manager at desktop/mobile sizes before accepting a new frame extension.

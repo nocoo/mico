@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import App from './App'
 import { clearMsalCache, completeCallback, loginWithMsal } from './msal'
 import {
@@ -129,15 +129,20 @@ export default function BootGate() {
 	const [loginRequired, setLoginRequired] = useState(false)
 	const [loggingOut, setLoggingOut] = useState(false)
 	const [logoutError, setLogoutError] = useState('')
+	const bootstrapRequest = useRef<AbortController | null>(null)
 	const avatarUrl = useUserAvatar(runtime?.auth, loggingOut ? null : (session?.user ?? null))
 
-	const load = () => {
+	const load = useCallback(() => {
+		bootstrapRequest.current?.abort()
+		const controller = new AbortController()
+		bootstrapRequest.current = controller
 		setLoading(true)
 		setRuntimeError(false)
 		setLoginRequired(false)
 		setSession(null)
-		void fetchRuntime()
+		void fetchRuntime(controller.signal)
 			.then(async (nextRuntime) => {
+				if (controller.signal.aborted) return
 				setRuntime(nextRuntime)
 				if (window.location.pathname === '/login') {
 					setLoading(false)
@@ -153,7 +158,8 @@ export default function BootGate() {
 					return
 				}
 				try {
-					const nextSession = await fetchSession()
+					const nextSession = await fetchSession(controller.signal)
+					if (controller.signal.aborted) return
 					if (!nextSession.user || sessionExpired(nextSession)) {
 						setLoginRequired(true)
 						setLoading(false)
@@ -162,17 +168,22 @@ export default function BootGate() {
 					setSession(nextSession)
 					setLoading(false)
 				} catch {
+					if (controller.signal.aborted) return
 					setLoginRequired(true)
 					setLoading(false)
 				}
 			})
 			.catch(() => {
+				if (controller.signal.aborted) return
 				setLoading(false)
 				setRuntimeError(true)
 			})
-	}
+	}, [])
 
-	useEffect(load, [])
+	useEffect(() => {
+		load()
+		return () => bootstrapRequest.current?.abort()
+	}, [load])
 
 	useEffect(() => {
 		if (!session?.user || !runtime || runtime.auth.mode === 'none') return
