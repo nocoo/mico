@@ -7,12 +7,14 @@ import { OperationError } from './store.ts'
 
 export interface AuthSession {
 	name: string
+	identity: string
 	expiresAt: number
 	sockets: Set<WebSocket>
 }
 
 export interface VerifiedSession {
 	name: string
+	identity: string
 	expiresAt: number
 }
 
@@ -105,20 +107,21 @@ export class AuthManager {
 							verified.payload.preferred_username.trim()
 						? verified.payload.preferred_username.trim()
 						: verified.payload.oid
-			return { name, expiresAt }
+			return { name, identity: `${verified.payload.tid}:${verified.payload.oid}`, expiresAt }
 		} catch (error) {
 			if (error instanceof OperationError) throw error
 			throw new OperationError(401, 'UNAUTHENTICATED', 'ID token verification failed')
 		}
 	}
 
-	issueSession(name: string, expiresAt: number): string {
+	issueSession(session: Omit<AuthSession, 'sockets'>): string {
+		const { name, identity, expiresAt } = session
 		if (this.sessions.size >= 1000) {
 			const oldest = this.sessions.keys().next().value as string | undefined
 			if (oldest) this.revokeSession(oldest)
 		}
 		const token = randomBytes(32).toString('base64url')
-		this.sessions.set(token, { name, expiresAt, sockets: new Set() })
+		this.sessions.set(token, { name, identity, expiresAt, sockets: new Set() })
 		const timer = setTimeout(() => this.revokeSession(token), Math.max(0, expiresAt - Date.now()))
 		timer.unref()
 		this.sessionTimers.set(token, timer)

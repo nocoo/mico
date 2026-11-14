@@ -518,7 +518,7 @@ export function createDaemon(
 					throw new OperationError(400, 'INVALID_REQUEST', 'id_token must be a string')
 				}
 				const user = await auth.verifyIdToken(body.id_token)
-				const token = auth.issueSession(user.name, user.expiresAt)
+				const token = auth.issueSession(user)
 				auth.setSessionCookie(res, token, user.expiresAt)
 				res.writeHead(204)
 				res.end()
