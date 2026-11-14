@@ -231,7 +231,16 @@ function deploy(): void {
 		'-n',
 		target.environment,
 	])
-	const identity = az<{ id: string }>(['identity', 'show', ...group, '-n', target.identity])
+	const identity = az<{ id: string; clientId: string }>([
+		'identity',
+		'show',
+		...group,
+		'-n',
+		target.identity,
+	])
+	if (target.ai && target.ai.clientId.toLowerCase() !== identity.clientId.toLowerCase()) {
+		throw new Error('AZURE_CLIENT_ID must match the attached MICO_AZ_IDENTITY')
+	}
 	const registry = az<{ loginServer: string }>(['acr', 'show', ...group, '-n', target.registry])
 	const image = az<{ digest: string }>([
 		'acr',
@@ -268,7 +277,7 @@ function deploy(): void {
 try {
 	if (command === 'plan') {
 		console.log(
-			JSON.stringify({ ...target, aiEnabled: false, ephemeral: true, replicas: 1 }, null, 2),
+			JSON.stringify({ ...target, mossEnabled: false, ephemeral: true, replicas: 1 }, null, 2),
 		)
 	} else {
 		preflight()

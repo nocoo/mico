@@ -21,6 +21,7 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/src ./src
 COPY --from=build /app/scripts/generate-image.ts ./scripts/generate-image.ts
+COPY --from=build /app/scripts/verify-managed-ai.ts ./scripts/verify-managed-ai.ts
 RUN mkdir -p /data /home/node/.config/mico \
     && chown -R node:node /data /home/node/.config
 USER node

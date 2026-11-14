@@ -1,3 +1,5 @@
+import { loadAiConfig } from '../../src/server/aiConfig.ts'
+
 export interface AzureTarget {
 	subscriptionId: string
 	tenantId: string
@@ -11,6 +13,15 @@ export interface AzureTarget {
 	authTenantId?: string
 	authClientId?: string
 	allowedObjectIds?: string
+	aiEnabled: boolean
+	ai?: {
+		clientId: string
+		baseURL: string
+		model: string
+		maiHost: string
+		maiDeployment: string
+		lectureReasoning: string
+	}
 }
 
 const UUID = /^[a-f\d]{8}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{4}-[a-f\d]{12}$/i
@@ -26,6 +37,9 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 	if (authMode !== 'none' && authMode !== 'entra') {
 		throw new Error('Set MICO_AUTH_MODE explicitly to none or entra')
 	}
+	const aiEnabled = env.MICO_AI_ENABLED?.trim() || 'false'
+	if (aiEnabled !== 'true' && aiEnabled !== 'false')
+		throw new Error('MICO_AI_ENABLED must be true or false')
 	const target: AzureTarget = {
 		subscriptionId: required('MICO_AZ_SUBSCRIPTION_ID', UUID),
 		tenantId: required('MICO_AZ_TENANT_ID', UUID),
@@ -36,6 +50,7 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 		environment: required('MICO_AZ_ENVIRONMENT', name),
 		app: required('MICO_AZ_APP', name),
 		authMode,
+		aiEnabled: aiEnabled === 'true',
 	}
 	if (authMode === 'entra') {
 		target.authTenantId = required('MICO_AUTH_TENANT_ID', UUID)
@@ -45,6 +60,34 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 			throw new Error('Missing or invalid MICO_AUTH_ALLOWED_OBJECT_IDS')
 		}
 		target.allowedObjectIds = ids.join(',')
+	}
+	if (target.aiEnabled) {
+		if (env.MICO_AI_AUTH_MODE !== 'managed-identity')
+			throw new Error('Azure AI deployment requires MICO_AI_AUTH_MODE=managed-identity')
+		if (env.MICO_MOSS_ENABLED && env.MICO_MOSS_ENABLED !== 'false')
+			throw new Error('MOSS is not enabled by the Azure adapter')
+		const config = loadAiConfig({
+			MICO_RUNTIME: 'deploy',
+			MICO_AI_ENABLED: 'true',
+			MICO_AI_AUTH_MODE: 'managed-identity',
+			MICO_MOSS_ENABLED: 'false',
+			AZURE_CLIENT_ID: env.AZURE_CLIENT_ID,
+			MAGPIE_BASE_URL: env.MAGPIE_BASE_URL,
+			MAGPIE_MODEL: env.MAGPIE_MODEL,
+			MAGPIE_LECTURE_REASONING: env.MAGPIE_LECTURE_REASONING,
+			AZURE_MAI_HOST: env.AZURE_MAI_HOST,
+			AZURE_OPENAI_DEPLOYMENT: env.AZURE_OPENAI_DEPLOYMENT,
+		})
+		if (!config.mai.host || !config.mai.deployment)
+			throw new Error('Azure AI deployment requires AZURE_MAI_HOST and AZURE_OPENAI_DEPLOYMENT')
+		target.ai = {
+			clientId: config.azureClientId as string,
+			baseURL: config.chat.baseURL,
+			model: config.chat.model,
+			maiHost: config.mai.host,
+			maiDeployment: config.mai.deployment,
+			lectureReasoning: config.lectureReasoning,
+		}
 	}
 	return target
 }
@@ -74,9 +117,19 @@ export function containerApp(
 		MICO_STATIC_DIR: '/app/dist',
 		MICO_DB_PATH: '/tmp/mico/board.sqlite',
 		MICO_PUBLIC_ORIGIN: input.origin,
-		MICO_AI_ENABLED: 'false',
+		MICO_AI_ENABLED: String(target.aiEnabled),
+		MICO_MOSS_ENABLED: 'false',
 		MICO_EPHEMERAL: 'true',
 		MICO_AUTH_MODE: target.authMode,
+	}
+	if (target.ai) {
+		env.MICO_AI_AUTH_MODE = 'managed-identity'
+		env.AZURE_CLIENT_ID = target.ai.clientId
+		env.MAGPIE_BASE_URL = target.ai.baseURL
+		env.MAGPIE_MODEL = target.ai.model
+		env.MAGPIE_LECTURE_REASONING = target.ai.lectureReasoning
+		env.AZURE_MAI_HOST = target.ai.maiHost
+		env.AZURE_OPENAI_DEPLOYMENT = target.ai.maiDeployment
 	}
 	if (target.authMode === 'entra') {
 		env.MICO_AUTH_TENANT_ID = target.authTenantId as string

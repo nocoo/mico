@@ -9,6 +9,7 @@
 !scripts/
 scripts/**
 !scripts/generate-image.ts
+!scripts/verify-managed-ai.ts
 !public/
 !public/**
 **/*.test.ts

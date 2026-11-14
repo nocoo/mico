@@ -88,6 +88,50 @@ test('Azure template pins digest, uses UAMI, disables AI and marks ephemeral sto
 	assert.throws(() => containerApp(azureTarget(env), { ...input, digest: 'latest' }), /digest/)
 })
 
+test('Azure managed AI explicitly forwards model settings without keys or MOSS', () => {
+	const configured = {
+		...env,
+		MICO_AI_ENABLED: 'true',
+		MICO_AI_AUTH_MODE: 'managed-identity',
+		MICO_MOSS_ENABLED: 'false',
+		AZURE_CLIENT_ID: '66666666-6666-4666-8666-666666666666',
+		MAGPIE_BASE_URL: 'https://ai-fixture.services.ai.azure.com/openai/v1',
+		MAGPIE_MODEL: 'chat-fixture',
+		AZURE_MAI_HOST: 'ai-fixture.services.ai.azure.com',
+		AZURE_OPENAI_DEPLOYMENT: 'speech-fixture',
+		MAGPIE_LECTURE_REASONING: 'low',
+		MAGPIE_API_KEY: 'never-forward',
+		AZURE_OPENAI_API_KEY: 'never-forward',
+	}
+	const target = azureTarget(configured)
+	const settings = Object.fromEntries(
+		containerApp(target, input).properties.template.containers[0].env.map(({ name, value }) => [
+			name,
+			value,
+		]),
+	)
+	assert.equal(settings.MICO_AI_ENABLED, 'true')
+	assert.equal(settings.MICO_AI_AUTH_MODE, 'managed-identity')
+	assert.equal(settings.MICO_MOSS_ENABLED, 'false')
+	assert.equal(settings.MAGPIE_MODEL, 'chat-fixture')
+	assert.equal(settings.MAGPIE_LECTURE_REASONING, 'low')
+	assert.equal(settings.AZURE_OPENAI_DEPLOYMENT, 'speech-fixture')
+	assert.equal(settings.AZURE_CLIENT_ID, configured.AZURE_CLIENT_ID)
+	assert.equal(settings.MAGPIE_API_KEY, undefined)
+	assert.equal(settings.AZURE_OPENAI_API_KEY, undefined)
+	assert.ok(!JSON.stringify(target).includes('never-forward'))
+	assert.throws(
+		() => azureTarget({ ...configured, MICO_AI_AUTH_MODE: 'api-key' }),
+		/managed-identity/,
+	)
+	assert.throws(() => azureTarget({ ...configured, MICO_MOSS_ENABLED: 'true' }), /MOSS/)
+	assert.throws(() => azureTarget({ ...configured, AZURE_MAI_HOST: '' }), /AZURE_MAI_HOST/)
+	assert.throws(
+		() => azureTarget({ ...configured, MAGPIE_BASE_URL: 'https://untrusted.example' }),
+		/Azure AI HTTPS/,
+	)
+})
+
 test('Azure origin derives only from the selected app and actual environment domain', () => {
 	assert.equal(azureOrigin(azureTarget(env), 'example.westus2.azurecontainerapps.io'), input.origin)
 	for (const domain of [
