@@ -2,7 +2,7 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { type ImageProviderConfig, loadImageConfig } from './aiConfig.ts'
-import type { BoardStore, GeneratedImagePlacement } from './store.ts'
+import type { GeneratedImagePlacement, TenantStore } from './store.ts'
 import { MAX_CANVAS_IMAGES, OperationError } from './store.ts'
 
 export type ImageAspect = '1:1' | '3:2' | '2:3'
@@ -86,7 +86,7 @@ const MAX_WIDTH = 4096
 
 export class ImageGenerationService {
 	private readonly jobs = new Map<string, Job>()
-	private readonly store: BoardStore
+	private readonly store: TenantStore
 	private readonly broadcast: (event: unknown) => void
 	private readonly generator?: ImageGenerator
 	private readonly env: NodeJS.ProcessEnv
@@ -98,7 +98,7 @@ export class ImageGenerationService {
 	private closed = false
 
 	constructor(
-		store: BoardStore,
+		store: TenantStore,
 		broadcast: (event: unknown) => void,
 		options: ImageGenerationOptions = {},
 	) {

@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { BoardStore, OperationError } from '../src/server/store.ts'
+import { BoardStore, LOCAL_TENANT, OperationError } from '../src/server/store.ts'
 import type { Board, Shape } from '../src/shared/types.ts'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
@@ -42,18 +42,19 @@ async function applyExample(
 	operations: unknown[],
 ): Promise<{ board: Board; close: () => Promise<void> }> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-example-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const boardStore = new BoardStore(join(directory, 'board.sqlite'))
+	const store = boardStore.forTenant(LOCAL_TENANT)
 	try {
 		const board = await store.apply({ operations })
 		return {
 			board,
 			close: async () => {
-				await store.close()
+				await boardStore.close()
 				rmSync(directory, { recursive: true, force: true })
 			},
 		}
 	} catch (error) {
-		await store.close()
+		await boardStore.close()
 		rmSync(directory, { recursive: true, force: true })
 		throw error
 	}
@@ -67,7 +68,8 @@ async function assertExample(operations: unknown[], check: (board: Board) => voi
 		await applied.close()
 	}
 	const directory = mkdtempSync(join(tmpdir(), 'mico-example-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await store.apply({ operations })
 		await assert.rejects(
@@ -77,7 +79,7 @@ async function assertExample(operations: unknown[], check: (board: Board) => voi
 			'fixed example ids must fail explicitly on a second application',
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }

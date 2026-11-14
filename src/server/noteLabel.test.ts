@@ -7,7 +7,7 @@ import { NOTE_LABEL_SPACE, noteLabelHeightDelta } from '../shared/noteLayout.ts'
 import type { Board, CanvasShape } from '../shared/types.ts'
 import { CanvasHistory } from '../web/canvas/history.ts'
 import { createCanvasTools } from './aiTools.ts'
-import { BoardStore, OperationError } from './store.ts'
+import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 
 const NOTE_COLOR = '#fff8d4'
 const BLUE = '#00a2e1'
@@ -17,11 +17,12 @@ const toolRun = (tool: unknown, input: unknown) =>
 		messages: [],
 	})
 
-function withStore(run: (store: BoardStore) => Promise<void> | void): Promise<void> {
+function withStore(run: (store: TenantStore) => Promise<void> | void): Promise<void> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-note-label-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	return Promise.resolve(run(store)).finally(async () => {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	})
 }
@@ -62,7 +63,7 @@ function shapeOf(board: Board, id: string): CanvasShape {
 }
 
 async function replay(
-	store: BoardStore,
+	store: TenantStore,
 	history: CanvasHistory,
 	direction: 'undo' | 'redo',
 ): Promise<Board> {

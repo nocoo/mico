@@ -752,55 +752,77 @@ function rightmostClearPosition(
 	}
 	return { x: rightmost + 64, y: top, w: preferred.w, h: preferred.h }
 }
-
-const SCHEMA = `
-	CREATE TABLE IF NOT EXISTS canvases (
+const TABLE_TENANTS = `CREATE TABLE IF NOT EXISTS tenants (
 		id TEXT PRIMARY KEY,
+		active_canvas_id TEXT,
+		state_version INTEGER NOT NULL,
+		created_at TEXT NOT NULL
+	)`
+
+const TABLE_CANVASES = `CREATE TABLE IF NOT EXISTS canvases (
+		tenant_id TEXT NOT NULL,
+		id TEXT NOT NULL,
 		name TEXT NOT NULL,
 		revision INTEGER NOT NULL,
 		shapes TEXT NOT NULL,
 		created_at TEXT NOT NULL,
-		updated_at TEXT NOT NULL
-	);
-	CREATE TABLE IF NOT EXISTS settings (
-		key TEXT PRIMARY KEY,
-		value TEXT NOT NULL
-	);
-	CREATE TABLE IF NOT EXISTS image_assets (
-		id TEXT PRIMARY KEY,
+		updated_at TEXT NOT NULL,
+		PRIMARY KEY (tenant_id, id)
+	)`
+
+const TABLE_IMAGE_ASSETS = `CREATE TABLE IF NOT EXISTS image_assets (
+		tenant_id TEXT NOT NULL,
+		id TEXT NOT NULL,
 		content_type TEXT NOT NULL,
 		bytes BLOB NOT NULL,
 		size INTEGER NOT NULL,
-		created_at TEXT NOT NULL
-	);
-`
+		created_at TEXT NOT NULL,
+		PRIMARY KEY (tenant_id, id)
+	)`
+
+const SCHEMA = `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${TABLE_IMAGE_ASSETS};`
 
 const STATEMENTS = {
-	findCanvas: 'SELECT * FROM canvases WHERE id = ?',
-	listCanvases: 'SELECT * FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC',
-	firstCanvas: 'SELECT id FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
-	ensureDefaultCanvas:
-		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) SELECT ?, ?, 0, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM canvases)',
-	countCanvases: 'SELECT COUNT(*) AS count FROM canvases',
+	findCanvas: 'SELECT * FROM canvases WHERE id = ? AND tenant_id = ?',
+	listCanvases:
+		'SELECT * FROM canvases WHERE tenant_id = ? ORDER BY updated_at DESC, created_at DESC, id ASC',
+	firstCanvas:
+		'SELECT id FROM canvases WHERE tenant_id = ? ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
+	countCanvases: 'SELECT COUNT(*) AS count FROM canvases WHERE tenant_id = ?',
 	insertCanvas:
-		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
 	updateBoard:
-		'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ?',
-	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ?',
-	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ?',
-	deleteCanvas: 'DELETE FROM canvases WHERE id = ?',
-	findSetting: 'SELECT value FROM settings WHERE key = ?',
-	saveSetting:
-		'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-	bumpStateVersion:
-		"INSERT INTO settings (key, value) VALUES ('stateVersion', '1') ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1",
-	listImageIds: 'SELECT id FROM image_assets',
+		'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ? AND tenant_id = ?',
+	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ? AND tenant_id = ?',
+	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ? AND tenant_id = ?',
+	deleteCanvas: 'DELETE FROM canvases WHERE id = ? AND tenant_id = ?',
+	ensureDefaultCanvas:
+		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, 0, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
+	findTenant: 'SELECT active_canvas_id, state_version FROM tenants WHERE id = ?',
+	createTenant:
+		'INSERT INTO tenants (id, active_canvas_id, state_version, created_at) VALUES (?, NULL, 0, ?) ON CONFLICT(id) DO NOTHING',
+	saveActiveCanvas: 'UPDATE tenants SET active_canvas_id = ? WHERE id = ?',
+	bumpStateVersion: 'UPDATE tenants SET state_version = state_version + 1 WHERE id = ?',
+	listImageIds: 'SELECT id FROM image_assets WHERE tenant_id = ?',
 	insertImage:
-		'INSERT INTO image_assets (id, content_type, bytes, size, created_at) VALUES (?, ?, ?, ?, ?)',
-	findImage: 'SELECT content_type, bytes FROM image_assets WHERE id = ?',
+		'INSERT INTO image_assets (id, content_type, bytes, size, created_at, tenant_id) VALUES (?, ?, ?, ?, ?, ?)',
+	findImage: 'SELECT content_type, bytes FROM image_assets WHERE id = ? AND tenant_id = ?',
 	legacyBoard: 'SELECT revision, shapes FROM board WHERE id = 1',
 	dropLegacyBoard: 'DROP TABLE board',
 } as const
+
+export interface TenantScope {
+	readonly tenantId: string
+}
+
+export const LOCAL_TENANT: TenantScope = { tenantId: 'local' }
+
+function validTenantId(value: unknown): string {
+	if (typeof value !== 'string' || value.trim().length === 0 || value.length > 120) {
+		throw new OperationError(400, 'INVALID_TENANT', 'tenant id must be a non-empty string')
+	}
+	return value
+}
 
 export class BoardStore {
 	private readonly driver: Sql
@@ -817,6 +839,10 @@ export class BoardStore {
 				await this.ready
 				return operation()
 			})
+	}
+
+	forTenant(scope: TenantScope): TenantStore {
+		return new TenantStore(this.exclusive, this.driver, validTenantId(scope.tenantId))
 	}
 
 	get sql(): Sql {
@@ -852,69 +878,153 @@ export class BoardStore {
 		}
 	}
 
+	close(): Promise<void> {
+		return this.exclusive(() => this.driver.close())
+	}
+
 	private async initialize(): Promise<void> {
 		await this.driver.exec(SCHEMA)
+		await this.migrateLocalTenant()
 		await this.migrateLegacyBoard()
-		await this.ensureCanvas()
+	}
+
+	private async migrateLocalTenant(): Promise<void> {
+		if (!(await this.driver.hasTable('settings'))) return
+		const hasImages = await this.driver.hasTable('image_assets')
+		const statements = [
+			'BEGIN',
+			'ALTER TABLE canvases RENAME TO legacy_canvases',
+			hasImages ? 'ALTER TABLE image_assets RENAME TO legacy_image_assets' : '',
+			TABLE_CANVASES,
+			TABLE_IMAGE_ASSETS,
+			"INSERT INTO canvases (tenant_id, id, name, revision, shapes, created_at, updated_at) SELECT 'local', id, name, revision, shapes, created_at, updated_at FROM legacy_canvases",
+			hasImages
+				? "INSERT INTO image_assets (tenant_id, id, content_type, bytes, size, created_at) SELECT 'local', id, content_type, bytes, size, created_at FROM legacy_image_assets"
+				: '',
+			`INSERT INTO tenants (id, active_canvas_id, state_version, created_at) SELECT 'local', (SELECT value FROM settings WHERE key = 'activeCanvasId'), COALESCE((SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'stateVersion'), 0), '${new Date().toISOString()}'`,
+			'DROP TABLE legacy_canvases',
+			hasImages ? 'DROP TABLE legacy_image_assets' : '',
+			'DROP TABLE settings',
+			'COMMIT',
+		]
+		await this.driver.exec(statements.filter(Boolean).join(';\n'))
 	}
 
 	private async migrateLegacyBoard(): Promise<void> {
 		if (!(await this.driver.hasTable('board'))) return
 		const row = await this.driver.get<{ revision: number; shapes: string }>(STATEMENTS.legacyBoard)
-		const existing = await this.driver.get<{ count: number }>(STATEMENTS.countCanvases)
+		const existing = await this.driver.get<{ count: number }>(STATEMENTS.countCanvases, ['local'])
 		const statements: SqlStatement[] = []
 		if (existing?.count === 0 && row) {
 			const now = new Date().toISOString()
 			statements.push({
 				sql: STATEMENTS.insertCanvas,
-				params: [DEFAULT_CANVAS_ID, DEFAULT_CANVAS_NAME, row.revision, row.shapes, now, now],
+				params: [
+					DEFAULT_CANVAS_ID,
+					DEFAULT_CANVAS_NAME,
+					row.revision,
+					row.shapes,
+					now,
+					now,
+					'local',
+				],
 			})
-			statements.push({
-				sql: STATEMENTS.saveSetting,
-				params: ['activeCanvasId', DEFAULT_CANVAS_ID],
-			})
+			statements.push({ sql: STATEMENTS.createTenant, params: ['local', now] })
+			statements.push({ sql: STATEMENTS.saveActiveCanvas, params: [DEFAULT_CANVAS_ID, 'local'] })
 		}
 		statements.push({ sql: STATEMENTS.dropLegacyBoard })
 		await this.driver.batch(statements)
 	}
+}
 
-	private async ensureCanvas(): Promise<void> {
+export class TenantStore {
+	readonly tenantId: string
+	private readonly sql: Sql
+	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
+	private readonly scoped: {
+		get<T>(sql: string, params?: readonly SqlValue[]): Promise<T | undefined>
+		all<T>(sql: string, params?: readonly SqlValue[]): Promise<T[]>
+		run(sql: string, params?: readonly SqlValue[]): Promise<number>
+		batch(statements: readonly SqlStatement[]): Promise<number[]>
+	}
+	private bootstrap: Promise<void> | undefined
+
+	constructor(
+		exclusive: <T>(operation: () => Promise<T>) => Promise<T>,
+		sql: Sql,
+		tenantId: string,
+	) {
+		this.exclusive = exclusive
+		this.sql = sql
+		this.tenantId = tenantId
+		const append = (params: readonly SqlValue[] = []): SqlValue[] => [...params, tenantId]
+		this.scoped = {
+			get: <T>(text: string, params?: readonly SqlValue[]) => sql.get<T>(text, append(params)),
+			all: <T>(text: string, params?: readonly SqlValue[]) => sql.all<T>(text, append(params)),
+			run: (text: string, params?: readonly SqlValue[]) => sql.run(text, append(params)),
+			batch: (statements: readonly SqlStatement[]) =>
+				sql.batch(
+					statements.map((statement) => ({
+						sql: statement.sql,
+						params: append(statement.params),
+					})),
+				),
+		}
+	}
+
+	private ensure(): Promise<void> {
+		if (!this.bootstrap) {
+			this.bootstrap = this.exclusive(() => this.createTenant()).catch((error: unknown) => {
+				this.bootstrap = undefined
+				throw error
+			})
+		}
+		return this.bootstrap
+	}
+
+	private async run<T>(body: () => Promise<T>): Promise<T> {
+		await this.ensure()
+		return this.exclusive(body)
+	}
+
+	private async createTenant(): Promise<void> {
 		const now = new Date().toISOString()
-		await this.driver.run(STATEMENTS.ensureDefaultCanvas, [
-			DEFAULT_CANVAS_ID,
+		await this.sql.run(STATEMENTS.createTenant, [this.tenantId, now])
+		await this.scoped.run(STATEMENTS.ensureDefaultCanvas, [
+			this.tenantId === LOCAL_TENANT.tenantId ? DEFAULT_CANVAS_ID : randomUUID(),
 			DEFAULT_CANVAS_NAME,
 			'[]',
 			now,
 			now,
 		])
-		const active = await this.getSetting('activeCanvasId')
-		if (!active || !(await this.findRow(active))) {
-			const first = await this.driver.get<{ id: string }>(STATEMENTS.firstCanvas)
-			if (first) await this.setSetting('activeCanvasId', first.id)
-		}
-	}
-
-	private async getSetting(key: string): Promise<string | undefined> {
-		const row = await this.driver.get<{ value: string }>(STATEMENTS.findSetting, [key])
-		return row?.value
-	}
-
-	private async setSetting(key: string, value: string): Promise<void> {
-		await this.driver.run(STATEMENTS.saveSetting, [key, value])
+		const tenant = await this.scoped.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
+		if (tenant?.active_canvas_id && (await this.findRow(tenant.active_canvas_id))) return
+		const first = await this.scoped.get<{ id: string }>(STATEMENTS.firstCanvas)
+		if (first) await this.scoped.run(STATEMENTS.saveActiveCanvas, [first.id])
 	}
 
 	private async stateVersion(): Promise<number> {
-		const raw = await this.getSetting('stateVersion')
-		const version = raw === undefined ? 0 : Number(raw)
+		const tenant = await this.scoped.get<{ state_version: number }>(STATEMENTS.findTenant)
+		const version = tenant?.state_version ?? 0
 		return Number.isInteger(version) && version >= 0 ? version : 0
 	}
 
-	getStateVersion(): Promise<number> {
-		return this.exclusive(() => this.stateVersion())
+	private async activeCanvasId(): Promise<string> {
+		const tenant = await this.scoped.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
+		const active = tenant?.active_canvas_id ?? undefined
+		if (active && (await this.findRow(active))) return active
+		const first = await this.scoped.get<{ id: string }>(STATEMENTS.firstCanvas)
+		if (!first) throw new Error('Tenant has no canvas')
+		await this.scoped.run(STATEMENTS.saveActiveCanvas, [first.id])
+		return first.id
+	}
+
+	getActiveCanvasId(): Promise<string> {
+		return this.run(() => this.activeCanvasId())
 	}
 
 	private findRow(id: string): Promise<CanvasRow | undefined> {
-		return this.driver.get<CanvasRow>(STATEMENTS.findCanvas, [id])
+		return this.scoped.get<CanvasRow>(STATEMENTS.findCanvas, [id])
 	}
 
 	private async requireRow(id: string): Promise<CanvasRow> {
@@ -938,7 +1048,7 @@ export class BoardStore {
 			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes)) &&
 			persistMigration
 		) {
-			await this.driver.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
+			await this.scoped.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
 		}
 		return board
 	}
@@ -957,33 +1067,22 @@ export class BoardStore {
 
 	private async readState(includePreviews: boolean): Promise<CanvasSnapshot> {
 		const stateVersion = await this.stateVersion()
-		const rows = await this.driver.all<CanvasRow>(STATEMENTS.listCanvases)
-		const configured = await this.getSetting('activeCanvasId')
-		const active = rows.find((row) => row.id === configured) ?? rows[0]
-		if (!active) throw new Error('No canvas exists')
+		const rows = await this.scoped.all<CanvasRow>(STATEMENTS.listCanvases)
+		const active = await this.activeCanvasId()
+		const current = rows.find((row) => row.id === active) ?? rows[0]
+		if (!current) throw new Error('No canvas exists')
 		const canvases: CanvasSummary[] = []
 		for (const row of rows) canvases.push(await this.summaryOf(row, includePreviews))
-		const board = await this.parseRow(active)
-		return { stateVersion, activeCanvasId: active.id, canvases, board }
-	}
-
-	private async activeCanvasId(): Promise<string> {
-		const active = await this.getSetting('activeCanvasId')
-		if (active && (await this.findRow(active))) return active
-		await this.ensureCanvas()
-		return (await this.getSetting('activeCanvasId')) ?? DEFAULT_CANVAS_ID
+		const board = await this.parseRow(current)
+		return { stateVersion, activeCanvasId: current.id, canvases, board }
 	}
 
 	private async boardOf(id: string): Promise<Board> {
 		return cloneBoard(await this.parseRow(await this.requireRow(id), true))
 	}
 
-	getActiveCanvasId(): Promise<string> {
-		return this.exclusive(() => this.activeCanvasId())
-	}
-
 	listCanvases(includePreviews = true): Promise<CanvasSummary[]> {
-		return this.exclusive(async () => (await this.readState(includePreviews)).canvases)
+		return this.run(async () => (await this.readState(includePreviews)).canvases)
 	}
 
 	getCanvasList(includePreviews = true): Promise<{
@@ -991,35 +1090,35 @@ export class BoardStore {
 		activeCanvasId: string
 		canvases: CanvasSummary[]
 	}> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const { stateVersion, activeCanvasId, canvases } = await this.readState(includePreviews)
 			return { stateVersion, activeCanvasId, canvases }
 		})
 	}
 
 	getCanvasSummary(id: string): Promise<CanvasSummary> {
-		return this.exclusive(async () => this.summaryOf(await this.requireRow(validCanvasId(id))))
+		return this.run(async () => this.summaryOf(await this.requireRow(validCanvasId(id))))
 	}
 
 	getState(includePreviews = true): Promise<CanvasSnapshot> {
-		return this.exclusive(() => this.readState(includePreviews))
+		return this.run(() => this.readState(includePreviews))
 	}
 
 	getBoard(canvasId?: string): Promise<Board> {
-		return this.exclusive(async () =>
+		return this.run(async () =>
 			this.boardOf(canvasId === undefined ? await this.activeCanvasId() : validCanvasId(canvasId)),
 		)
 	}
 
 	countImageShapes(canvasId: string): Promise<number> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const board = await this.boardOf(validCanvasId(canvasId))
 			return board.shapes.filter((shape) => shape.type === 'image').length
 		})
 	}
 
 	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): Promise<boolean> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const board = await this.boardOf(validCanvasId(canvasId))
 			return !occupiedPlacement(board.shapes, x, y, w, h)
 		})
@@ -1033,7 +1132,7 @@ export class BoardStore {
 		position: { x: number; y: number; w: number; h: number }
 		backgroundApplied: boolean
 	}> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const canvasId = validCanvasId(request.canvasId)
 			const w = request.w
 			const h = request.h
@@ -1112,7 +1211,7 @@ export class BoardStore {
 				)
 			}
 			next.revision += 1
-			const changes = await this.driver.batch([
+			const changes = await this.scoped.batch([
 				{
 					sql: STATEMENTS.insertImage,
 					params: [imageId, 'image/png', request.bytes, request.bytes.byteLength, now],
@@ -1142,7 +1241,7 @@ export class BoardStore {
 	}
 
 	getCanvas(canvasId: string): Promise<CanvasDetail> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const row = await this.requireRow(validCanvasId(canvasId))
 			return { canvas: await this.summaryOf(row), board: await this.parseRow(row) }
 		})
@@ -1159,7 +1258,7 @@ export class BoardStore {
 	}
 
 	private async listImageAssetIds(): Promise<Set<string>> {
-		const rows = await this.driver.all<{ id: string }>(STATEMENTS.listImageIds)
+		const rows = await this.scoped.all<{ id: string }>(STATEMENTS.listImageIds)
 		return new Set(rows.map((row) => row.id))
 	}
 
@@ -1167,9 +1266,9 @@ export class BoardStore {
 		bytes: Uint8Array,
 		contentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
 	): Promise<string> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const id = randomUUID()
-			await this.driver.run(STATEMENTS.insertImage, [
+			await this.scoped.run(STATEMENTS.insertImage, [
 				id,
 				contentType,
 				bytes,
@@ -1181,9 +1280,9 @@ export class BoardStore {
 	}
 
 	getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const assetId = this.validImageId(id)
-			const row = await this.driver.get<{ content_type: string; bytes: Uint8Array }>(
+			const row = await this.scoped.get<{ content_type: string; bytes: Uint8Array }>(
 				STATEMENTS.findImage,
 				[assetId],
 			)
@@ -1193,7 +1292,7 @@ export class BoardStore {
 	}
 
 	apply(request: unknown): Promise<Board> {
-		return this.exclusive(async () => (await this.applyOperations(request)).board)
+		return this.run(async () => (await this.applyOperations(request)).board)
 	}
 
 	applyRequest(request: unknown): Promise<{
@@ -1201,7 +1300,7 @@ export class BoardStore {
 		canvas: CanvasSummary
 		board: Board
 	}> {
-		return this.exclusive(() => this.applyOperations(request))
+		return this.run(() => this.applyOperations(request))
 	}
 
 	private async applyOperations(request: unknown): Promise<{
@@ -1443,7 +1542,7 @@ export class BoardStore {
 		}
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
-		const changes = await this.driver.run(STATEMENTS.updateBoard, [
+		const changes = await this.scoped.run(STATEMENTS.updateBoard, [
 			next.revision,
 			JSON.stringify(next.shapes),
 			updatedAt,
@@ -1469,16 +1568,16 @@ export class BoardStore {
 		name?: unknown,
 		activate = false,
 	): Promise<{ state: CanvasSnapshot; canvas: CanvasSummary }> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const canvasName = name === undefined ? 'Untitled canvas' : validCanvasName(name)
 			const id = randomUUID()
 			const now = new Date().toISOString()
 			const statements: SqlStatement[] = [
 				{ sql: STATEMENTS.insertCanvas, params: [id, canvasName, 0, '[]', now, now] },
 			]
-			if (activate) statements.push({ sql: STATEMENTS.saveSetting, params: ['activeCanvasId', id] })
+			if (activate) statements.push({ sql: STATEMENTS.saveActiveCanvas, params: [id] })
 			statements.push({ sql: STATEMENTS.bumpStateVersion })
-			await this.driver.batch(statements)
+			await this.scoped.batch(statements)
 			const state = await this.readState(true)
 			const canvas = state.canvases.find((candidate) => candidate.id === id)
 			if (!canvas) throw new Error('Created canvas is missing from the state')
@@ -1487,11 +1586,11 @@ export class BoardStore {
 	}
 
 	renameCanvas(canvasId: string, name: unknown): Promise<CanvasSnapshot> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const id = validCanvasId(canvasId)
 			const canvasName = validCanvasName(name)
 			await this.requireRow(id)
-			await this.driver.batch([
+			await this.scoped.batch([
 				{ sql: STATEMENTS.renameCanvas, params: [canvasName, id] },
 				{ sql: STATEMENTS.bumpStateVersion },
 			])
@@ -1500,38 +1599,36 @@ export class BoardStore {
 	}
 
 	deleteCanvas(canvasId: string): Promise<CanvasSnapshot> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const id = validCanvasId(canvasId)
 			await this.requireRow(id)
-			const count = await this.driver.get<{ count: number }>(STATEMENTS.countCanvases)
+			const count = await this.scoped.get<{ count: number }>(STATEMENTS.countCanvases)
 			if ((count?.count ?? 0) <= 1) {
 				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
 			}
 			const statements: SqlStatement[] = [{ sql: STATEMENTS.deleteCanvas, params: [id] }]
-			if ((await this.getSetting('activeCanvasId')) === id) {
-				const next = await this.driver.get<{ id: string }>(STATEMENTS.firstCanvas)
-				if (next)
-					statements.push({ sql: STATEMENTS.saveSetting, params: ['activeCanvasId', next.id] })
+			const tenant = await this.scoped.get<{ active_canvas_id: string | null }>(
+				STATEMENTS.findTenant,
+			)
+			if (tenant?.active_canvas_id === id) {
+				const next = await this.scoped.get<{ id: string }>(STATEMENTS.firstCanvas)
+				if (next) statements.push({ sql: STATEMENTS.saveActiveCanvas, params: [next.id] })
 			}
 			statements.push({ sql: STATEMENTS.bumpStateVersion })
-			await this.driver.batch(statements)
+			await this.scoped.batch(statements)
 			return this.readState(true)
 		})
 	}
 
 	activateCanvas(canvasId: string): Promise<CanvasSnapshot> {
-		return this.exclusive(async () => {
+		return this.run(async () => {
 			const id = validCanvasId(canvasId)
 			await this.requireRow(id)
-			await this.driver.batch([
-				{ sql: STATEMENTS.saveSetting, params: ['activeCanvasId', id] },
+			await this.scoped.batch([
+				{ sql: STATEMENTS.saveActiveCanvas, params: [id] },
 				{ sql: STATEMENTS.bumpStateVersion },
 			])
 			return this.readState(true)
 		})
-	}
-
-	close(): Promise<void> {
-		return this.exclusive(() => this.driver.close())
 	}
 }

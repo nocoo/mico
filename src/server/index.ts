@@ -26,7 +26,7 @@ import { createManagedIdentityAuth } from './managedIdentity.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
 import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
 import { parseRequestTarget } from './requestTarget.ts'
-import { BoardStore, OperationError } from './store.ts'
+import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 
 function parsePort(env: NodeJS.ProcessEnv): number {
 	const raw = env.MICO_PORT
@@ -258,7 +258,8 @@ function knownPath(pathname: string): boolean {
 export interface Daemon {
 	server: ReturnType<typeof createServer>
 	runtimeConfig: RuntimeConfig
-	store: BoardStore
+	boards: BoardStore
+	store: TenantStore
 	aiSettings: AiSettingsStore
 	imageGeneration: ImageGenerationService
 	wss: WebSocketServer
@@ -324,7 +325,8 @@ export function createDaemon(
 				})
 			: undefined
 	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
-	const store = new BoardStore(dbPath)
+	const boards = new BoardStore(dbPath)
+	const store = boards.forTenant(LOCAL_TENANT)
 	const settingsPath = options.settingsPath
 	const aiSettings = new AiSettingsStore({
 		path: settingsPath ?? AI_SETTINGS_PATH,
@@ -1049,6 +1051,7 @@ export function createDaemon(
 	return {
 		server,
 		runtimeConfig,
+		boards,
 		store,
 		aiSettings,
 		imageGeneration,
@@ -1060,7 +1063,7 @@ export function createDaemon(
 				timeout.unref()
 				server.close(() => {
 					clearTimeout(timeout)
-					store.close().finally(resolveClose)
+					boards.close().finally(resolveClose)
 				})
 				imageGeneration.close()
 				mai?.close()

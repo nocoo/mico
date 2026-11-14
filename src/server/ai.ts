@@ -16,7 +16,7 @@ import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
 import { createRedirectSafeFetch } from './managedIdentity.ts'
-import { type BoardStore, OperationError } from './store.ts'
+import { OperationError, type TenantStore } from './store.ts'
 
 export function createMagpieModel(
 	settings: ChatSettings,
@@ -164,7 +164,7 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 
 interface AiResponseOptions {
 	res: ServerResponse
-	store: BoardStore
+	store: TenantStore
 	broadcast: (event: unknown) => void
 	model: LanguageModel
 	request: AiChatRequest

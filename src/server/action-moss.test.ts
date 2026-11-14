@@ -4,11 +4,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { serializeCanvasTools } from './mossApi.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, LOCAL_TENANT } from './store.ts'
 
 test('MOSS serializes action-card tool without a completion field', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-action-moss-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const tools = await serializeCanvasTools(
 			store,
@@ -28,7 +29,7 @@ test('MOSS serializes action-card tool without a completion field', async () => 
 		assert.equal(Object.hasOwn(schema.properties.items.items.properties, 'done'), false)
 		assert.ok(schema.properties.removeItemIds)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })

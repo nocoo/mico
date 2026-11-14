@@ -4,12 +4,13 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
-import { BoardStore, OperationError } from './store.ts'
+import { BoardStore, LOCAL_TENANT, OperationError } from './store.ts'
 
 test('operations are atomic and delete cascades connectors', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'nested', 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 
 	try {
 		const created = await store.apply({
@@ -75,14 +76,15 @@ test('operations are atomic and delete cascades connectors', async () => {
 		assert.equal(deleted.revision, 2)
 		assert.deepEqual(deleted.shapes, [])
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('lines can point in any direction while other shapes require non-negative sizes and valid colors', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const line = { id: 'line', type: 'line', x: 10, y: 10, w: -20, h: -30, color: '#123456' }
 		await store.apply({ operations: [{ type: 'create', shape: line }] })
@@ -100,7 +102,7 @@ test('lines can point in any direction while other shapes require non-negative s
 				}),
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -108,8 +110,10 @@ test('lines can point in any direction while other shapes require non-negative s
 test('multiple stores on one database do not overwrite each other', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const first = new BoardStore(dbPath)
-	const second = new BoardStore(dbPath)
+	const firstBoard = new BoardStore(dbPath)
+	const first = firstBoard.forTenant(LOCAL_TENANT)
+	const secondBoard = new BoardStore(dbPath)
+	const second = secondBoard.forTenant(LOCAL_TENANT)
 	try {
 		const shape = { id: 'a', type: 'rectangle', x: 0, y: 0, w: 100, h: 40, color: '#123456' }
 		await first.apply({ operations: [{ type: 'create', shape }] })
@@ -127,8 +131,8 @@ test('multiple stores on one database do not overwrite each other', async () => 
 			['a', 'b'],
 		)
 	} finally {
-		await first.close()
-		await second.close()
+		await firstBoard.close()
+		await secondBoard.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -136,7 +140,8 @@ test('multiple stores on one database do not overwrite each other', async () => 
 test('board persists in sqlite', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	let store = new BoardStore(dbPath)
+	let board = new BoardStore(dbPath)
+	let store = board.forTenant(LOCAL_TENANT)
 
 	try {
 		await store.apply({
@@ -156,8 +161,9 @@ test('board persists in sqlite', async () => {
 				},
 			],
 		})
-		await store.close()
-		store = new BoardStore(dbPath)
+		await board.close()
+		board = new BoardStore(dbPath)
+		store = board.forTenant(LOCAL_TENANT)
 		assert.deepEqual(await store.getBoard(), {
 			revision: 1,
 			shapes: [
@@ -165,7 +171,7 @@ test('board persists in sqlite', async () => {
 			],
 		})
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -173,7 +179,8 @@ test('board persists in sqlite', async () => {
 test('note labels persist and only apply to note shapes', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	let store = new BoardStore(dbPath)
+	let board = new BoardStore(dbPath)
+	let store = board.forTenant(LOCAL_TENANT)
 	try {
 		await store.apply({
 			operations: [
@@ -196,8 +203,9 @@ test('note labels persist and only apply to note shapes', async () => {
 		await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { label: 'Resolved' } }],
 		})
-		await store.close()
-		store = new BoardStore(dbPath)
+		await board.close()
+		board = new BoardStore(dbPath)
+		store = board.forTenant(LOCAL_TENANT)
 		const persisted = (await store.getBoard()).shapes[0]
 		assert.equal(persisted?.type === 'connector' ? undefined : persisted?.label, 'Resolved')
 		await assert.rejects(
@@ -221,7 +229,7 @@ test('note labels persist and only apply to note shapes', async () => {
 				}),
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -229,7 +237,8 @@ test('note labels persist and only apply to note shapes', async () => {
 test('action cards persist stable items and set_action_done is guarded and item-scoped', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	let store = new BoardStore(dbPath)
+	let board = new BoardStore(dbPath)
+	let store = board.forTenant(LOCAL_TENANT)
 	try {
 		const card = {
 			id: 'actions',
@@ -276,18 +285,20 @@ test('action cards persist stable items and set_action_done is guarded and item-
 					operations: [{ type: 'set_action_done', id: 'actions', itemId: 'missing', done: true }],
 				}),
 		)
-		await store.close()
-		store = new BoardStore(dbPath)
+		await board.close()
+		board = new BoardStore(dbPath)
+		store = board.forTenant(LOCAL_TENANT)
 		assert.deepEqual(await store.getBoard(), changed)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('action cards reject malformed and duplicate item ids atomically', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const shape = {
 			id: 'actions',
@@ -321,7 +332,7 @@ test('action cards reject malformed and duplicate item ids atomically', async ()
 			assert.deepEqual(await store.getBoard(), before)
 		}
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -329,7 +340,8 @@ test('action cards reject malformed and duplicate item ids atomically', async ()
 test('connectors persist optional anchor pins within the referenced anchor range', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	let store = new BoardStore(dbPath)
+	let board = new BoardStore(dbPath)
+	let store = board.forTenant(LOCAL_TENANT)
 
 	try {
 		await store.apply({
@@ -367,21 +379,23 @@ test('connectors persist optional anchor pins within the referenced anchor range
 			toAnchor: 4,
 		})
 
-		await store.close()
-		store = new BoardStore(dbPath)
+		await board.close()
+		board = new BoardStore(dbPath)
+		store = board.forTenant(LOCAL_TENANT)
 		const persisted = (await store.getBoard()).shapes.find((shape) => shape.id === 'c')
 		assert.equal(persisted?.type, 'connector')
 		assert.equal(persisted?.type === 'connector' ? persisted.fromAnchor : undefined, 3)
 		assert.equal(persisted?.type === 'connector' ? persisted.toAnchor : undefined, 4)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('anchor pins outside the referenced anchor range are rejected', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 
 	const connector = (extra: Record<string, unknown>) => ({
 		id: 'c',
@@ -447,14 +461,15 @@ test('anchor pins outside the referenced anchor range are rejected', async () =>
 		})
 		assert.equal((await store.getBoard()).shapes.length, 3)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('updating and rebinding a connector revalidates its anchor pins', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 
 	try {
 		await store.apply({
@@ -527,14 +542,15 @@ test('updating and rebinding a connector revalidates its anchor pins', async () 
 		const updated = (await store.getBoard()).shapes.find((shape) => shape.id === 'c')
 		assert.equal(updated?.type === 'connector' ? updated.toAnchor : undefined, 7)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('rejected anchor pins leave the board untouched', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 
 	try {
 		await store.apply({
@@ -589,7 +605,7 @@ test('rejected anchor pins leave the board untouched', async () => {
 			['a', 'b'],
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -597,7 +613,8 @@ test('rejected anchor pins leave the board untouched', async () => {
 test('boards with out of range anchor pins fail to load', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 
 	try {
 		await store.apply({
@@ -612,22 +629,25 @@ test('boards with out of range anchor pins fail to load', async () => {
 				},
 			],
 		})
-		await store.sql.run("UPDATE canvases SET shapes = ? WHERE id = 'main'", [
-			JSON.stringify([
-				{ id: 'a', type: 'rectangle', x: 0, y: 0, w: 100, h: 80, color: '#123456' },
-				{ id: 'b', type: 'rectangle', x: 300, y: 0, w: 100, h: 80, color: '#123456' },
-				{
-					id: 'c',
-					type: 'connector',
-					from: 'a',
-					to: 'b',
-					color: '#654321',
-					fromAnchor: 12,
-				},
-			]),
-		])
-		await store.close()
-		await assert.rejects(() => new BoardStore(dbPath).getBoard())
+		await board.sql.run(
+			"UPDATE canvases SET shapes = ? WHERE id = 'main' AND tenant_id = 'local'",
+			[
+				JSON.stringify([
+					{ id: 'a', type: 'rectangle', x: 0, y: 0, w: 100, h: 80, color: '#123456' },
+					{ id: 'b', type: 'rectangle', x: 300, y: 0, w: 100, h: 80, color: '#123456' },
+					{
+						id: 'c',
+						type: 'connector',
+						from: 'a',
+						to: 'b',
+						color: '#654321',
+						fromAnchor: 12,
+					},
+				]),
+			],
+		)
+		await board.close()
+		await assert.rejects(() => new BoardStore(dbPath).forTenant(LOCAL_TENANT).getBoard())
 	} finally {
 		rmSync(directory, { recursive: true, force: true })
 	}
@@ -635,7 +655,8 @@ test('boards with out of range anchor pins fail to load', async () => {
 
 test('path shapes validate brush, stroke width and in-bounds points', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	const path = {
 		id: 'stroke',
 		type: 'path' as const,
@@ -714,14 +735,15 @@ test('path shapes validate brush, stroke width and in-bounds points', async () =
 		)
 		assert.equal((await store.getBoard()).shapes.length, 1)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('frames hold named members, reject nesting and ungroup on delete', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const frame = {
 			id: 'frame-1',
@@ -800,14 +822,15 @@ test('frames hold named members, reject nesting and ungroup on delete', async ()
 		)
 		assert.equal(ungrouped.shapes.length, 2)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('html cards embed generated markup and expose only title and html', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const frame = {
 			id: 'html-frame',
@@ -923,7 +946,7 @@ test('html cards embed generated markup and expose only title and html', async (
 			(error: unknown) => error instanceof OperationError && error.status === 400,
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -931,7 +954,8 @@ test('html cards embed generated markup and expose only title and html', async (
 test('legacy lines may keep an ignored text field', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await store.apply({
 			operations: [
@@ -953,8 +977,9 @@ test('legacy lines may keep an ignored text field', async () => {
 		await store.apply({
 			operations: [{ type: 'update', id: 'legacy-line', patch: { text: 'ignored' } }],
 		})
-		await store.close()
-		const reopened = new BoardStore(dbPath)
+		await board.close()
+		const reopenedBoard = new BoardStore(dbPath)
+		const reopened = reopenedBoard.forTenant(LOCAL_TENANT)
 		try {
 			assert.deepEqual((await reopened.getBoard()).shapes[0], {
 				id: 'legacy-line',
@@ -967,7 +992,7 @@ test('legacy lines may keep an ignored text field', async () => {
 				text: 'ignored',
 			})
 		} finally {
-			await reopened.close()
+			await reopenedBoard.close()
 		}
 	} finally {
 		rmSync(directory, { recursive: true, force: true })
@@ -976,7 +1001,8 @@ test('legacy lines may keep an ignored text field', async () => {
 
 test('frames connect only to frames', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const left = {
 			id: 'left',
@@ -1048,7 +1074,7 @@ test('frames connect only to frames', async () => {
 			)
 		}
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -1056,7 +1082,8 @@ test('frames connect only to frames', async () => {
 test('sticky note text updates persist', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await store.apply({
 			operations: [
@@ -1078,8 +1105,9 @@ test('sticky note text updates persist', async () => {
 		await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { text: 'Remember this' } }],
 		})
-		await store.close()
-		const reopened = new BoardStore(dbPath)
+		await board.close()
+		const reopenedBoard = new BoardStore(dbPath)
+		const reopened = reopenedBoard.forTenant(LOCAL_TENANT)
 		try {
 			assert.deepEqual((await reopened.getBoard()).shapes, [
 				{
@@ -1094,7 +1122,7 @@ test('sticky note text updates persist', async () => {
 				},
 			])
 		} finally {
-			await reopened.close()
+			await reopenedBoard.close()
 		}
 	} finally {
 		rmSync(directory, { recursive: true, force: true })
@@ -1104,7 +1132,8 @@ test('sticky note text updates persist', async () => {
 test('legacy widget shapes and incompatible connectors are dropped on load', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	const legacy = [
 		{
 			id: 'legacy-widget',
@@ -1141,17 +1170,18 @@ test('legacy widget shapes and incompatible connectors are dropped on load', asy
 		{ id: 'mixed-edge', type: 'connector', from: 'legacy-frame', to: 'kept', color: '#5c6474' },
 	]
 	try {
-		await store.sql.run("UPDATE canvases SET revision = ?, shapes = ? WHERE id = 'main'", [
-			7,
-			JSON.stringify(legacy),
-		])
+		await store.getState()
+		await board.sql.run(
+			"UPDATE canvases SET revision = ?, shapes = ? WHERE id = 'main' AND tenant_id = 'local'",
+			[7, JSON.stringify(legacy)],
+		)
 		assert.deepEqual(
 			(await store.getBoard()).shapes.map((shape) => shape.id),
 			['kept', 'legacy-frame'],
 		)
 		assert.equal((await store.getBoard()).revision, 7)
-		const row = await store.sql.get<{ shapes: string }>(
-			"SELECT shapes FROM canvases WHERE id = 'main'",
+		const row = await board.sql.get<{ shapes: string }>(
+			"SELECT shapes FROM canvases WHERE id = 'main' AND tenant_id = 'local'",
 		)
 		assert.ok(row)
 		assert.deepEqual(
@@ -1159,14 +1189,15 @@ test('legacy widget shapes and incompatible connectors are dropped on load', asy
 			['kept', 'legacy-frame'],
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
 
 test('canvases are isolated, switchable and managed', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const initial = await store.getState()
 		assert.equal(typeof initial.stateVersion, 'number')
@@ -1275,7 +1306,7 @@ test('canvases are isolated, switchable and managed', async () => {
 			(error: unknown) => error instanceof OperationError && error.status === 400,
 		)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -1297,7 +1328,8 @@ test('a legacy single-board database migrates to a canvas', async () => {
 		)
 	await legacy.close()
 
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const state = await store.getState()
 		assert.equal(state.activeCanvasId, 'main')
@@ -1308,12 +1340,12 @@ test('a legacy single-board database migrates to a canvas', async () => {
 			state.board.shapes.map((shape) => shape.id),
 			['legacy-shape'],
 		)
-		const old = await store.sql.get(
+		const old = await board.sql.get(
 			"SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board'",
 		)
 		assert.equal(old, undefined)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -1322,7 +1354,8 @@ test('image assets and frame references persist and delete atomically', async ()
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-'))
 	const dbPath = join(directory, 'board.sqlite')
 	const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3])
-	let store = new BoardStore(dbPath)
+	let board = new BoardStore(dbPath)
+	let store = board.forTenant(LOCAL_TENANT)
 	try {
 		const imageId = await store.saveImage(png, 'image/png')
 		await store.apply({
@@ -1363,8 +1396,9 @@ test('image assets and frame references persist and delete atomically', async ()
 		await store.apply({
 			operations: [{ type: 'update', id: 'hero', patch: { backgroundFit: 'contain' } }],
 		})
-		await store.close()
-		store = new BoardStore(dbPath)
+		await board.close()
+		board = new BoardStore(dbPath)
+		store = board.forTenant(LOCAL_TENANT)
 		const reopenedFrame = (await store.getBoard()).shapes.find((shape) => shape.id === 'hero')
 		assert.ok(reopenedFrame?.type === 'frame')
 		assert.equal(reopenedFrame.backgroundImageId, 'photo')
@@ -1473,14 +1507,15 @@ test('image assets and frame references persist and delete atomically', async ()
 		const heroWithoutImage = (await store.getBoard()).shapes.find((shape) => shape.id === 'hero-2')
 		assert.ok(heroWithoutImage?.type === 'frame')
 		assert.equal(heroWithoutImage.backgroundImageId, undefined)
-		await store.close()
-		store = new BoardStore(dbPath)
+		await board.close()
+		board = new BoardStore(dbPath)
+		store = board.forTenant(LOCAL_TENANT)
 		const asset = await store.getImage(imageId)
 		assert.ok(asset)
 		assert.equal(asset.contentType, 'image/png')
 		assert.deepEqual(Buffer.from(asset.bytes), Buffer.from(png))
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -1488,7 +1523,8 @@ test('image assets and frame references persist and delete atomically', async ()
 test('delete and recreate image shape id does not preserve stale frame background', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-recreate-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const imageId = await store.saveImage(
 			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -1550,7 +1586,7 @@ test('delete and recreate image shape id does not preserve stale frame backgroun
 		assert.equal(frame.backgroundImageId, undefined)
 		assert.equal(frame.backgroundFit, 'stretch')
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -1558,7 +1594,8 @@ test('delete and recreate image shape id does not preserve stale frame backgroun
 test('delete then explicitly reassign recreated image shape id restores frame background', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-reassign-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		const imageId = await store.saveImage(
 			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
@@ -1625,7 +1662,7 @@ test('delete then explicitly reassign recreated image shape id restores frame ba
 		assert.equal(frame.backgroundImageId, 'photo')
 		assert.equal(frame.backgroundFit, 'contain')
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
@@ -1633,7 +1670,8 @@ test('delete then explicitly reassign recreated image shape id restores frame ba
 test('active canvas and its content persist across reopen', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
 	const dbPath = join(directory, 'board.sqlite')
-	const store = new BoardStore(dbPath)
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
 	let canvasId = ''
 	try {
 		await store.apply({
@@ -1655,9 +1693,10 @@ test('active canvas and its content persist across reopen', async () => {
 			],
 		})
 	} finally {
-		await store.close()
+		await board.close()
 	}
-	const reopened = new BoardStore(dbPath)
+	const reopenedBoard = new BoardStore(dbPath)
+	const reopened = reopenedBoard.forTenant(LOCAL_TENANT)
 	try {
 		const state = await reopened.getState()
 		assert.equal(state.activeCanvasId, canvasId)
@@ -1671,7 +1710,7 @@ test('active canvas and its content persist across reopen', async () => {
 			['main-note'],
 		)
 	} finally {
-		await reopened.close()
+		await reopenedBoard.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })

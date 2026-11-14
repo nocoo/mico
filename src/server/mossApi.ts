@@ -5,7 +5,7 @@ import type { Board, Shape } from '../shared/types.ts'
 import { boardBounds } from './aiBoard.ts'
 import { createCanvasTools } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
-import type { BoardStore } from './store.ts'
+import type { TenantStore } from './store.ts'
 import { OperationError } from './store.ts'
 
 export interface MossStore {
@@ -67,7 +67,7 @@ export async function serializeCanvasTools(
 	imageGeneration?: ImageGenerationService,
 ): Promise<MossToolDefinition[]> {
 	const tools = await createCanvasTools({
-		store: store as unknown as BoardStore,
+		store: store as unknown as TenantStore,
 		broadcast,
 		selection,
 		canvasId,
@@ -238,7 +238,7 @@ export async function executeMossTool(
 	const board = await store.getBoard(request.canvasId)
 
 	const tools = await createCanvasTools({
-		store: store as unknown as BoardStore,
+		store: store as unknown as TenantStore,
 		broadcast,
 		selection: request.selection,
 		canvasId: request.canvasId,

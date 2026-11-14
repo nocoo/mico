@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import test from 'node:test'
 import type { Board, CanvasShape, Shape } from '../shared/types.ts'
 import { CanvasHistory } from '../web/canvas/history.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, LOCAL_TENANT, type TenantStore } from './store.ts'
 
 const note = (id: string): CanvasShape => ({
 	id,
@@ -16,19 +16,20 @@ const note = (id: string): CanvasShape => ({
 	h: 130,
 	color: '#fff8d4',
 })
-const withStore = async (run: (store: BoardStore) => Promise<void>): Promise<void> => {
+const withStore = async (run: (store: TenantStore) => Promise<void>): Promise<void> => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-history-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await run(store)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
 
 async function replay(
-	store: BoardStore,
+	store: TenantStore,
 	history: CanvasHistory,
 	direction: 'undo' | 'redo',
 ): Promise<Board> {

@@ -53,7 +53,7 @@ export async function verifyManagedAi({
 		const models = await fetch(`${origin}/api/ai/models`, { signal: AbortSignal.timeout(30000) })
 		assert.equal(models.status, 200)
 		await models.arrayBuffer()
-		const canvasId = daemon.store.getActiveCanvasId()
+		const canvasId = await daemon.store.getActiveCanvasId()
 		const chat = await fetch(`${origin}/api/ai/chat`, {
 			method: 'POST',
 			headers,
@@ -78,7 +78,7 @@ export async function verifyManagedAi({
 		assert.equal(chat.status, 200)
 		const stream = await chat.text()
 		assert.ok(!stream.includes('"type":"error"'), 'Chat returned a stream error')
-		const created = daemon.store.getBoard(canvasId)
+		const created = await daemon.store.getBoard(canvasId)
 		assert.ok(created.shapes.length >= 2, 'Chat did not persist the requested canvas content')
 		const labels = created.shapes
 			.flatMap((shape) => [
@@ -168,7 +168,7 @@ export async function verifyManagedAi({
 		)
 		assert.ok(voiceResult.transcript.trim().length > 10, 'MAI returned an empty transcription')
 		assert.ok(voiceResult.intermediateEvents > 0, 'MAI returned no partial transcription events')
-		const beforeLecture = daemon.store.getBoard(canvasId)
+		const beforeLecture = await daemon.store.getBoard(canvasId)
 		const beforeRevision = beforeLecture.revision
 		const previousIds = new Set(beforeLecture.shapes.map((shape) => shape.id))
 		const lecture = await fetch(`${origin}/api/ai/chat`, {
@@ -195,7 +195,7 @@ export async function verifyManagedAi({
 		})
 		assert.equal(lecture.status, 200)
 		assert.ok(!(await lecture.text()).includes('"type":"error"'), 'Lecture returned a stream error')
-		const afterLecture = daemon.store.getBoard(canvasId)
+		const afterLecture = await daemon.store.getBoard(canvasId)
 		assert.ok(
 			afterLecture.revision > beforeRevision &&
 				afterLecture.shapes.some(
@@ -220,7 +220,7 @@ export async function verifyManagedAi({
 			status: 'passed',
 			authMode: 'managed-identity',
 			chatModel: publicSettings.model,
-			shapes: daemon.store.getBoard(canvasId).shapes.length,
+			shapes: (await daemon.store.getBoard(canvasId)).shapes.length,
 			audioSeconds: pcm.length / 32000,
 			...voiceResult,
 			mossDisabled: true,

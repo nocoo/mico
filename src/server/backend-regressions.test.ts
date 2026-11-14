@@ -5,15 +5,16 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { boardDigest, formatBoardContext } from './aiBoard.ts'
 import { createCanvasTools } from './aiTools.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, LOCAL_TENANT, type TenantStore } from './store.ts'
 
-async function withStore(run: (store: BoardStore) => Promise<void>) {
+async function withStore(run: (store: TenantStore) => Promise<void>) {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-backend-regressions-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await run(store)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
@@ -23,7 +24,7 @@ const run = (tool: unknown, input: unknown) =>
 		toolCallId: 'regression',
 		messages: [],
 	})
-const toolsFor = async (store: BoardStore, selection: string[] = []) =>
+const toolsFor = async (store: TenantStore, selection: string[] = []) =>
 	createCanvasTools({
 		store,
 		broadcast: () => {},

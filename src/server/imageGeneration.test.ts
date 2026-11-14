@@ -9,7 +9,7 @@ import { loadImageConfig } from './aiConfig.ts'
 import { createCanvasTools } from './aiTools.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
-import { BoardStore, OperationError } from './store.ts'
+import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
@@ -26,14 +26,15 @@ async function waitForStatus(
 }
 
 async function withStore(
-	run: (store: BoardStore, directory: string) => Promise<void> | void,
+	run: (store: TenantStore, directory: string) => Promise<void> | void,
 ): Promise<void> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-image-generation-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await run(store, directory)
 	} finally {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }

@@ -13,9 +13,9 @@ import { boardDigest } from './aiBoard.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
 import {
 	addedPlacement,
-	type BoardStore,
 	connectorPlacementBounds,
 	OperationError,
+	type TenantStore,
 } from './store.ts'
 import { expandLucideIcons } from './summaryIcons.ts'
 
@@ -123,7 +123,7 @@ type ToolReply =
 	| { ok: false; error: string; message: string; hint?: string }
 
 interface ToolContext {
-	store: BoardStore
+	store: TenantStore
 	broadcast: (event: unknown) => void
 	selection: string[]
 	canvasId: string
@@ -462,7 +462,7 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 	color,
 })
 
-const imageServices = new WeakMap<BoardStore, ImageGenerationService>()
+const imageServices = new WeakMap<TenantStore, ImageGenerationService>()
 
 export async function createCanvasTools(
 	input: Omit<ToolContext, 'revision' | 'imageGeneration'> & {

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import WebSocket from 'ws'
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
 import { createDaemon, type Daemon } from './index.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, LOCAL_TENANT } from './store.ts'
 
 async function withProduction(
 	run: (context: { url: string; directory: string; daemon: Daemon }) => Promise<void>,
@@ -225,11 +225,12 @@ test('SIGTERM drains an in-flight write before closing SQLite', { timeout: 10_00
 		assert.equal(res.statusCode, 200)
 		const [code] = await exited
 		assert.equal(code, 0)
-		const store = new BoardStore(dbPath)
+		const board = new BoardStore(dbPath)
+		const store = board.forTenant(LOCAL_TENANT)
 		try {
 			assert.equal((await store.getBoard()).shapes[0].id, 'shutdown-note')
 		} finally {
-			await store.close()
+			await board.close()
 		}
 	} finally {
 		if (child.exitCode === null) child.kill('SIGKILL')

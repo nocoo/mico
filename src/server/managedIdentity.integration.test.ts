@@ -315,10 +315,11 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 			'/openai/v1/responses',
 			'/openai/v1/responses',
 		])
+		const board = await daemon.store.getBoard()
 		assert.ok(
-			daemon.store
-				.getBoard()
-				.shapes.some((shape) => shape.type === 'text' && shape.text === 'Managed identity ready'),
+			board.shapes.some(
+				(shape) => shape.type === 'text' && shape.text === 'Managed identity ready',
+			),
 		)
 		assert.equal(credential.requestedScopes.length, 1)
 		assert.equal(readFileSync(settingsPath, 'utf8'), saved)

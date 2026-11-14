@@ -14,17 +14,18 @@ import { createMockAiModel } from './aiMock.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
 import { createDaemon, type Daemon } from './index.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, LOCAL_TENANT, type TenantStore } from './store.ts'
 
 type Execute = (input: unknown, options: unknown) => Promise<unknown>
 const run = (tool: unknown, input: unknown) =>
 	(tool as { execute: Execute }).execute(input, { toolCallId: 'test-call', messages: [] })
 
-function withStore(runTest: (store: BoardStore, broadcast: unknown[]) => Promise<void> | void) {
+function withStore(runTest: (store: TenantStore, broadcast: unknown[]) => Promise<void> | void) {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	return Promise.resolve(runTest(store, [])).finally(async () => {
-		await store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	})
 }
