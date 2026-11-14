@@ -25,6 +25,7 @@
 		"hooks:install": "sh scripts/install-hooks.sh"
 	},
 	"dependencies": {
+		"@ai-sdk/azure": "4.0.113",
 		"@ai-sdk/openai-compatible": "3.0.80",
 		"@ai-sdk/react": "4.0.159",
 		"@azure/identity": "4.14.1",
