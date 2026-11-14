@@ -23,6 +23,7 @@ function runtime(
 					}
 				: { mode: auth },
 		aiEnabled: options.aiEnabled ?? false,
+		aiSettingsVisible: true,
 		mossEnabled: options.mossEnabled ?? true,
 		ephemeral: options.ephemeral ?? true,
 	}

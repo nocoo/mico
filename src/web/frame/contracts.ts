@@ -68,6 +68,7 @@ export interface AssistantState {
 	connection: ConnectionState
 	open: boolean
 	mossEnabled: boolean
+	aiSettingsVisible: boolean
 	canvasId: string
 	selectedIds: string[]
 	initialPrompt: string

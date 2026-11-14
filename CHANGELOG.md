@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hide the AI Settings tab in deployment mode while preserving local access, visible-tab keyboard navigation and the server's read-only settings policy.
+
 ## v0.8.1
 
 - Route managed Azure Chat through the native Responses API so reasoning-capable models can execute canvas tools; keep local API-key gateways on Chat Completions.

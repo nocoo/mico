@@ -131,6 +131,7 @@ test('deploy HTTP routes use environment credentials and reject browser configur
 		const serverAddress = daemon.server.address()
 		assert.ok(serverAddress && typeof serverAddress !== 'string')
 		const url = `http://127.0.0.1:${serverAddress.port}`
+		assert.equal((await (await fetch(`${url}/api/runtime`)).json()).aiSettingsVisible, false)
 		const settings = await fetch(`${url}/api/ai/settings`)
 		assert.equal(settings.status, 200)
 		assert.deepEqual(await settings.json(), {

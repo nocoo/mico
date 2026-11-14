@@ -16,6 +16,7 @@ const runtime = (
 				}
 			: { mode },
 	aiEnabled: options.aiEnabled ?? true,
+	aiSettingsVisible: true,
 	mossEnabled: options.mossEnabled ?? true,
 	ephemeral: options.ephemeral ?? false,
 })

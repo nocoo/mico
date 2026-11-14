@@ -61,15 +61,15 @@ Provisioning a resource/model, changing quota allocation or deleting an old acco
 
 ## Public contracts
 
-`GET /api/ai/settings` returns `{baseURL, model, hasApiKey, authMode, readOnly}`. Managed mode reports no API key and rejects updates with `AI_SETTINGS_READ_ONLY`. The UI identifies Managed identity and does not request a model list for a read-only deployment. `GET /api/ai/models` uses the same credential policy as Chat.
+`GET /api/ai/settings` returns `{baseURL, model, hasApiKey, authMode, readOnly}`. Managed mode reports no API key and rejects updates with `AI_SETTINGS_READ_ONLY`. The Settings tab is omitted entirely in `MICO_RUNTIME=deploy`, including keyboard navigation and its view model, so the browser makes no Settings/model-list requests for that hidden page. Laptop mode retains the tab, including read-only Managed identity inspection. Hiding the UI does not remove the authenticated/read-only server API. `GET /api/ai/models` uses the same credential policy as Chat.
 
-`GET /api/runtime` includes `aiEnabled` and `mossEnabled`. Disabled MOSS requests return `MOSS_DISABLED`; globally disabled AI retains `AI_DISABLED` precedence. User authentication and origin checks still run before protected routes. `/mai/config` returns only `{host, deployment, localPath}`.
+`GET /api/runtime` includes `aiEnabled`, `mossEnabled` and `aiSettingsVisible`; Settings visibility is derived from the runtime mode rather than a hostname or new deployment-specific switch. Disabled MOSS requests return `MOSS_DISABLED`; globally disabled AI retains `AI_DISABLED` precedence. User authentication and origin checks still run before protected routes. `/mai/config` returns only `{host, deployment, localPath}`.
 
 ## Verification
 
 - L1: configuration policy, saved-key isolation, managed token caching/expiry, cancellation, header replacement and redirect rejection.
 - L3: `managedIdentity.integration.test.ts` exercises real daemon Chat/model HTTP routes with synthetic credentials and mocked Responses events, including function invocation, persisted canvas writes, tool-result continuation and `store=false`, plus asynchronous MAI authentication/queue behavior. Existing auth tests cover protected upgrades and session revocation.
-- L4: `managed-ai.spec.ts` checks read-only identity Settings, MAI default selection, disabled MOSS pointer/keyboard controls and absence of MOSS traffic. Local enabled-MOSS behavior remains covered separately.
+- L4: `managed-ai.spec.ts` checks hidden deployment Settings with no requests, visible-tab keyboard navigation, laptop read-only identity Settings, MAI default selection, disabled MOSS pointer/keyboard controls and absence of MOSS traffic. Local enabled-MOSS behavior remains covered separately.
 - Opt-in real check: `node scripts/verify-managed-ai.ts --confirm-provider-usage --audio <pcm16-file>` runs in the actual managed-identity container. It starts a separate loopback-only daemon with a fresh temporary database, tests Chat tools, MAI transcription, lecture handling and MOSS denial, then removes only its own database. Inputs are limited to 20 seconds of 16 kHz mono PCM16. Use a complete, self-contained utterance with visualizable facts: an arbitrary mid-sentence cut can legitimately return `WAIT` in lecture mode and fail the required new-note assertion. It never changes the production daemon's authentication or board.
 
 Automated suites use mocks, never paid providers or the daily board. The opt-in check incurs provider usage and requires explicit authorization. Keep its transcripts, deployment metadata and model receipts outside Git.

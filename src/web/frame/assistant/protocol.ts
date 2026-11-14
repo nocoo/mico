@@ -40,6 +40,14 @@ export function summaryToolsCompleted(parts: UIMessage['parts']): boolean {
 export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
 export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'audio'
 
+export function assistantTabs(settingsVisible: boolean): readonly AssistantTab[] {
+	return ASSISTANT_TABS.filter((tab) => settingsVisible || tab !== 'settings')
+}
+
+export function resolveAssistantTab(tab: AssistantTab, settingsVisible: boolean): AssistantTab {
+	return tab === 'settings' && !settingsVisible ? 'chat' : tab
+}
+
 export function initialAssistantTab(initialPrompt: string): AssistantTab {
 	return initialPrompt.trim() ? 'chat' : DEFAULT_ASSISTANT_TAB
 }
@@ -74,12 +82,14 @@ export function deriveAssistantActivity({
 export function nextAssistantTab(
 	current: AssistantTab,
 	key: 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End',
+	settingsVisible: boolean,
 ): AssistantTab {
-	if (key === 'Home') return 'chat'
-	if (key === 'End') return 'settings'
-	const index = ASSISTANT_TABS.indexOf(current)
+	const tabs = assistantTabs(settingsVisible)
+	if (key === 'Home') return tabs[0]
+	if (key === 'End') return tabs[tabs.length - 1]
+	const index = tabs.indexOf(resolveAssistantTab(current, settingsVisible))
 	const direction = key === 'ArrowRight' ? 1 : -1
-	return ASSISTANT_TABS[(index + direction + ASSISTANT_TABS.length) % ASSISTANT_TABS.length]
+	return tabs[(index + direction + tabs.length) % tabs.length]
 }
 
 export function takeLectureBatch(queue: readonly string[], maxCount = 3, maxChars = 900) {

@@ -18,16 +18,16 @@ A successful Azure deployment does not establish support for untested providers.
 
 The image serves UI, API and WebSocket traffic on one port. The reverse proxy must preserve the configured public `Host`, support WebSocket upgrades and stream responses without buffering. Terminate TLS at the hosting edge and keep the container port inaccessible except through that edge.
 
-| Variable                  | Meaning                                                                                                                                                                                     |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `MICO_RUNTIME`            | `laptop` (default): local environment/settings sources. `deploy`: process environment only; AI Settings are read-only. This does **not** select an authentication mode.                     |
-| `MICO_HOST` / `MICO_PORT` | Bind address and port. The image defaults to `0.0.0.0:47063`.                                                                                                                               |
-| `MICO_STATIC_DIR`         | Built frontend directory; `/app/dist` in the image.                                                                                                                                         |
-| `MICO_DB_PATH`            | SQLite path; choose a writable local filesystem. The Azure preview uses `/tmp/mico/board.sqlite`.                                                                                           |
-| `MICO_PUBLIC_ORIGIN`      | Exact canonical public HTTPS origin, with no path/query/fragment. Required for Entra login. Host/Origin checks use it rather than trusting forwarded headers.                               |
-| `MICO_AUTH_MODE`          | `none` (default) or `entra`. Optional and independent of runtime/hosting provider.                                                                                                          |
-| `MICO_AI_ENABLED`         | `true` (default) or `false`. False disables AI/voice/image-generation entrypoints and removes the requirement for Chat provider configuration. Manual drawing and image uploads still work. |
-| `MICO_EPHEMERAL`          | `true` displays the temporary-data warning. Default false. This is a notice, not a persistence implementation.                                                                              |
+| Variable                  | Meaning                                                                                                                                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MICO_RUNTIME`            | `laptop` (default): local environment/settings sources. `deploy`: process environment only; the AI Settings tab is hidden and its API remains read-only. This does **not** select an authentication mode. |
+| `MICO_HOST` / `MICO_PORT` | Bind address and port. The image defaults to `0.0.0.0:47063`.                                                                                                                                             |
+| `MICO_STATIC_DIR`         | Built frontend directory; `/app/dist` in the image.                                                                                                                                                       |
+| `MICO_DB_PATH`            | SQLite path; choose a writable local filesystem. The Azure preview uses `/tmp/mico/board.sqlite`.                                                                                                         |
+| `MICO_PUBLIC_ORIGIN`      | Exact canonical public HTTPS origin, with no path/query/fragment. Required for Entra login. Host/Origin checks use it rather than trusting forwarded headers.                                             |
+| `MICO_AUTH_MODE`          | `none` (default) or `entra`. Optional and independent of runtime/hosting provider.                                                                                                                        |
+| `MICO_AI_ENABLED`         | `true` (default) or `false`. False disables AI/voice/image-generation entrypoints and removes the requirement for Chat provider configuration. Manual drawing and image uploads still work.               |
+| `MICO_EPHEMERAL`          | `true` displays the temporary-data warning. Default false. This is a notice, not a persistence implementation.                                                                                            |
 
 AI configuration is documented separately in [ai-configuration.md](ai-configuration.md). `MICO_AI_AUTH_MODE` independently selects API-key or managed-identity provider authentication; it does not alter user login. `MICO_MOSS_ENABLED=false` disables MOSS even when Chat/MAI are enabled. With AI disabled, do not supply dummy provider credentials or a laptop gateway URL.
 

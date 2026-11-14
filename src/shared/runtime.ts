@@ -12,6 +12,7 @@ export interface RuntimeAuthContract {
 export interface PublicRuntimeContract {
 	auth: RuntimeAuthContract
 	aiEnabled: boolean
+	aiSettingsVisible: boolean
 	mossEnabled: boolean
 	ephemeral: boolean
 }
@@ -141,6 +142,7 @@ export function publicRuntimeContract(config: RuntimeConfig): PublicRuntimeContr
 	return {
 		auth: { ...config.auth },
 		aiEnabled: config.aiEnabled,
+		aiSettingsVisible: config.mode !== 'deploy',
 		mossEnabled: config.mossEnabled,
 		ephemeral: config.ephemeral,
 	}

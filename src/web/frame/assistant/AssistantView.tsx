@@ -246,24 +246,26 @@ export function AssistantView({
 								{ id: 'live', label: 'Live', icon: Mic },
 								{ id: 'settings', label: 'Settings', icon: Settings },
 							] as const
-						).map(({ id, label, icon }) => (
-							<IconButton
-								key={id}
-								id={`ai-tab-${id}`}
-								icon={icon}
-								label={label}
-								role="tab"
-								className="ai-tab"
-								aria-selected={model.tab === id}
-								aria-controls={`ai-panel-${id}`}
-								tabIndex={model.tab === id ? 0 : -1}
-								compact
-								tooltipSide="bottom"
-								onClick={() => model.setTab(id)}
-							>
-								<span>{label}</span>
-							</IconButton>
-						))}
+						)
+							.filter(({ id }) => model.tabs.includes(id))
+							.map(({ id, label, icon }) => (
+								<IconButton
+									key={id}
+									id={`ai-tab-${id}`}
+									icon={icon}
+									label={label}
+									role="tab"
+									className="ai-tab"
+									aria-selected={model.tab === id}
+									aria-controls={`ai-panel-${id}`}
+									tabIndex={model.tab === id ? 0 : -1}
+									compact
+									tooltipSide="bottom"
+									onClick={() => model.setTab(id)}
+								>
+									<span>{label}</span>
+								</IconButton>
+							))}
 					</div>
 					<span className="ai-close-slot" aria-hidden="true" />
 				</header>
@@ -335,7 +337,11 @@ export function AssistantView({
 							<div>
 								<strong>Assistant request failed</strong>
 								<span>{model.error.message}</span>
-								<span>Check your endpoint and model in Settings.</span>
+								<span>
+									{state.aiSettingsVisible
+										? 'Check your endpoint and model in Settings.'
+										: 'Ask the deployment administrator to check the AI configuration.'}
+								</span>
 							</div>
 							<button type="button" onClick={model.continueChat}>
 								Continue
@@ -516,15 +522,17 @@ export function AssistantView({
 					)}
 				</div>
 
-				<div
-					id="ai-panel-settings"
-					className="ai-settings-panel"
-					role="tabpanel"
-					aria-labelledby="ai-tab-settings"
-					hidden={model.tab !== 'settings'}
-				>
-					<AiSettings active={state.open && model.tab === 'settings'} />
-				</div>
+				{state.aiSettingsVisible && (
+					<div
+						id="ai-panel-settings"
+						className="ai-settings-panel"
+						role="tabpanel"
+						aria-labelledby="ai-tab-settings"
+						hidden={model.tab !== 'settings'}
+					>
+						<AiSettings active={state.open && model.tab === 'settings'} />
+					</div>
+				)}
 			</section>
 		</div>
 	)

@@ -54,6 +54,7 @@ const randomId = () => crypto.randomUUID()
 
 export interface AppProps {
 	aiEnabled?: boolean
+	aiSettingsVisible: boolean
 	mossEnabled: boolean
 	ephemeral?: boolean
 	user?: { name: string; expiresAt: number } | null
@@ -63,6 +64,7 @@ export interface AppProps {
 
 export default function App({
 	aiEnabled = true,
+	aiSettingsVisible,
 	mossEnabled,
 	ephemeral = false,
 	user = null,
@@ -1081,6 +1083,7 @@ export default function App({
 						},
 						open: aiPanelOpen,
 						mossEnabled,
+						aiSettingsVisible,
 						canvasId: activeCanvasId,
 						selectedIds,
 						initialPrompt: aiPrompt,

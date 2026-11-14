@@ -179,6 +179,7 @@ test('hosted auth verifies Entra claims, uses opaque sessions and returns 204 fo
 				redirectUri: `${ORIGIN}/auth/callback`,
 			},
 			aiEnabled: true,
+			aiSettingsVisible: true,
 			mossEnabled: true,
 			ephemeral: false,
 		})

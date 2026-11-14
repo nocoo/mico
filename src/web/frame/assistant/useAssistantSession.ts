@@ -9,10 +9,12 @@ import type { AssistantActions, AssistantState } from '../contracts'
 import type { LessonSegment } from './LessonPanel'
 import {
 	type AssistantTab,
+	assistantTabs,
 	buildAssistantRequestBody,
 	deriveAssistantActivity,
 	initialAssistantTab,
 	nextAssistantTab,
+	resolveAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
@@ -29,7 +31,17 @@ export type LiveProvider = 'moss' | 'mai'
 
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
-	const [tab, setTab] = useState<AssistantTab>(() => initialAssistantTab(state.initialPrompt))
+	const [selectedTab, setSelectedTab] = useState<AssistantTab>(() =>
+		initialAssistantTab(state.initialPrompt),
+	)
+	const tabs = assistantTabs(state.aiSettingsVisible)
+	const tab = resolveAssistantTab(selectedTab, state.aiSettingsVisible)
+	const setTab = useCallback(
+		(next: AssistantTab) => {
+			setSelectedTab(resolveAssistantTab(next, state.aiSettingsVisible))
+		},
+		[state.aiSettingsVisible],
+	)
 	const [liveProvider, setLiveProvider] = useState<LiveProvider>(state.mossEnabled ? 'moss' : 'mai')
 	const [draft, setDraft] = useState('')
 	const panelRef = useRef<HTMLElement>(null)
@@ -305,12 +317,16 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		(event: KeyboardEvent<HTMLDivElement>) => {
 			if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 			event.preventDefault()
-			const next = nextAssistantTab(tab, event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End')
+			const next = nextAssistantTab(
+				tab,
+				event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End',
+				state.aiSettingsVisible,
+			)
 			keyboardTabSelection.current = next !== tab && next === 'chat'
 			setTab(next)
 			document.getElementById(`ai-tab-${next}`)?.focus()
 		},
-		[tab],
+		[tab, setTab, state.aiSettingsVisible],
 	)
 
 	const selectLiveProvider = useCallback(
@@ -345,6 +361,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	}, [sendMessage, state.selectedIds, state.canvasId, clearError, requestSummary])
 
 	return {
+		tabs,
 		tab,
 		setTab,
 		focusTab,

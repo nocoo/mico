@@ -16,6 +16,7 @@ export function parseRuntimeConfig(body: unknown): RuntimeConfig {
 	}
 	if (
 		typeof runtime.aiEnabled !== 'boolean' ||
+		typeof runtime.aiSettingsVisible !== 'boolean' ||
 		typeof runtime.ephemeral !== 'boolean' ||
 		typeof runtime.mossEnabled !== 'boolean'
 	) {

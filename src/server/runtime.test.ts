@@ -15,6 +15,7 @@ test('runtime auth and AI controls are independent of deployment runtime', () =>
 	assert.deepEqual(publicRuntimeContract(none), {
 		auth: { mode: 'none' },
 		aiEnabled: true,
+		aiSettingsVisible: false,
 		mossEnabled: true,
 		ephemeral: false,
 	})
@@ -32,6 +33,23 @@ test('runtime auth and AI controls are independent of deployment runtime', () =>
 	assert.equal(hosted.ephemeral, true)
 	assert.deepEqual(hosted.allowedObjectIds, new Set([ALLOWED_OID]))
 	assert.equal(hosted.auth.redirectUri, 'https://mico.test/auth/callback')
+})
+
+test('AI Settings visibility follows deployment mode, not authentication or provider choice', () => {
+	for (const authMode of ['api-key', 'managed-identity']) {
+		assert.equal(
+			publicRuntimeContract(
+				loadRuntimeConfig({ MICO_RUNTIME: 'deploy', MICO_AI_AUTH_MODE: authMode }),
+			).aiSettingsVisible,
+			false,
+		)
+		assert.equal(
+			publicRuntimeContract(
+				loadRuntimeConfig({ MICO_RUNTIME: 'laptop', MICO_AI_AUTH_MODE: authMode }),
+			).aiSettingsVisible,
+			true,
+		)
+	}
 })
 
 test('MOSS is enabled by default and always disabled with AI', () => {

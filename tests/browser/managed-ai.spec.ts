@@ -1,12 +1,17 @@
 import { expect, test } from '@playwright/test'
 import { openAssistant, resetBoard } from './support'
 
-async function mockRuntime(page: Parameters<typeof openAssistant>[0], mossEnabled: boolean) {
+async function mockRuntime(
+	page: Parameters<typeof openAssistant>[0],
+	mossEnabled: boolean,
+	aiSettingsVisible = true,
+) {
 	await page.route('**/api/runtime', (route) =>
 		route.fulfill({
 			json: {
 				auth: { mode: 'none' },
 				aiEnabled: true,
+				aiSettingsVisible,
 				mossEnabled,
 				ephemeral: false,
 			},
@@ -106,6 +111,49 @@ test.describe('managed AI runtime', () => {
 		await expect(settings.getByRole('button', { name: 'Save settings' })).toBeDisabled()
 		expect(mossRequests).toBe(0)
 		expect(mossSockets).toBe(0)
+	})
+
+	test('deployment hides Settings and keeps keyboard navigation on visible tabs', async ({
+		page,
+	}, testInfo) => {
+		await mockRuntime(page, false, false)
+		let settingsRequests = 0
+		page.on('request', (request) => {
+			if (['/api/ai/settings', '/api/ai/models'].includes(new URL(request.url()).pathname))
+				settingsRequests++
+		})
+		await page.route('**/api/ai/settings', (route) => route.abort())
+		await page.route('**/api/ai/models', (route) => route.abort())
+		await page.goto('/')
+		const panel = await openAssistant(page, 'Chat')
+		await expect(panel.getByRole('tab')).toHaveText(['Chat', 'Audio', 'Live'])
+		await expect(panel.getByRole('tab', { name: 'Settings' })).toHaveCount(0)
+		await expect(page.locator('#ai-panel-settings')).toHaveCount(0)
+		const chat = panel.getByRole('tab', { name: 'Chat', exact: true })
+		const live = panel.getByRole('tab', { name: 'Live', exact: true })
+		await chat.focus()
+		await page.keyboard.press('End')
+		await expect(live).toBeFocused()
+		await expect(live).toHaveAttribute('aria-selected', 'true')
+		await page.keyboard.press('ArrowRight')
+		await expect(chat).toBeFocused()
+		await page.keyboard.press('ArrowLeft')
+		await expect(live).toBeFocused()
+		await page.keyboard.press('Home')
+		await expect(chat).toBeFocused()
+		await page.screenshot({
+			path: testInfo.outputPath('deployment-tabs.png'),
+			animations: 'disabled',
+		})
+		await page.route('**/api/ai/chat', (route) =>
+			route.fulfill({ status: 503, json: { error: 'PROVIDER_UNAVAILABLE' } }),
+		)
+		const composer = panel.getByRole('textbox', { name: 'Message the assistant' })
+		await composer.fill('Draw a test label')
+		await composer.press('Enter')
+		await expect(panel.getByRole('alert')).toContainText('deployment administrator')
+		await expect(panel.getByRole('alert')).not.toContainText('Settings')
+		expect(settingsRequests).toBe(0)
 	})
 
 	test('local runtime keeps MOSS enabled and selected by default', async ({ page }) => {
