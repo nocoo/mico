@@ -5,6 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer, request } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { DatabaseSync } from 'node:sqlite'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import WebSocket from 'ws'
@@ -235,6 +236,57 @@ test('SIGTERM drains an in-flight write before closing SQLite', { timeout: 10_00
 	} finally {
 		if (child.exitCode === null) child.kill('SIGKILL')
 		await exited
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('production exits without listening when storage initialization fails', {
+	timeout: 15_000,
+}, async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-startup-failure-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const lock = new DatabaseSync(dbPath)
+	lock.exec('CREATE TABLE held (id INTEGER); BEGIN IMMEDIATE')
+	const reservation = createServer()
+	reservation.listen(0, '127.0.0.1')
+	await once(reservation, 'listening')
+	const address = reservation.address()
+	assert.ok(address && typeof address !== 'string')
+	await new Promise<void>((resolve) => reservation.close(() => resolve()))
+	const child = spawn(process.execPath, [fileURLToPath(new URL('./index.ts', import.meta.url))], {
+		cwd: directory,
+		env: {
+			HOME: directory,
+			MICO_RUNTIME: 'deploy',
+			MICO_AI_ENABLED: 'false',
+			MICO_PORT: String(address.port),
+			MICO_DB_PATH: dbPath,
+		},
+		stdio: ['ignore', 'pipe', 'pipe'],
+	})
+	let stdout = ''
+	let stderr = ''
+	child.stdout.on('data', (chunk) => {
+		stdout += chunk
+	})
+	child.stderr.on('data', (chunk) => {
+		stderr += chunk
+	})
+	const exited = once(child, 'close')
+	const deadline = setTimeout(() => child.kill('SIGKILL'), 10_000)
+	try {
+		const [code, signal] = await exited
+		assert.equal(signal, null, stderr)
+		assert.equal(code, 1, stderr)
+		assert.doesNotMatch(stdout, /MICO daemon listening/)
+		assert.match(stderr, /MICO daemon startup failed/)
+		assert.match(stderr, /database is locked/)
+		assert.doesNotMatch(stderr, /UnhandledPromiseRejection/)
+	} finally {
+		clearTimeout(deadline)
+		if (child.exitCode === null) child.kill('SIGKILL')
+		await exited
+		lock.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })

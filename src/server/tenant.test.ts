@@ -74,6 +74,30 @@ test('tenants keep separate canvas lists, canvases and images', async () => {
 	}
 })
 
+test('reopening a non-local tenant does not create an extra default canvas', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-tenant-reopen-'))
+	const dbPath = join(directory, 'board.sqlite')
+	let boards = new BoardStore(dbPath)
+	try {
+		const tenant = boards.forTenant({ tenantId: 'ten-reopen' })
+		await tenant.createCanvas('Only canvas', true)
+		assert.equal((await tenant.getState()).canvases.length, 2)
+	} finally {
+		await boards.close()
+	}
+
+	boards = new BoardStore(dbPath)
+	try {
+		const tenant = boards.forTenant({ tenantId: 'ten-reopen' })
+		const state = await tenant.getState()
+		assert.equal(state.canvases.length, 2)
+		assert.equal(new Set(state.canvases.map((canvas) => canvas.id)).size, 2)
+	} finally {
+		await boards.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('a tenant cannot delete or read another tenant canvas by id', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-tenant-'))
 	const boards = new BoardStore(join(directory, 'board.sqlite'))

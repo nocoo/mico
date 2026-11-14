@@ -4,62 +4,120 @@ import { DatabaseSync } from 'node:sqlite'
 
 export type SqlValue = string | number | Uint8Array | null
 
-export interface SqlStatement {
-	readonly sql: string
-	readonly params?: readonly SqlValue[]
-}
-
-export interface Sql {
+export interface SqlTransaction {
 	exec(sql: string): Promise<void>
 	get<T>(sql: string, params?: readonly SqlValue[]): Promise<T | undefined>
 	all<T>(sql: string, params?: readonly SqlValue[]): Promise<T[]>
 	run(sql: string, params?: readonly SqlValue[]): Promise<number>
-	batch(statements: readonly SqlStatement[]): Promise<number[]>
 	hasTable(name: string): Promise<boolean>
+}
+
+export interface Sql extends SqlTransaction {
+	transaction<T>(operation: (tx: SqlTransaction) => Promise<T>): Promise<T>
 	close(): Promise<void>
 }
+
+interface SqliteLock {
+	readonly serialize: <T>(operation: () => Promise<T>) => Promise<T>
+	refs: number
+}
+
+const sqliteLocks = new Map<string, SqliteLock>()
 
 export function createSqliteSql(dbPath: string): Sql {
 	const path = resolve(dbPath)
 	mkdirSync(dirname(path), { recursive: true })
 	const db = new DatabaseSync(path, { timeout: 1000 })
+	let lock = sqliteLocks.get(path)
+	if (!lock) {
+		lock = { serialize: createMutex(), refs: 0 }
+		sqliteLocks.set(path, lock)
+	}
+	lock.refs += 1
+	const serialize = lock.serialize
+	let closed = false
+	let closePromise: Promise<void> | undefined
 
-	const run = (statement: SqlStatement): number =>
-		Number(db.prepare(statement.sql).run(...(statement.params ?? [])).changes)
+	const directExec = (sql: string): Promise<void> => {
+		if (closed) return Promise.reject(new Error('SQL driver is closed'))
+		db.exec(sql)
+		return Promise.resolve()
+	}
+	const directGet = <T>(sql: string, params: readonly SqlValue[] = []): Promise<T | undefined> => {
+		if (closed) return Promise.reject(new Error('SQL driver is closed'))
+		return Promise.resolve(db.prepare(sql).get(...params) as T | undefined)
+	}
+	const directAll = <T>(sql: string, params: readonly SqlValue[] = []): Promise<T[]> => {
+		if (closed) return Promise.reject(new Error('SQL driver is closed'))
+		return Promise.resolve(db.prepare(sql).all(...params) as T[])
+	}
+	const directRun = (sql: string, params: readonly SqlValue[] = []): Promise<number> => {
+		if (closed) return Promise.reject(new Error('SQL driver is closed'))
+		return Promise.resolve(Number(db.prepare(sql).run(...params).changes))
+	}
+	const directHasTable = (name: string): Promise<boolean> => {
+		if (closed) return Promise.reject(new Error('SQL driver is closed'))
+		const row = db
+			.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+			.get(name)
+		return Promise.resolve(row !== undefined)
+	}
+
+	const transactionSql: SqlTransaction = {
+		exec: directExec,
+		get: directGet,
+		all: directAll,
+		run: directRun,
+		hasTable: directHasTable,
+	}
+
+	const close = (): Promise<void> => {
+		if (!closePromise) {
+			closePromise = serialize(async () => {
+				if (closed) return
+				closed = true
+				try {
+					db.close()
+				} finally {
+					lock.refs -= 1
+					if (lock.refs === 0 && sqliteLocks.get(path) === lock) sqliteLocks.delete(path)
+				}
+			})
+		}
+		return closePromise
+	}
 
 	return {
 		async exec(sql) {
-			db.exec(sql)
+			await serialize(() => directExec(sql))
 		},
 		async get<T>(sql: string, params: readonly SqlValue[] = []) {
-			return db.prepare(sql).get(...params) as T | undefined
+			return serialize(() => directGet<T>(sql, params))
 		},
 		async all<T>(sql: string, params: readonly SqlValue[] = []) {
-			return db.prepare(sql).all(...params) as T[]
+			return serialize(() => directAll<T>(sql, params))
 		},
 		async run(sql: string, params: readonly SqlValue[] = []) {
-			return Number(db.prepare(sql).run(...params).changes)
+			return serialize(() => directRun(sql, params))
 		},
-		async batch(statements) {
-			db.exec('BEGIN IMMEDIATE')
-			try {
-				const changes = statements.map(run)
-				db.exec('COMMIT')
-				return changes
-			} catch (error) {
-				db.exec('ROLLBACK')
-				throw error
-			}
+		async transaction<T>(operation: (tx: SqlTransaction) => Promise<T>) {
+			return serialize(async () => {
+				if (closed) throw new Error('SQL driver is closed')
+				db.exec('BEGIN IMMEDIATE')
+				try {
+					const result = await operation(transactionSql)
+					db.exec('COMMIT')
+					return result
+				} catch (error) {
+					db.exec('ROLLBACK')
+					throw error
+				}
+			})
 		},
 		async hasTable(name: string) {
-			const row = db
-				.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-				.get(name)
-			return row !== undefined
+			return serialize(() => directHasTable(name))
 		},
-		async close() {
-			db.close()
-		},
+		close,
 	}
 }
 

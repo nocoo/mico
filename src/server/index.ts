@@ -683,6 +683,12 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				try {
+					await boards.waitUntilReady()
+				} catch {
+					sendError(res, 503, 'UNAVAILABLE', 'Storage initialization failed', origin)
+					return
+				}
 				sendJson(res, 200, { status: 'ok', version: manifest.version }, origin)
 				return
 			}
@@ -1066,13 +1072,13 @@ export function createDaemon(
 		imageGeneration,
 		wss,
 		close(): Promise<void> {
-			closing ??= new Promise<void>((resolveClose) => {
+			closing ??= new Promise<void>((resolveClose, rejectClose) => {
 				auth.close()
 				const timeout = setTimeout(() => server.closeAllConnections(), 5000)
 				timeout.unref()
 				server.close(() => {
 					clearTimeout(timeout)
-					boards.close().finally(resolveClose)
+					void boards.close().then(resolveClose, rejectClose)
 				})
 				for (const service of imageGenerators.values()) service.close()
 				mai?.close()
@@ -1085,24 +1091,46 @@ export function createDaemon(
 	}
 }
 
-export function startDaemon(): Daemon {
+export async function startDaemon(): Promise<Daemon> {
 	const env = loadRuntimeEnv()
 	const port = parsePort(env)
 	const host = env.MICO_HOST || '127.0.0.1'
 	const daemon = createDaemon({ port, staticDir: env.MICO_STATIC_DIR, env })
-	daemon.server.listen(port, host, () => {
+	try {
+		await daemon.boards.waitUntilReady()
+		await new Promise<void>((resolveListen, rejectListen) => {
+			daemon.server.once('error', rejectListen)
+			daemon.server.listen(port, host, () => {
+				daemon.server.off('error', rejectListen)
+				resolveListen()
+			})
+		})
 		console.log(`MICO daemon listening on http://${host}:${port}`)
-	})
-	return daemon
+		return daemon
+	} catch (error) {
+		await daemon.close()
+		throw error
+	}
 }
 
 const entry = process.argv[1] ? resolve(process.argv[1]) : undefined
 if (entry === fileURLToPath(import.meta.url)) {
-	const daemon = startDaemon()
-	const shutdown = (): void => {
-		console.log('MICO daemon stopping')
-		void daemon.close().then(() => process.exit(0))
+	try {
+		const daemon = await startDaemon()
+		const shutdown = (): void => {
+			console.log('MICO daemon stopping')
+			void daemon.close().then(
+				() => process.exit(0),
+				(error: unknown) => {
+					console.error('MICO daemon shutdown failed', error)
+					process.exit(1)
+				},
+			)
+		}
+		process.on('SIGINT', shutdown)
+		process.on('SIGTERM', shutdown)
+	} catch (error) {
+		console.error('MICO daemon startup failed', error)
+		process.exitCode = 1
 	}
-	process.on('SIGINT', shutdown)
-	process.on('SIGTERM', shutdown)
 }

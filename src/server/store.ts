@@ -19,7 +19,13 @@ import type {
 import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
 import { getConnectorAnchors } from '../web/anchors.ts'
 import { canvasPreview } from './preview.ts'
-import { createMutex, createSqliteSql, type Sql, type SqlStatement, type SqlValue } from './sql.ts'
+import {
+	createMutex,
+	createSqliteSql,
+	type Sql,
+	type SqlTransaction,
+	type SqlValue,
+} from './sql.ts'
 
 export class OperationError extends Error {
 	readonly status: number
@@ -827,19 +833,26 @@ function validTenantId(value: unknown): string {
 export class BoardStore {
 	private readonly driver: Sql
 	private readonly ready: Promise<void>
+	private readonly serialize: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly tenants = new Map<string, TenantStore>()
+	private closing = false
+	private closePromise: Promise<void> | undefined
 
 	constructor(dbPath: string) {
 		this.driver = createSqliteSql(dbPath)
-		const serialize = createMutex()
+		this.serialize = createMutex()
 		this.ready = this.initialize()
 		void this.ready.catch(() => undefined)
-		this.exclusive = <T>(operation: () => Promise<T>) =>
-			serialize(async () => {
+		this.exclusive = <T>(operation: () => Promise<T>) => {
+			if (this.closing) {
+				return Promise.reject(new Error('BoardStore is closing'))
+			}
+			return this.serialize(async () => {
 				await this.ready
 				return operation()
 			})
+		}
 	}
 
 	forTenant(scope: TenantScope): TenantStore {
@@ -852,53 +865,46 @@ export class BoardStore {
 	}
 
 	get sql(): Sql {
-		const ready = async (): Promise<void> => {
-			await this.ready
-		}
 		return {
-			exec: async (sql) => {
-				await ready()
-				return this.driver.exec(sql)
-			},
-			get: async <T>(sql: string, params?: readonly SqlValue[]) => {
-				await ready()
-				return this.driver.get<T>(sql, params)
-			},
-			all: async <T>(sql: string, params?: readonly SqlValue[]) => {
-				await ready()
-				return this.driver.all<T>(sql, params)
-			},
-			run: async (sql, params) => {
-				await ready()
-				return this.driver.run(sql, params)
-			},
-			batch: async (statements) => {
-				await ready()
-				return this.driver.batch(statements)
-			},
-			hasTable: async (name) => {
-				await ready()
-				return this.driver.hasTable(name)
-			},
-			close: () => this.driver.close(),
+			exec: (sql) => this.exclusive(() => this.driver.exec(sql)),
+			get: <T>(sql: string, params?: readonly SqlValue[]) =>
+				this.exclusive(() => this.driver.get<T>(sql, params)),
+			all: <T>(sql: string, params?: readonly SqlValue[]) =>
+				this.exclusive(() => this.driver.all<T>(sql, params)),
+			run: (sql, params) => this.exclusive(() => this.driver.run(sql, params)),
+			transaction: <T>(operation: (tx: SqlTransaction) => Promise<T>) =>
+				this.exclusive(() => this.driver.transaction(operation)),
+			hasTable: (name) => this.exclusive(() => this.driver.hasTable(name)),
+			close: () => this.close(),
 		}
+	}
+
+	waitUntilReady(): Promise<void> {
+		return this.ready
 	}
 
 	close(): Promise<void> {
-		return this.exclusive(() => this.driver.close())
+		if (this.closePromise) return this.closePromise
+		this.closing = true
+		this.closePromise = this.serialize(async () => {
+			await this.ready.catch(() => undefined)
+			await this.driver.close()
+		})
+		return this.closePromise
 	}
 
 	private async initialize(): Promise<void> {
-		await this.driver.exec(SCHEMA)
-		await this.migrateLocalTenant()
-		await this.migrateLegacyBoard()
+		await this.driver.transaction(async (tx) => {
+			await tx.exec(SCHEMA)
+			await this.migrateLocalTenant(tx)
+			await this.migrateLegacyBoard(tx)
+		})
 	}
 
-	private async migrateLocalTenant(): Promise<void> {
-		if (!(await this.driver.hasTable('settings'))) return
-		const hasImages = await this.driver.hasTable('image_assets')
+	private async migrateLocalTenant(tx: SqlTransaction): Promise<void> {
+		if (!(await tx.hasTable('settings'))) return
+		const hasImages = await tx.hasTable('image_assets')
 		const statements = [
-			'BEGIN',
 			'ALTER TABLE canvases RENAME TO legacy_canvases',
 			hasImages ? 'ALTER TABLE image_assets RENAME TO legacy_image_assets' : '',
 			TABLE_CANVASES,
@@ -911,35 +917,29 @@ export class BoardStore {
 			'DROP TABLE legacy_canvases',
 			hasImages ? 'DROP TABLE legacy_image_assets' : '',
 			'DROP TABLE settings',
-			'COMMIT',
 		]
-		await this.driver.exec(statements.filter(Boolean).join(';\n'))
+		await tx.exec(statements.filter(Boolean).join(';\n'))
 	}
 
-	private async migrateLegacyBoard(): Promise<void> {
-		if (!(await this.driver.hasTable('board'))) return
-		const row = await this.driver.get<{ revision: number; shapes: string }>(STATEMENTS.legacyBoard)
-		const existing = await this.driver.get<{ count: number }>(STATEMENTS.countCanvases, ['local'])
-		const statements: SqlStatement[] = []
+	private async migrateLegacyBoard(tx: SqlTransaction): Promise<void> {
+		if (!(await tx.hasTable('board'))) return
+		const row = await tx.get<{ revision: number; shapes: string }>(STATEMENTS.legacyBoard)
+		const existing = await tx.get<{ count: number }>(STATEMENTS.countCanvases, ['local'])
 		if (existing?.count === 0 && row) {
 			const now = new Date().toISOString()
-			statements.push({
-				sql: STATEMENTS.insertCanvas,
-				params: [
-					DEFAULT_CANVAS_ID,
-					DEFAULT_CANVAS_NAME,
-					row.revision,
-					row.shapes,
-					now,
-					now,
-					'local',
-				],
-			})
-			statements.push({ sql: STATEMENTS.createTenant, params: ['local', now] })
-			statements.push({ sql: STATEMENTS.saveActiveCanvas, params: [DEFAULT_CANVAS_ID, 'local'] })
+			await tx.run(STATEMENTS.insertCanvas, [
+				DEFAULT_CANVAS_ID,
+				DEFAULT_CANVAS_NAME,
+				row.revision,
+				row.shapes,
+				now,
+				now,
+				'local',
+			])
+			await tx.run(STATEMENTS.createTenant, ['local', now])
+			await tx.run(STATEMENTS.saveActiveCanvas, [DEFAULT_CANVAS_ID, 'local'])
 		}
-		statements.push({ sql: STATEMENTS.dropLegacyBoard })
-		await this.driver.batch(statements)
+		await tx.run(STATEMENTS.dropLegacyBoard)
 	}
 }
 
@@ -947,12 +947,6 @@ export class TenantStore {
 	readonly tenantId: string
 	private readonly sql: Sql
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
-	private readonly scoped: {
-		get<T>(sql: string, params?: readonly SqlValue[]): Promise<T | undefined>
-		all<T>(sql: string, params?: readonly SqlValue[]): Promise<T[]>
-		run(sql: string, params?: readonly SqlValue[]): Promise<number>
-		batch(statements: readonly SqlStatement[]): Promise<number[]>
-	}
 	private bootstrap: Promise<void> | undefined
 
 	constructor(
@@ -963,24 +957,11 @@ export class TenantStore {
 		this.exclusive = exclusive
 		this.sql = sql
 		this.tenantId = tenantId
-		const append = (params: readonly SqlValue[] = []): SqlValue[] => [...params, tenantId]
-		this.scoped = {
-			get: <T>(text: string, params?: readonly SqlValue[]) => sql.get<T>(text, append(params)),
-			all: <T>(text: string, params?: readonly SqlValue[]) => sql.all<T>(text, append(params)),
-			run: (text: string, params?: readonly SqlValue[]) => sql.run(text, append(params)),
-			batch: (statements: readonly SqlStatement[]) =>
-				sql.batch(
-					statements.map((statement) => ({
-						sql: statement.sql,
-						params: append(statement.params),
-					})),
-				),
-		}
 	}
 
 	private ensure(): Promise<void> {
 		if (!this.bootstrap) {
-			this.bootstrap = this.exclusive(() => this.createTenant()).catch((error: unknown) => {
+			this.bootstrap = this.createTenant().catch((error: unknown) => {
 				this.bootstrap = undefined
 				throw error
 			})
@@ -988,58 +969,90 @@ export class TenantStore {
 		return this.bootstrap
 	}
 
-	private async run<T>(body: () => Promise<T>): Promise<T> {
-		await this.ensure()
-		return this.exclusive(body)
+	private run<T>(body: (tx: SqlTransaction) => Promise<T>): Promise<T> {
+		return this.exclusive(async () => {
+			await this.ensure()
+			return this.sql.transaction((tx) =>
+				body({
+					exec: (sql) => tx.exec(sql),
+					get: <U>(sql: string, params: readonly SqlValue[] = []) =>
+						tx.get<U>(sql, [...params, this.tenantId]),
+					all: <U>(sql: string, params: readonly SqlValue[] = []) =>
+						tx.all<U>(sql, [...params, this.tenantId]),
+					run: (sql, params: readonly SqlValue[] = []) => tx.run(sql, [...params, this.tenantId]),
+					hasTable: (name) => tx.hasTable(name),
+				}),
+			)
+		})
 	}
 
 	private async createTenant(): Promise<void> {
 		const now = new Date().toISOString()
-		await this.sql.run(STATEMENTS.createTenant, [this.tenantId, now])
-		await this.scoped.run(STATEMENTS.ensureDefaultCanvas, [
-			this.tenantId === LOCAL_TENANT.tenantId ? DEFAULT_CANVAS_ID : randomUUID(),
-			DEFAULT_CANVAS_NAME,
-			'[]',
-			now,
-			now,
-		])
-		const tenant = await this.scoped.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
-		if (tenant?.active_canvas_id && (await this.findRow(tenant.active_canvas_id))) return
-		const first = await this.scoped.get<{ id: string }>(STATEMENTS.firstCanvas)
-		if (first) await this.scoped.run(STATEMENTS.saveActiveCanvas, [first.id])
-	}
-
-	private async stateVersion(): Promise<number> {
-		const tenant = await this.scoped.get<{ state_version: number }>(STATEMENTS.findTenant)
-		const version = tenant?.state_version ?? 0
-		return Number.isInteger(version) && version >= 0 ? version : 0
-	}
-
-	private async activeCanvasId(): Promise<string> {
-		const tenant = await this.scoped.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
-		const active = tenant?.active_canvas_id ?? undefined
-		if (active && (await this.findRow(active))) return active
-		const first = await this.scoped.get<{ id: string }>(STATEMENTS.firstCanvas)
-		if (!first) throw new Error('Tenant has no canvas')
-		await this.scoped.run(STATEMENTS.saveActiveCanvas, [first.id])
-		return first.id
+		await this.sql.transaction(async (tx) => {
+			await tx.run(STATEMENTS.createTenant, [this.tenantId, now])
+			const existing = await tx.get<{ count: number }>(STATEMENTS.countCanvases, [this.tenantId])
+			if ((existing?.count ?? 0) === 0) {
+				await tx.run(STATEMENTS.insertCanvas, [
+					this.tenantId === LOCAL_TENANT.tenantId ? DEFAULT_CANVAS_ID : randomUUID(),
+					DEFAULT_CANVAS_NAME,
+					0,
+					'[]',
+					now,
+					now,
+					this.tenantId,
+				])
+			}
+			const tenant = await tx.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant, [
+				this.tenantId,
+			])
+			if (tenant?.active_canvas_id) {
+				const row = await tx.get<{ id: string }>(STATEMENTS.findCanvas, [
+					tenant.active_canvas_id,
+					this.tenantId,
+				])
+				if (row) return
+			}
+			const first = await tx.get<{ id: string }>(STATEMENTS.firstCanvas, [this.tenantId])
+			if (first) {
+				await tx.run(STATEMENTS.saveActiveCanvas, [first.id, this.tenantId])
+			}
+		})
 	}
 
 	getActiveCanvasId(): Promise<string> {
-		return this.run(() => this.activeCanvasId())
+		return this.run(async (tx) => this.activeCanvasId(tx))
 	}
 
-	private findRow(id: string): Promise<CanvasRow | undefined> {
-		return this.scoped.get<CanvasRow>(STATEMENTS.findCanvas, [id])
+	private findRow(tx: SqlTransaction, id: string): Promise<CanvasRow | undefined> {
+		return tx.get<CanvasRow>(STATEMENTS.findCanvas, [id])
 	}
 
-	private async requireRow(id: string): Promise<CanvasRow> {
-		const row = await this.findRow(id)
+	private async requireRow(tx: SqlTransaction, id: string): Promise<CanvasRow> {
+		const row = await this.findRow(tx, id)
 		if (!row) throw new OperationError(404, 'NOT_FOUND', `canvas not found: ${id}`)
 		return row
 	}
 
-	private async parseRow(row: CanvasRow, persistMigration = false): Promise<Board> {
+	private async activeCanvasId(tx: SqlTransaction): Promise<string> {
+		const tenant = await tx.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
+		const active = tenant?.active_canvas_id ?? undefined
+		if (active && (await this.findRow(tx, active))) return active
+		const first = await tx.get<{ id: string }>(STATEMENTS.firstCanvas)
+		if (!first) throw new Error('Tenant has no canvas')
+		await tx.run(STATEMENTS.saveActiveCanvas, [first.id])
+		return first.id
+	}
+
+	private async listImageAssetIds(tx: SqlTransaction): Promise<Set<string>> {
+		const rows = await tx.all<{ id: string }>(STATEMENTS.listImageIds)
+		return new Set(rows.map((row) => row.id))
+	}
+
+	private async parseRow(
+		tx: SqlTransaction,
+		row: CanvasRow,
+		persistMigration = false,
+	): Promise<Board> {
 		let parsed: unknown
 		try {
 			parsed = JSON.parse(row.shapes)
@@ -1049,17 +1062,21 @@ export class TenantStore {
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
 		const beforeValidation = JSON.stringify(migrated.shapes)
-		validateBoardState(board, await this.listImageAssetIds())
+		validateBoardState(board, await this.listImageAssetIds(tx))
 		if (
 			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes)) &&
 			persistMigration
 		) {
-			await this.scoped.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
+			await tx.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
 		}
 		return board
 	}
 
-	private async summaryOf(row: CanvasRow, includePreview = true): Promise<CanvasSummary> {
+	private async summaryOf(
+		tx: SqlTransaction,
+		row: CanvasRow,
+		includePreview = true,
+	): Promise<CanvasSummary> {
 		const summary: CanvasSummary = {
 			id: row.id,
 			name: row.name,
@@ -1067,28 +1084,29 @@ export class TenantStore {
 			createdAt: row.created_at,
 			updatedAt: row.updated_at,
 		}
-		if (includePreview) summary.preview = canvasPreview((await this.parseRow(row)).shapes)
+		if (includePreview) summary.preview = canvasPreview((await this.parseRow(tx, row)).shapes)
 		return summary
 	}
 
-	private async readState(includePreviews: boolean): Promise<CanvasSnapshot> {
-		const stateVersion = await this.stateVersion()
-		const rows = await this.scoped.all<CanvasRow>(STATEMENTS.listCanvases)
-		const active = await this.activeCanvasId()
+	private async readState(tx: SqlTransaction, includePreviews: boolean): Promise<CanvasSnapshot> {
+		const tenant = await tx.get<{ state_version: number }>(STATEMENTS.findTenant)
+		const stateVersion = tenant?.state_version ?? 0
+		const rows = await tx.all<CanvasRow>(STATEMENTS.listCanvases)
+		const active = await this.activeCanvasId(tx)
 		const current = rows.find((row) => row.id === active) ?? rows[0]
 		if (!current) throw new Error('No canvas exists')
 		const canvases: CanvasSummary[] = []
-		for (const row of rows) canvases.push(await this.summaryOf(row, includePreviews))
-		const board = await this.parseRow(current)
+		for (const row of rows) canvases.push(await this.summaryOf(tx, row, includePreviews))
+		const board = await this.parseRow(tx, current)
 		return { stateVersion, activeCanvasId: current.id, canvases, board }
 	}
 
-	private async boardOf(id: string): Promise<Board> {
-		return cloneBoard(await this.parseRow(await this.requireRow(id), true))
+	private async boardOf(tx: SqlTransaction, id: string): Promise<Board> {
+		return cloneBoard(await this.parseRow(tx, await this.requireRow(tx, id), true))
 	}
 
 	listCanvases(includePreviews = true): Promise<CanvasSummary[]> {
-		return this.run(async () => (await this.readState(includePreviews)).canvases)
+		return this.run(async (tx) => (await this.readState(tx, includePreviews)).canvases)
 	}
 
 	getCanvasList(includePreviews = true): Promise<{
@@ -1096,36 +1114,39 @@ export class TenantStore {
 		activeCanvasId: string
 		canvases: CanvasSummary[]
 	}> {
-		return this.run(async () => {
-			const { stateVersion, activeCanvasId, canvases } = await this.readState(includePreviews)
+		return this.run(async (tx) => {
+			const { stateVersion, activeCanvasId, canvases } = await this.readState(tx, includePreviews)
 			return { stateVersion, activeCanvasId, canvases }
 		})
 	}
 
 	getCanvasSummary(id: string): Promise<CanvasSummary> {
-		return this.run(async () => this.summaryOf(await this.requireRow(validCanvasId(id))))
+		return this.run(async (tx) => this.summaryOf(tx, await this.requireRow(tx, validCanvasId(id))))
 	}
 
 	getState(includePreviews = true): Promise<CanvasSnapshot> {
-		return this.run(() => this.readState(includePreviews))
+		return this.run((tx) => this.readState(tx, includePreviews))
 	}
 
 	getBoard(canvasId?: string): Promise<Board> {
-		return this.run(async () =>
-			this.boardOf(canvasId === undefined ? await this.activeCanvasId() : validCanvasId(canvasId)),
+		return this.run(async (tx) =>
+			this.boardOf(
+				tx,
+				canvasId === undefined ? await this.activeCanvasId(tx) : validCanvasId(canvasId),
+			),
 		)
 	}
 
 	countImageShapes(canvasId: string): Promise<number> {
-		return this.run(async () => {
-			const board = await this.boardOf(validCanvasId(canvasId))
+		return this.run(async (tx) => {
+			const board = await this.boardOf(tx, validCanvasId(canvasId))
 			return board.shapes.filter((shape) => shape.type === 'image').length
 		})
 	}
 
 	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): Promise<boolean> {
-		return this.run(async () => {
-			const board = await this.boardOf(validCanvasId(canvasId))
+		return this.run(async (tx) => {
+			const board = await this.boardOf(tx, validCanvasId(canvasId))
 			return !occupiedPlacement(board.shapes, x, y, w, h)
 		})
 	}
@@ -1138,7 +1159,7 @@ export class TenantStore {
 		position: { x: number; y: number; w: number; h: number }
 		backgroundApplied: boolean
 	}> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const canvasId = validCanvasId(request.canvasId)
 			const w = request.w
 			const h = request.h
@@ -1160,8 +1181,8 @@ export class TenantStore {
 				throw new OperationError(400, 'INVALID_REQUEST', 'Generated image bytes must be non-empty')
 			}
 
-			const row = await this.requireRow(canvasId)
-			const board = await this.parseRow(row)
+			const row = await this.requireRow(tx, canvasId)
+			const board = await this.parseRow(tx, row)
 			if (board.shapes.filter((shape) => shape.type === 'image').length >= MAX_CANVAS_IMAGES) {
 				throw new OperationError(
 					409,
@@ -1206,7 +1227,7 @@ export class TenantStore {
 				}
 			}
 
-			const assetIds = await this.listImageAssetIds()
+			const assetIds = await this.listImageAssetIds(tx)
 			assetIds.add(imageId)
 			validateBoardState(next, assetIds)
 			if (next.shapes.filter((item) => item.type === 'image').length > MAX_CANVAS_IMAGES) {
@@ -1217,27 +1238,31 @@ export class TenantStore {
 				)
 			}
 			next.revision += 1
-			const changes = await this.scoped.batch([
-				{
-					sql: STATEMENTS.insertImage,
-					params: [imageId, 'image/png', request.bytes, request.bytes.byteLength, now],
-				},
-				{
-					sql: STATEMENTS.updateBoard,
-					params: [next.revision, JSON.stringify(next.shapes), now, canvasId, board.revision],
-				},
+			await tx.run(STATEMENTS.insertImage, [
+				imageId,
+				'image/png',
+				request.bytes,
+				request.bytes.byteLength,
+				now,
 			])
-			if (changes[1] !== 1) {
+			const changes = await tx.run(STATEMENTS.updateBoard, [
+				next.revision,
+				JSON.stringify(next.shapes),
+				now,
+				canvasId,
+				board.revision,
+			])
+			if (changes !== 1) {
 				throw new OperationError(
 					409,
 					'REVISION_CONFLICT',
 					'Canvas revision changed during image insertion',
 				)
 			}
-			const updatedRow = await this.requireRow(canvasId)
+			const updatedRow = await this.requireRow(tx, canvasId)
 			return {
 				canvasId,
-				canvas: await this.summaryOf(updatedRow),
+				canvas: await this.summaryOf(tx, updatedRow),
 				board: cloneBoard(next),
 				imageId,
 				position,
@@ -1247,9 +1272,9 @@ export class TenantStore {
 	}
 
 	getCanvas(canvasId: string): Promise<CanvasDetail> {
-		return this.run(async () => {
-			const row = await this.requireRow(validCanvasId(canvasId))
-			return { canvas: await this.summaryOf(row), board: await this.parseRow(row) }
+		return this.run(async (tx) => {
+			const row = await this.requireRow(tx, validCanvasId(canvasId))
+			return { canvas: await this.summaryOf(tx, row), board: await this.parseRow(tx, row) }
 		})
 	}
 
@@ -1263,18 +1288,13 @@ export class TenantStore {
 		return value
 	}
 
-	private async listImageAssetIds(): Promise<Set<string>> {
-		const rows = await this.scoped.all<{ id: string }>(STATEMENTS.listImageIds)
-		return new Set(rows.map((row) => row.id))
-	}
-
 	saveImage(
 		bytes: Uint8Array,
 		contentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
 	): Promise<string> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const id = randomUUID()
-			await this.scoped.run(STATEMENTS.insertImage, [
+			await tx.run(STATEMENTS.insertImage, [
 				id,
 				contentType,
 				bytes,
@@ -1286,19 +1306,18 @@ export class TenantStore {
 	}
 
 	getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const assetId = this.validImageId(id)
-			const row = await this.scoped.get<{ content_type: string; bytes: Uint8Array }>(
-				STATEMENTS.findImage,
-				[assetId],
-			)
+			const row = await tx.get<{ content_type: string; bytes: Uint8Array }>(STATEMENTS.findImage, [
+				assetId,
+			])
 			if (!row) return undefined
 			return { bytes: Buffer.from(row.bytes), contentType: row.content_type }
 		})
 	}
 
 	apply(request: unknown): Promise<Board> {
-		return this.run(async () => (await this.applyOperations(request)).board)
+		return this.run(async (tx) => (await this.applyOperations(tx, request)).board)
 	}
 
 	applyRequest(request: unknown): Promise<{
@@ -1306,10 +1325,13 @@ export class TenantStore {
 		canvas: CanvasSummary
 		board: Board
 	}> {
-		return this.run(() => this.applyOperations(request))
+		return this.run((tx) => this.applyOperations(tx, request))
 	}
 
-	private async applyOperations(request: unknown): Promise<{
+	private async applyOperations(
+		tx: SqlTransaction,
+		request: unknown,
+	): Promise<{
 		canvasId: string
 		canvas: CanvasSummary
 		board: Board
@@ -1321,9 +1343,9 @@ export class TenantStore {
 		if (!Array.isArray(request.operations)) invalid('operations must be an array')
 		const canvasId = Object.hasOwn(request, 'canvasId')
 			? validCanvasId(request.canvasId)
-			: await this.activeCanvasId()
-		const row = await this.requireRow(canvasId)
-		const board = await this.parseRow(row)
+			: await this.activeCanvasId(tx)
+		const row = await this.requireRow(tx, canvasId)
+		const board = await this.parseRow(tx, row)
 		if (Object.hasOwn(request, 'expectedRevision')) {
 			if (!Number.isInteger(request.expectedRevision) || (request.expectedRevision as number) < 0) {
 				throw new OperationError(
@@ -1344,7 +1366,7 @@ export class TenantStore {
 		const next = cloneBoard(board)
 		const labelHeightAdjustments = new Map<string, number>()
 		const cascaded = new Set<string>()
-		const assetIds = await this.listImageAssetIds()
+		const assetIds = await this.listImageAssetIds(tx)
 		let createsImage = false
 		for (const operation of request.operations as Operation[]) {
 			if (!isObject(operation)) invalid('operation must be an object')
@@ -1548,7 +1570,7 @@ export class TenantStore {
 		}
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
-		const changes = await this.scoped.run(STATEMENTS.updateBoard, [
+		const changes = await tx.run(STATEMENTS.updateBoard, [
 			next.revision,
 			JSON.stringify(next.shapes),
 			updatedAt,
@@ -1562,10 +1584,10 @@ export class TenantStore {
 				'Canvas revision changed during the operation',
 			)
 		}
-		const updatedRow = await this.requireRow(canvasId)
+		const updatedRow = await this.requireRow(tx, canvasId)
 		return {
 			canvasId,
-			canvas: await this.summaryOf(updatedRow),
+			canvas: await this.summaryOf(tx, updatedRow),
 			board: cloneBoard(next),
 		}
 	}
@@ -1574,17 +1596,14 @@ export class TenantStore {
 		name?: unknown,
 		activate = false,
 	): Promise<{ state: CanvasSnapshot; canvas: CanvasSummary }> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const canvasName = name === undefined ? 'Untitled canvas' : validCanvasName(name)
 			const id = randomUUID()
 			const now = new Date().toISOString()
-			const statements: SqlStatement[] = [
-				{ sql: STATEMENTS.insertCanvas, params: [id, canvasName, 0, '[]', now, now] },
-			]
-			if (activate) statements.push({ sql: STATEMENTS.saveActiveCanvas, params: [id] })
-			statements.push({ sql: STATEMENTS.bumpStateVersion })
-			await this.scoped.batch(statements)
-			const state = await this.readState(true)
+			await tx.run(STATEMENTS.insertCanvas, [id, canvasName, 0, '[]', now, now])
+			if (activate) await tx.run(STATEMENTS.saveActiveCanvas, [id])
+			await tx.run(STATEMENTS.bumpStateVersion)
+			const state = await this.readState(tx, true)
 			const canvas = state.canvases.find((candidate) => candidate.id === id)
 			if (!canvas) throw new Error('Created canvas is missing from the state')
 			return { state, canvas }
@@ -1592,49 +1611,42 @@ export class TenantStore {
 	}
 
 	renameCanvas(canvasId: string, name: unknown): Promise<CanvasSnapshot> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const id = validCanvasId(canvasId)
 			const canvasName = validCanvasName(name)
-			await this.requireRow(id)
-			await this.scoped.batch([
-				{ sql: STATEMENTS.renameCanvas, params: [canvasName, id] },
-				{ sql: STATEMENTS.bumpStateVersion },
-			])
-			return this.readState(true)
+			await this.requireRow(tx, id)
+			await tx.run(STATEMENTS.renameCanvas, [canvasName, id])
+			await tx.run(STATEMENTS.bumpStateVersion)
+			return this.readState(tx, true)
 		})
 	}
 
 	deleteCanvas(canvasId: string): Promise<CanvasSnapshot> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const id = validCanvasId(canvasId)
-			await this.requireRow(id)
-			const count = await this.scoped.get<{ count: number }>(STATEMENTS.countCanvases)
+			await this.requireRow(tx, id)
+			const count = await tx.get<{ count: number }>(STATEMENTS.countCanvases)
 			if ((count?.count ?? 0) <= 1) {
 				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
 			}
-			const statements: SqlStatement[] = [{ sql: STATEMENTS.deleteCanvas, params: [id] }]
-			const tenant = await this.scoped.get<{ active_canvas_id: string | null }>(
-				STATEMENTS.findTenant,
-			)
+			await tx.run(STATEMENTS.deleteCanvas, [id])
+			const tenant = await tx.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
 			if (tenant?.active_canvas_id === id) {
-				const next = await this.scoped.get<{ id: string }>(STATEMENTS.firstCanvas)
-				if (next) statements.push({ sql: STATEMENTS.saveActiveCanvas, params: [next.id] })
+				const next = await tx.get<{ id: string }>(STATEMENTS.firstCanvas)
+				if (next) await tx.run(STATEMENTS.saveActiveCanvas, [next.id])
 			}
-			statements.push({ sql: STATEMENTS.bumpStateVersion })
-			await this.scoped.batch(statements)
-			return this.readState(true)
+			await tx.run(STATEMENTS.bumpStateVersion)
+			return this.readState(tx, true)
 		})
 	}
 
 	activateCanvas(canvasId: string): Promise<CanvasSnapshot> {
-		return this.run(async () => {
+		return this.run(async (tx) => {
 			const id = validCanvasId(canvasId)
-			await this.requireRow(id)
-			await this.scoped.batch([
-				{ sql: STATEMENTS.saveActiveCanvas, params: [id] },
-				{ sql: STATEMENTS.bumpStateVersion },
-			])
-			return this.readState(true)
+			await this.requireRow(tx, id)
+			await tx.run(STATEMENTS.saveActiveCanvas, [id])
+			await tx.run(STATEMENTS.bumpStateVersion)
+			return this.readState(tx, true)
 		})
 	}
 }

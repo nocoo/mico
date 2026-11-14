@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
@@ -1350,6 +1350,51 @@ test('a legacy single-board database migrates to a canvas', async () => {
 	}
 })
 
+test('simultaneous legacy open completes one atomic migration', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-legacy-concurrent-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const legacy = new DatabaseSync(dbPath)
+	legacy.exec(
+		'CREATE TABLE board (id INTEGER PRIMARY KEY CHECK (id = 1), revision INTEGER NOT NULL, shapes TEXT NOT NULL)',
+	)
+	const shapes = JSON.stringify([
+		{ id: 'legacy-shape', type: 'rectangle', x: 5, y: 6, w: 70, h: 80, color: '#123456' },
+	])
+	legacy.prepare('INSERT INTO board (id, revision, shapes) VALUES (1, ?, ?)').run(7, shapes)
+	await legacy.close()
+
+	const firstBoard = new BoardStore(dbPath)
+	const secondBoard = new BoardStore(dbPath)
+	try {
+		await Promise.all([firstBoard.waitUntilReady(), secondBoard.waitUntilReady()])
+		const first = firstBoard.forTenant(LOCAL_TENANT)
+		const second = secondBoard.forTenant(LOCAL_TENANT)
+		const [firstState, secondState] = await Promise.all([first.getState(), second.getState()])
+		for (const state of [firstState, secondState]) {
+			assert.equal(state.activeCanvasId, 'main')
+			assert.equal(state.canvases.length, 1)
+			assert.equal(state.board.revision, 7)
+			assert.deepEqual(
+				state.board.shapes.map((shape) => shape.id),
+				['legacy-shape'],
+			)
+		}
+
+		const tenants = await firstBoard.sql.all<{ id: string }>('SELECT id FROM tenants ORDER BY id')
+		assert.deepEqual(
+			tenants.map((tenant) => tenant.id),
+			['local'],
+		)
+		const partialTables = await firstBoard.sql.all<{ name: string }>(
+			"SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('board', 'legacy_canvases', 'legacy_image_assets', 'settings')",
+		)
+		assert.deepEqual(partialTables, [])
+	} finally {
+		await Promise.all([firstBoard.close(), secondBoard.close()])
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('image assets and frame references persist and delete atomically', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-store-image-'))
 	const dbPath = join(directory, 'board.sqlite')
@@ -1711,6 +1756,91 @@ test('active canvas and its content persist across reopen', async () => {
 		)
 	} finally {
 		await reopenedBoard.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('waitUntilReady is exposed and close is idempotent after failed initialization', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-failed-init-'))
+	const dbPath = join(directory, 'board.sqlite')
+	writeFileSync(dbPath, 'not a sqlite database')
+	const board = new BoardStore(dbPath)
+	try {
+		await assert.rejects(() => board.waitUntilReady())
+		await Promise.all([board.close(), board.close(), board.close()])
+		await board.close()
+		await assert.rejects(() => board.sql.run('SELECT 1'))
+	} finally {
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('close drains accepted writes and rejects new work', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-close-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const board = new BoardStore(dbPath)
+	const store = board.forTenant(LOCAL_TENANT)
+	try {
+		const write = store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'accepted', type: 'rectangle', x: 0, y: 0, w: 10, h: 10, color: '#123456' },
+				},
+			],
+		})
+		const closing = board.close()
+		await write
+		await closing
+		await assert.rejects(() =>
+			store.apply({
+				operations: [
+					{
+						type: 'create',
+						shape: {
+							id: 'rejected',
+							type: 'rectangle',
+							x: 0,
+							y: 0,
+							w: 10,
+							h: 10,
+							color: '#123456',
+						},
+					},
+				],
+			}),
+		)
+	} finally {
+		await board.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('concurrent delete across handles cannot remove the last canvas', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-last-canvas-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const firstBoard = new BoardStore(dbPath)
+	const first = firstBoard.forTenant(LOCAL_TENANT)
+	const secondBoard = new BoardStore(dbPath)
+	const second = secondBoard.forTenant(LOCAL_TENANT)
+	try {
+		const created = await first.createCanvas('Second')
+		const results = await Promise.allSettled([
+			first.deleteCanvas('main'),
+			second.deleteCanvas(created.canvas.id),
+		])
+		const failures = results.filter(
+			(result): result is PromiseRejectedResult => result.status === 'rejected',
+		)
+		assert.equal(failures.length, 1)
+		assert.ok(
+			failures[0].reason instanceof OperationError && failures[0].reason.code === 'LAST_CANVAS',
+		)
+		const state = await first.getState()
+		assert.equal(state.canvases.length, 1)
+	} finally {
+		await firstBoard.close()
+		await secondBoard.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })
