@@ -12,6 +12,7 @@ export interface RuntimeAuthContract {
 export interface PublicRuntimeContract {
 	auth: RuntimeAuthContract
 	aiEnabled: boolean
+	mossEnabled: boolean
 	ephemeral: boolean
 }
 
@@ -23,14 +24,20 @@ export interface RuntimeConfig {
 	mode: RuntimeMode
 	auth: RuntimeAuthContract
 	aiEnabled: boolean
+	aiAuthMode: 'api-key' | 'managed-identity'
+	azureClientId?: string
+	mossEnabled: boolean
 	ephemeral: boolean
 	publicOrigin?: string
 	allowedObjectIds: Set<string>
 }
 
-function booleanValue(env: NodeJS.ProcessEnv, name: 'MICO_AI_ENABLED' | 'MICO_EPHEMERAL'): boolean {
+function booleanValue(
+	env: NodeJS.ProcessEnv,
+	name: 'MICO_AI_ENABLED' | 'MICO_MOSS_ENABLED' | 'MICO_EPHEMERAL',
+): boolean {
 	const raw = env[name]?.trim()
-	if (!raw) return name === 'MICO_AI_ENABLED'
+	if (!raw) return name !== 'MICO_EPHEMERAL'
 	if (raw === 'true') return true
 	if (raw === 'false') return false
 	throw new Error(`${name} must be true or false`)
@@ -69,6 +76,18 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 	}
 
 	const aiEnabled = booleanValue(env, 'MICO_AI_ENABLED')
+	const aiAuthMode = env.MICO_AI_AUTH_MODE?.trim() || 'api-key'
+	if (aiAuthMode !== 'api-key' && aiAuthMode !== 'managed-identity') {
+		throw new Error('MICO_AI_AUTH_MODE must be api-key or managed-identity')
+	}
+	const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+	const azureClientId = env.AZURE_CLIENT_ID?.trim() || undefined
+	if (aiEnabled && aiAuthMode === 'managed-identity') {
+		if (!azureClientId)
+			throw new Error('AZURE_CLIENT_ID is required when managed identity AI is enabled')
+		if (!guidPattern.test(azureClientId)) throw new Error('AZURE_CLIENT_ID must be a GUID')
+	}
+	const mossEnabled = aiEnabled && booleanValue(env, 'MICO_MOSS_ENABLED')
 	const ephemeral = booleanValue(env, 'MICO_EPHEMERAL')
 	const publicOrigin = env.MICO_PUBLIC_ORIGIN?.trim()
 		? canonicalOrigin(env.MICO_PUBLIC_ORIGIN.trim(), 'MICO_PUBLIC_ORIGIN')
@@ -79,7 +98,6 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 		if (new URL(publicOrigin).protocol !== 'https:') {
 			throw new Error('MICO_PUBLIC_ORIGIN must use HTTPS when MICO_AUTH_MODE=entra')
 		}
-		const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 		const tenantId = env.MICO_AUTH_TENANT_ID?.trim()
 		const clientId = env.MICO_AUTH_CLIENT_ID?.trim()
 		if (!tenantId) throw new Error('MICO_AUTH_TENANT_ID is required when MICO_AUTH_MODE=entra')
@@ -103,6 +121,9 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 			mode: runtime,
 			publicOrigin,
 			aiEnabled,
+			aiAuthMode,
+			azureClientId,
+			mossEnabled,
 			ephemeral,
 			allowedObjectIds,
 			auth: {
@@ -119,6 +140,9 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 		mode: runtime,
 		publicOrigin,
 		aiEnabled,
+		aiAuthMode,
+		azureClientId,
+		mossEnabled,
 		ephemeral,
 		allowedObjectIds: new Set(),
 		auth: { mode: 'none' },
@@ -129,6 +153,7 @@ export function publicRuntimeContract(config: RuntimeConfig): PublicRuntimeContr
 	return {
 		auth: { ...config.auth },
 		aiEnabled: config.aiEnabled,
+		mossEnabled: config.mossEnabled,
 		ephemeral: config.ephemeral,
 	}
 }

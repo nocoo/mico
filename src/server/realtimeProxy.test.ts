@@ -171,7 +171,7 @@ test('MAI forwards frames and safely closes on long Unicode upstream errors', {
 		...config.mai,
 		createUpstream(url, options) {
 			assert.equal(url, 'wss://mai.example/mai/v1/realtime?intent=transcription')
-			assert.equal(options.headers['api-key'], 'test')
+			assert.equal('api-key' in options.headers ? options.headers['api-key'] : undefined, 'test')
 			upstream = new WebSocket(`ws://127.0.0.1:${address.port}`)
 			return upstream
 		},

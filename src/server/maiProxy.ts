@@ -14,7 +14,13 @@ export interface MaiProxyOptions {
 	deployment: string
 	allowedOrigin?: string
 	onConnection?: (req: IncomingMessage, client: WebSocket) => void
-	createUpstream?: (url: string, options: { headers: { 'api-key': string } }) => WebSocket
+	createUpstream?: (
+		url: string,
+		options: { headers: { 'api-key': string } | { Authorization: string } },
+	) => WebSocket
+	bearerProvider?: () => Promise<string>
+	maxBufferedBytes?: number
+	maxBacklogFrames?: number
 	onError?: (error: Error) => void
 }
 
@@ -51,66 +57,123 @@ export function createMaiProxy(options: MaiProxyOptions): {
 			client.on('error', () => client.terminate())
 			options.onConnection?.(req, client)
 
-			if (!options.host || !options.apiKey || !options.deployment) {
+			if (!options.host || (!options.apiKey && !options.bearerProvider) || !options.deployment) {
 				client.send(
 					JSON.stringify({
 						action: 'proxy.error',
-						message: 'MAI credentials are missing from server environment',
+						message:
+							'MAI credentials or identity configuration are missing from the server environment',
 					}),
 				)
 				client.close(1008, 'MAI config unavailable')
 				return
 			}
 
-			let upstream: WebSocket
-			try {
-				upstream = createUpstream(`wss://${options.host}${UPSTREAM_PATH}`, {
-					headers: { 'api-key': options.apiKey },
-				})
-			} catch (error) {
-				options.onError?.(error instanceof Error ? error : new Error(String(error)))
-				client.send(
-					JSON.stringify({ action: 'proxy.error', message: 'Could not connect to MAI Realtime.' }),
-				)
-				client.close(1011, 'MAI upstream unavailable')
-				return
-			}
-
-			upstreams.add(upstream)
+			const maxFrames = options.maxBacklogFrames ?? 256
+			const maxBytes = options.maxBufferedBytes ?? 4 * 1024 * 1024
 			const backlog: [WebSocket.RawData, boolean][] = []
+			let backlogBytes = 0
+			let clientClosed = false
+			let upstream: WebSocket | undefined
+
 			client.on('message', (data, isBinary) => {
-				if (upstream.readyState === WebSocket.OPEN) upstream.send(data, { binary: isBinary })
-				else if (upstream.readyState === WebSocket.CONNECTING) backlog.push([data, isBinary])
-			})
-			upstream.on('open', () => {
-				for (const [data, isBinary] of backlog.splice(0)) {
+				if (clientClosed) return
+				if (upstream?.readyState === WebSocket.OPEN) {
 					upstream.send(data, { binary: isBinary })
+					return
 				}
-			})
-			upstream.on('message', (data, isBinary) => {
-				if (client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary })
-			})
-			upstream.on('error', (error) => {
-				options.onError?.(error)
-				if (client.readyState === WebSocket.OPEN) client.close(1011, 'MAI upstream unavailable')
-			})
-			upstream.on('close', (code, reason) => {
-				upstreams.delete(upstream)
-				if (client.readyState === WebSocket.OPEN) {
-					const safeCode =
-						code >= 1000 && code <= 4999 && ![1004, 1005, 1006, 1015].includes(code) ? code : 1011
-					client.close(safeCode, reason.toString().slice(0, 120))
+				if (upstream?.readyState === WebSocket.CONNECTING || !upstream) {
+					const frameBytes =
+						typeof data === 'string'
+							? Buffer.byteLength(data)
+							: data instanceof ArrayBuffer
+								? data.byteLength
+								: Buffer.isBuffer(data)
+									? data.length
+									: (data as unknown as Buffer[]).reduce((total, part) => total + part.length, 0)
+					if (backlog.length >= maxFrames || backlogBytes + frameBytes > maxBytes) {
+						client.close(1013, 'MAI client backlog exceeded')
+						return
+					}
+					backlog.push([data, isBinary])
+					backlogBytes += frameBytes
 				}
 			})
 			client.on('close', () => {
+				clientClosed = true
 				if (
-					upstream.readyState === WebSocket.CONNECTING ||
-					upstream.readyState === WebSocket.OPEN
+					upstream &&
+					(upstream.readyState === WebSocket.CONNECTING || upstream.readyState === WebSocket.OPEN)
 				) {
 					upstream.close()
 				}
 			})
-			client.on('error', () => upstream.terminate())
+
+			void (async () => {
+				let authHeaders: { 'api-key': string } | { Authorization: string }
+				try {
+					if (options.bearerProvider) {
+						authHeaders = { Authorization: `Bearer ${await options.bearerProvider()}` }
+					} else {
+						authHeaders = { 'api-key': options.apiKey }
+					}
+				} catch {
+					if (!clientClosed && client.readyState === WebSocket.OPEN) {
+						client.send(
+							JSON.stringify({
+								action: 'proxy.error',
+								message: 'Could not authenticate MAI Realtime.',
+							}),
+						)
+						client.close(1008, 'MAI identity unavailable')
+					}
+					return
+				}
+				if (closed || clientClosed || client.readyState !== WebSocket.OPEN) return
+
+				try {
+					upstream = createUpstream(`wss://${options.host}${UPSTREAM_PATH}`, {
+						headers: authHeaders,
+					})
+				} catch (error) {
+					options.onError?.(error instanceof Error ? error : new Error(String(error)))
+					if (!clientClosed && client.readyState === WebSocket.OPEN) {
+						client.send(
+							JSON.stringify({
+								action: 'proxy.error',
+								message: 'Could not connect to MAI Realtime.',
+							}),
+						)
+						client.close(1011, 'MAI upstream unavailable')
+					}
+					return
+				}
+
+				upstreams.add(upstream)
+				const activeUpstream = upstream
+				activeUpstream.on('open', () => {
+					if (closed || clientClosed || activeUpstream.readyState !== WebSocket.OPEN) return
+					for (const [data, isBinary] of backlog.splice(0)) {
+						activeUpstream.send(data, { binary: isBinary })
+					}
+					backlogBytes = 0
+				})
+				activeUpstream.on('message', (data, isBinary) => {
+					if (client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary })
+				})
+				activeUpstream.on('error', (error) => {
+					options.onError?.(error)
+					if (client.readyState === WebSocket.OPEN) client.close(1011, 'MAI upstream unavailable')
+				})
+				activeUpstream.on('close', (code, reason) => {
+					upstreams.delete(activeUpstream)
+					if (client.readyState === WebSocket.OPEN) {
+						const safeCode =
+							code >= 1000 && code <= 4999 && ![1004, 1005, 1006, 1015].includes(code) ? code : 1011
+						client.close(safeCode, reason.toString().slice(0, 120))
+					}
+				})
+			})()
 		})
 	}
 

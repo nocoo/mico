@@ -13,6 +13,7 @@ export interface PublicAiSettings {
 	baseURL: string
 	model: string
 	hasApiKey: boolean
+	authMode: 'api-key' | 'managed-identity'
 	readOnly: boolean
 }
 
@@ -80,7 +81,8 @@ export class AiSettingsStore {
 	}: AiSettingsStoreOptions = {}) {
 		this.path = path
 		this.aiEnabled = aiEnabled
-		this.readOnly = config.runtime === 'deploy' || !aiEnabled
+		this.readOnly =
+			config.runtime === 'deploy' || config.authMode === 'managed-identity' || !aiEnabled
 		this.persist = persist && !this.readOnly
 		this.settings = { ...config.chat }
 		if (!this.persist) return
@@ -93,7 +95,11 @@ export class AiSettingsStore {
 			const saved = JSON.parse(text) as unknown
 			if (!isRecord(saved)) throw new Error('Invalid AI settings')
 			const keys = Object.keys(saved)
-			if (!keys.every((key) => key === 'baseURL' || key === 'model' || key === 'apiKey')) {
+			if (
+				!keys.every(
+					(key) => key === 'baseURL' || key === 'model' || key === 'apiKey' || key === 'authMode',
+				)
+			) {
 				throw new Error('Invalid AI settings')
 			}
 			if (typeof saved.baseURL !== 'string' || typeof saved.model !== 'string') {
@@ -106,7 +112,7 @@ export class AiSettingsStore {
 			const model = validateModel(saved.model)
 			const apiKey =
 				saved.apiKey === undefined ? this.settings.apiKey : validateApiKey(saved.apiKey)
-			this.settings = { baseURL, model, apiKey }
+			this.settings = { baseURL, model, apiKey, authMode: this.settings.authMode }
 			try {
 				chmodSync(path, 0o600)
 			} catch {}
@@ -123,6 +129,7 @@ export class AiSettingsStore {
 			baseURL: this.settings.baseURL,
 			model: this.settings.model,
 			hasApiKey: this.settings.apiKey.length > 0,
+			authMode: this.settings.authMode,
 			readOnly: this.readOnly,
 		}
 	}
@@ -155,7 +162,7 @@ export class AiSettingsStore {
 		const baseURL = validateBaseURL(body.baseURL)
 		const model = validateModel(body.model)
 		const apiKey = body.apiKey === undefined ? this.settings.apiKey : validateApiKey(body.apiKey)
-		const next = { baseURL, model, apiKey }
+		const next = { baseURL, model, apiKey, authMode: this.settings.authMode }
 
 		if (this.persist) {
 			try {
@@ -170,6 +177,7 @@ export class AiSettingsStore {
 			baseURL: next.baseURL,
 			model: next.model,
 			hasApiKey: next.apiKey.length > 0,
+			authMode: next.authMode,
 			readOnly: this.readOnly,
 		}
 	}

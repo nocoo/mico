@@ -50,6 +50,7 @@ test('laptop and local production builds keep the existing provider defaults', (
 		baseURL: DEFAULT_CHAT_BASE_URL,
 		model: DEFAULT_CHAT_MODEL,
 		apiKey: 'magpie',
+		authMode: 'api-key',
 	})
 	assert.deepEqual(config.mai, { host: '', apiKey: '', deployment: '' })
 	assert.deepEqual(config.image, { endpoint: '', apiKey: '', model: DEFAULT_IMAGE_MODEL })
@@ -81,6 +82,7 @@ test('deploy requires an explicit chat endpoint and model without a default cred
 		baseURL: 'https://gateway.example/v1',
 		model: 'cloud-model',
 		apiKey: '',
+		authMode: 'api-key',
 	})
 })
 
@@ -101,10 +103,13 @@ test('one environment snapshot configures all four AI paths', () => {
 	})
 	assert.deepEqual(loadAiConfig(env), {
 		runtime: 'deploy',
+		authMode: 'api-key',
+		azureClientId: undefined,
 		chat: {
 			baseURL: 'https://gateway.example/prefix/v1',
 			model: 'cloud-chat',
 			apiKey: 'chat-test-secret',
+			authMode: 'api-key',
 		},
 		lectureReasoning: 'medium',
 		mai: {
@@ -119,6 +124,57 @@ test('one environment snapshot configures all four AI paths', () => {
 		},
 		moss: { url: 'wss://voice.example/realtime?model=custom-voice', apiKey: 'voice-test-secret' },
 	})
+})
+
+test('managed identity uses Azure hosts and removes provider keys', () => {
+	const config = loadAiConfig({
+		MICO_RUNTIME: 'laptop',
+		MICO_AI_AUTH_MODE: 'managed-identity',
+		AZURE_CLIENT_ID: '11111111-1111-1111-1111-111111111111',
+		MAGPIE_BASE_URL: 'https://resource.services.ai.azure.com/openai/v1',
+		MAGPIE_MODEL: 'chat-deployment',
+		MAGPIE_API_KEY: 'must-not-leak',
+		AZURE_MAI_ENDPOINT: 'https://resource.services.ai.azure.com',
+		AZURE_MAI_DEPLOYMENT_NAME: 'voice-deployment',
+		AZURE_MAI_API_KEY: 'must-not-leak-mai',
+	})
+	assert.equal(config.authMode, 'managed-identity')
+	assert.equal(config.chat.authMode, 'managed-identity')
+	assert.equal(config.chat.apiKey, '')
+	assert.equal(config.mai.apiKey, '')
+	assert.equal(config.mai.host, 'resource.services.ai.azure.com')
+	assert.equal(config.mai.deployment, 'voice-deployment')
+
+	assert.throws(
+		() =>
+			loadAiConfig({
+				MICO_AI_AUTH_MODE: 'managed-identity',
+				AZURE_CLIENT_ID: '11111111-1111-1111-1111-111111111111',
+				MAGPIE_BASE_URL: 'http://resource.services.ai.azure.com/openai/v1',
+				MAGPIE_MODEL: 'chat-deployment',
+			}),
+		/MAGPIE_BASE_URL must use an allowed Azure AI HTTPS resource host/,
+	)
+	assert.throws(
+		() =>
+			loadAiConfig({
+				MICO_AI_AUTH_MODE: 'managed-identity',
+				AZURE_CLIENT_ID: '11111111-1111-1111-1111-111111111111',
+				MAGPIE_BASE_URL: 'https://resource.example/openai/v1',
+				MAGPIE_MODEL: 'chat-deployment',
+			}),
+		/MAGPIE_BASE_URL must use an allowed Azure AI HTTPS resource host/,
+	)
+	assert.throws(
+		() =>
+			loadAiConfig({
+				MICO_AI_AUTH_MODE: 'managed-identity',
+				AZURE_CLIENT_ID: 'not-a-guid',
+				MAGPIE_BASE_URL: 'https://resource.services.ai.azure.com/openai/v1',
+				MAGPIE_MODEL: 'chat-deployment',
+			}),
+		/AZURE_CLIENT_ID must be a GUID/,
+	)
 })
 
 test('invalid configuration fails without including credential-bearing values', () => {

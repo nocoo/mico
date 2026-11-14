@@ -2,6 +2,7 @@ import { readFileSync, statSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { TokenCredential } from '@azure/identity'
 import type { LanguageModel } from 'ai'
 import type { JWTVerifyGetKey } from 'jose'
 import serveStatic from 'serve-static'
@@ -20,6 +21,7 @@ import {
 	MAI_LOCAL_PATH,
 	type MaiProxyOptions,
 } from './maiProxy.ts'
+import { createManagedIdentityAuth } from './managedIdentity.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
 import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
 import { parseRequestTarget } from './requestTarget.ts'
@@ -275,12 +277,20 @@ export function createDaemon(
 		authJwksResolver?: JWTVerifyGetKey
 		createMaiUpstream?: MaiProxyOptions['createUpstream']
 		createMossUpstream?: MossRealtimeProxyOptions['createUpstream']
+		managedIdentityCredential?: TokenCredential
 	} = {},
 ): Daemon {
 	const env = options.env ?? process.env
 	const runtimeConfig = loadRuntimeConfig(env)
 	const port = options.port ?? parsePort(env)
 	const config = loadAiConfig(env)
+	const managedIdentityAuth =
+		runtimeConfig.aiEnabled && runtimeConfig.aiAuthMode === 'managed-identity'
+			? createManagedIdentityAuth(
+					runtimeConfig.azureClientId as string,
+					options.managedIdentityCredential,
+				)
+			: undefined
 	if (options.staticDir && !statSync(resolve(options.staticDir, 'index.html')).isFile()) {
 		throw new Error('MICO_STATIC_DIR must contain a built index.html')
 	}
@@ -300,13 +310,15 @@ export function createDaemon(
 			? createMaiProxy({
 					...config.mai,
 					allowedOrigin: runtimeConfig.publicOrigin,
+					bearerProvider: managedIdentityAuth?.maiBearer,
 					createUpstream: options.createMaiUpstream,
 					onConnection: (req, client) => auth.attachSocket(req, client),
 				})
 			: undefined
 	const moss =
-		runtimeConfig.aiEnabled && assets
+		runtimeConfig.aiEnabled && runtimeConfig.mossEnabled && assets
 			? createMossProxy({
+					enabled: true,
 					...config.moss,
 					allowedOrigin: runtimeConfig.publicOrigin,
 					createUpstream: options.createMossUpstream,
@@ -323,7 +335,9 @@ export function createDaemon(
 		aiEnabled: runtimeConfig.aiEnabled,
 	})
 	const aiModel = options.aiModel
-	const modelFactory = options.createAiModel ?? createMagpieModel
+	const modelFactory =
+		options.createAiModel ??
+		((settings: ChatSettings) => createMagpieModel(settings, managedIdentityAuth?.chatBearer))
 	const wss = new WebSocketServer({ noServer: true })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
 
@@ -809,6 +823,10 @@ export function createDaemon(
 					sendAiDisabled(res, origin)
 					return
 				}
+				if (!runtimeConfig.mossEnabled) {
+					sendError(res, 503, 'MOSS_DISABLED', 'MOSS Live is disabled', origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -827,6 +845,10 @@ export function createDaemon(
 			if (isPath('api', 'moss', 'tool')) {
 				if (!runtimeConfig.aiEnabled) {
 					sendAiDisabled(res, origin)
+					return
+				}
+				if (!runtimeConfig.mossEnabled) {
+					sendError(res, 503, 'MOSS_DISABLED', 'MOSS Live is disabled', origin)
 					return
 				}
 				if (req.method !== 'POST') {
@@ -869,7 +891,11 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const models = await fetchAiModels(aiSettings.getEffective())
+				const models = await fetchAiModels(
+					aiSettings.getEffective(),
+					5000,
+					managedIdentityAuth?.chatBearer,
+				)
 				sendJson(res, 200, { models }, origin)
 				return
 			}
@@ -885,7 +911,7 @@ export function createDaemon(
 					return
 				}
 				const request = await parseAiChatRequest(await readJson(req))
-				const model = aiModel ?? modelFactory(aiSettings.getEffective())
+				const model = aiModel ? aiModel : modelFactory(aiSettings.getEffective())
 				await streamAiChat({
 					res,
 					store,
@@ -985,7 +1011,16 @@ export function createDaemon(
 		}
 
 		if (!runtimeConfig.aiEnabled && (pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)) {
-			socket.write('HTTP/1.1 503 Service Unavailable\r\nConnection: close\r\n\r\n')
+			socket.write(
+				'HTTP/1.1 503 Service Unavailable\r\nX-Mico-Error: AI_DISABLED\r\nConnection: close\r\n\r\n',
+			)
+			socket.destroy()
+			return
+		}
+		if (runtimeConfig.aiEnabled && !runtimeConfig.mossEnabled && pathname === MOSS_LOCAL_PATH) {
+			socket.write(
+				'HTTP/1.1 503 Service Unavailable\r\nX-Mico-Error: MOSS_DISABLED\r\nConnection: close\r\n\r\n',
+			)
 			socket.destroy()
 			return
 		}

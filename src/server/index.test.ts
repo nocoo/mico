@@ -413,7 +413,12 @@ test('AI models use the saved effective gateway, preserve prefixes, and hide cre
 
 		await assert.rejects(
 			fetchAiModels(
-				{ baseURL: `${mockBaseURL}/slow`, apiKey: 'timeout-secret', model: 'slow' },
+				{
+					baseURL: `${mockBaseURL}/slow`,
+					apiKey: 'timeout-secret',
+					model: 'slow',
+					authMode: 'api-key',
+				},
 				20,
 			),
 			(error: unknown) =>

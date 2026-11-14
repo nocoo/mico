@@ -15,6 +15,7 @@ test('runtime auth and AI controls are independent of deployment runtime', () =>
 	assert.deepEqual(publicRuntimeContract(none), {
 		auth: { mode: 'none' },
 		aiEnabled: true,
+		mossEnabled: true,
 		ephemeral: false,
 	})
 
@@ -31,6 +32,47 @@ test('runtime auth and AI controls are independent of deployment runtime', () =>
 	assert.equal(hosted.ephemeral, true)
 	assert.deepEqual(hosted.allowedObjectIds, new Set([ALLOWED_OID]))
 	assert.equal(hosted.auth.redirectUri, 'https://mico.test/auth/callback')
+})
+
+test('MOSS is enabled by default and always disabled with AI', () => {
+	assert.equal(loadRuntimeConfig({ MICO_AI_ENABLED: 'true' }).mossEnabled, true)
+	assert.equal(
+		loadRuntimeConfig({ MICO_AI_ENABLED: 'true', MICO_MOSS_ENABLED: 'false' }).mossEnabled,
+		false,
+	)
+	assert.equal(
+		loadRuntimeConfig({ MICO_AI_ENABLED: 'false', MICO_MOSS_ENABLED: 'true' }).mossEnabled,
+		false,
+	)
+	assert.throws(
+		() => loadRuntimeConfig({ MICO_MOSS_ENABLED: 'sometimes' }),
+		/MICO_MOSS_ENABLED must be true or false/,
+	)
+
+	assert.throws(
+		() =>
+			loadRuntimeConfig({
+				MICO_AI_AUTH_MODE: 'managed-identity',
+				MICO_AI_ENABLED: 'true',
+			}),
+		/AZURE_CLIENT_ID is required/,
+	)
+	assert.throws(
+		() =>
+			loadRuntimeConfig({
+				MICO_AI_AUTH_MODE: 'managed-identity',
+				MICO_AI_ENABLED: 'true',
+				AZURE_CLIENT_ID: 'not-a-guid',
+			}),
+		/AZURE_CLIENT_ID must be a GUID/,
+	)
+	const managed = loadRuntimeConfig({
+		MICO_AI_AUTH_MODE: 'managed-identity',
+		MICO_AI_ENABLED: 'true',
+		AZURE_CLIENT_ID: CLIENT_ID,
+	})
+	assert.equal(managed.aiAuthMode, 'managed-identity')
+	assert.equal(managed.azureClientId, CLIENT_ID)
 })
 
 test('hosted auth configuration fails closed on incomplete or unsafe values', () => {

@@ -3,10 +3,13 @@ import { parseEnv } from 'node:util'
 
 export type RuntimeMode = 'laptop' | 'deploy'
 
+export type AiAuthMode = 'api-key' | 'managed-identity'
+
 export interface ChatSettings {
 	baseURL: string
 	model: string
 	apiKey: string
+	authMode: AiAuthMode
 }
 
 export interface ImageProviderConfig {
@@ -17,6 +20,8 @@ export interface ImageProviderConfig {
 
 export interface AiConfig {
 	runtime: RuntimeMode
+	authMode: AiAuthMode
+	azureClientId?: string
 	chat: ChatSettings
 	lectureReasoning: string
 	mai: { host: string; apiKey: string; deployment: string }
@@ -29,6 +34,17 @@ export const DEFAULT_CHAT_MODEL = 'auto/gpt-6-luna'
 export const DEFAULT_CHAT_API_KEY = 'magpie'
 export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.5-flare'
 export const DEFAULT_MOSS_URL = 'wss://api.mosi.cn/v1/realtime?model=moss-live-1.0'
+
+const AZURE_AI_RESOURCE_SUFFIXES = [
+	'.services.ai.azure.com',
+	'.openai.azure.com',
+	'.cognitiveservices.azure.com',
+]
+
+export function isAllowedAzureAiHost(hostname: string): boolean {
+	const host = hostname.toLowerCase().replace(/[.]$/, '')
+	return AZURE_AI_RESOURCE_SUFFIXES.some((suffix) => host.endsWith(suffix))
+}
 
 function endpoint(value: string, name: string, protocols = ['http:', 'https:']): string {
 	if (!value) return ''
@@ -99,10 +115,24 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 		throw new Error('MICO_AI_ENABLED must be true or false')
 	}
 	const aiEnabled = aiEnabledRaw !== 'false'
+	const aiAuthMode = env.MICO_AI_AUTH_MODE?.trim() || 'api-key'
+	if (aiAuthMode !== 'api-key' && aiAuthMode !== 'managed-identity') {
+		throw new Error('MICO_AI_AUTH_MODE must be api-key or managed-identity')
+	}
+	const azureClientId = env.AZURE_CLIENT_ID?.trim() || undefined
+	if (aiEnabled && aiAuthMode === 'managed-identity') {
+		if (!azureClientId)
+			throw new Error('AZURE_CLIENT_ID is required when managed identity AI is enabled')
+		if (!/^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.test(azureClientId)) {
+			throw new Error('AZURE_CLIENT_ID must be a GUID')
+		}
+	}
 	if (!aiEnabled) {
 		return {
 			runtime,
-			chat: { baseURL: '', model: '', apiKey: '' },
+			authMode: aiAuthMode,
+			azureClientId,
+			chat: { baseURL: '', model: '', apiKey: '', authMode: aiAuthMode },
 			lectureReasoning: 'none',
 			mai: { host: '', apiKey: '', deployment: '' },
 			image: { endpoint: '', apiKey: '', model: DEFAULT_IMAGE_MODEL },
@@ -115,24 +145,78 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 	if (!local && (!baseURL || !model)) {
 		throw new Error('MAGPIE_BASE_URL and MAGPIE_MODEL are required when MICO_RUNTIME=deploy')
 	}
-	const host = env.AZURE_MAI_HOST?.trim() ?? ''
+	let host = env.AZURE_MAI_HOST?.trim() ?? ''
+	const maiEndpoint = env.AZURE_MAI_ENDPOINT?.trim() ?? ''
+	if (maiEndpoint) {
+		let maiUrl: URL
+		try {
+			maiUrl = new URL(maiEndpoint)
+		} catch {
+			throw new Error('Invalid AZURE_MAI_ENDPOINT')
+		}
+		if (
+			maiUrl.protocol !== 'https:' ||
+			maiUrl.port ||
+			maiUrl.username ||
+			maiUrl.password ||
+			maiUrl.pathname !== '/' ||
+			maiUrl.search ||
+			maiUrl.hash
+		) {
+			throw new Error('Invalid AZURE_MAI_ENDPOINT')
+		}
+		host = maiUrl.hostname
+	}
 	if (host) {
 		const url = new URL(endpoint(`https://${host}`, 'AZURE_MAI_HOST'))
 		if (url.host !== host || url.pathname !== '/') throw new Error('Invalid AZURE_MAI_HOST')
+		if (aiAuthMode === 'managed-identity' && !isAllowedAzureAiHost(url.hostname)) {
+			throw new Error('AZURE_MAI resource host must use an allowed Azure AI HTTPS suffix')
+		}
+	}
+	if (aiAuthMode === 'managed-identity' && baseURL) {
+		let chatUrl: URL
+		try {
+			chatUrl = new URL(baseURL)
+		} catch {
+			throw new Error('Invalid MAGPIE_BASE_URL')
+		}
+		if (
+			chatUrl.protocol !== 'https:' ||
+			chatUrl.port ||
+			chatUrl.username ||
+			chatUrl.password ||
+			chatUrl.search ||
+			chatUrl.hash ||
+			!isAllowedAzureAiHost(chatUrl.hostname)
+		) {
+			throw new Error('MAGPIE_BASE_URL must use an allowed Azure AI HTTPS resource host')
+		}
 	}
 	const image = loadImageConfig(env)
+	const maiApiKey =
+		aiAuthMode === 'managed-identity'
+			? ''
+			: apiKey(env, 'AZURE_MAI_API_KEY') || apiKey(env, 'AZURE_OPENAI_API_KEY')
 	return {
 		runtime,
+		authMode: aiAuthMode,
+		azureClientId,
 		chat: {
 			baseURL: endpoint(baseURL, 'MAGPIE_BASE_URL'),
 			model,
-			apiKey: apiKey(env, 'MAGPIE_API_KEY', local ? DEFAULT_CHAT_API_KEY : ''),
+			apiKey:
+				aiAuthMode === 'managed-identity'
+					? ''
+					: apiKey(env, 'MAGPIE_API_KEY', local ? DEFAULT_CHAT_API_KEY : ''),
+			authMode: aiAuthMode,
 		},
 		lectureReasoning: env.MAGPIE_LECTURE_REASONING?.trim() || 'none',
 		mai: {
 			host,
-			apiKey: image.apiKey,
-			deployment: env.AZURE_OPENAI_DEPLOYMENT?.trim() ?? '',
+			apiKey: maiApiKey,
+			deployment:
+				env.AZURE_MAI_DEPLOYMENT_NAME?.trim() || env.AZURE_OPENAI_DEPLOYMENT?.trim() || '',
 		},
 		image,
 		moss: {

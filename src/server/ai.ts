@@ -14,18 +14,32 @@ import type { ChatSettings } from './aiConfig.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
+import { createBearerFetch, createRedirectSafeFetch } from './managedIdentity.ts'
 import { type BoardStore, OperationError } from './store.ts'
 
-export function createMagpieModel(settings: ChatSettings): LanguageModel {
+export function createMagpieModel(
+	settings: ChatSettings,
+	chatBearer?: () => Promise<string>,
+): LanguageModel {
 	const provider = createOpenAICompatible({
 		name: 'magpie',
 		baseURL: settings.baseURL,
-		...(settings.apiKey ? { apiKey: settings.apiKey } : {}),
+		...(settings.authMode === 'managed-identity'
+			? chatBearer
+				? { fetch: createBearerFetch(chatBearer) }
+				: {}
+			: settings.apiKey
+				? { apiKey: settings.apiKey, fetch: createRedirectSafeFetch() }
+				: { fetch: createRedirectSafeFetch() }),
 	})
 	return provider.chatModel(settings.model)
 }
 
-export async function fetchAiModels(settings: ChatSettings, timeoutMs = 5000): Promise<string[]> {
+export async function fetchAiModels(
+	settings: ChatSettings,
+	timeoutMs = 5000,
+	chatBearer?: () => Promise<string>,
+): Promise<string[]> {
 	const unavailable = () =>
 		new OperationError(502, 'AI_MODELS_UNAVAILABLE', 'Could not fetch AI models')
 
@@ -42,12 +56,16 @@ export async function fetchAiModels(settings: ChatSettings, timeoutMs = 5000): P
 
 	let response: Response
 	try {
+		const headers = new Headers({ Accept: 'application/json' })
+		if (settings.authMode === 'managed-identity') {
+			if (!chatBearer) throw unavailable()
+			headers.set('Authorization', `Bearer ${await chatBearer()}`)
+		} else if (settings.apiKey) {
+			headers.set('Authorization', `Bearer ${settings.apiKey}`)
+		}
 		response = await fetch(modelsURL, {
 			method: 'GET',
-			headers: {
-				Accept: 'application/json',
-				...(settings.apiKey ? { Authorization: `Bearer ${settings.apiKey}` } : {}),
-			},
+			headers,
 			redirect: 'manual',
 			signal: AbortSignal.timeout(timeoutMs),
 		})
@@ -203,7 +221,7 @@ export async function streamAiChat({
 				: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
 		onError: () => {
 			console.error('AI request failed')
-			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and AI settings.'
+			return 'The assistant could not reach the configured AI provider. Check the daemon log and AI settings.'
 		},
 	})
 	await result.pipeUIMessageStreamToResponse(res, { headers })

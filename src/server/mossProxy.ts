@@ -16,6 +16,7 @@ export interface MossUpstreamOptions {
 export type MossUpstreamFactory = (url: string, options: MossUpstreamOptions) => WebSocket
 
 export interface MossRealtimeProxyOptions {
+	enabled?: boolean
 	url: string
 	apiKey: string
 	allowedOrigin?: string
@@ -145,6 +146,14 @@ export function createMossProxy(options: MossRealtimeProxyOptions): {
 		}
 		if (pathname !== MOSS_LOCAL_PATH) return
 		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host, options.allowedOrigin)) {
+			socket.destroy()
+			return
+		}
+
+		if (options.enabled === false) {
+			socket.write(
+				'HTTP/1.1 503 Service Unavailable\r\nX-Mico-Error: MOSS_DISABLED\r\nConnection: close\r\n\r\n',
+			)
 			socket.destroy()
 			return
 		}
