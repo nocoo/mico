@@ -54,6 +54,7 @@ const randomId = () => crypto.randomUUID()
 
 export interface AppProps {
 	aiEnabled?: boolean
+	mossEnabled: boolean
 	ephemeral?: boolean
 	user?: { name: string; expiresAt: number } | null
 	avatarUrl?: string | null
@@ -62,11 +63,12 @@ export interface AppProps {
 
 export default function App({
 	aiEnabled = true,
+	mossEnabled,
 	ephemeral = false,
 	user = null,
 	avatarUrl = null,
 	onSignOut,
-}: AppProps = {}) {
+}: AppProps) {
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -1078,6 +1080,7 @@ export default function App({
 							objectCount: board.shapes.length,
 						},
 						open: aiPanelOpen,
+						mossEnabled,
 						canvasId: activeCanvasId,
 						selectedIds,
 						initialPrompt: aiPrompt,

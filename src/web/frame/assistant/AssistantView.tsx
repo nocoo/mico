@@ -471,10 +471,26 @@ export function AssistantView({
 						value={model.liveProvider}
 						onValueChange={model.selectLiveProvider}
 					>
-						<SegmentedControl.Item value="moss">MOSS Live</SegmentedControl.Item>
+						<SegmentedControl.Item
+							value="moss"
+							aria-disabled={!state.mossEnabled}
+							data-moss-disabled={String(!state.mossEnabled)}
+							tabIndex={state.mossEnabled ? undefined : -1}
+							onPointerDown={(event) => {
+								if (!state.mossEnabled) event.preventDefault()
+							}}
+							onClick={(event) => {
+								if (!state.mossEnabled) event.preventDefault()
+							}}
+							onKeyDown={(event) => {
+								if (!state.mossEnabled) event.preventDefault()
+							}}
+						>
+							MOSS Live
+						</SegmentedControl.Item>
 						<SegmentedControl.Item value="mai">MAI Transcribe</SegmentedControl.Item>
 					</SegmentedControl.Root>
-					{model.liveProvider === 'moss' ? (
+					{state.mossEnabled && model.liveProvider === 'moss' ? (
 						<MossPanel
 							key={state.canvasId}
 							active={state.open && model.tab === 'live'}

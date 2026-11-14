@@ -3,7 +3,7 @@ import { board } from './support'
 
 const runtime = (
 	mode: 'none' | 'entra' = 'none',
-	options: { aiEnabled?: boolean; ephemeral?: boolean } = {},
+	options: { aiEnabled?: boolean; mossEnabled?: boolean; ephemeral?: boolean } = {},
 ) => ({
 	auth:
 		mode === 'entra'
@@ -16,6 +16,7 @@ const runtime = (
 				}
 			: { mode },
 	aiEnabled: options.aiEnabled ?? true,
+	mossEnabled: options.mossEnabled ?? true,
 	ephemeral: options.ephemeral ?? false,
 })
 

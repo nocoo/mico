@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { buildAiSettingsPayload, parseAiModels } from './frame/assistant/useAiSettingsViewModel.ts'
+import {
+	buildAiSettingsPayload,
+	parseAiModels,
+	parseAiSettings,
+} from './frame/assistant/useAiSettingsViewModel.ts'
 import {
 	microphoneAiLabel,
 	microphonePhaseLabel,
@@ -22,6 +26,40 @@ test('AI settings payload preserves key and clear semantics', () => {
 		model: 'model',
 		apiKey: '',
 	})
+})
+
+test('AI settings validation requires auth mode and rejects invalid payloads', () => {
+	assert.deepEqual(
+		parseAiSettings({
+			baseURL: 'https://example.test/v1',
+			model: 'model/test',
+			hasApiKey: false,
+			readOnly: true,
+			authMode: 'managed-identity',
+		}),
+		{
+			baseURL: 'https://example.test/v1',
+			model: 'model/test',
+			hasApiKey: false,
+			readOnly: true,
+			authMode: 'managed-identity',
+		},
+	)
+	assert.throws(
+		() => parseAiSettings({ baseURL: '', model: '', hasApiKey: false, readOnly: false }),
+		/Invalid AI settings/,
+	)
+	assert.throws(
+		() =>
+			parseAiSettings({
+				baseURL: '',
+				model: '',
+				hasApiKey: false,
+				readOnly: false,
+				authMode: 'unknown',
+			}),
+		/Invalid AI settings/,
+	)
 })
 
 test('AI model list validation rejects invalid payloads and removes duplicates', () => {

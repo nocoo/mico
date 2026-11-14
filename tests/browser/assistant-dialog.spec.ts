@@ -25,6 +25,7 @@ test.beforeEach(async ({ page, request }) => {
 				model: 'model/demo',
 				hasApiKey: true,
 				readOnly: false,
+				authMode: 'api-key',
 			},
 		})
 	})
@@ -163,6 +164,7 @@ test('Settings controls remain usable on a narrow assistant panel', async ({ pag
 				model: 'model/custom',
 				hasApiKey: true,
 				readOnly: false,
+				authMode: 'api-key',
 			},
 		})
 	})
@@ -192,6 +194,7 @@ test('deployment-managed AI settings are read-only without provider requests', a
 				model: 'deployment/model',
 				hasApiKey: true,
 				readOnly: true,
+				authMode: 'api-key',
 			},
 		})
 	})

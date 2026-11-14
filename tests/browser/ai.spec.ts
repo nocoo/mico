@@ -250,6 +250,7 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		model: 'example-model',
 		hasApiKey: false,
 		readOnly: false,
+		authMode: 'api-key',
 	})
 })
 

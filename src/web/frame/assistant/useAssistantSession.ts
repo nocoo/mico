@@ -30,7 +30,7 @@ export type LiveProvider = 'moss' | 'mai'
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
 	const [tab, setTab] = useState<AssistantTab>(() => initialAssistantTab(state.initialPrompt))
-	const [liveProvider, setLiveProvider] = useState<LiveProvider>('moss')
+	const [liveProvider, setLiveProvider] = useState<LiveProvider>(state.mossEnabled ? 'moss' : 'mai')
 	const [draft, setDraft] = useState('')
 	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
@@ -313,9 +313,17 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		[tab],
 	)
 
-	const selectLiveProvider = useCallback((value: string) => {
-		if (value === 'moss' || value === 'mai') setLiveProvider(value)
-	}, [])
+	const selectLiveProvider = useCallback(
+		(value: string) => {
+			if (value === 'mai') setLiveProvider('mai')
+			if (value === 'moss' && state.mossEnabled) setLiveProvider('moss')
+		},
+		[state.mossEnabled],
+	)
+
+	useEffect(() => {
+		if (!state.mossEnabled) setLiveProvider('mai')
+	}, [state.mossEnabled])
 
 	const continueChat = useCallback(() => {
 		if (requestLock.current) return

@@ -3,7 +3,12 @@ import packageJson from '../../package.json' with { type: 'json' }
 import { board, ISOLATED_ORIGIN, resetBoard } from './support'
 
 function runtime(
-	options: { auth?: 'none' | 'entra'; ephemeral?: boolean; aiEnabled?: boolean } = {},
+	options: {
+		auth?: 'none' | 'entra'
+		ephemeral?: boolean
+		aiEnabled?: boolean
+		mossEnabled?: boolean
+	} = {},
 ) {
 	const auth = options.auth ?? 'none'
 	return {
@@ -18,6 +23,7 @@ function runtime(
 					}
 				: { mode: auth },
 		aiEnabled: options.aiEnabled ?? false,
+		mossEnabled: options.mossEnabled ?? true,
 		ephemeral: options.ephemeral ?? true,
 	}
 }

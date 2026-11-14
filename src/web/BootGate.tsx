@@ -266,6 +266,7 @@ export default function BootGate() {
 	return (
 		<App
 			aiEnabled={runtime.aiEnabled}
+			mossEnabled={runtime.mossEnabled}
 			ephemeral={runtime.ephemeral}
 			user={session?.user ?? null}
 			avatarUrl={avatarUrl}

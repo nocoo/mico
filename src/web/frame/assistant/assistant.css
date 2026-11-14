@@ -1491,6 +1491,11 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	}
 }
 
+.ai-assistant .live-provider .rt-SegmentedControlItem[data-moss-disabled="true"] {
+	opacity: 0.48;
+	cursor: default;
+}
+
 .ai-assistant .microphone-panel {
 	position: relative;
 	padding: 0;

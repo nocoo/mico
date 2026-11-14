@@ -67,6 +67,7 @@ export interface ToolbarActions {
 export interface AssistantState {
 	connection: ConnectionState
 	open: boolean
+	mossEnabled: boolean
 	canvasId: string
 	selectedIds: string[]
 	initialPrompt: string

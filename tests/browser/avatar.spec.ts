@@ -19,6 +19,7 @@ async function signedIn(page: Page) {
 					redirectUri: 'http://127.0.0.1:27063/auth/callback',
 				},
 				aiEnabled: false,
+				mossEnabled: false,
 				ephemeral: true,
 			},
 		}),

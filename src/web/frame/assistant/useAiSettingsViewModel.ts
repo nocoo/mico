@@ -1,10 +1,33 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
 
+export type AiAuthMode = 'api-key' | 'managed-identity'
+
 export interface AiSettingsData {
 	baseURL: string
 	model: string
 	hasApiKey: boolean
 	readOnly: boolean
+	authMode: AiAuthMode
+}
+
+export function parseAiSettings(body: unknown): AiSettingsData {
+	if (!body || typeof body !== 'object') throw new Error('Invalid AI settings')
+	const value = body as Record<string, unknown>
+	if (
+		typeof value.baseURL !== 'string' ||
+		typeof value.model !== 'string' ||
+		typeof value.hasApiKey !== 'boolean' ||
+		typeof value.readOnly !== 'boolean' ||
+		(value.authMode !== 'api-key' && value.authMode !== 'managed-identity')
+	)
+		throw new Error('Invalid AI settings')
+	return {
+		baseURL: value.baseURL,
+		model: value.model,
+		hasApiKey: value.hasApiKey,
+		readOnly: value.readOnly,
+		authMode: value.authMode,
+	}
 }
 
 export function parseAiModels(body: unknown): string[] {
@@ -51,7 +74,7 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 		try {
 			const response = await fetch('/api/ai/settings', { signal })
 			if (!response.ok) throw new Error('Settings request failed')
-			const next = (await response.json()) as AiSettingsData
+			const next = parseAiSettings(await response.json())
 			setSettings(next)
 			setBaseURL(next.baseURL)
 			setModel(next.model)
@@ -102,7 +125,7 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 				body: JSON.stringify(buildAiSettingsPayload(baseURL, model, apiKey, clearKey)),
 			})
 			if (!response.ok) throw new Error('Settings request failed')
-			const next = (await response.json()) as AiSettingsData
+			const next = parseAiSettings(await response.json())
 			setSettings(next)
 			setBaseURL(next.baseURL)
 			setModel(next.model)

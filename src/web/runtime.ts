@@ -1,6 +1,28 @@
 import type { PublicRuntimeContract } from '../shared/runtime'
 
-export type RuntimeConfig = PublicRuntimeContract
+export interface RuntimeConfig extends PublicRuntimeContract {
+	mossEnabled: boolean
+}
+
+export function parseRuntimeConfig(body: unknown): RuntimeConfig {
+	if (!body || typeof body !== 'object') throw new Error('Runtime configuration is invalid.')
+	const runtime = body as Record<string, unknown>
+	if (!runtime.auth || typeof runtime.auth !== 'object') {
+		throw new Error('Runtime configuration is invalid.')
+	}
+	const auth = runtime.auth as Record<string, unknown>
+	if (auth.mode !== 'none' && auth.mode !== 'entra') {
+		throw new Error('Runtime configuration is invalid.')
+	}
+	if (
+		typeof runtime.aiEnabled !== 'boolean' ||
+		typeof runtime.ephemeral !== 'boolean' ||
+		typeof runtime.mossEnabled !== 'boolean'
+	) {
+		throw new Error('Runtime configuration is invalid.')
+	}
+	return body as RuntimeConfig
+}
 
 export interface ServerSession {
 	user: { name: string; expiresAt: number } | null
@@ -9,14 +31,7 @@ export interface ServerSession {
 export async function fetchRuntime(signal?: AbortSignal): Promise<RuntimeConfig> {
 	const response = await fetch('/api/runtime', { cache: 'no-store', signal })
 	if (!response.ok) throw new Error('Runtime configuration could not be loaded.')
-	const runtime = (await response.json()) as RuntimeConfig
-	if (!runtime.auth || (runtime.auth.mode !== 'none' && runtime.auth.mode !== 'entra')) {
-		throw new Error('Runtime configuration is invalid.')
-	}
-	if (typeof runtime.aiEnabled !== 'boolean' || typeof runtime.ephemeral !== 'boolean') {
-		throw new Error('Runtime configuration is invalid.')
-	}
-	return runtime
+	return parseRuntimeConfig(await response.json())
 }
 
 export async function fetchSession(signal?: AbortSignal): Promise<ServerSession> {

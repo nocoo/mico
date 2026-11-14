@@ -8,7 +8,12 @@ export function AiSettings({ active }: { active: boolean }) {
 		<Theme className="ai-settings" hasBackground={false}>
 			{model.settings ? (
 				<form onSubmit={model.save} className="ai-settings-form">
-					{model.settings.readOnly && (
+					{model.settings.authMode === 'managed-identity' && (
+						<p className="ai-settings-note" role="status">
+							Authentication: Managed identity — no API key required.
+						</p>
+					)}
+					{model.settings.readOnly && model.settings.authMode === 'api-key' && (
 						<p className="ai-settings-note" role="status">
 							AI settings are managed by this deployment and cannot be changed here.
 						</p>
@@ -67,27 +72,29 @@ export function AiSettings({ active }: { active: boolean }) {
 							{model.modelNote}
 						</p>
 					)}
-					<label className="ai-settings-field" htmlFor="ai-settings-key">
-						<span>API key</span>
-						<TextField.Root
-							id="ai-settings-key"
-							type="password"
-							autoComplete="new-password"
-							value={model.apiKey}
-							onChange={(event) => model.setApiKey(event.target.value)}
-							disabled={model.settings.readOnly || model.clearKey}
-							placeholder={
-								model.settings.readOnly
-									? model.settings.hasApiKey
-										? 'Configured by deployment'
-										: 'Not configured'
-									: model.settings.hasApiKey
-										? 'Leave blank to keep current key'
-										: 'Optional'
-							}
-						/>
-					</label>
-					{model.settings.hasApiKey && (
+					{model.settings.authMode === 'api-key' && (
+						<label className="ai-settings-field" htmlFor="ai-settings-key">
+							<span>API key</span>
+							<TextField.Root
+								id="ai-settings-key"
+								type="password"
+								autoComplete="new-password"
+								value={model.apiKey}
+								onChange={(event) => model.setApiKey(event.target.value)}
+								disabled={model.settings.readOnly || model.clearKey}
+								placeholder={
+									model.settings.readOnly
+										? model.settings.hasApiKey
+											? 'Configured by deployment'
+											: 'Not configured'
+										: model.settings.hasApiKey
+											? 'Leave blank to keep current key'
+											: 'Optional'
+								}
+							/>
+						</label>
+					)}
+					{model.settings.authMode === 'api-key' && model.settings.hasApiKey && (
 						<label className="ai-settings-clear" htmlFor="ai-settings-clear-key">
 							<Checkbox
 								id="ai-settings-clear-key"
