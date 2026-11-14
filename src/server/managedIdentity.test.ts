@@ -1,14 +1,22 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createMagpieModel } from './ai.ts'
-import {
-	createBearerFetch,
-	createManagedIdentityAuth,
-	createRedirectSafeFetch,
-} from './managedIdentity.ts'
+import { createManagedIdentityAuth, createRedirectSafeFetch } from './managedIdentity.ts'
 
 const CLIENT_ID = '11111111-1111-1111-1111-111111111111'
-const ENDPOINT = 'https://fixture.services.ai.azure.com/openai/v1/chat/completions'
+const BASE = 'https://fixture.services.ai.azure.com/openai/v1'
+const ENDPOINT = `${BASE}/responses`
+const prompt = [{ role: 'user' as const, content: [{ type: 'text' as const, text: 'test' }] }]
+
+function managedModel(bearer: () => Promise<string>) {
+	const model = createMagpieModel(
+		{ baseURL: BASE, model: 'gpt-6.1-sol', apiKey: 'must-not-use', authMode: 'managed-identity' },
+		bearer,
+	)
+	assert.ok(typeof model === 'object' && model.specificationVersion === 'v4')
+	assert.equal(model.provider, 'azure.responses')
+	return model
+}
 
 test('SDK bearer providers share the Foundry audience cache and renew expired tokens', async (t) => {
 	let now = Date.now()
@@ -30,62 +38,48 @@ test('SDK bearer providers share the Foundry audience cache and renew expired to
 	assert.deepEqual(scopes, [['https://ai.azure.com/.default'], ['https://ai.azure.com/.default']])
 })
 
-test('managed fetch replaces credentials, preserves request fields and refuses redirects', async (t) => {
+test('Azure Responses uses the token provider without API keys and refuses redirects', async (t) => {
 	let requests = 0
-	t.mock.method(globalThis, 'fetch', async (_url: unknown, init: RequestInit) => {
+	t.mock.method(globalThis, 'fetch', async (url: unknown, init: RequestInit) => {
 		requests++
+		assert.equal(String(url), ENDPOINT)
 		const headers = new Headers(init.headers)
 		assert.equal(headers.get('Authorization'), 'Bearer fixture-token')
 		assert.equal(headers.get('api-key'), null)
 		assert.equal(headers.get('Content-Type'), 'application/json')
-		assert.equal(init.body, '{}')
+		assert.equal(JSON.parse(String(init.body)).model, 'gpt-6.1-sol')
 		assert.equal(init.redirect, 'manual')
 		return new Response('redirect', {
 			status: 302,
 			headers: { Location: 'https://untrusted.example' },
 		})
 	})
-	const send = createBearerFetch(async () => 'fixture-token')
 	await assert.rejects(
-		send(ENDPOINT, {
-			method: 'POST',
-			body: '{}',
-			headers: {
-				Authorization: 'Bearer stale',
-				'api-key': 'stale-key',
-				'Content-Type': 'application/json',
-			},
-		}),
+		async () => managedModel(async () => 'fixture-token').doStream({ prompt }),
 		/redirected/,
 	)
 	assert.equal(requests, 1)
 })
 
-test('cancelled managed requests never send provider traffic', async (t) => {
+test('cancelled managed Responses requests never send provider traffic', async (t) => {
 	let requests = 0
-	let credentials = 0
 	t.mock.method(globalThis, 'fetch', async () => {
 		requests++
 		return new Response()
 	})
 	const aborted = new AbortController()
 	aborted.abort()
-	await assert.rejects(
-		createBearerFetch(async () => {
-			credentials++
-			return 'fixture'
-		})(ENDPOINT, { signal: aborted.signal }),
-		{ name: 'AbortError' },
-	)
-	assert.equal(credentials, 0)
+	await assert.rejects(createRedirectSafeFetch()(ENDPOINT, { signal: aborted.signal }), {
+		name: 'AbortError',
+	})
 	const pending = new AbortController()
-	await assert.rejects(
-		createBearerFetch(async () => {
-			pending.abort()
-			return 'fixture'
-		})(ENDPOINT, { signal: pending.signal }),
-		{ name: 'AbortError' },
-	)
+	const model = managedModel(async () => {
+		pending.abort()
+		return 'fixture'
+	})
+	await assert.rejects(async () => model.doStream({ prompt, abortSignal: pending.signal }), {
+		name: 'AbortError',
+	})
 	assert.equal(requests, 0)
 })
 
@@ -93,7 +87,7 @@ test('managed model creation cannot silently omit its token provider', () => {
 	assert.throws(
 		() =>
 			createMagpieModel({
-				baseURL: ENDPOINT,
+				baseURL: BASE,
 				model: 'fixture',
 				apiKey: '',
 				authMode: 'managed-identity',

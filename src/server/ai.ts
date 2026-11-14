@@ -1,4 +1,5 @@
 import type { ServerResponse } from 'node:http'
+import { createAzure } from '@ai-sdk/azure'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import {
 	convertToModelMessages,
@@ -14,22 +15,26 @@ import type { ChatSettings } from './aiConfig.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
-import { createBearerFetch, createRedirectSafeFetch } from './managedIdentity.ts'
+import { createRedirectSafeFetch } from './managedIdentity.ts'
 import { type BoardStore, OperationError } from './store.ts'
 
 export function createMagpieModel(
 	settings: ChatSettings,
 	chatBearer?: () => Promise<string>,
 ): LanguageModel {
-	if (settings.authMode === 'managed-identity' && !chatBearer) {
-		throw new Error('Managed identity token provider is required')
+	if (settings.authMode === 'managed-identity') {
+		if (!chatBearer) throw new Error('Managed identity token provider is required')
+		return createAzure({
+			baseURL: settings.baseURL,
+			tokenProvider: chatBearer,
+			fetch: createRedirectSafeFetch(),
+		}).responses(settings.model)
 	}
 	const provider = createOpenAICompatible({
 		name: 'magpie',
 		baseURL: settings.baseURL,
-		...(settings.authMode === 'managed-identity' && chatBearer
-			? { fetch: createBearerFetch(chatBearer) }
-			: { apiKey: settings.apiKey || undefined, fetch: createRedirectSafeFetch() }),
+		apiKey: settings.apiKey || undefined,
+		fetch: createRedirectSafeFetch(),
 	})
 	return provider.chatModel(settings.model)
 }
@@ -209,11 +214,16 @@ export async function streamAiChat({
 				: isStepCount(40),
 		maxRetries: 1,
 		abortSignal: abort.signal,
-		providerOptions: {
-			magpie: {
-				reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low',
-			},
-		},
+		providerOptions:
+			typeof model === 'object' && model.provider === 'azure.responses'
+				? {
+						azure: {
+							reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low',
+							store: false,
+							strictJsonSchema: false,
+						},
+					}
+				: { magpie: { reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low' } },
 		prepareStep:
 			request.mode === 'lecture'
 				? undefined

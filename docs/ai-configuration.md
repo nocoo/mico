@@ -11,6 +11,8 @@
 | `MICO_AI_ENABLED=false`               | Disable Chat, voice and generated-image entrypoints without disabling manual drawing or image uploads. No Chat endpoint/model or identity is required.                             |
 | `MICO_MOSS_ENABLED=false`             | Disable MOSS HTTP/tools and WebSocket upgrades, and prevent its UI from mounting or selecting the provider. Live defaults to MAI. Global AI disable always wins.                   |
 
+Managed Chat uses `@ai-sdk/azure`'s Responses model (`/openai/v1/responses`) and native token-provider callback. Local API-key gateways retain Chat Completions. The verified reasoning-capable model accepts basic Chat Completions but rejects its reasoning-plus-tools combination there, so an `OK` text probe is not sufficient acceptance. Responses requests set `store=false`; the SDK preserves tool-call continuation and reasoning metadata without retaining responses server-side.
+
 Managed identity uses the SDK's bearer-token provider cache and expiry refresh. Chat and MAI share the `https://ai.azure.com/.default` audience for the Foundry endpoints used by this integration. Tokens stay server-side and are acquired at request/connection time, never serialized into Settings or passed to the browser. Azure AI host validation and redirect rejection prevent credentials from being redirected to another service. Cancelled Chat requests do not start provider traffic after token retrieval finishes.
 
 The MAI Realtime documentation includes examples using the Cognitive Services audience. The verified Foundry integration rejected that audience with `PermissionDenied` while the AI audience successfully transcribed the same synthetic audio using the same identity and resource. This implementation uses the verified audience directly; it does not retry with alternate credentials or audiences.
@@ -66,7 +68,7 @@ Provisioning a resource/model, changing quota allocation or deleting an old acco
 ## Verification
 
 - L1: configuration policy, saved-key isolation, managed token caching/expiry, cancellation, header replacement and redirect rejection.
-- L3: `managedIdentity.integration.test.ts` exercises real daemon Chat/model HTTP routes with synthetic credentials and a mocked provider, plus asynchronous MAI authentication/queue behavior. Existing auth tests cover protected upgrades and session revocation.
+- L3: `managedIdentity.integration.test.ts` exercises real daemon Chat/model HTTP routes with synthetic credentials and mocked Responses events, including function invocation, persisted canvas writes, tool-result continuation and `store=false`, plus asynchronous MAI authentication/queue behavior. Existing auth tests cover protected upgrades and session revocation.
 - L4: `managed-ai.spec.ts` checks read-only identity Settings, MAI default selection, disabled MOSS pointer/keyboard controls and absence of MOSS traffic. Local enabled-MOSS behavior remains covered separately.
 - Opt-in real check: `node scripts/verify-managed-ai.ts --confirm-provider-usage --audio <pcm16-file>` runs in the actual managed-identity container. It starts a separate loopback-only daemon with a fresh temporary database, tests Chat tools, MAI transcription, lecture handling and MOSS denial, then removes only its own database. Inputs are limited to 20 seconds of 16 kHz mono PCM16. It never changes the production daemon's authentication or board.
 

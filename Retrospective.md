@@ -2,6 +2,10 @@
 
 ## Managed Foundry integration
 
+- A successful bare Chat Completions reply did not prove tool compatibility: the target reasoning model rejected tools on that endpoint during the deployed SDK check. Use the native Azure Responses provider and verify a real function invocation/continuation, not an `OK` probe alone. Keep response storage disabled and preserve the model's reasoning metadata through the SDK.
+- The newest Azure provider used a newer V4 stream union (`ping`) than the pinned AI core. Select the latest provider release compatible with the existing protocol dependency and run TypeScript; do not cast away the mismatch or force dependency overrides.
+- Container App configuration can report success before the new revision is ready. An early console probe selected the previous ready replica and could not find the new verification script. Require latest-ready to equal latest and verify the image digest before selecting a replica.
+
 - The segmented control's item remained part of roving focus despite its disabled presentation. Prevent only activation keys, not Tab or arrow navigation, and test entry and exit through the disabled option. Match the real `/moss` WebSocket route when asserting zero network attempts.
 - The first operator check could report success with final-only transcription and a lecture response that never wrote a note. Require partial transcription events, the requested Chat labels, and a new non-empty note with a newer board revision; test both false-green branches with isolated module doubles, not only the usage-confirmation guard.
 

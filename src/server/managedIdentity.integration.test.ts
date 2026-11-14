@@ -162,8 +162,14 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 		apiKey: 'stale-secret',
 	})
 	writeFileSync(settingsPath, saved)
+	const modelId = 'gpt-6.1-sol'
 	const originalFetch = globalThis.fetch
 	const outbound: string[] = []
+	let responses = 0
+	const eventStream = (events: unknown[]) =>
+		new Response(events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join(''), {
+			headers: { 'Content-Type': 'text/event-stream' },
+		})
 	t.mock.method(globalThis, 'fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
 		const url = new URL(input instanceof Request ? input.url : String(input))
 		if (url.hostname !== 'resource.services.ai.azure.com') return originalFetch(input, init)
@@ -172,42 +178,96 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 		assert.equal(headers.get('Authorization'), 'Bearer mock-chat')
 		assert.equal(headers.get('api-key'), null)
 		assert.equal(init?.redirect, 'manual')
-		if (url.pathname === '/openai/v1/models')
-			return Response.json({ data: [{ id: 'chat-deployment' }] })
-		assert.equal(url.pathname, '/openai/v1/chat/completions')
+		if (url.pathname === '/openai/v1/models') return Response.json({ data: [{ id: modelId }] })
+		assert.equal(url.pathname, '/openai/v1/responses')
+		assert.equal(url.search, '')
 		const body = JSON.parse(String(init?.body))
-		assert.equal(body.model, 'chat-deployment')
-		assert.equal(body.reasoning_effort, 'low')
+		assert.equal(body.model, modelId)
+		assert.equal(body.reasoning.effort, 'low')
+		assert.equal(body.store, false)
+		assert.ok(body.tools.some((tool: { name: string }) => tool.name === 'get_board'))
+		responses++
+		if (responses === 1) {
+			const args = JSON.stringify({
+				texts: [{ id: 'managed-label', x: 20, y: 20, text: 'Managed identity ready' }],
+			})
+			const item = {
+				type: 'function_call',
+				id: 'fc_fixture',
+				call_id: 'call_fixture',
+				name: 'add_texts',
+				arguments: args,
+			}
+			return eventStream([
+				{ type: 'response.created', response: { id: 'resp_tool', created_at: 1, model: modelId } },
+				{ type: 'response.output_item.added', output_index: 0, item: { ...item, arguments: '' } },
+				{
+					type: 'response.function_call_arguments.delta',
+					output_index: 0,
+					item_id: item.id,
+					delta: args,
+				},
+				{
+					type: 'response.function_call_arguments.done',
+					output_index: 0,
+					item_id: item.id,
+					arguments: args,
+				},
+				{
+					type: 'response.output_item.done',
+					output_index: 0,
+					item: { ...item, status: 'completed' },
+				},
+				{
+					type: 'response.completed',
+					response: {
+						usage: {
+							input_tokens: 5,
+							output_tokens: 3,
+							input_tokens_details: { cached_tokens: 0 },
+							output_tokens_details: { reasoning_tokens: 0 },
+						},
+					},
+				},
+			])
+		}
 		assert.ok(
-			body.tools.some((tool: { function: { name: string } }) => tool.function.name === 'get_board'),
+			body.input.some(
+				(item: { type: string; call_id?: string }) =>
+					item.type === 'function_call_output' && item.call_id === 'call_fixture',
+			),
 		)
 		const events = [
+			{ type: 'response.created', response: { id: 'resp_fixture', created_at: 1, model: modelId } },
 			{
-				id: 'fixture',
-				object: 'chat.completion.chunk',
-				created: 1,
-				model: 'chat-deployment',
-				choices: [
-					{
-						index: 0,
-						delta: { role: 'assistant', content: 'Managed identity ready' },
-						finish_reason: null,
-					},
-				],
+				type: 'response.output_item.added',
+				output_index: 0,
+				item: { id: 'msg_fixture', type: 'message' },
 			},
 			{
-				id: 'fixture',
-				object: 'chat.completion.chunk',
-				created: 1,
-				model: 'chat-deployment',
-				choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
-				usage: { prompt_tokens: 5, completion_tokens: 3, total_tokens: 8 },
+				type: 'response.output_text.delta',
+				item_id: 'msg_fixture',
+				output_index: 0,
+				delta: 'Managed identity ready',
+			},
+			{
+				type: 'response.output_item.done',
+				output_index: 0,
+				item: { id: 'msg_fixture', type: 'message' },
+			},
+			{
+				type: 'response.completed',
+				response: {
+					usage: {
+						input_tokens: 5,
+						output_tokens: 3,
+						input_tokens_details: { cached_tokens: 0 },
+						output_tokens_details: { reasoning_tokens: 0 },
+					},
+				},
 			},
 		]
-		return new Response(
-			`${events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')}data: [DONE]\n\n`,
-			{ headers: { 'Content-Type': 'text/event-stream' } },
-		)
+		return eventStream(events)
 	})
 	const credential = new MockCredential()
 	const daemon = createDaemon({
@@ -221,7 +281,7 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 			AZURE_CLIENT_ID: CLIENT_ID,
 			MICO_MOSS_ENABLED: 'false',
 			MAGPIE_BASE_URL: 'https://resource.services.ai.azure.com/openai/v1',
-			MAGPIE_MODEL: 'chat-deployment',
+			MAGPIE_MODEL: modelId,
 			MAGPIE_LECTURE_REASONING: 'low',
 		},
 	})
@@ -231,13 +291,13 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 		const settings = await (await originalFetch(`${url}/api/ai/settings`)).json()
 		assert.deepEqual(settings, {
 			baseURL: 'https://resource.services.ai.azure.com/openai/v1',
-			model: 'chat-deployment',
+			model: modelId,
 			hasApiKey: false,
 			authMode: 'managed-identity',
 			readOnly: true,
 		})
 		const models = await originalFetch(`${url}/api/ai/models`)
-		assert.deepEqual(await models.json(), { models: ['chat-deployment'] })
+		assert.deepEqual(await models.json(), { models: [modelId] })
 		const chat = await originalFetch(`${url}/api/ai/chat`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
@@ -250,7 +310,16 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 		})
 		assert.equal(chat.status, 200)
 		assert.match(await chat.text(), /Managed identity ready/)
-		assert.deepEqual(outbound, ['/openai/v1/models', '/openai/v1/chat/completions'])
+		assert.deepEqual(outbound, [
+			'/openai/v1/models',
+			'/openai/v1/responses',
+			'/openai/v1/responses',
+		])
+		assert.ok(
+			daemon.store
+				.getBoard()
+				.shapes.some((shape) => shape.type === 'text' && shape.text === 'Managed identity ready'),
+		)
 		assert.equal(credential.requestedScopes.length, 1)
 		assert.equal(readFileSync(settingsPath, 'utf8'), saved)
 	} finally {

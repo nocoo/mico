@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.8.1
+
+- Route managed Azure Chat through the native Responses API so reasoning-capable models can execute canvas tools; keep local API-key gateways on Chat Completions.
+- Use the Azure provider's token callback without a dummy key, preserve cancellation/redirect protection, disable response storage and test function-call continuation through real canvas writes.
+- Align the Azure provider with the existing AI SDK protocol version rather than hiding incompatible stream types with casts.
+
 ## v0.8.0
 
 - Add explicit Managed Identity authentication for Foundry Chat and MAI streaming, with SDK token caching/refresh and no API-key or developer-credential fallback.
