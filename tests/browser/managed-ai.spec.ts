@@ -81,7 +81,7 @@ test.describe('managed AI runtime', () => {
 		await live.getByRole('tab', { name: 'Settings' }).click()
 		const settings = live.getByRole('tabpanel', { name: 'Settings' })
 		await expect(settings.getByRole('status')).toContainText('Managed identity')
-		await expect(settings.getByRole('status')).toContainText('No API key required')
+		await expect(settings.getByRole('status')).toContainText('no API key required')
 		await expect(settings.getByLabel('Endpoint')).toBeDisabled()
 		await expect(settings.getByLabel('Model', { exact: true })).toBeDisabled()
 		await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0)

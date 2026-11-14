@@ -210,6 +210,14 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
 	await expect(settings.getByLabel('Endpoint')).toHaveValue('http://127.0.0.1:3425/v1')
 	await expect(settings.locator('.rt-TextFieldRoot')).toHaveCount(3)
+	await panel.evaluate(async (element) => {
+		await Promise.all(
+			element
+				.getAnimations({ subtree: true })
+				.filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().iterations))
+				.map((animation) => animation.finished.catch(() => undefined)),
+		)
+	})
 	const fieldBox = await settings.locator('.rt-TextFieldRoot').first().boundingBox()
 	const checkboxBox = await settings.getByRole('checkbox').boundingBox()
 	const saveBox = await settings.getByRole('button', { name: 'Save settings' }).boundingBox()
