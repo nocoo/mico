@@ -2,36 +2,31 @@
 
 ## Unreleased
 
-- Move preview, AI and sign-out controls into a glass Debug panel beside Canvases, with optional Microsoft profile photos and accessible avatar fallbacks.
-- Add the project `mico-deploy` skill for repeatable environment-driven Azure publication and exact-image acceptance.
+## v0.7.0
 
-- Add provider-neutral hosting configuration with independently optional Entra SPA login, AI availability and an ephemeral-preview notice.
-- Protect hosted canvas APIs and WebSocket connections with validated Microsoft identity and revocable server sessions when login is enabled; keep local unauthenticated drawing unchanged.
-- Add environment-driven Azure Container Apps preview provisioning and digest-pinned image deployment, without committed deployment identifiers, provider credentials or durable-data claims.
+### Hosted preview
 
-- Add a top-right AI button and assistant panel with Chat and Audio tabs.
-- Connect Chat to the local Magpie gateway through the Vercel AI SDK with streaming responses, a stepwise canvas-agent prompt and a mock model for deterministic tests.
-- Give the assistant canvas tools for text, notes, boxes, lines, connectors, frames, strokes, HTML cards, updates and deletes; every call writes and broadcasts immediately.
-- Attach the current marquee selection to each AI request as primary context, add quick lesson prompts and a `?ai=` URL trigger for automation.
-- Keep the Audio tab as a recording microphone interface placeholder.
-- Add a Lesson tab that plays ten recorded school lectures, streams PCM to Azure MAI-Transcribe-2-Streaming over a Vite WebSocket proxy, and shows live transcript, segment list, waveform, VAD meter and playback controls.
-- Queue confirmed transcript segments into the AI while audio keeps playing; lecture requests run one at a time, coalesce under lag and let the model answer `WAIT` for incomplete sentences.
-- Use low-latency live reasoning and incremental drawing prompts so the board grows with the session instead of waiting for a final plan.
-- Add ten meeting and planning cases with generated Chinese, English and Japanese audio, plus the source scripts and a reusable real-daemon case runner.
-- Add a post-session summary action and automatic summary when a live session ends; the assistant checks layout warnings, fixes overlaps, then builds one rich HTML summary card.
-- Give `get_board` layout warnings for overlaps and frame escapes, and map vivid colors to note tint fills instead of failing the tool.
-- Enforce a two-column live layout, cap section width, treat duplicate create ids as updates, and allow richer HTML/text in cards and notes.
-- Add a real-session case library and round artifacts under `evals/runs/`.
-- Pin each AI request to the active canvas, guard stale updates, sanitize interrupted tool calls, and block scripts and external resources in HTML cards.
-- Add multiple saved canvases with names, timestamps and generated SVG previews; the top-left Canvases panel creates, switches, renames and deletes them.
-- Keep one shared active canvas across browser clients, the HTTP API and the CLI; switching clears transient interaction and fits the new board.
-- Add full canvas management to the agent API and CLI, including per-canvas operations, `--canvas` targeting, state snapshots and WebSocket canvas events.
-- Migrate existing single-board databases to a canvas named “My canvas” automatically.
-- Gate pushes and pull requests with a base-ci quality workflow that declares every System0 slot; CI runs types, zero-warning lint, workflow lint, secret and dependency scans, the build, unit and integration tests, and a browser E2E subset.
-- Split the Node suite into L1 and L3 partitions through `scripts/run-tests.ts`, so a test file in a new directory is discovered instead of silently skipped.
-- Fail `pnpm lint` on warnings, exclude the frozen prototype references from Biome, and build the WebSocket probe key at runtime so the secret scan stays clean.
-- Add local pre-commit and pre-push gates (`pnpm hooks:install`): lint, types and unit tests on an index snapshot plus a staged secret scan, then build, integration and dependency checks on each pushed commit.
-- Require one passing check, `quality / Z1: Gate`, on `main`; force pushes and branch deletion are blocked.
+- Add a provider-neutral container runtime with independently optional Entra SPA login, AI availability and a temporary-data notice.
+- Add the Azure Container Apps preview adapter and `mico-deploy` project skill: external environment configuration, managed-identity image pull, immutable image digests and repeatable acceptance checks.
+- Protect authenticated HTTP and WebSocket entrypoints with canonical request paths, same-origin writes, an allowed-user list, revocable sessions and private response caching policy.
+- Move deployment status, AI availability, account details and sign-out into a glass Debug panel beside Canvases. Optional Microsoft profile photos use silent delegated access and fall back without blocking the workspace.
+- Keep the Azure preview at one replica with AI disabled and ephemeral SQLite. Container replacement can erase canvas data and sessions; durable cloud storage and other cloud adapters remain separate work.
+
+### Canvas and assistant
+
+- Add named canvas management across the browser, HTTP API and CLI, with synchronized active-canvas state and lightweight previews.
+- Refresh the application frame and canvas elements with the glass/jelly design, responsive panels, inline editing, reference-based visual checks and Linux font fixes.
+- Add minimap navigation and per-canvas undo/redo for manual edits, preserving concurrent external operations through revision checks.
+- Add editable note labels, shared HTML card design fragments and persistent action cards with stable item IDs, completion state and undo support.
+- Add streaming canvas-aware Chat, recorded Audio playback/transcription, MAI microphone sessions and MOSS Live tools. Local provider configuration remains available; cloud AI can be disabled independently.
+- Generate HTML summaries and action cards after recorded or MAI sessions, with retry recovery pinned to the original canvas. MOSS exposes the tools but does not automatically summarize on stop.
+- Preserve sandboxed inline HTML/scripts while blocking external iframe resources, and isolate AI tools and generated images to their intended canvases.
+
+### Delivery and verification
+
+- Add local Docker packaging for the production UI, API and voice proxies, with isolated data volumes and real-browser container checks.
+- Expand unit, HTTP/WebSocket, CLI, browser, visual and security regression coverage; discover Node tests automatically and include hosted identity controls in the browser gate.
+- Add staged-index and exact-pushed-revision Git gates, zero-warning lint, dependency/secret scans and the aggregate CI quality gate. Push checks preserve the shared dependency installation.
 
 ## v0.6.5
 

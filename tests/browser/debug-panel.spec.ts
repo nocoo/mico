@@ -137,7 +137,7 @@ test('debug entry is adjacent, focused, exclusive with Canvases, and dismisses o
 	await expect(panel.getByText('Data may disappear', { exact: true })).toBeVisible()
 	await expect(panel.getByText('AI unavailable', { exact: true })).toBeVisible()
 	await expect(panel.getByText('Manual drawing is available', { exact: true })).toBeVisible()
-	await expect(panel.getByText(`Version ${packageJson.version}`, { exact: true })).toBeVisible()
+	await expect(panel.getByText(`Version v${packageJson.version}`, { exact: true })).toBeVisible()
 	await page.screenshot({
 		path: testInfo.outputPath('debug-desktop.png'),
 		fullPage: true,

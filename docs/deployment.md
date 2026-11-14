@@ -72,7 +72,7 @@ The application still has one shared workspace and active canvas. Authentication
 2. With Entra enabled, anonymous `/` opens the sign-in flow; `/api/state`, images and WebSocket upgrades reject anonymous callers.
 3. Sign-in reaches the registered SPA callback, establishes a server session and opens the canvas. Logout revokes the session.
 4. Draw a note, edit it and refresh; verify WebSocket synchronization in the same live replica.
-5. The preview notice is visible. AI unavailable is explicit; opening the app does not contact AI providers or request the microphone.
+5. Open Debug beside Canvases to inspect the preview notice, AI availability, account and application version. Opening the app does not contact AI providers or request the microphone.
 6. Foreign Origin and forged/expired sessions are rejected.
 
 Local automated tests use mock identity keys and isolated databases; they do not prove the live Entra callback is registered. Record real browser sign-in as a separate manual acceptance step.

@@ -129,7 +129,7 @@ export function DebugPanel({
 							{!model.aiEnabled && <span>Manual drawing is available</span>}
 						</span>
 					</section>
-					<section className="debug-version">Version {model.version}</section>
+					<section className="debug-version">Version v{model.version}</section>
 					{model.hasSignOut && (
 						<button type="button" className="debug-sign-out" onClick={onSignOut}>
 							Sign out
