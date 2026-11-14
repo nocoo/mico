@@ -80,6 +80,19 @@ export async function verifyManagedAi({
 		assert.ok(!stream.includes('"type":"error"'), 'Chat returned a stream error')
 		const created = daemon.store.getBoard(canvasId)
 		assert.ok(created.shapes.length >= 2, 'Chat did not persist the requested canvas content')
+		const labels = created.shapes
+			.flatMap((shape) => [
+				'text' in shape ? shape.text : '',
+				'title' in shape ? shape.title : '',
+				'label' in shape ? shape.label : '',
+			])
+			.join(' ')
+			.toLowerCase()
+			.replace(/\s+/g, '')
+		assert.ok(
+			labels.includes('managedidentity') && labels.includes('maiready'),
+			'Chat did not write the requested labels',
+		)
 		const voiceResult = await new Promise<{ transcript: string; intermediateEvents: number }>(
 			(resolveVoice, reject) => {
 				let settled = false
@@ -154,6 +167,10 @@ export async function verifyManagedAi({
 			},
 		)
 		assert.ok(voiceResult.transcript.trim().length > 10, 'MAI returned an empty transcription')
+		assert.ok(voiceResult.intermediateEvents > 0, 'MAI returned no partial transcription events')
+		const beforeLecture = daemon.store.getBoard(canvasId)
+		const beforeRevision = beforeLecture.revision
+		const previousIds = new Set(beforeLecture.shapes.map((shape) => shape.id))
 		const lecture = await fetch(`${origin}/api/ai/chat`, {
 			method: 'POST',
 			headers,
@@ -178,6 +195,17 @@ export async function verifyManagedAi({
 		})
 		assert.equal(lecture.status, 200)
 		assert.ok(!(await lecture.text()).includes('"type":"error"'), 'Lecture returned a stream error')
+		const afterLecture = daemon.store.getBoard(canvasId)
+		assert.ok(
+			afterLecture.revision > beforeRevision &&
+				afterLecture.shapes.some(
+					(shape) =>
+						shape.type === 'note' &&
+						!previousIds.has(shape.id) &&
+						(shape.text?.trim().length ?? 0) > 0,
+				),
+			'Lecture did not persist the requested new note',
+		)
 		for (const route of ['/api/moss/session', '/api/moss/tool']) {
 			const response = await fetch(`${origin}${route}`, {
 				method: 'POST',

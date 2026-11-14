@@ -2,6 +2,9 @@
 
 ## Managed Foundry integration
 
+- The segmented control's item remained part of roving focus despite its disabled presentation. Prevent only activation keys, not Tab or arrow navigation, and test entry and exit through the disabled option. Match the real `/moss` WebSocket route when asserting zero network attempts.
+- The first operator check could report success with final-only transcription and a lecture response that never wrote a note. Require partial transcription events, the requested Chat labels, and a new non-empty note with a newer board revision; test both false-green branches with isolated module doubles, not only the usage-confirmation guard.
+
 - The streaming and non-streaming MAI models have different regional catalogs and quotas. Inspect the exact streaming model rather than treating a non-streaming quota result as proof that the realtime path is blocked. Resource-specific names, IDs, endpoints and validation receipts stay in private operator configuration.
 - The published realtime sample's Cognitive Services audience was rejected by the selected Foundry endpoint, while the AI audience succeeded with the same identity/resource and synthetic audio. Verify audiences through the actual container identity, then use one tested contract instead of adding credential or audience fallback. GPT reasoning support also needed a real check: the selected model rejected `none`, so the deployment profile explicitly uses `low`.
 - Azure console commands are URL parameters; a long inline script produced an IIS handshake error, not an inference failure. Use a short shell/receiver, send larger inputs over stdin with bounded pacing, and preserve console evidence without tokens. Unpaced large input was truncated by the console transport.
