@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs'
+import { mkdirSync, realpathSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 
@@ -28,10 +28,17 @@ export function createSqliteSql(dbPath: string): Sql {
 	const path = resolve(dbPath)
 	mkdirSync(dirname(path), { recursive: true })
 	const db = new DatabaseSync(path, { timeout: 1000 })
-	let lock = sqliteLocks.get(path)
+	let lockKey: string
+	try {
+		lockKey = realpathSync(path)
+	} catch (error) {
+		db.close()
+		throw error
+	}
+	let lock = sqliteLocks.get(lockKey)
 	if (!lock) {
 		lock = { serialize: createMutex(), refs: 0 }
-		sqliteLocks.set(path, lock)
+		sqliteLocks.set(lockKey, lock)
 	}
 	lock.refs += 1
 	const serialize = lock.serialize
@@ -80,7 +87,7 @@ export function createSqliteSql(dbPath: string): Sql {
 					db.close()
 				} finally {
 					lock.refs -= 1
-					if (lock.refs === 0 && sqliteLocks.get(path) === lock) sqliteLocks.delete(path)
+					if (lock.refs === 0 && sqliteLocks.get(lockKey) === lock) sqliteLocks.delete(lockKey)
 				}
 			})
 		}

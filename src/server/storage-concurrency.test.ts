@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -9,6 +9,35 @@ const png = Buffer.from(
 	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=',
 	'base64',
 )
+
+test('real and symlink database paths share the same transaction lock', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-symlink-lock-'))
+	const path = join(directory, 'board.sqlite')
+	const link = join(directory, 'linked.sqlite')
+	const first = new BoardStore(path)
+	let second: BoardStore | undefined
+	try {
+		const firstStore = first.forTenant(LOCAL_TENANT)
+		const before = await firstStore.getState()
+		symlinkSync(path, link)
+		second = new BoardStore(link)
+		const secondStore = second.forTenant(LOCAL_TENANT)
+		await secondStore.getState()
+		const states = await Promise.all([firstStore.getState(), secondStore.getState()])
+		assert.deepEqual(states, [before, before])
+		await Promise.all([
+			firstStore.createCanvas('First writer'),
+			secondStore.createCanvas('Second writer'),
+		])
+		const after = await Promise.all([firstStore.getState(), secondStore.getState()])
+		assert.deepEqual(after[0], after[1])
+		assert.equal(after[0].canvases.length, 3)
+		assert.equal(after[0].stateVersion, before.stateVersion + 2)
+	} finally {
+		await Promise.all([first.close(), second?.close()])
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
 
 test('a failed generated-image revision guard rolls back its asset and board', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-image-rollback-'))
