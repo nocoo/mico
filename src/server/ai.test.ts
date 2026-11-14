@@ -23,19 +23,19 @@ const run = (tool: unknown, input: unknown) =>
 function withStore(runTest: (store: BoardStore, broadcast: unknown[]) => Promise<void> | void) {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
-	return Promise.resolve(runTest(store, [])).finally(() => {
-		store.close()
+	return Promise.resolve(runTest(store, [])).finally(async () => {
+		await store.close()
 		rmSync(directory, { recursive: true, force: true })
 	})
 }
 
 test('AI tools create, inspect and update frame titles and note labels', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_notes, {
 			notes: [
@@ -68,9 +68,9 @@ test('AI tools create, inspect and update frame titles and note labels', async (
 
 test('upsert_action_card preserves completion, omissions and explicit deletes safely', async () => {
 	await withStore(async (store) => {
-		const canvasId = store.getActiveCanvasId()
-		const otherCanvas = store.createCanvas('Other canvas').canvas.id
-		const tools = createCanvasTools({ store, broadcast: () => {}, selection: [], canvasId })
+		const canvasId = await store.getActiveCanvasId()
+		const otherCanvas = (await store.createCanvas('Other canvas')).canvas.id
+		const tools = await createCanvasTools({ store, broadcast: () => {}, selection: [], canvasId })
 		const input = {
 			id: 'next-actions',
 			x: 80,
@@ -89,8 +89,8 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 		}
 		assert.equal(created.ok, true)
 		assert.equal(created.revision, 1)
-		assert.deepEqual(store.getBoard(otherCanvas).shapes, [])
-		const card = store.getBoard(canvasId).shapes[0]
+		assert.deepEqual((await store.getBoard(otherCanvas)).shapes, [])
+		const card = (await store.getBoard(canvasId)).shapes[0]
 		assert.ok(card?.type === 'actions')
 		assert.equal(card.w, 300)
 		assert.equal(card.color, CANDY_TINTS.green)
@@ -98,7 +98,7 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 		assert.ok(card.items.every((item) => item.done === false))
 		const initialHeight = card.h
 
-		store.applyRequest({
+		await store.applyRequest({
 			canvasId,
 			expectedRevision: 1,
 			operations: [{ type: 'set_action_done', id: 'next-actions', itemId: 'owner-a', done: true }],
@@ -109,7 +109,7 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 		})) as { ok: boolean; error?: string }
 		assert.equal(stale.ok, false)
 		assert.equal(stale.error, 'REVISION_CONFLICT')
-		const completedCard = store.getBoard(canvasId).shapes[0]
+		const completedCard = (await store.getBoard(canvasId)).shapes[0]
 		assert.ok(completedCard?.type === 'actions')
 		assert.equal(completedCard.items?.find((item) => item.id === 'owner-a')?.done, true)
 
@@ -131,7 +131,7 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 		})) as { ok: boolean; revision: number; updated: string[] }
 		assert.equal(updated.ok, true)
 		assert.equal(updated.revision, 3)
-		const updatedCard = store.getBoard(canvasId).shapes[0]
+		const updatedCard = (await store.getBoard(canvasId)).shapes[0]
 		assert.ok(updatedCard?.type === 'actions')
 		assert.deepEqual(
 			updatedCard.items?.map((item) => [item.id, item.done]),
@@ -151,9 +151,9 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 			items: [{ id: 'long-zh', text: '确认中文行动项并跟进完整上下文'.repeat(12) }],
 		})) as { ok: boolean }
 		assert.equal(longChinese.ok, true)
-		const chineseCard = store
-			.getBoard(canvasId)
-			.shapes.find((shape) => shape.id === 'long-chinese-actions')
+		const chineseCard = (await store.getBoard(canvasId)).shapes.find(
+			(shape) => shape.id === 'long-chinese-actions',
+		)
 		assert.ok(chineseCard?.type === 'actions')
 		assert.ok(chineseCard.h > 300)
 
@@ -165,7 +165,9 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 			items: [],
 		})) as { ok: boolean }
 		assert.equal(empty.ok, true)
-		const emptyCard = store.getBoard(canvasId).shapes.find((shape) => shape.id === 'empty-actions')
+		const emptyCard = (await store.getBoard(canvasId)).shapes.find(
+			(shape) => shape.id === 'empty-actions',
+		)
 		assert.ok(emptyCard?.type === 'actions')
 		assert.deepEqual(emptyCard.items, [])
 
@@ -180,7 +182,7 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 		assert.equal(collision.ok, false)
 		assert.equal(collision.error, 'DUPLICATE_ID')
 		assert.equal(
-			store.getBoard(canvasId).shapes.find((shape) => shape.id === 'occupied')?.type,
+			(await store.getBoard(canvasId)).shapes.find((shape) => shape.id === 'occupied')?.type,
 			'note',
 		)
 
@@ -203,11 +205,11 @@ test('upsert_action_card preserves completion, omissions and explicit deletes sa
 test('AI tools create a labelled lesson and connect existing ids', async () => {
 	await withStore(async (store) => {
 		const events: unknown[] = []
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: (event) => events.push(event),
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 
 		const text = (await run(tools.add_texts, {
@@ -235,21 +237,21 @@ test('AI tools create a labelled lesson and connect existing ids', async () => {
 		})) as { ok: boolean; created: { id: string; type: string }[] }
 		assert.equal(connector.ok, true)
 		assert.deepEqual(connector.created, [{ id: 'flow', type: 'connector' }])
-		assert.equal(store.getBoard().shapes.length, 4)
+		assert.equal((await store.getBoard()).shapes.length, 4)
 	})
 })
 
 test('AI tools add uploaded images and update frame backgrounds', async () => {
 	await withStore(async (store) => {
-		const imageId = store.saveImage(
+		const imageId = await store.saveImage(
 			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
 			'image/png',
 		)
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		const added = (await run(tools.add_images, {
 			images: [{ id: 'photo', imageId, x: 100, y: 100, w: 320, h: 240 }],
@@ -270,7 +272,7 @@ test('AI tools add uploaded images and update frame backgrounds', async () => {
 			],
 		})
 		assert.equal((framed as { ok: boolean }).ok, true)
-		const board = store.getBoard()
+		const board = await store.getBoard()
 		const frame = board.shapes.find((shape) => shape.id === 'hero')
 		assert.ok(frame?.type === 'frame')
 		assert.equal(frame.backgroundImageId, 'photo')
@@ -284,7 +286,7 @@ test('AI tools add uploaded images and update frame backgrounds', async () => {
 			updates: [{ id: 'hero', patch: { backgroundImageId: null } }],
 		})) as { ok: boolean }
 		assert.equal(unlinked.ok, true)
-		const unlinkedFrame = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		const unlinkedFrame = (await store.getBoard()).shapes.find((shape) => shape.id === 'hero')
 		assert.ok(unlinkedFrame?.type === 'frame')
 		assert.equal(unlinkedFrame.backgroundImageId, undefined)
 	})
@@ -292,16 +294,16 @@ test('AI tools add uploaded images and update frame backgrounds', async () => {
 
 test('AI image mutations reject missing assets and invalid backgrounds without side effects', async () => {
 	await withStore(async (store) => {
-		const imageId = store.saveImage(
+		const imageId = await store.saveImage(
 			new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
 			'image/png',
 		)
 		const events: unknown[] = []
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: (event) => events.push(event),
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 
 		await run(tools.add_images, {
@@ -322,16 +324,16 @@ test('AI image mutations reject missing assets and invalid backgrounds without s
 			],
 		})
 
-		const beforeMissing = JSON.stringify(store.getBoard())
-		const revisionBeforeMissing = store.getBoard().revision
+		const beforeMissing = JSON.stringify(await store.getBoard())
+		const revisionBeforeMissing = (await store.getBoard()).revision
 		const broadcastsBeforeMissing = events.length
 		const missing = (await run(tools.add_images, {
 			images: [{ id: 'missing-photo', imageId: 'missing-asset', x: 100, y: 500, w: 100, h: 100 }],
 		})) as { ok: boolean; error?: string }
 		assert.equal(missing.ok, false)
 		assert.equal(missing.error, 'MISSING_IMAGE_ASSET')
-		assert.equal(JSON.stringify(store.getBoard()), beforeMissing)
-		assert.equal(store.getBoard().revision, revisionBeforeMissing)
+		assert.equal(JSON.stringify(await store.getBoard()), beforeMissing)
+		assert.equal((await store.getBoard()).revision, revisionBeforeMissing)
 		assert.equal(events.length, broadcastsBeforeMissing)
 
 		await run(tools.add_boxes, {
@@ -340,8 +342,8 @@ test('AI image mutations reject missing assets and invalid backgrounds without s
 				{ id: 'right', x: 1100, y: 100, w: 100, h: 100 },
 			],
 		})
-		const beforeInvalid = JSON.stringify(store.getBoard())
-		const revisionBeforeInvalid = store.getBoard().revision
+		const beforeInvalid = JSON.stringify(await store.getBoard())
+		const revisionBeforeInvalid = (await store.getBoard()).revision
 		const broadcastsBeforeInvalid = events.length
 		const invalid = (await run(tools.add_frames, {
 			frames: [
@@ -354,28 +356,28 @@ test('AI image mutations reject missing assets and invalid backgrounds without s
 			],
 		})) as { ok: boolean; error?: string }
 		assert.equal(invalid.ok, false)
-		assert.equal(JSON.stringify(store.getBoard()), beforeInvalid)
-		assert.equal(store.getBoard().revision, revisionBeforeInvalid)
+		assert.equal(JSON.stringify(await store.getBoard()), beforeInvalid)
+		assert.equal((await store.getBoard()).revision, revisionBeforeInvalid)
 		assert.equal(events.length, broadcastsBeforeInvalid)
 
-		const beforeUpdateInvalid = JSON.stringify(store.getBoard())
-		const revisionBeforeUpdateInvalid = store.getBoard().revision
+		const beforeUpdateInvalid = JSON.stringify(await store.getBoard())
+		const revisionBeforeUpdateInvalid = (await store.getBoard()).revision
 		const broadcastsBeforeUpdateInvalid = events.length
 		const invalidUpdate = (await run(tools.update_shapes, {
 			updates: [{ id: 'hero', patch: { backgroundImageId: 'not-an-image-shape' } }],
 		})) as { ok: boolean; error?: string }
 		assert.equal(invalidUpdate.ok, false)
-		assert.equal(JSON.stringify(store.getBoard()), beforeUpdateInvalid)
-		assert.equal(store.getBoard().revision, revisionBeforeUpdateInvalid)
+		assert.equal(JSON.stringify(await store.getBoard()), beforeUpdateInvalid)
+		assert.equal((await store.getBoard()).revision, revisionBeforeUpdateInvalid)
 		assert.equal(events.length, broadcastsBeforeUpdateInvalid)
 
-		const revisionBeforeDelete = store.getBoard().revision
+		const revisionBeforeDelete = (await store.getBoard()).revision
 		const deleteReply = (await run(tools.delete_shapes, { ids: ['photo'] })) as {
 			ok: boolean
 		}
 		assert.equal(deleteReply.ok, true)
-		assert.equal(store.getBoard().revision, revisionBeforeDelete + 1)
-		const hero = store.getBoard().shapes.find((shape) => shape.id === 'hero')
+		assert.equal((await store.getBoard()).revision, revisionBeforeDelete + 1)
+		const hero = (await store.getBoard()).shapes.find((shape) => shape.id === 'hero')
 		assert.ok(hero?.type === 'frame')
 		assert.equal(hero.backgroundImageId, undefined)
 		assert.ok(events.length > broadcastsBeforeInvalid)
@@ -384,11 +386,11 @@ test('AI image mutations reject missing assets and invalid backgrounds without s
 
 test('AI tools report validation errors without writing', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		const reply = (await run(tools.add_connectors, {
 			connectors: [{ id: 'missing', from: 'ghost-a', to: 'ghost-b' }],
@@ -396,7 +398,7 @@ test('AI tools report validation errors without writing', async () => {
 		assert.equal(reply.ok, false)
 		assert.equal(reply.error, 'INVALID_REQUEST')
 		assert.match(reply.message ?? '', /invalid endpoint/)
-		assert.equal(store.getBoard().shapes.length, 0)
+		assert.equal((await store.getBoard()).shapes.length, 0)
 
 		const missing = (await run(tools.update_shapes, {
 			updates: [{ id: 'ghost', patch: { x: 10 } }],
@@ -408,11 +410,11 @@ test('AI tools report validation errors without writing', async () => {
 
 test('AI tools estimate text bounds and derive stroke bounds from absolute points', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_texts, {
 			texts: [
@@ -437,7 +439,7 @@ test('AI tools estimate text bounds and derive stroke bounds from absolute point
 				},
 			],
 		})
-		const shapes = store.getBoard().shapes
+		const shapes = (await store.getBoard()).shapes
 		const text = shapes.find((shape) => shape.id === 'cjk')
 		assert.ok(text && text.type === 'text')
 		assert.ok(text.w >= 64)
@@ -452,7 +454,7 @@ test('AI tools estimate text bounds and derive stroke bounds from absolute point
 	})
 })
 
-test('lecture instructions tell the model to wait on incomplete sentences', () => {
+test('lecture instructions tell the model to wait on incomplete sentences', async () => {
 	const prompt = buildInstructions({ revision: 0, shapes: [] }, [], 'lecture')
 	assert.match(prompt, /Live session mode/)
 	assert.match(prompt, /reply with exactly WAIT/)
@@ -461,7 +463,7 @@ test('lecture instructions tell the model to wait on incomplete sentences', () =
 	assert.doesNotMatch(buildInstructions({ revision: 0, shapes: [] }, []), /Live session mode/)
 })
 
-test('board context marks the user selection as primary context', () => {
+test('board context marks the user selection as primary context', async () => {
 	const board = {
 		revision: 3,
 		shapes: [
@@ -512,7 +514,7 @@ async function withDaemon(
 
 test('AI chat streams a tool loop and draws on the active board', async () => {
 	await withDaemon(async ({ daemon, url, model }) => {
-		daemon.store.apply({
+		await daemon.store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -554,7 +556,7 @@ test('AI chat streams a tool loop and draws on the active board', async () => {
 		const firstPrompt = JSON.stringify(model.doStreamCalls[0]?.prompt)
 		assert.match(firstPrompt, /selected-seed/)
 		assert.match(firstPrompt, /primary context/)
-		const shapes = daemon.store.getBoard().shapes
+		const shapes = (await daemon.store.getBoard()).shapes
 		assert.equal(shapes.length, 9)
 		assert.ok(shapes.some((shape) => shape.id === 'mock-1-title'))
 		assert.ok(shapes.some((shape) => shape.id === 'mock-1-flow' && shape.type === 'connector'))
@@ -647,15 +649,15 @@ test('post-session summary writes a reusable HTML card and preserves action comp
 			assert.match(stream, /upsert_action_card/)
 		}
 		await summarize()
-		const initial = daemon.store.getBoard()
+		const initial = await daemon.store.getBoard()
 		assert.ok(initial.shapes.some((shape) => shape.id === 'summary' && shape.type === 'html'))
 		assert.equal(initial.shapes.find((shape) => shape.id === 'actions')?.type, 'actions')
-		daemon.store.applyRequest({
+		await daemon.store.applyRequest({
 			expectedRevision: initial.revision,
 			operations: [{ type: 'set_action_done', id: 'actions', itemId: 'timeline', done: true }],
 		})
 		await summarize()
-		const shapes = daemon.store.getBoard().shapes
+		const shapes = (await daemon.store.getBoard()).shapes
 		assert.equal(shapes.filter((shape) => shape.id === 'summary').length, 1)
 		const action = shapes.find((shape) => shape.id === 'actions')
 		if (action?.type !== 'actions') throw new Error('Missing action card')
@@ -740,9 +742,9 @@ test('AI chat rejects invalid requests', async () => {
 
 test('AI tools stay pinned to the canvas captured at request time', async () => {
 	await withStore(async (store) => {
-		const first = store.getActiveCanvasId()
-		const second = store.createCanvas('Second canvas', true).canvas.id
-		const tools = createCanvasTools({
+		const first = await store.getActiveCanvasId()
+		const second = (await store.createCanvas('Second canvas', true)).canvas.id
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
@@ -751,18 +753,18 @@ test('AI tools stay pinned to the canvas captured at request time', async () => 
 		await run(tools.add_texts, {
 			texts: [{ id: 'pinned', x: 10, y: 10, text: 'Pinned to the first canvas' }],
 		})
-		assert.equal(store.getBoard(first).shapes.length, 1)
-		assert.equal(store.getBoard(second).shapes.length, 0)
+		assert.equal((await store.getBoard(first)).shapes.length, 1)
+		assert.equal((await store.getBoard(second)).shapes.length, 0)
 	})
 })
 
 test('update_shapes validates palette colors and normalizes notes only', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_notes, {
 			notes: [
@@ -785,17 +787,17 @@ test('update_shapes validates palette colors and normalizes notes only', async (
 				{ id: 'pale-box', patch: { color: CANDY_TINTS.pink } },
 			],
 		})
-		const revision = store.getBoard().revision
+		const revision = (await store.getBoard()).revision
 		const reply = (await run(tools.update_shapes, input)) as { ok: boolean; revision: number }
 		assert.equal(reply.ok, true)
 		assert.equal(reply.revision, revision + 1)
-		const shapes = store.getBoard().shapes
+		const shapes = (await store.getBoard()).shapes
 		assert.equal(shapes.find((shape) => shape.id === 'pale-note')?.color, CANDY_TINTS.blue)
 		assert.equal(shapes.find((shape) => shape.id === 'vivid-note')?.color, CANDY_TINTS.pink)
 		assert.equal(shapes.find((shape) => shape.id === 'vivid-box')?.color, CANDY_COLORS.green)
 		assert.equal(shapes.find((shape) => shape.id === 'pale-box')?.color, CANDY_TINTS.pink)
 
-		store.apply({
+		await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -815,26 +817,26 @@ test('update_shapes validates palette colors and normalizes notes only', async (
 				},
 			],
 		})
-		const beforeConflict = JSON.stringify(store.getBoard())
+		const beforeConflict = JSON.stringify(await store.getBoard())
 		const conflict = (await run(tools.update_shapes, input)) as { ok: boolean; error?: string }
 		assert.equal(conflict.ok, false)
 		assert.equal(conflict.error, 'REVISION_CONFLICT')
-		assert.equal(JSON.stringify(store.getBoard()), beforeConflict)
+		assert.equal(JSON.stringify(await store.getBoard()), beforeConflict)
 	})
 })
 
 test('unrelated creates cannot acknowledge unread concurrent edits', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_texts, {
 			texts: [{ id: 'label', x: 10, y: 10, text: 'Before' }],
 		})
-		store.apply({
+		await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -847,14 +849,14 @@ test('unrelated creates cannot acknowledge unread concurrent edits', async () =>
 		})) as { ok: boolean; error?: string }
 		assert.equal(conflict.ok, false)
 		assert.equal(conflict.error, 'REVISION_CONFLICT')
-		const label = store.getBoard().shapes.find((shape) => shape.id === 'label')
+		const label = (await store.getBoard()).shapes.find((shape) => shape.id === 'label')
 		assert.equal(label?.type === 'text' ? label.text : null, 'Before')
 
 		const added = (await run(tools.add_notes, {
 			notes: [{ id: 'unread', x: 600, y: 10, text: 'Unrelated addition' }],
 		})) as { ok: boolean; revision: number }
 		assert.equal(added.ok, true)
-		assert.equal(added.revision, store.getBoard().revision)
+		assert.equal(added.revision, (await store.getBoard()).revision)
 		const retried = (await run(tools.update_shapes, {
 			updates: [{ id: 'label', patch: { text: 'After' } }],
 		})) as { ok: boolean; error?: string }
@@ -864,18 +866,18 @@ test('unrelated creates cannot acknowledge unread concurrent edits', async () =>
 			updates: [{ id: 'label', patch: { text: 'After' } }],
 		})) as { ok: boolean }
 		assert.equal(refreshed.ok, true)
-		const updated = store.getBoard().shapes.find((shape) => shape.id === 'label')
+		const updated = (await store.getBoard()).shapes.find((shape) => shape.id === 'label')
 		assert.equal(updated?.type === 'text' ? updated.text : null, 'After')
 	})
 })
 
 test('strokes round points and their bounds together', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		const reply = (await run(tools.add_strokes, {
 			strokes: [
@@ -889,7 +891,7 @@ test('strokes round points and their bounds together', async () => {
 			],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const stroke = store.getBoard().shapes.find((shape) => shape.id === 'decimal')
+		const stroke = (await store.getBoard()).shapes.find((shape) => shape.id === 'decimal')
 		assert.ok(stroke && stroke.type === 'path')
 		assert.equal(stroke.w, 1.1)
 		assert.equal(stroke.h, 2.1)
@@ -900,7 +902,7 @@ test('strokes round points and their bounds together', async () => {
 	})
 })
 
-test('line and path digests keep direction and sampled geometry', () => {
+test('line and path digests keep direction and sampled geometry', async () => {
 	const line = digestShape({
 		id: 'line',
 		type: 'line',
@@ -953,7 +955,7 @@ test('line and path digests keep direction and sampled geometry', () => {
 	assert.deepEqual(longPath.samples?.at(-1), { x: 199, y: 199 })
 })
 
-test('interrupted tool calls are dropped before the next turn', () => {
+test('interrupted tool calls are dropped before the next turn', async () => {
 	const messages = [
 		{ id: 'u', role: 'user' as const, parts: [{ type: 'text' as const, text: 'Draw a box' }] },
 		{
@@ -1025,11 +1027,11 @@ test('lecture mode can answer WAIT without forcing a tool call', async () => {
 		assert.deepEqual(model.doStreamCalls[0]?.providerOptions, {
 			magpie: { reasoningEffort: 'none' },
 		})
-		assert.equal(daemon.store.getBoard().shapes.length, 0)
+		assert.equal((await daemon.store.getBoard()).shapes.length, 0)
 	}, model)
 })
 
-test('board digests warn about overlaps and frame escapes', () => {
+test('board digests warn about overlaps and frame escapes', async () => {
 	const board = {
 		revision: 1,
 		shapes: [
@@ -1082,11 +1084,11 @@ test('board digests warn about overlaps and frame escapes', () => {
 
 test('re-creating an existing id updates it instead of failing', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_notes, {
 			notes: [{ id: 'risks', x: 10, y: 10, text: 'First version' }],
@@ -1095,7 +1097,7 @@ test('re-creating an existing id updates it instead of failing', async () => {
 			notes: [{ id: 'risks', x: 10, y: 10, text: 'Second version' }],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const notes = store.getBoard().shapes.filter((shape) => shape.id === 'risks')
+		const notes = (await store.getBoard()).shapes.filter((shape) => shape.id === 'risks')
 		assert.equal(notes.length, 1)
 		assert.equal(notes[0].type === 'note' ? notes[0].text : null, 'Second version')
 	})
@@ -1103,11 +1105,11 @@ test('re-creating an existing id updates it instead of failing', async () => {
 
 test('same-batch duplicate ids collapse into one object', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		const reply = (await run(tools.add_notes, {
 			notes: [
@@ -1116,7 +1118,7 @@ test('same-batch duplicate ids collapse into one object', async () => {
 			],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const notes = store.getBoard().shapes.filter((shape) => shape.id === 'same')
+		const notes = (await store.getBoard()).shapes.filter((shape) => shape.id === 'same')
 		assert.equal(notes.length, 1)
 		assert.equal(notes[0].type === 'note' ? notes[0].text : null, 'Second')
 	})
@@ -1124,11 +1126,11 @@ test('same-batch duplicate ids collapse into one object', async () => {
 
 test('connector upserts reset anchors when endpoints change', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1146,7 +1148,7 @@ test('connector upserts reset anchors when endpoints change', async () => {
 			connectors: [{ id: 'link', from: 'line', to: 'b' }],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const link = store.getBoard().shapes.find((shape) => shape.id === 'link')
+		const link = (await store.getBoard()).shapes.find((shape) => shape.id === 'link')
 		assert.equal(link?.type === 'connector' ? link.from : null, 'line')
 		assert.equal(link?.type === 'connector' ? link.fromAnchor : 'missing', undefined)
 	})
@@ -1154,11 +1156,11 @@ test('connector upserts reset anchors when endpoints change', async () => {
 
 test('add_frames computes padded bounds and attaches every member atomically', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1170,14 +1172,14 @@ test('add_frames computes padded bounds and attaches every member atomically', a
 			frames: [{ id: 'lesson', title: 'Lesson', memberIds: ['a', 'b'] }],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const frame = store.getBoard().shapes.find((shape) => shape.id === 'lesson')
+		const frame = (await store.getBoard()).shapes.find((shape) => shape.id === 'lesson')
 		assert.ok(frame && frame.type === 'frame')
 		assert.equal(frame.x, 60)
 		assert.equal(frame.y, 60)
 		assert.equal(frame.w, 480)
 		assert.equal(frame.h, 310)
 		for (const memberId of ['a', 'b']) {
-			const member = store.getBoard().shapes.find((shape) => shape.id === memberId)
+			const member = (await store.getBoard()).shapes.find((shape) => shape.id === memberId)
 			assert.ok(member && member.type !== 'connector')
 			assert.equal(member.frameId, 'lesson')
 		}
@@ -1186,11 +1188,11 @@ test('add_frames computes padded bounds and attaches every member atomically', a
 
 test('add_frames accepts off-screen and signed-line geometry', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_lines, {
 			lines: [{ id: 'signed', from: { x: 2500, y: 3500 }, to: { x: 2300, y: 3300 } }],
@@ -1202,7 +1204,7 @@ test('add_frames accepts off-screen and signed-line geometry', async () => {
 			frames: [{ id: 'far', title: 'Far', memberIds: ['signed', 'outside'] }],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const frame = store.getBoard().shapes.find((shape) => shape.id === 'far')
+		const frame = (await store.getBoard()).shapes.find((shape) => shape.id === 'far')
 		assert.ok(frame && frame.type === 'frame')
 		assert.equal(frame.x, 2260)
 		assert.equal(frame.y, 3260)
@@ -1213,11 +1215,11 @@ test('add_frames accepts off-screen and signed-line geometry', async () => {
 
 test('add_frames rejects invalid membership and frame id collisions without mutation', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_notes, {
 			notes: [{ id: 'a', x: 100, y: 100, text: 'A' }],
@@ -1237,7 +1239,7 @@ test('add_frames rejects invalid membership and frame id collisions without muta
 		assert.equal(collisionId.ok, false)
 		assert.equal(collisionId.error, 'DUPLICATE_ID')
 		assert.equal(
-			store.getBoard().shapes.some((shape) => shape.type === 'frame'),
+			(await store.getBoard()).shapes.some((shape) => shape.type === 'frame'),
 			false,
 		)
 	})
@@ -1245,11 +1247,11 @@ test('add_frames rejects invalid membership and frame id collisions without muta
 
 test('add_frames rejects unrelated overlap and already framed members', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1264,7 +1266,7 @@ test('add_frames rejects unrelated overlap and already framed members', async ()
 		assert.equal(reply.ok, false)
 		assert.equal(reply.error, 'FRAME_COLLISION')
 		assert.equal(
-			store.getBoard().shapes.some((shape) => shape.type === 'frame'),
+			(await store.getBoard()).shapes.some((shape) => shape.type === 'frame'),
 			false,
 		)
 
@@ -1287,11 +1289,11 @@ test('add_frames rejects unrelated overlap and already framed members', async ()
 
 test('explicit frame membership grows in a batched update and never shrinks', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1310,14 +1312,14 @@ test('explicit frame membership grows in a batched update and never shrinks', as
 			],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const frame = store.getBoard().shapes.find((shape) => shape.id === 'frame')
+		const frame = (await store.getBoard()).shapes.find((shape) => shape.id === 'frame')
 		assert.ok(frame && frame.type === 'frame')
 		assert.equal(frame.x, 60)
 		assert.equal(frame.y, 60)
 		assert.equal(frame.w, 880)
 		assert.equal(frame.h, 180)
 		for (const memberId of ['a', 'b', 'c']) {
-			const member = store.getBoard().shapes.find((shape) => shape.id === memberId)
+			const member = (await store.getBoard()).shapes.find((shape) => shape.id === memberId)
 			assert.ok(member && member.type !== 'connector')
 			assert.equal(member.frameId, 'frame')
 		}
@@ -1326,11 +1328,11 @@ test('explicit frame membership grows in a batched update and never shrinks', as
 
 test('growth rejects collision atomically and stale revisions', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1342,18 +1344,18 @@ test('growth rejects collision atomically and stale revisions', async () => {
 		await run(tools.add_frames, {
 			frames: [{ id: 'frame', title: 'Frame', memberIds: ['a', 'b'] }],
 		})
-		const frameBefore = store.getBoard().shapes.find((shape) => shape.id === 'frame')
+		const frameBefore = (await store.getBoard()).shapes.find((shape) => shape.id === 'frame')
 		const collision = (await run(tools.update_shapes, {
 			updates: [{ id: 'a', patch: { x: 600 } }],
 		})) as { ok: boolean; error?: string }
 		assert.equal(collision.ok, false)
 		assert.equal(collision.error, 'FRAME_COLLISION')
-		const frameAfter = store.getBoard().shapes.find((shape) => shape.id === 'frame')
+		const frameAfter = (await store.getBoard()).shapes.find((shape) => shape.id === 'frame')
 		assert.deepEqual(frameAfter, frameBefore)
-		const movedA = store.getBoard().shapes.find((shape) => shape.id === 'a')
+		const movedA = (await store.getBoard()).shapes.find((shape) => shape.id === 'a')
 		assert.equal(movedA?.type === 'ellipse' || movedA?.type === 'rectangle' ? movedA.x : null, 100)
 
-		store.applyRequest({
+		await store.applyRequest({
 			operations: [
 				{
 					type: 'create',
@@ -1369,14 +1371,14 @@ test('growth rejects collision atomically and stale revisions', async () => {
 					},
 				},
 			],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		const stale = (await run(tools.update_shapes, {
 			updates: [{ id: 'b', patch: { x: 650 } }],
 		})) as { ok: boolean; error?: string }
 		assert.equal(stale.ok, false)
 		assert.equal(stale.error, 'REVISION_CONFLICT')
-		const b = store.getBoard().shapes.find((shape) => shape.id === 'b')
+		const b = (await store.getBoard()).shapes.find((shape) => shape.id === 'b')
 		assert.ok(b && b.type !== 'connector')
 		assert.equal(b.x, 400)
 	})
@@ -1384,11 +1386,11 @@ test('growth rejects collision atomically and stale revisions', async () => {
 
 test('multiple frame batches and frame nesting are rejected safely', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1405,7 +1407,10 @@ test('multiple frame batches and frame nesting are rejected safely', async () =>
 			],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		assert.equal(store.getBoard().shapes.filter((shape) => shape.type === 'frame').length, 2)
+		assert.equal(
+			(await store.getBoard()).shapes.filter((shape) => shape.type === 'frame').length,
+			2,
+		)
 
 		await run(tools.add_boxes, {
 			boxes: [
@@ -1423,11 +1428,11 @@ test('multiple frame batches and frame nesting are rejected safely', async () =>
 
 test('AI HTML cards embed Lucide icons and expose full markup for later updates', async () => {
 	await withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
 		const created = (await run(tools.add_html_cards, {
 			cards: [
@@ -1451,7 +1456,7 @@ test('AI HTML cards embed Lucide icons and expose full markup for later updates'
 			updates: [{ id: 'summary', patch: { html: '<i data-lucide="clipboard-list"></i>' } }],
 		})) as { ok: boolean }
 		assert.equal(updated.ok, true)
-		const card = store.getBoard().shapes.find((shape) => shape.id === 'summary')
+		const card = (await store.getBoard()).shapes.find((shape) => shape.id === 'summary')
 		assert.ok(card?.type === 'html')
 		assert.match(card.html ?? '', /<svg[^>]*lucide-clipboard-list/)
 	})

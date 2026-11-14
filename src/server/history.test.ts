@@ -16,28 +16,32 @@ const note = (id: string): CanvasShape => ({
 	h: 130,
 	color: '#fff8d4',
 })
-const withStore = (run: (store: BoardStore) => void) => {
+const withStore = async (run: (store: BoardStore) => Promise<void>): Promise<void> => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-history-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
 	try {
-		run(store)
+		await run(store)
 	} finally {
-		store.close()
+		await store.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
 
-function replay(store: BoardStore, history: CanvasHistory, direction: 'undo' | 'redo'): Board {
-	const current = store.getBoard()
+async function replay(
+	store: BoardStore,
+	history: CanvasHistory,
+	direction: 'undo' | 'redo',
+): Promise<Board> {
+	const current = await store.getBoard()
 	const operations = history.plan(current, direction)
 	assert.ok(operations)
-	const next = store.apply({ operations, expectedRevision: current.revision })
+	const next = await store.apply({ operations, expectedRevision: current.revision })
 	history.complete(direction)
 	return next
 }
 
 test('history roundtrips deletion cascades, frame membership and stacking order atomically', () =>
-	withStore((store) => {
+	withStore(async (store) => {
 		const shapes: Shape[] = [
 			{ ...note('frame'), type: 'frame', title: 'Group' },
 			{ ...note('a'), frameId: 'frame' },
@@ -52,8 +56,10 @@ test('history roundtrips deletion cascades, frame membership and stacking order 
 				color: '#00a2e1',
 			},
 		]
-		const before = store.apply({ operations: shapes.map((shape) => ({ type: 'create', shape })) })
-		const after = store.apply({
+		const before = await store.apply({
+			operations: shapes.map((shape) => ({ type: 'create', shape })),
+		})
+		const after = await store.apply({
 			operations: [
 				{ type: 'delete', id: 'frame' },
 				{ type: 'delete', id: 'a' },
@@ -61,15 +67,15 @@ test('history roundtrips deletion cascades, frame membership and stacking order 
 		})
 		const history = new CanvasHistory()
 		history.record(before, after)
-		const undone = replay(store, history, 'undo')
+		const undone = await replay(store, history, 'undo')
 		assert.deepEqual(undone.shapes, before.shapes)
 		assert.equal(undone.revision, after.revision + 1)
-		assert.deepEqual(replay(store, history, 'redo').shapes, after.shapes)
+		assert.deepEqual((await replay(store, history, 'redo')).shapes, after.shapes)
 	}))
 
 test('history restores absent optional fields without deleting surviving connectors', () =>
-	withStore((store) => {
-		const before = store.apply({
+	withStore(async (store) => {
+		const before = await store.apply({
 			operations: [
 				{ type: 'create', shape: note('a') },
 				{ type: 'create', shape: note('b') },
@@ -79,7 +85,7 @@ test('history restores absent optional fields without deleting surviving connect
 				},
 			],
 		})
-		const after = store.apply({
+		const after = await store.apply({
 			operations: [
 				{ type: 'update', id: 'a', patch: { text: 'Edited' } },
 				{ type: 'update', id: 'edge', patch: { fromAnchor: 3 } },
@@ -87,13 +93,13 @@ test('history restores absent optional fields without deleting surviving connect
 		})
 		const history = new CanvasHistory()
 		history.record(before, after)
-		assert.deepEqual(replay(store, history, 'undo').shapes, before.shapes)
-		assert.deepEqual(replay(store, history, 'redo').shapes, after.shapes)
+		assert.deepEqual((await replay(store, history, 'undo')).shapes, before.shapes)
+		assert.deepEqual((await replay(store, history, 'redo')).shapes, after.shapes)
 	}))
 
 test('image undo restores frame backgrounds and enforces the five-image cap', () =>
-	withStore((store) => {
-		const imageId = store.saveImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), 'image/png')
+	withStore(async (store) => {
+		const imageId = await store.saveImage(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), 'image/png')
 		const image: CanvasShape = { ...note('image'), type: 'image', imageId }
 		const frame: CanvasShape = {
 			...note('frame'),
@@ -102,28 +108,30 @@ test('image undo restores frame backgrounds and enforces the five-image cap', ()
 			backgroundImageId: 'image',
 			backgroundFit: 'cover',
 		}
-		const before = store.apply({
+		const before = await store.apply({
 			operations: [
 				{ type: 'create', shape: image },
 				{ type: 'create', shape: frame },
 			],
 		})
-		const after = store.apply({ operations: [{ type: 'delete', id: 'image' }] })
+		const after = await store.apply({ operations: [{ type: 'delete', id: 'image' }] })
 		const history = new CanvasHistory()
 		history.record(before, after)
-		assert.deepEqual(replay(store, history, 'undo').shapes, before.shapes)
-		assert.deepEqual(replay(store, history, 'redo').shapes, after.shapes)
+		assert.deepEqual((await replay(store, history, 'undo')).shapes, before.shapes)
+		assert.deepEqual((await replay(store, history, 'redo')).shapes, after.shapes)
 		for (let index = 0; index < 5; index++)
-			store.apply({ operations: [{ type: 'create', shape: { ...image, id: `other-${index}` } }] })
-		const full = store.getBoard()
-		assert.throws(() => replay(store, history, 'undo'), /more than 5 image/)
-		assert.deepEqual(store.getBoard(), full)
+			await store.apply({
+				operations: [{ type: 'create', shape: { ...image, id: `other-${index}` } }],
+			})
+		const full = await store.getBoard()
+		await assert.rejects(() => replay(store, history, 'undo'), /more than 5 image/)
+		assert.deepEqual(await store.getBoard(), full)
 		assert.equal(history.canUndo, true)
 	}))
 
 test('history restores action cards and their item completion state', () =>
-	withStore((store) => {
-		const before = store.apply({
+	withStore(async (store) => {
+		const before = await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -141,26 +149,27 @@ test('history restores action cards and their item completion state', () =>
 				},
 			],
 		})
-		const after = store.apply({
+		const after = await store.apply({
 			expectedRevision: before.revision,
 			operations: [{ type: 'set_action_done', id: 'actions', itemId: 'stable', done: true }],
 		})
 		const history = new CanvasHistory()
 		history.record(before, after)
-		assert.deepEqual(replay(store, history, 'undo').shapes, before.shapes)
-		assert.deepEqual(replay(store, history, 'redo').shapes, after.shapes)
+		assert.deepEqual((await replay(store, history, 'undo')).shapes, before.shapes)
+		assert.deepEqual((await replay(store, history, 'redo')).shapes, after.shapes)
 	}))
 
 test('restore validates exact keys, revision, index, shapes and final references without partial writes', () =>
-	withStore((store) => {
-		const before = store.apply({ operations: [{ type: 'create', shape: note('a') }] })
-		assert.throws(
-			() => store.apply({ operations: [{ type: 'restore', shape: note('a'), index: 0 }] }),
+	withStore(async (store) => {
+		const before = await store.apply({ operations: [{ type: 'create', shape: note('a') }] })
+		await assert.rejects(
+			async () =>
+				await store.apply({ operations: [{ type: 'restore', shape: note('a'), index: 0 }] }),
 			/expectedRevision/,
 		)
-		assert.throws(
-			() =>
-				store.apply({
+		await assert.rejects(
+			async () =>
+				await store.apply({
 					operations: [{ type: 'restore', shape: note('a'), index: 0 }],
 					expectedRevision: 0,
 				}),
@@ -180,12 +189,13 @@ test('restore validates exact keys, revision, index, shapes and final references
 			{ type: 'restore', shape: { ...note('image'), type: 'image', imageId: 'missing' }, index: 0 },
 		]
 		for (const operation of invalid) {
-			assert.throws(() =>
-				store.apply({
-					operations: [{ type: 'delete', id: 'a' }, operation],
-					expectedRevision: before.revision,
-				}),
+			await assert.rejects(
+				async () =>
+					await store.apply({
+						operations: [{ type: 'delete', id: 'a' }, operation],
+						expectedRevision: before.revision,
+					}),
 			)
-			assert.deepEqual(store.getBoard(), before)
+			assert.deepEqual(await store.getBoard(), before)
 		}
 	}))

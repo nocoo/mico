@@ -1,7 +1,4 @@
 import { randomUUID } from 'node:crypto'
-import { mkdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
-import { DatabaseSync } from 'node:sqlite'
 import {
 	hasVisibleNoteLabel,
 	NOTE_MIN_LABELED_HEIGHT,
@@ -22,6 +19,7 @@ import type {
 import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
 import { getConnectorAnchors } from '../web/anchors.ts'
 import { canvasPreview } from './preview.ts'
+import { createMutex, createSqliteSql, type Sql, type SqlStatement, type SqlValue } from './sql.ts'
 
 export class OperationError extends Error {
 	readonly status: number
@@ -755,132 +753,177 @@ function rightmostClearPosition(
 	return { x: rightmost + 64, y: top, w: preferred.w, h: preferred.h }
 }
 
+const SCHEMA = `
+	CREATE TABLE IF NOT EXISTS canvases (
+		id TEXT PRIMARY KEY,
+		name TEXT NOT NULL,
+		revision INTEGER NOT NULL,
+		shapes TEXT NOT NULL,
+		created_at TEXT NOT NULL,
+		updated_at TEXT NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS settings (
+		key TEXT PRIMARY KEY,
+		value TEXT NOT NULL
+	);
+	CREATE TABLE IF NOT EXISTS image_assets (
+		id TEXT PRIMARY KEY,
+		content_type TEXT NOT NULL,
+		bytes BLOB NOT NULL,
+		size INTEGER NOT NULL,
+		created_at TEXT NOT NULL
+	);
+`
+
+const STATEMENTS = {
+	findCanvas: 'SELECT * FROM canvases WHERE id = ?',
+	listCanvases: 'SELECT * FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC',
+	firstCanvas: 'SELECT id FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
+	ensureDefaultCanvas:
+		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) SELECT ?, ?, 0, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM canvases)',
+	countCanvases: 'SELECT COUNT(*) AS count FROM canvases',
+	insertCanvas:
+		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
+	updateBoard:
+		'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ?',
+	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ?',
+	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ?',
+	deleteCanvas: 'DELETE FROM canvases WHERE id = ?',
+	findSetting: 'SELECT value FROM settings WHERE key = ?',
+	saveSetting:
+		'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
+	bumpStateVersion:
+		"INSERT INTO settings (key, value) VALUES ('stateVersion', '1') ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1",
+	listImageIds: 'SELECT id FROM image_assets',
+	insertImage:
+		'INSERT INTO image_assets (id, content_type, bytes, size, created_at) VALUES (?, ?, ?, ?, ?)',
+	findImage: 'SELECT content_type, bytes FROM image_assets WHERE id = ?',
+	legacyBoard: 'SELECT revision, shapes FROM board WHERE id = 1',
+	dropLegacyBoard: 'DROP TABLE board',
+} as const
+
 export class BoardStore {
-	readonly db: DatabaseSync
+	private readonly driver: Sql
+	private readonly ready: Promise<void>
+	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
 
 	constructor(dbPath: string) {
-		const resolvedPath = resolve(dbPath)
-		mkdirSync(dirname(resolvedPath), { recursive: true })
-		this.db = new DatabaseSync(resolvedPath, { timeout: 1000 })
-		this.db.exec(`
-			CREATE TABLE IF NOT EXISTS canvases (
-				id TEXT PRIMARY KEY,
-				name TEXT NOT NULL,
-				revision INTEGER NOT NULL,
-				shapes TEXT NOT NULL,
-				created_at TEXT NOT NULL,
-				updated_at TEXT NOT NULL
-			);
-			CREATE TABLE IF NOT EXISTS settings (
-				key TEXT PRIMARY KEY,
-				value TEXT NOT NULL
-			);
-			CREATE TABLE IF NOT EXISTS image_assets (
-				id TEXT PRIMARY KEY,
-				content_type TEXT NOT NULL,
-				bytes BLOB NOT NULL,
-				size INTEGER NOT NULL,
-				created_at TEXT NOT NULL
-			);
-		`)
-		this.migrateLegacyBoard()
-		this.ensureCanvas()
+		this.driver = createSqliteSql(dbPath)
+		const serialize = createMutex()
+		this.ready = this.initialize()
+		void this.ready.catch(() => undefined)
+		this.exclusive = <T>(operation: () => Promise<T>) =>
+			serialize(async () => {
+				await this.ready
+				return operation()
+			})
 	}
 
-	private migrateLegacyBoard(): void {
-		const legacy = this.db
-			.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'board'")
-			.get()
-		if (!legacy) return
-		this.db.exec('BEGIN IMMEDIATE')
-		try {
-			const row = this.db.prepare('SELECT revision, shapes FROM board WHERE id = 1').get() as
-				| { revision: number; shapes: string }
-				| undefined
-			const existing = this.db.prepare('SELECT COUNT(*) AS count FROM canvases').get() as {
-				count: number
-			}
-			if (existing.count === 0 && row) {
-				const now = new Date().toISOString()
-				this.db
-					.prepare(
-						'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
-					)
-					.run(DEFAULT_CANVAS_ID, DEFAULT_CANVAS_NAME, row.revision, row.shapes, now, now)
-				this.setSetting('activeCanvasId', DEFAULT_CANVAS_ID)
-			}
-			this.db.exec('DROP TABLE board')
-			this.db.exec('COMMIT')
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
+	get sql(): Sql {
+		const ready = async (): Promise<void> => {
+			await this.ready
+		}
+		return {
+			exec: async (sql) => {
+				await ready()
+				return this.driver.exec(sql)
+			},
+			get: async <T>(sql: string, params?: readonly SqlValue[]) => {
+				await ready()
+				return this.driver.get<T>(sql, params)
+			},
+			all: async <T>(sql: string, params?: readonly SqlValue[]) => {
+				await ready()
+				return this.driver.all<T>(sql, params)
+			},
+			run: async (sql, params) => {
+				await ready()
+				return this.driver.run(sql, params)
+			},
+			batch: async (statements) => {
+				await ready()
+				return this.driver.batch(statements)
+			},
+			hasTable: async (name) => {
+				await ready()
+				return this.driver.hasTable(name)
+			},
+			close: () => this.driver.close(),
 		}
 	}
 
-	private ensureCanvas(): void {
-		const count = this.db.prepare('SELECT COUNT(*) AS count FROM canvases').get() as {
-			count: number
-		}
-		if (count.count === 0) {
+	private async initialize(): Promise<void> {
+		await this.driver.exec(SCHEMA)
+		await this.migrateLegacyBoard()
+		await this.ensureCanvas()
+	}
+
+	private async migrateLegacyBoard(): Promise<void> {
+		if (!(await this.driver.hasTable('board'))) return
+		const row = await this.driver.get<{ revision: number; shapes: string }>(STATEMENTS.legacyBoard)
+		const existing = await this.driver.get<{ count: number }>(STATEMENTS.countCanvases)
+		const statements: SqlStatement[] = []
+		if (existing?.count === 0 && row) {
 			const now = new Date().toISOString()
-			this.db
-				.prepare(
-					'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, 0, ?, ?, ?)',
-				)
-				.run(DEFAULT_CANVAS_ID, DEFAULT_CANVAS_NAME, '[]', now, now)
+			statements.push({
+				sql: STATEMENTS.insertCanvas,
+				params: [DEFAULT_CANVAS_ID, DEFAULT_CANVAS_NAME, row.revision, row.shapes, now, now],
+			})
+			statements.push({
+				sql: STATEMENTS.saveSetting,
+				params: ['activeCanvasId', DEFAULT_CANVAS_ID],
+			})
 		}
-		const active = this.getSetting('activeCanvasId')
-		if (!active || !this.findRow(active)) {
-			const first = this.db
-				.prepare(
-					'SELECT id FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
-				)
-				.get() as { id: string } | undefined
-			if (first) this.setSetting('activeCanvasId', first.id)
+		statements.push({ sql: STATEMENTS.dropLegacyBoard })
+		await this.driver.batch(statements)
+	}
+
+	private async ensureCanvas(): Promise<void> {
+		const now = new Date().toISOString()
+		await this.driver.run(STATEMENTS.ensureDefaultCanvas, [
+			DEFAULT_CANVAS_ID,
+			DEFAULT_CANVAS_NAME,
+			'[]',
+			now,
+			now,
+		])
+		const active = await this.getSetting('activeCanvasId')
+		if (!active || !(await this.findRow(active))) {
+			const first = await this.driver.get<{ id: string }>(STATEMENTS.firstCanvas)
+			if (first) await this.setSetting('activeCanvasId', first.id)
 		}
 	}
 
-	private getSetting(key: string): string | undefined {
-		const row = this.db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as
-			| { value: string }
-			| undefined
+	private async getSetting(key: string): Promise<string | undefined> {
+		const row = await this.driver.get<{ value: string }>(STATEMENTS.findSetting, [key])
 		return row?.value
 	}
 
-	getStateVersion(): number {
-		const raw = this.getSetting('stateVersion')
+	private async setSetting(key: string, value: string): Promise<void> {
+		await this.driver.run(STATEMENTS.saveSetting, [key, value])
+	}
+
+	private async stateVersion(): Promise<number> {
+		const raw = await this.getSetting('stateVersion')
 		const version = raw === undefined ? 0 : Number(raw)
 		return Number.isInteger(version) && version >= 0 ? version : 0
 	}
 
-	private bumpStateVersion(): number {
-		this.db
-			.prepare(
-				"INSERT INTO settings (key, value) VALUES ('stateVersion', '1') ON CONFLICT(key) DO UPDATE SET value = CAST(value AS INTEGER) + 1",
-			)
-			.run()
-		return this.getStateVersion()
+	getStateVersion(): Promise<number> {
+		return this.exclusive(() => this.stateVersion())
 	}
 
-	private setSetting(key: string, value: string): void {
-		this.db
-			.prepare(
-				'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value',
-			)
-			.run(key, value)
+	private findRow(id: string): Promise<CanvasRow | undefined> {
+		return this.driver.get<CanvasRow>(STATEMENTS.findCanvas, [id])
 	}
 
-	private findRow(id: string): CanvasRow | undefined {
-		return this.db.prepare('SELECT * FROM canvases WHERE id = ?').get(id) as CanvasRow | undefined
-	}
-
-	private requireRow(id: string): CanvasRow {
-		const row = this.findRow(id)
+	private async requireRow(id: string): Promise<CanvasRow> {
+		const row = await this.findRow(id)
 		if (!row) throw new OperationError(404, 'NOT_FOUND', `canvas not found: ${id}`)
 		return row
 	}
 
-	private parseRow(row: CanvasRow, persistMigration = false): Board {
+	private async parseRow(row: CanvasRow, persistMigration = false): Promise<Board> {
 		let parsed: unknown
 		try {
 			parsed = JSON.parse(row.shapes)
@@ -890,19 +933,17 @@ export class BoardStore {
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
 		const beforeValidation = JSON.stringify(migrated.shapes)
-		validateBoardState(board, this.listImageAssetIds())
+		validateBoardState(board, await this.listImageAssetIds())
 		if (
 			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes)) &&
 			persistMigration
 		) {
-			this.db
-				.prepare('UPDATE canvases SET shapes = ? WHERE id = ?')
-				.run(JSON.stringify(migrated.shapes), row.id)
+			await this.driver.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
 		}
 		return board
 	}
 
-	private summaryOf(row: CanvasRow, includePreview = true): CanvasSummary {
+	private async summaryOf(row: CanvasRow, includePreview = true): Promise<CanvasSummary> {
 		const summary: CanvasSummary = {
 			id: row.id,
 			name: row.name,
@@ -910,106 +951,112 @@ export class BoardStore {
 			createdAt: row.created_at,
 			updatedAt: row.updated_at,
 		}
-		if (includePreview) summary.preview = canvasPreview(this.parseRow(row).shapes)
+		if (includePreview) summary.preview = canvasPreview((await this.parseRow(row)).shapes)
 		return summary
 	}
 
-	private readState(includePreviews: boolean): CanvasSnapshot {
-		this.db.exec('BEGIN DEFERRED')
-		try {
-			const stateVersion = this.getStateVersion()
-			const rows = this.db
-				.prepare('SELECT * FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC')
-				.all() as unknown as CanvasRow[]
-			const configured = this.getSetting('activeCanvasId')
-			const active = rows.find((row) => row.id === configured) ?? rows[0]
-			if (!active) throw new Error('No canvas exists')
-			const canvases = rows.map((row) => this.summaryOf(row, includePreviews))
-			const board = this.parseRow(active)
-			this.db.exec('COMMIT')
-			return { stateVersion, activeCanvasId: active.id, canvases, board }
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
-		}
+	private async readState(includePreviews: boolean): Promise<CanvasSnapshot> {
+		const stateVersion = await this.stateVersion()
+		const rows = await this.driver.all<CanvasRow>(STATEMENTS.listCanvases)
+		const configured = await this.getSetting('activeCanvasId')
+		const active = rows.find((row) => row.id === configured) ?? rows[0]
+		if (!active) throw new Error('No canvas exists')
+		const canvases: CanvasSummary[] = []
+		for (const row of rows) canvases.push(await this.summaryOf(row, includePreviews))
+		const board = await this.parseRow(active)
+		return { stateVersion, activeCanvasId: active.id, canvases, board }
 	}
 
-	getActiveCanvasId(): string {
-		const active = this.getSetting('activeCanvasId')
-		if (active && this.findRow(active)) return active
-		this.ensureCanvas()
-		return this.getSetting('activeCanvasId') ?? DEFAULT_CANVAS_ID
+	private async activeCanvasId(): Promise<string> {
+		const active = await this.getSetting('activeCanvasId')
+		if (active && (await this.findRow(active))) return active
+		await this.ensureCanvas()
+		return (await this.getSetting('activeCanvasId')) ?? DEFAULT_CANVAS_ID
 	}
 
-	listCanvases(includePreviews = true): CanvasSnapshot['canvases'] {
-		return this.readState(includePreviews).canvases
+	private async boardOf(id: string): Promise<Board> {
+		return cloneBoard(await this.parseRow(await this.requireRow(id), true))
 	}
 
-	getCanvasList(includePreviews = true): {
+	getActiveCanvasId(): Promise<string> {
+		return this.exclusive(() => this.activeCanvasId())
+	}
+
+	listCanvases(includePreviews = true): Promise<CanvasSummary[]> {
+		return this.exclusive(async () => (await this.readState(includePreviews)).canvases)
+	}
+
+	getCanvasList(includePreviews = true): Promise<{
 		stateVersion: number
 		activeCanvasId: string
 		canvases: CanvasSummary[]
-	} {
-		const { stateVersion, activeCanvasId, canvases } = this.readState(includePreviews)
-		return { stateVersion, activeCanvasId, canvases }
+	}> {
+		return this.exclusive(async () => {
+			const { stateVersion, activeCanvasId, canvases } = await this.readState(includePreviews)
+			return { stateVersion, activeCanvasId, canvases }
+		})
 	}
 
-	getCanvasSummary(id: string): CanvasSummary {
-		return this.summaryOf(this.requireRow(validCanvasId(id)))
+	getCanvasSummary(id: string): Promise<CanvasSummary> {
+		return this.exclusive(async () => this.summaryOf(await this.requireRow(validCanvasId(id))))
 	}
 
-	getState(includePreviews = true): CanvasSnapshot {
-		return this.readState(includePreviews)
+	getState(includePreviews = true): Promise<CanvasSnapshot> {
+		return this.exclusive(() => this.readState(includePreviews))
 	}
 
-	getBoard(canvasId?: string): Board {
-		const id = canvasId === undefined ? this.getActiveCanvasId() : validCanvasId(canvasId)
-		return cloneBoard(this.parseRow(this.requireRow(id), true))
+	getBoard(canvasId?: string): Promise<Board> {
+		return this.exclusive(async () =>
+			this.boardOf(canvasId === undefined ? await this.activeCanvasId() : validCanvasId(canvasId)),
+		)
 	}
 
-	countImageShapes(canvasId: string): number {
-		const board = this.getBoard(validCanvasId(canvasId))
-		return board.shapes.filter((shape) => shape.type === 'image').length
+	countImageShapes(canvasId: string): Promise<number> {
+		return this.exclusive(async () => {
+			const board = await this.boardOf(validCanvasId(canvasId))
+			return board.shapes.filter((shape) => shape.type === 'image').length
+		})
 	}
 
-	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): boolean {
-		const board = this.getBoard(validCanvasId(canvasId))
-		return !occupiedPlacement(board.shapes, x, y, w, h)
+	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): Promise<boolean> {
+		return this.exclusive(async () => {
+			const board = await this.boardOf(validCanvasId(canvasId))
+			return !occupiedPlacement(board.shapes, x, y, w, h)
+		})
 	}
 
-	placeGeneratedImage(request: GeneratedImagePlacement): {
+	placeGeneratedImage(request: GeneratedImagePlacement): Promise<{
 		canvasId: string
 		canvas: CanvasSummary
 		board: Board
 		imageId: string
 		position: { x: number; y: number; w: number; h: number }
 		backgroundApplied: boolean
-	} {
-		const canvasId = validCanvasId(request.canvasId)
-		const w = request.w
-		const h = request.h
-		if (!validFiniteNumber(request.x) || !validFiniteNumber(request.y)) {
-			throw new OperationError(400, 'INVALID_REQUEST', 'x and y must be finite numbers')
-		}
-		if (!validFiniteNumber(w) || w < 1 || !validFiniteNumber(h) || h < 1) {
-			throw new OperationError(
-				400,
-				'INVALID_REQUEST',
-				'Generated image dimensions must be positive finite numbers',
-			)
-		}
-		if (
-			typeof request.bytes !== 'object' ||
-			!(request.bytes instanceof Uint8Array) ||
-			request.bytes.byteLength === 0
-		) {
-			throw new OperationError(400, 'INVALID_REQUEST', 'Generated image bytes must be non-empty')
-		}
+	}> {
+		return this.exclusive(async () => {
+			const canvasId = validCanvasId(request.canvasId)
+			const w = request.w
+			const h = request.h
+			if (!validFiniteNumber(request.x) || !validFiniteNumber(request.y)) {
+				throw new OperationError(400, 'INVALID_REQUEST', 'x and y must be finite numbers')
+			}
+			if (!validFiniteNumber(w) || w < 1 || !validFiniteNumber(h) || h < 1) {
+				throw new OperationError(
+					400,
+					'INVALID_REQUEST',
+					'Generated image dimensions must be positive finite numbers',
+				)
+			}
+			if (
+				typeof request.bytes !== 'object' ||
+				!(request.bytes instanceof Uint8Array) ||
+				request.bytes.byteLength === 0
+			) {
+				throw new OperationError(400, 'INVALID_REQUEST', 'Generated image bytes must be non-empty')
+			}
 
-		this.db.exec('BEGIN IMMEDIATE')
-		try {
-			const row = this.requireRow(canvasId)
-			const board = this.parseRow(row)
+			const row = await this.requireRow(canvasId)
+			const board = await this.parseRow(row)
 			if (board.shapes.filter((shape) => shape.type === 'image').length >= MAX_CANVAS_IMAGES) {
 				throw new OperationError(
 					409,
@@ -1026,7 +1073,8 @@ export class BoardStore {
 				position = rightmostClearPosition(board.shapes, position)
 			}
 
-			const imageId = this.saveImage(request.bytes, 'image/png')
+			const imageId = randomUUID()
+			const now = new Date().toISOString()
 			const next = cloneBoard(board)
 			const shape: Shape = {
 				id: request.shapeId,
@@ -1053,7 +1101,8 @@ export class BoardStore {
 				}
 			}
 
-			const assetIds = this.listImageAssetIds()
+			const assetIds = await this.listImageAssetIds()
+			assetIds.add(imageId)
 			validateBoardState(next, assetIds)
 			if (next.shapes.filter((item) => item.type === 'image').length > MAX_CANVAS_IMAGES) {
 				throw new OperationError(
@@ -1063,39 +1112,40 @@ export class BoardStore {
 				)
 			}
 			next.revision += 1
-			const updatedAt = new Date().toISOString()
-			const result = this.db
-				.prepare(
-					'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ?',
-				)
-				.run(next.revision, JSON.stringify(next.shapes), updatedAt, canvasId, board.revision)
-			if (Number(result.changes) !== 1) {
+			const changes = await this.driver.batch([
+				{
+					sql: STATEMENTS.insertImage,
+					params: [imageId, 'image/png', request.bytes, request.bytes.byteLength, now],
+				},
+				{
+					sql: STATEMENTS.updateBoard,
+					params: [next.revision, JSON.stringify(next.shapes), now, canvasId, board.revision],
+				},
+			])
+			if (changes[1] !== 1) {
 				throw new OperationError(
 					409,
 					'REVISION_CONFLICT',
 					'Canvas revision changed during image insertion',
 				)
 			}
-			this.db.exec('COMMIT')
-			const updatedRow = this.requireRow(canvasId)
+			const updatedRow = await this.requireRow(canvasId)
 			return {
 				canvasId,
-				canvas: this.summaryOf(updatedRow),
+				canvas: await this.summaryOf(updatedRow),
 				board: cloneBoard(next),
 				imageId,
 				position,
 				backgroundApplied,
 			}
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
-		}
+		})
 	}
 
-	getCanvas(canvasId: string): CanvasDetail {
-		const id = validCanvasId(canvasId)
-		const row = this.requireRow(id)
-		return { canvas: this.summaryOf(row), board: this.parseRow(row) }
+	getCanvas(canvasId: string): Promise<CanvasDetail> {
+		return this.exclusive(async () => {
+			const row = await this.requireRow(validCanvasId(canvasId))
+			return { canvas: await this.summaryOf(row), board: await this.parseRow(row) }
+		})
 	}
 
 	private validImageId(value: unknown): string {
@@ -1108,38 +1158,57 @@ export class BoardStore {
 		return value
 	}
 
-	private listImageAssetIds(): Set<string> {
-		const rows = this.db.prepare('SELECT id FROM image_assets').all() as unknown as { id: string }[]
+	private async listImageAssetIds(): Promise<Set<string>> {
+		const rows = await this.driver.all<{ id: string }>(STATEMENTS.listImageIds)
 		return new Set(rows.map((row) => row.id))
 	}
 
 	saveImage(
 		bytes: Uint8Array,
 		contentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
-	): string {
-		const id = randomUUID()
-		this.db
-			.prepare(
-				'INSERT INTO image_assets (id, content_type, bytes, size, created_at) VALUES (?, ?, ?, ?, ?)',
+	): Promise<string> {
+		return this.exclusive(async () => {
+			const id = randomUUID()
+			await this.driver.run(STATEMENTS.insertImage, [
+				id,
+				contentType,
+				bytes,
+				bytes.byteLength,
+				new Date().toISOString(),
+			])
+			return id
+		})
+	}
+
+	getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
+		return this.exclusive(async () => {
+			const assetId = this.validImageId(id)
+			const row = await this.driver.get<{ content_type: string; bytes: Uint8Array }>(
+				STATEMENTS.findImage,
+				[assetId],
 			)
-			.run(id, contentType, Buffer.from(bytes), bytes.byteLength, new Date().toISOString())
-		return id
+			if (!row) return undefined
+			return { bytes: Buffer.from(row.bytes), contentType: row.content_type }
+		})
 	}
 
-	getImage(id: unknown): { bytes: Uint8Array; contentType: string } | undefined {
-		const assetId = this.validImageId(id)
-		const row = this.db
-			.prepare('SELECT content_type, bytes FROM image_assets WHERE id = ?')
-			.get(assetId) as { content_type: string; bytes: Uint8Array } | undefined
-		if (!row) return undefined
-		return { bytes: Buffer.from(row.bytes), contentType: row.content_type }
+	apply(request: unknown): Promise<Board> {
+		return this.exclusive(async () => (await this.applyOperations(request)).board)
 	}
 
-	apply(request: unknown): Board {
-		return this.applyRequest(request).board
+	applyRequest(request: unknown): Promise<{
+		canvasId: string
+		canvas: CanvasSummary
+		board: Board
+	}> {
+		return this.exclusive(() => this.applyOperations(request))
 	}
 
-	applyRequest(request: unknown): { canvasId: string; canvas: CanvasSummary; board: Board } {
+	private async applyOperations(request: unknown): Promise<{
+		canvasId: string
+		canvas: CanvasSummary
+		board: Board
+	}> {
 		if (!isObject(request)) invalid('request must be an object')
 		if (!hasExactKeys(request, ['operations'], ['expectedRevision', 'canvasId'])) {
 			invalid('invalid operation request')
@@ -1147,9 +1216,9 @@ export class BoardStore {
 		if (!Array.isArray(request.operations)) invalid('operations must be an array')
 		const canvasId = Object.hasOwn(request, 'canvasId')
 			? validCanvasId(request.canvasId)
-			: this.getActiveCanvasId()
-		const row = this.requireRow(canvasId)
-		const board = this.parseRow(row)
+			: await this.activeCanvasId()
+		const row = await this.requireRow(canvasId)
+		const board = await this.parseRow(row)
 		if (Object.hasOwn(request, 'expectedRevision')) {
 			if (!Number.isInteger(request.expectedRevision) || (request.expectedRevision as number) < 0) {
 				throw new OperationError(
@@ -1170,7 +1239,7 @@ export class BoardStore {
 		const next = cloneBoard(board)
 		const labelHeightAdjustments = new Map<string, number>()
 		const cascaded = new Set<string>()
-		const assetIds = this.listImageAssetIds()
+		const assetIds = await this.listImageAssetIds()
 		let createsImage = false
 		for (const operation of request.operations as Operation[]) {
 			if (!isObject(operation)) invalid('operation must be an object')
@@ -1374,111 +1443,95 @@ export class BoardStore {
 		}
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
-		const result = this.db
-			.prepare(
-				'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ?',
-			)
-			.run(next.revision, JSON.stringify(next.shapes), updatedAt, canvasId, board.revision)
-		if (Number(result.changes) !== 1) {
+		const changes = await this.driver.run(STATEMENTS.updateBoard, [
+			next.revision,
+			JSON.stringify(next.shapes),
+			updatedAt,
+			canvasId,
+			board.revision,
+		])
+		if (changes !== 1) {
 			throw new OperationError(
 				409,
 				'REVISION_CONFLICT',
 				'Canvas revision changed during the operation',
 			)
 		}
-		const updatedRow = this.requireRow(canvasId)
+		const updatedRow = await this.requireRow(canvasId)
 		return {
 			canvasId,
-			canvas: this.summaryOf(updatedRow),
+			canvas: await this.summaryOf(updatedRow),
 			board: cloneBoard(next),
 		}
 	}
 
-	createCanvas(name?: unknown, activate = false): { state: CanvasSnapshot; canvas: CanvasSummary } {
-		const canvasName = name === undefined ? 'Untitled canvas' : validCanvasName(name)
-		const id = randomUUID()
-		const now = new Date().toISOString()
-		this.db.exec('BEGIN IMMEDIATE')
-		try {
-			this.db
-				.prepare(
-					'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at) VALUES (?, ?, 0, ?, ?, ?)',
-				)
-				.run(id, canvasName, '[]', now, now)
-			if (activate) this.setSetting('activeCanvasId', id)
-			this.bumpStateVersion()
-			this.db.exec('COMMIT')
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
-		}
-		const state = this.getState()
-		const canvas = state.canvases.find((candidate) => candidate.id === id)
-		if (!canvas) throw new Error('Created canvas is missing from the state')
-		return { state, canvas }
+	createCanvas(
+		name?: unknown,
+		activate = false,
+	): Promise<{ state: CanvasSnapshot; canvas: CanvasSummary }> {
+		return this.exclusive(async () => {
+			const canvasName = name === undefined ? 'Untitled canvas' : validCanvasName(name)
+			const id = randomUUID()
+			const now = new Date().toISOString()
+			const statements: SqlStatement[] = [
+				{ sql: STATEMENTS.insertCanvas, params: [id, canvasName, 0, '[]', now, now] },
+			]
+			if (activate) statements.push({ sql: STATEMENTS.saveSetting, params: ['activeCanvasId', id] })
+			statements.push({ sql: STATEMENTS.bumpStateVersion })
+			await this.driver.batch(statements)
+			const state = await this.readState(true)
+			const canvas = state.canvases.find((candidate) => candidate.id === id)
+			if (!canvas) throw new Error('Created canvas is missing from the state')
+			return { state, canvas }
+		})
 	}
 
-	renameCanvas(canvasId: string, name: unknown): CanvasSnapshot {
-		const id = validCanvasId(canvasId)
-		const canvasName = validCanvasName(name)
-		this.db.exec('BEGIN IMMEDIATE')
-		try {
-			this.requireRow(id)
-			this.db.prepare('UPDATE canvases SET name = ? WHERE id = ?').run(canvasName, id)
-			this.bumpStateVersion()
-			this.db.exec('COMMIT')
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
-		}
-		return this.getState()
+	renameCanvas(canvasId: string, name: unknown): Promise<CanvasSnapshot> {
+		return this.exclusive(async () => {
+			const id = validCanvasId(canvasId)
+			const canvasName = validCanvasName(name)
+			await this.requireRow(id)
+			await this.driver.batch([
+				{ sql: STATEMENTS.renameCanvas, params: [canvasName, id] },
+				{ sql: STATEMENTS.bumpStateVersion },
+			])
+			return this.readState(true)
+		})
 	}
 
-	deleteCanvas(canvasId: string): CanvasSnapshot {
-		const id = validCanvasId(canvasId)
-		this.db.exec('BEGIN IMMEDIATE')
-		try {
-			this.requireRow(id)
-			const count = this.db.prepare('SELECT COUNT(*) AS count FROM canvases').get() as {
-				count: number
-			}
-			if (count.count <= 1) {
+	deleteCanvas(canvasId: string): Promise<CanvasSnapshot> {
+		return this.exclusive(async () => {
+			const id = validCanvasId(canvasId)
+			await this.requireRow(id)
+			const count = await this.driver.get<{ count: number }>(STATEMENTS.countCanvases)
+			if ((count?.count ?? 0) <= 1) {
 				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
 			}
-			this.db.prepare('DELETE FROM canvases WHERE id = ?').run(id)
-			if (this.getSetting('activeCanvasId') === id) {
-				const next = this.db
-					.prepare(
-						'SELECT id FROM canvases ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
-					)
-					.get() as { id: string } | undefined
-				if (next) this.setSetting('activeCanvasId', next.id)
+			const statements: SqlStatement[] = [{ sql: STATEMENTS.deleteCanvas, params: [id] }]
+			if ((await this.getSetting('activeCanvasId')) === id) {
+				const next = await this.driver.get<{ id: string }>(STATEMENTS.firstCanvas)
+				if (next)
+					statements.push({ sql: STATEMENTS.saveSetting, params: ['activeCanvasId', next.id] })
 			}
-			this.bumpStateVersion()
-			this.db.exec('COMMIT')
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
-		}
-		return this.getState()
+			statements.push({ sql: STATEMENTS.bumpStateVersion })
+			await this.driver.batch(statements)
+			return this.readState(true)
+		})
 	}
 
-	activateCanvas(canvasId: string): CanvasSnapshot {
-		const id = validCanvasId(canvasId)
-		this.db.exec('BEGIN IMMEDIATE')
-		try {
-			this.requireRow(id)
-			this.setSetting('activeCanvasId', id)
-			this.bumpStateVersion()
-			this.db.exec('COMMIT')
-		} catch (error) {
-			this.db.exec('ROLLBACK')
-			throw error
-		}
-		return this.getState()
+	activateCanvas(canvasId: string): Promise<CanvasSnapshot> {
+		return this.exclusive(async () => {
+			const id = validCanvasId(canvasId)
+			await this.requireRow(id)
+			await this.driver.batch([
+				{ sql: STATEMENTS.saveSetting, params: ['activeCanvasId', id] },
+				{ sql: STATEMENTS.bumpStateVersion },
+			])
+			return this.readState(true)
+		})
 	}
 
-	close(): void {
-		this.db.close()
+	close(): Promise<void> {
+		return this.exclusive(() => this.driver.close())
 	}
 }

@@ -9,9 +9,9 @@ import type { BoardStore } from './store.ts'
 import { OperationError } from './store.ts'
 
 export interface MossStore {
-	getActiveCanvasId(): string
-	getBoard(canvasId?: string): Board
-	applyRequest(request: unknown): unknown
+	getActiveCanvasId(): Promise<string>
+	getBoard(canvasId?: string): Promise<Board>
+	applyRequest(request: unknown): Promise<unknown>
 }
 
 export const mossSessionSchema = z
@@ -58,15 +58,15 @@ function parseSchema<T>(schema: z.ZodType<T>, body: unknown, label: string): T {
 	)
 }
 
-export function serializeCanvasTools(
+export async function serializeCanvasTools(
 	store: MossStore,
 	broadcast: (event: unknown) => void,
 	canvasId: string,
 	selection: string[],
 	revision: number,
 	imageGeneration?: ImageGenerationService,
-): MossToolDefinition[] {
-	const tools = createCanvasTools({
+): Promise<MossToolDefinition[]> {
+	const tools = await createCanvasTools({
 		store: store as unknown as BoardStore,
 		broadcast,
 		selection,
@@ -210,14 +210,14 @@ export async function createMossSession(
 	imageGeneration?: ImageGenerationService,
 ): Promise<MossSessionResponse> {
 	const request = parseSchema(mossSessionSchema, body, 'MOSS session request')
-	const canvasId = request.canvasId ?? store.getActiveCanvasId()
-	const board = store.getBoard(canvasId)
+	const canvasId = request.canvasId ?? (await store.getActiveCanvasId())
+	const board = await store.getBoard(canvasId)
 	const selection = request.selection ?? []
 	return {
 		canvasId,
 		revision: board.revision,
 		instructions: buildMossInstructions(board, selection),
-		tools: serializeCanvasTools(
+		tools: await serializeCanvasTools(
 			store,
 			broadcast,
 			canvasId,
@@ -235,9 +235,9 @@ export async function executeMossTool(
 	imageGeneration?: ImageGenerationService,
 ): Promise<{ result: unknown }> {
 	const request = parseSchema(mossToolSchema, body, 'MOSS tool request')
-	const board = store.getBoard(request.canvasId)
+	const board = await store.getBoard(request.canvasId)
 
-	const tools = createCanvasTools({
+	const tools = await createCanvasTools({
 		store: store as unknown as BoardStore,
 		broadcast,
 		selection: request.selection,

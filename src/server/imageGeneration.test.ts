@@ -33,7 +33,7 @@ async function withStore(
 	try {
 		await run(store, directory)
 	} finally {
-		store.close()
+		await store.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
@@ -73,10 +73,10 @@ test('the real script inserts a generated image using a local mock provider', as
 				}),
 			})
 			try {
-				const job = service.start({
+				const job = await service.start({
 					prompt: 'A calm blue horizon',
 					aspect: '3:2',
-					canvasId: store.getActiveCanvasId(),
+					canvasId: await store.getActiveCanvasId(),
 					x: 100,
 					y: 150,
 					width: 300,
@@ -90,8 +90,11 @@ test('the real script inserts a generated image using a local mock provider', as
 					quality: 'high',
 					size: '1536x1024',
 				})
-				assert.deepEqual(store.getImage(result.imageId)?.bytes, Buffer.from(PNG))
-				assert.equal(store.getBoard().shapes.filter((shape) => shape.type === 'image').length, 1)
+				assert.deepEqual((await store.getImage(result.imageId))?.bytes, Buffer.from(PNG))
+				assert.equal(
+					(await store.getBoard()).shapes.filter((shape) => shape.type === 'image').length,
+					1,
+				)
 				assert.equal(events.length, 1)
 			} finally {
 				service.close()
@@ -104,8 +107,9 @@ test('the real script inserts a generated image using a local mock provider', as
 })
 
 test('manual image caps reject a sixth shape and preserve existing data', async () => {
-	await withStore((store) => {
-		const assetIds = Array.from({ length: 5 }, () => store.saveImage(PNG, 'image/png'))
+	await withStore(async (store) => {
+		const assetIds: string[] = []
+		for (let index = 0; index < 5; index++) assetIds.push(await store.saveImage(PNG, 'image/png'))
 		const operations = assetIds.map((imageId, index) => ({
 			type: 'create' as const,
 			shape: {
@@ -119,13 +123,13 @@ test('manual image caps reject a sixth shape and preserve existing data', async 
 				imageId,
 			},
 		}))
-		store.apply({ operations })
-		assert.equal(store.countImageShapes(store.getActiveCanvasId()), 5)
+		await store.apply({ operations })
+		assert.equal(await store.countImageShapes(await store.getActiveCanvasId()), 5)
 
-		const extraAssetId = store.saveImage(PNG, 'image/png')
-		assert.throws(
-			() =>
-				store.apply({
+		const extraAssetId = await store.saveImage(PNG, 'image/png')
+		await assert.rejects(
+			async () =>
+				await store.apply({
 					operations: [
 						{
 							type: 'create',
@@ -144,13 +148,13 @@ test('manual image caps reject a sixth shape and preserve existing data', async 
 				}),
 			(error: unknown) => error instanceof OperationError && error.code === 'IMAGE_CAP_REACHED',
 		)
-		assert.equal(store.countImageShapes(store.getActiveCanvasId()), 5)
+		assert.equal(await store.countImageShapes(await store.getActiveCanvasId()), 5)
 	})
 })
 
 test('busy is daemon-wide and occupied placement is rejected before generation', async () => {
 	await withStore(async (store) => {
-		const other = store.createCanvas('Other')
+		const other = await store.createCanvas('Other')
 		let calls = 0
 		let resolveGenerator: ((bytes: Uint8Array) => void) | undefined
 		const service = new ImageGenerationService(store, () => {}, {
@@ -161,18 +165,18 @@ test('busy is daemon-wide and occupied placement is rejected before generation',
 				})
 			},
 		})
-		const first = service.start({
+		const first = await service.start({
 			prompt: 'A clear illustration',
 			aspect: '1:1',
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 			x: 500,
 			y: 500,
 			width: 300,
 		})
 		assert.equal(first.status, 'pending')
-		assert.throws(
-			() =>
-				service.start({
+		await assert.rejects(
+			async () =>
+				await service.start({
 					prompt: 'A second illustration',
 					aspect: '3:2',
 					canvasId: other.canvas.id,
@@ -184,7 +188,7 @@ test('busy is daemon-wide and occupied placement is rejected before generation',
 		)
 		assert.equal(calls, 1)
 
-		store.apply({
+		await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -200,12 +204,12 @@ test('busy is daemon-wide and occupied placement is rejected before generation',
 				},
 			],
 		})
-		assert.throws(
-			() =>
-				service.start({
+		await assert.rejects(
+			async () =>
+				await service.start({
 					prompt: 'No provider call',
 					aspect: '1:1',
-					canvasId: store.getActiveCanvasId(),
+					canvasId: await store.getActiveCanvasId(),
 					x: 100,
 					y: 100,
 					width: 300,
@@ -217,12 +221,12 @@ test('busy is daemon-wide and occupied placement is rejected before generation',
 		const completed = await waitForStatus(service, first.jobId)
 		assert.equal(completed.status, 'completed')
 		assert.equal(calls, 1)
-		assert.throws(
-			() =>
-				service.start({
+		await assert.rejects(
+			async () =>
+				await service.start({
 					prompt: 'No provider call',
 					aspect: '1:1',
-					canvasId: store.getActiveCanvasId(),
+					canvasId: await store.getActiveCanvasId(),
 					x: 100,
 					y: 100,
 					width: 300,
@@ -235,8 +239,8 @@ test('busy is daemon-wide and occupied placement is rejected before generation',
 })
 
 test('pinned connector anchor bounds block image placement', async () => {
-	await withStore((store) => {
-		store.apply({
+	await withStore(async (store) => {
+		await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -283,12 +287,12 @@ test('pinned connector anchor bounds block image placement', async () => {
 				return PNG
 			},
 		})
-		assert.throws(
-			() =>
-				service.start({
+		await assert.rejects(
+			async () =>
+				await service.start({
 					prompt: 'Do not cover the pinned connector',
 					aspect: '1:1',
-					canvasId: store.getActiveCanvasId(),
+					canvasId: await store.getActiveCanvasId(),
 					x: 300,
 					y: 100,
 					width: 100,
@@ -311,8 +315,8 @@ test('generation failure releases the busy lock', async () => {
 				return PNG
 			},
 		})
-		const canvasId = store.getActiveCanvasId()
-		const failed = service.start({
+		const canvasId = await store.getActiveCanvasId()
+		const failed = await service.start({
 			prompt: 'First attempt',
 			aspect: '1:1',
 			canvasId,
@@ -325,7 +329,7 @@ test('generation failure releases the busy lock', async () => {
 		assert.equal(service.getBusyJobId(), undefined)
 
 		fail = false
-		const retried = service.start({
+		const retried = await service.start({
 			prompt: 'Second attempt',
 			aspect: '1:1',
 			canvasId,
@@ -348,8 +352,8 @@ test('occupied placement at completion moves just beyond rightmost bounds', asyn
 					resolveGenerator = resolve
 				}),
 		})
-		const canvasId = store.getActiveCanvasId()
-		const started = service.start({
+		const canvasId = await store.getActiveCanvasId()
+		const started = await service.start({
 			prompt: 'A generated result',
 			aspect: '1:1',
 			canvasId,
@@ -357,7 +361,7 @@ test('occupied placement at completion moves just beyond rightmost bounds', asyn
 			y: 500,
 			width: 200,
 		})
-		store.apply({
+		await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -376,7 +380,7 @@ test('occupied placement at completion moves just beyond rightmost bounds', asyn
 		resolveGenerator?.(PNG)
 		const completed = await waitForStatus(service, started.jobId)
 		assert.equal(completed.status, 'completed')
-		const board = store.getBoard(canvasId)
+		const board = await store.getBoard(canvasId)
 		const image = board.shapes.find((shape) => shape.id === started.shapeId)
 		assert.ok(image && image.type === 'image')
 		assert.equal(image.x, 764)
@@ -388,9 +392,9 @@ test('occupied placement at completion moves just beyond rightmost bounds', asyn
 })
 
 test('existing frame background is rejected before provider call', async () => {
-	await withStore((store) => {
-		const assetId = store.saveImage(PNG, 'image/png')
-		store.apply({
+	await withStore(async (store) => {
+		const assetId = await store.saveImage(PNG, 'image/png')
+		await store.apply({
 			operations: [
 				{
 					type: 'create',
@@ -429,12 +433,12 @@ test('existing frame background is rejected before provider call', async () => {
 				return PNG
 			},
 		})
-		assert.throws(
-			() =>
-				service.start({
+		await assert.rejects(
+			async () =>
+				await service.start({
 					prompt: 'Should not be billed',
 					aspect: '1:1',
-					canvasId: store.getActiveCanvasId(),
+					canvasId: await store.getActiveCanvasId(),
 					x: 500,
 					y: 500,
 					width: 200,
@@ -449,10 +453,10 @@ test('existing frame background is rejected before provider call', async () => {
 
 test('frame and canvas state changes are reconciled without overwriting', async () => {
 	await withStore(async (store) => {
-		const canvas = store.createCanvas('Original generation canvas')
+		const canvas = await store.createCanvas('Original generation canvas')
 		const canvasId = canvas.canvas.id
-		store.activateCanvas(canvasId)
-		store.apply({
+		await store.activateCanvas(canvasId)
+		await store.apply({
 			canvasId,
 			operations: [
 				{
@@ -478,7 +482,7 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 					resolveMoved = resolve
 				}),
 		})
-		const moved = movedService.start({
+		const moved = await movedService.start({
 			prompt: 'Move the frame',
 			aspect: '3:2',
 			canvasId,
@@ -487,29 +491,29 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 			width: 300,
 			frameId: 'frame',
 		})
-		store.apply({
+		await store.apply({
 			canvasId,
-			expectedRevision: store.getBoard(canvasId).revision,
+			expectedRevision: (await store.getBoard(canvasId)).revision,
 			operations: [{ type: 'update', id: 'frame', patch: { x: 900, y: 300 } }],
 		})
 		resolveMoved?.(PNG)
 		const movedStatus = await waitForStatus(movedService, moved.jobId)
 		assert.equal(movedStatus.status, 'completed', JSON.stringify(movedStatus))
 		assert.equal((movedStatus as { backgroundApplied: boolean }).backgroundApplied, true)
-		const movedBoard = store.getBoard(canvasId)
+		const movedBoard = await store.getBoard(canvasId)
 		const movedFrame = movedBoard.shapes.find((shape) => shape.id === 'frame')
 		assert.ok(movedFrame?.type === 'frame')
 		assert.equal(movedFrame.backgroundImageId, moved.shapeId)
-		store.apply({
+		await store.apply({
 			canvasId,
-			expectedRevision: store.getBoard(canvasId).revision,
+			expectedRevision: (await store.getBoard(canvasId)).revision,
 			operations: [{ type: 'update', id: 'frame', patch: { backgroundImageId: null } }],
 		})
 
-		const existingAsset = store.saveImage(PNG, 'image/png')
-		store.apply({
+		const existingAsset = await store.saveImage(PNG, 'image/png')
+		await store.apply({
 			canvasId,
-			expectedRevision: store.getBoard(canvasId).revision,
+			expectedRevision: (await store.getBoard(canvasId)).revision,
 			operations: [
 				{
 					type: 'create',
@@ -534,7 +538,7 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 					resolveChanged = resolve
 				}),
 		})
-		const changed = changedService.start({
+		const changed = await changedService.start({
 			prompt: 'Do not overwrite the frame background',
 			aspect: '1:1',
 			canvasId,
@@ -543,23 +547,23 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 			width: 200,
 			frameId: 'frame',
 		})
-		store.apply({
+		await store.apply({
 			canvasId,
-			expectedRevision: store.getBoard(canvasId).revision,
+			expectedRevision: (await store.getBoard(canvasId)).revision,
 			operations: [{ type: 'update', id: 'frame', patch: { backgroundImageId: 'existing-photo' } }],
 		})
 		resolveChanged?.(PNG)
 		const changedStatus = await waitForStatus(changedService, changed.jobId)
 		assert.equal(changedStatus.status, 'completed', JSON.stringify(changedStatus))
 		assert.equal((changedStatus as { backgroundApplied: boolean }).backgroundApplied, false)
-		const changedBoard = store.getBoard(canvasId)
+		const changedBoard = await store.getBoard(canvasId)
 		const changedFrame = changedBoard.shapes.find((shape) => shape.id === 'frame')
 		assert.ok(changedFrame?.type === 'frame')
 		assert.equal(changedFrame.backgroundImageId, 'existing-photo')
 
-		store.apply({
+		await store.apply({
 			canvasId,
-			expectedRevision: store.getBoard(canvasId).revision,
+			expectedRevision: (await store.getBoard(canvasId)).revision,
 			operations: [{ type: 'update', id: 'frame', patch: { backgroundImageId: null } }],
 		})
 
@@ -570,7 +574,7 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 					resolveDeletedFrame = resolve
 				}),
 		})
-		const deletedFrame = deletedFrameService.start({
+		const deletedFrame = await deletedFrameService.start({
 			prompt: 'The frame may disappear',
 			aspect: '1:1',
 			canvasId,
@@ -579,20 +583,20 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 			width: 200,
 			frameId: 'frame',
 		})
-		store.apply({
+		await store.apply({
 			canvasId,
-			expectedRevision: store.getBoard(canvasId).revision,
+			expectedRevision: (await store.getBoard(canvasId)).revision,
 			operations: [{ type: 'delete', id: 'frame' }],
 		})
 		resolveDeletedFrame?.(PNG)
 		const deletedFrameStatus = await waitForStatus(deletedFrameService, deletedFrame.jobId)
 		assert.equal(deletedFrameStatus.status, 'completed', JSON.stringify(deletedFrameStatus))
 		assert.equal(
-			store.getBoard(canvasId).shapes.some((shape) => shape.id === 'frame'),
+			(await store.getBoard(canvasId)).shapes.some((shape) => shape.id === 'frame'),
 			false,
 		)
 		assert.equal(
-			store.getBoard(canvasId).shapes.some((shape) => shape.id === deletedFrame.shapeId),
+			(await store.getBoard(canvasId)).shapes.some((shape) => shape.id === deletedFrame.shapeId),
 			true,
 		)
 	})
@@ -600,8 +604,8 @@ test('frame and canvas state changes are reconciled without overwriting', async 
 
 test('completion pins to the original canvas and deleted canvas fails safely', async () => {
 	await withStore(async (store) => {
-		const original = store.createCanvas('Original')
-		const other = store.createCanvas('Other')
+		const original = await store.createCanvas('Original')
+		const other = await store.createCanvas('Other')
 		let resolveGenerator: ((bytes: Uint8Array) => void) | undefined
 		const service = new ImageGenerationService(store, () => {}, {
 			generator: () =>
@@ -609,7 +613,7 @@ test('completion pins to the original canvas and deleted canvas fails safely', a
 					resolveGenerator = resolve
 				}),
 		})
-		const started = service.start({
+		const started = await service.start({
 			prompt: 'Pinned to original',
 			aspect: '2:3',
 			canvasId: original.canvas.id,
@@ -617,16 +621,18 @@ test('completion pins to the original canvas and deleted canvas fails safely', a
 			y: 500,
 			width: 200,
 		})
-		store.activateCanvas(other.canvas.id)
+		await store.activateCanvas(other.canvas.id)
 		resolveGenerator?.(PNG)
 		const completed = await waitForStatus(service, started.jobId)
 		assert.equal(completed.status, 'completed')
 		assert.equal(
-			store.getBoard(original.canvas.id).shapes.some((shape) => shape.id === started.shapeId),
+			(await store.getBoard(original.canvas.id)).shapes.some(
+				(shape) => shape.id === started.shapeId,
+			),
 			true,
 		)
 		assert.equal(
-			store.getBoard(other.canvas.id).shapes.some((shape) => shape.id === started.shapeId),
+			(await store.getBoard(other.canvas.id)).shapes.some((shape) => shape.id === started.shapeId),
 			false,
 		)
 
@@ -637,7 +643,7 @@ test('completion pins to the original canvas and deleted canvas fails safely', a
 					resolveDeleted = resolve
 				}),
 		})
-		const deleted = deletedService.start({
+		const deleted = await deletedService.start({
 			prompt: 'Deleted canvas',
 			aspect: '1:1',
 			canvasId: original.canvas.id,
@@ -645,7 +651,7 @@ test('completion pins to the original canvas and deleted canvas fails safely', a
 			y: 900,
 			width: 200,
 		})
-		store.deleteCanvas(original.canvas.id)
+		await store.deleteCanvas(original.canvas.id)
 		resolveDeleted?.(PNG)
 		const failed = await waitForStatus(deletedService, deleted.jobId)
 		assert.equal(failed.status, 'failed')
@@ -658,8 +664,8 @@ test('chat and MOSS expose the native generation and status tools', async () => 
 		const service = new ImageGenerationService(store, () => {}, {
 			generator: async () => PNG,
 		})
-		const canvasId = store.getActiveCanvasId()
-		const tools = createCanvasTools({
+		const canvasId = await store.getActiveCanvasId()
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
@@ -692,7 +698,7 @@ test('chat and MOSS expose the native generation and status tools', async () => 
 			{
 				canvasId,
 				selection: [],
-				revision: store.getBoard(canvasId).revision,
+				revision: (await store.getBoard(canvasId)).revision,
 				name: 'image_generation_status',
 				input: { jobId },
 			},

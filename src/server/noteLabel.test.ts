@@ -20,8 +20,8 @@ const toolRun = (tool: unknown, input: unknown) =>
 function withStore(run: (store: BoardStore) => Promise<void> | void): Promise<void> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-note-label-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
-	return Promise.resolve(run(store)).finally(() => {
-		store.close()
+	return Promise.resolve(run(store)).finally(async () => {
+		await store.close()
 		rmSync(directory, { recursive: true, force: true })
 	})
 }
@@ -61,16 +61,20 @@ function shapeOf(board: Board, id: string): CanvasShape {
 	return shape
 }
 
-function replay(store: BoardStore, history: CanvasHistory, direction: 'undo' | 'redo'): Board {
-	const current = store.getBoard()
+async function replay(
+	store: BoardStore,
+	history: CanvasHistory,
+	direction: 'undo' | 'redo',
+): Promise<Board> {
+	const current = await store.getBoard()
 	const operations = history.plan(current, direction)
 	assert.ok(operations)
-	const next = store.apply({ operations, expectedRevision: current.revision })
+	const next = await store.apply({ operations, expectedRevision: current.revision })
 	history.complete(direction)
 	return next
 }
 
-test('shared note label layout compensates only visibility transitions', () => {
+test('shared note label layout compensates only visibility transitions', async () => {
 	assert.equal(NOTE_LABEL_SPACE, 19)
 	assert.equal(noteLabelHeightDelta(undefined, 'Risk'), 19)
 	assert.equal(noteLabelHeightDelta('', 'Risk'), 19)
@@ -80,26 +84,26 @@ test('shared note label layout compensates only visibility transitions', () => {
 })
 
 test('store compensates note labels atomically, idempotently and reversibly', () =>
-	withStore((store) => {
-		const created = store.apply({ operations: [{ type: 'create', shape: note('note') }] })
-		const labelled = store.apply({
+	withStore(async (store) => {
+		const created = await store.apply({ operations: [{ type: 'create', shape: note('note') }] })
+		const labelled = await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { label: 'Risk' } }],
 		})
 		assert.equal(shapeOf(labelled, 'note').type === 'note' ? shapeOf(labelled, 'note').h : 0, 159)
 		assert.equal(labelled.revision, created.revision + 1)
 
-		const repeated = store.apply({
+		const repeated = await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { label: 'Risk' } }],
 		})
 		const repeatedNote = shapeOf(repeated, 'note')
 		assert.equal(repeatedNote.type === 'note' ? repeatedNote.h : 0, 159)
 
-		const cleared = store.apply({
+		const cleared = await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { label: '' } }],
 		})
 		assert.equal(shapeOf(cleared, 'note').type === 'note' ? shapeOf(cleared, 'note').h : 0, 140)
 
-		const relabelled = store.apply({
+		const relabelled = await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { label: 'Decision' } }],
 		})
 		assert.equal(
@@ -107,13 +111,13 @@ test('store compensates note labels atomically, idempotently and reversibly', ()
 			159,
 		)
 
-		const explicit = store.apply({
+		const explicit = await store.apply({
 			operations: [{ type: 'update', id: 'note', patch: { label: 'Explicit', h: 170 } }],
 		})
 		assert.equal(shapeOf(explicit, 'note').type === 'note' ? shapeOf(explicit, 'note').h : 0, 170)
-		assert.throws(
-			() =>
-				store.apply({
+		await assert.rejects(
+			async () =>
+				await store.apply({
 					operations: [{ type: 'update', id: 'note', patch: { label: 'Too small', h: 49 } }],
 				}),
 			(error: unknown) =>
@@ -124,27 +128,28 @@ test('store compensates note labels atomically, idempotently and reversibly', ()
 
 		for (const h of [0, 20]) {
 			const id = `tiny-${h}`
-			const tiny = store.apply({ operations: [{ type: 'create', shape: note(id, { h }) }] })
-			assert.throws(
-				() => store.apply({ operations: [{ type: 'update', id, patch: { label: 'Risk' } }] }),
+			const tiny = await store.apply({ operations: [{ type: 'create', shape: note(id, { h }) }] })
+			await assert.rejects(
+				async () =>
+					await store.apply({ operations: [{ type: 'update', id, patch: { label: 'Risk' } }] }),
 				(error: unknown) =>
 					error instanceof OperationError &&
 					error.status === 400 &&
 					/at least 50/.test(error.message),
 			)
-			assert.deepEqual(store.getBoard(), tiny)
+			assert.deepEqual(await store.getBoard(), tiny)
 		}
 	}))
 
 test('store preserves 32px containment and grows only an escaped frame edge', () =>
-	withStore((store) => {
-		const before = store.apply({
+	withStore(async (store) => {
+		const before = await store.apply({
 			operations: [
 				{ type: 'create', shape: frame('frame', { x: 68, y: 68, w: 324, h: 204 }) },
 				{ type: 'create', shape: note('contained', { x: 100, y: 100, h: 140, frameId: 'frame' }) },
 			],
 		})
-		const contained = store.apply({
+		const contained = await store.apply({
 			operations: [{ type: 'update', id: 'contained', patch: { label: 'Still inside' } }],
 		})
 		const containedFrame = shapeOf(contained, 'frame')
@@ -163,17 +168,17 @@ test('store preserves 32px containment and grows only an escaped frame edge', ()
 				: null,
 		)
 
-		store.apply({
+		await store.apply({
 			operations: [{ type: 'update', id: 'frame', patch: { h: 172 } }],
 		})
-		const escaped = store.apply({
+		const escaped = await store.apply({
 			operations: [{ type: 'update', id: 'contained', patch: { label: '' } }],
 		})
 		assert.equal(
 			shapeOf(escaped, 'contained').type === 'note' ? shapeOf(escaped, 'contained').h : 0,
 			140,
 		)
-		const regrown = store.apply({
+		const regrown = await store.apply({
 			operations: [{ type: 'update', id: 'contained', patch: { label: 'Escape' } }],
 		})
 		const grownFrame = shapeOf(regrown, 'frame')
@@ -181,8 +186,8 @@ test('store preserves 32px containment and grows only an escaped frame edge', ()
 	}))
 
 test('store rejects note and frame collisions atomically, but accepts a blocker moved in the batch', () =>
-	withStore((store) => {
-		const initial = store.apply({
+	withStore(async (store) => {
+		const initial = await store.apply({
 			operations: [
 				{ type: 'create', shape: frame('frame', { x: 0, y: 0, w: 400, h: 300 }) },
 				{ type: 'create', shape: note('member', { x: 40, y: 150, h: 150, frameId: 'frame' }) },
@@ -193,16 +198,18 @@ test('store rejects note and frame collisions atomically, but accepts a blocker 
 				{ type: 'create', shape: note('external', { x: 350, y: 330, w: 40, h: 60 }) },
 			],
 		})
-		assert.throws(
-			() =>
-				store.apply({ operations: [{ type: 'update', id: 'member', patch: { label: 'Risk' } }] }),
+		await assert.rejects(
+			async () =>
+				await store.apply({
+					operations: [{ type: 'update', id: 'member', patch: { label: 'Risk' } }],
+				}),
 			(error: unknown) =>
 				error instanceof OperationError &&
 				['NOTE_LABEL_COLLISION', 'FRAME_COLLISION'].includes(error.code),
 		)
-		assert.deepEqual(store.getBoard(), initial)
+		assert.deepEqual(await store.getBoard(), initial)
 
-		const moved = store.apply({
+		const moved = await store.apply({
 			operations: [
 				{ type: 'update', id: 'member', patch: { label: 'Risk' } },
 				{ type: 'update', id: 'sibling', patch: { y: 400 } },
@@ -216,8 +223,8 @@ test('store rejects note and frame collisions atomically, but accepts a blocker 
 	}))
 
 test('store ignores a note own connector while checking label growth and merges frame growth', () =>
-	withStore((store) => {
-		store.apply({
+	withStore(async (store) => {
+		await store.apply({
 			operations: [
 				{ type: 'create', shape: frame('frame', { x: 0, y: 0, w: 500, h: 400 }) },
 				{ type: 'create', shape: note('first', { x: 40, y: 232, h: 159, frameId: 'frame' }) },
@@ -239,7 +246,7 @@ test('store ignores a note own connector while checking label growth and merges 
 				},
 			],
 		})
-		const grown = store.apply({
+		const grown = await store.apply({
 			operations: [
 				{ type: 'update', id: 'first', patch: { label: 'First' } },
 				{ type: 'update', id: 'second', patch: { label: 'Second' } },
@@ -252,37 +259,37 @@ test('store ignores a note own connector while checking label growth and merges 
 	}))
 
 test('history restores compensated note and frame geometry without reapplying growth', () =>
-	withStore((store) => {
-		const before = store.apply({
+	withStore(async (store) => {
+		const before = await store.apply({
 			operations: [
 				{ type: 'create', shape: frame('frame', { x: 0, y: 0, w: 400, h: 160 }) },
 				{ type: 'create', shape: note('member', { x: 40, y: 20, h: 140, frameId: 'frame' }) },
 			],
 		})
-		const after = store.apply({
+		const after = await store.apply({
 			operations: [{ type: 'update', id: 'member', patch: { label: 'Action' } }],
 		})
 		const history = new CanvasHistory()
 		history.record(before, after)
-		assert.deepEqual(replay(store, history, 'undo').shapes, before.shapes)
-		assert.deepEqual(replay(store, history, 'redo').shapes, after.shapes)
+		assert.deepEqual((await replay(store, history, 'undo')).shapes, before.shapes)
+		assert.deepEqual((await replay(store, history, 'redo')).shapes, after.shapes)
 	}))
 
 test('AI add_notes preserves omitted dimensions for existing ids and reserves label space on create', () =>
 	withStore(async (store) => {
-		const tools = createCanvasTools({
+		const tools = await createCanvasTools({
 			store,
 			broadcast: () => {},
 			selection: [],
-			canvasId: store.getActiveCanvasId(),
+			canvasId: await store.getActiveCanvasId(),
 		})
-		store.apply({ operations: [{ type: 'create', shape: note('existing', { h: 227 }) }] })
+		await store.apply({ operations: [{ type: 'create', shape: note('existing', { h: 227 }) }] })
 		await toolRun(tools.get_board, {})
 		const updated = (await toolRun(tools.add_notes, {
 			notes: [{ id: 'existing', x: 140, y: 120, text: 'Updated', label: 'AI label' }],
 		})) as { ok: boolean }
 		assert.equal(updated.ok, true)
-		const existing = shapeOf(store.getBoard(), 'existing')
+		const existing = shapeOf(await store.getBoard(), 'existing')
 		assert.equal(existing.type === 'note' ? existing.h : 0, 246)
 		assert.equal(existing.type === 'note' ? existing.x : 0, 140)
 
@@ -292,8 +299,8 @@ test('AI add_notes preserves omitted dimensions for existing ids and reserves la
 		})) as { ok: boolean }
 		assert.equal(explicit.ok, true)
 		assert.equal(
-			shapeOf(store.getBoard(), 'existing').type === 'note'
-				? shapeOf(store.getBoard(), 'existing').h
+			shapeOf(await store.getBoard(), 'existing').type === 'note'
+				? shapeOf(await store.getBoard(), 'existing').h
 				: 0,
 			260,
 		)
@@ -303,8 +310,8 @@ test('AI add_notes preserves omitted dimensions for existing ids and reserves la
 		})) as { ok: boolean }
 		assert.equal(created.ok, true)
 		assert.equal(
-			shapeOf(store.getBoard(), 'new-labelled').type === 'note'
-				? shapeOf(store.getBoard(), 'new-labelled').h
+			shapeOf(await store.getBoard(), 'new-labelled').type === 'note'
+				? shapeOf(await store.getBoard(), 'new-labelled').h
 				: 0,
 			180 + NOTE_LABEL_SPACE,
 		)

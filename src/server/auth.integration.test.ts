@@ -520,7 +520,7 @@ test('hosted protection covers APIs, assets, mutations and all WebSocket handsha
 
 test('non-canonical paths cannot bypass API or static authentication', async () => {
 	await withHostedDaemon(async ({ port, daemon }) => {
-		const count = daemon.store.listCanvases().length
+		const count = (await daemon.store.listCanvases()).length
 		for (const path of ['//ignored//api/canvases', '/api//canvases', '/api/../api/canvases']) {
 			const response = await httpRequest(port, path, {
 				method: 'POST',
@@ -540,7 +540,7 @@ test('non-canonical paths cannot bypass API or static authentication', async () 
 			assert.equal((await httpRequest(port, path, { host: HOST })).status, 400, path)
 		}
 		assert.equal((await httpRequest(port, '/%61pi/state', { host: HOST })).status, 401)
-		assert.equal(daemon.store.listCanvases().length, count)
+		assert.equal((await daemon.store.listCanvases()).length, count)
 	})
 })
 

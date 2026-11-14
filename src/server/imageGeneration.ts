@@ -122,13 +122,13 @@ export class ImageGenerationService {
 		return this.busyJobId
 	}
 
-	start(request: ImageGenerationRequest): {
+	async start(request: ImageGenerationRequest): Promise<{
 		ok: true
 		status: 'pending'
 		jobId: string
 		shapeId: string
 		canvasId: string
-	} {
+	}> {
 		if (this.busyJobId) {
 			throw new OperationError(
 				409,
@@ -155,7 +155,7 @@ export class ImageGenerationService {
 			throw new OperationError(400, 'INVALID_REQUEST', 'width must be between 1 and 4096 pixels')
 		}
 
-		const board = this.store.getBoard(request.canvasId)
+		const board = await this.store.getBoard(request.canvasId)
 		const shapeId = request.shapeId ?? `image-${randomUUID().slice(0, 8)}`
 		if (
 			typeof shapeId !== 'string' ||
@@ -172,7 +172,7 @@ export class ImageGenerationService {
 		if (board.shapes.some((shape) => shape.id === shapeId)) {
 			throw new OperationError(400, 'DUPLICATE_ID', `shape id already exists: ${shapeId}`)
 		}
-		if (this.store.countImageShapes(request.canvasId) >= MAX_CANVAS_IMAGES) {
+		if ((await this.store.countImageShapes(request.canvasId)) >= MAX_CANVAS_IMAGES) {
 			throw new OperationError(
 				409,
 				'IMAGE_CAP_REACHED',
@@ -186,7 +186,13 @@ export class ImageGenerationService {
 					? (request.width * 2) / 3
 					: (request.width * 3) / 2
 		if (
-			!this.store.isPlacementClear(request.canvasId, request.x, request.y, request.width, height)
+			!(await this.store.isPlacementClear(
+				request.canvasId,
+				request.x,
+				request.y,
+				request.width,
+				height,
+			))
 		) {
 			throw new OperationError(
 				409,
@@ -395,7 +401,7 @@ export class ImageGenerationService {
 				h: job.height,
 				bytes: png,
 			}
-			const result = this.store.placeGeneratedImage(placement)
+			const result = await this.store.placeGeneratedImage(placement)
 			job.status = 'completed'
 			job.imageId = result.imageId
 			job.x = result.position.x

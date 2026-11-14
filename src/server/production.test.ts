@@ -227,9 +227,9 @@ test('SIGTERM drains an in-flight write before closing SQLite', { timeout: 10_00
 		assert.equal(code, 0)
 		const store = new BoardStore(dbPath)
 		try {
-			assert.equal(store.getBoard().shapes[0].id, 'shutdown-note')
+			assert.equal((await store.getBoard()).shapes[0].id, 'shutdown-note')
 		} finally {
-			store.close()
+			await store.close()
 		}
 	} finally {
 		if (child.exitCode === null) child.kill('SIGKILL')
@@ -238,7 +238,7 @@ test('SIGTERM drains an in-flight write before closing SQLite', { timeout: 10_00
 	}
 })
 
-test('production refuses a missing frontend build before opening a database', () => {
+test('production refuses a missing frontend build before opening a database', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-no-build-'))
 	try {
 		assert.throws(

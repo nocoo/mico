@@ -10,6 +10,7 @@ import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
 import { loadRuntimeConfig, publicRuntimeContract, type RuntimeConfig } from '../shared/runtime.ts'
+import type { CanvasSnapshot } from '../shared/types.ts'
 import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } from './ai.ts'
 import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
@@ -380,7 +381,7 @@ export function createDaemon(
 		sendError(res, 503, 'AI_DISABLED', 'AI features are disabled', origin)
 	}
 
-	const broadcastState = (state = store.getState()): void => {
+	const broadcastState = (state: CanvasSnapshot): void => {
 		broadcast({ type: 'snapshot', ...state })
 	}
 
@@ -672,7 +673,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, store.getState(includePreviews), origin)
+				sendJson(res, 200, await store.getState(includePreviews), origin)
 				return
 			}
 
@@ -682,7 +683,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, store.getBoard(), origin)
+				sendJson(res, 200, await store.getBoard(), origin)
 				return
 			}
 
@@ -723,7 +724,7 @@ export function createDaemon(
 						'Content-Type does not match image bytes',
 					)
 				}
-				const id = store.saveImage(bytes, detected)
+				const id = await store.saveImage(bytes, detected)
 				sendJson(res, 200, { id }, origin)
 				return
 			}
@@ -734,7 +735,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const asset = store.getImage(segments[2])
+				const asset = await store.getImage(segments[2])
 				if (!asset) {
 					throw new OperationError(404, 'NOT_FOUND', 'Image not found')
 				}
@@ -755,7 +756,7 @@ export function createDaemon(
 
 			if (isPath('api', 'canvases')) {
 				if (req.method === 'GET') {
-					sendJson(res, 200, store.getCanvasList(includePreviews), origin)
+					sendJson(res, 200, await store.getCanvasList(includePreviews), origin)
 					return
 				}
 				if (req.method !== 'POST') {
@@ -770,7 +771,7 @@ export function createDaemon(
 				if (record.activate !== undefined && typeof record.activate !== 'boolean') {
 					invalid('activate must be a boolean')
 				}
-				const created = store.createCanvas(record.name, record.activate === true)
+				const created = await store.createCanvas(record.name, record.activate === true)
 				broadcastState(created.state)
 				sendJson(res, 200, { ...created.state, createdCanvasId: created.canvas.id }, origin)
 				return
@@ -778,19 +779,19 @@ export function createDaemon(
 
 			if (canvasId !== null) {
 				if (req.method === 'GET') {
-					sendJson(res, 200, store.getCanvas(canvasId), origin)
+					sendJson(res, 200, await store.getCanvas(canvasId), origin)
 					return
 				}
 				if (req.method === 'PATCH') {
 					const body = await readJson(req)
 					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('invalid canvas request')
-					const state = store.renameCanvas(canvasId, body.name)
+					const state = await store.renameCanvas(canvasId, body.name)
 					broadcastState(state)
 					sendJson(res, 200, state, origin)
 					return
 				}
 				if (req.method === 'DELETE') {
-					const state = store.deleteCanvas(canvasId)
+					const state = await store.deleteCanvas(canvasId)
 					broadcastState(state)
 					sendJson(res, 200, state, origin)
 					return
@@ -809,7 +810,7 @@ export function createDaemon(
 				const body = await readJson(req)
 				if (!isRecord(body) || !exactKeys(body, ['id'])) invalid('invalid active canvas request')
 				if (typeof body.id !== 'string') invalid('canvas id must be a string')
-				const state = store.activateCanvas(body.id)
+				const state = await store.activateCanvas(body.id)
 				broadcastState(state)
 				sendJson(res, 200, state, origin)
 				return
@@ -928,7 +929,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const result = store.applyRequest(await readJson(req, true))
+				const result = await store.applyRequest(await readJson(req, true))
 				broadcast({
 					type: 'board',
 					canvasId: result.canvasId,
@@ -959,12 +960,13 @@ export function createDaemon(
 
 	wss.on('connection', (socket: WebSocket) => {
 		socket.on('error', () => socket.terminate())
-		try {
-			socket.send(JSON.stringify({ type: 'snapshot', ...store.getState() }))
-		} catch (error) {
-			console.error(error)
-			socket.close(1011, 'Could not read the board')
-		}
+		store
+			.getState()
+			.then((state) => socket.send(JSON.stringify({ type: 'snapshot', ...state })))
+			.catch((error: unknown) => {
+				console.error(error)
+				socket.close(1011, 'Could not read the board')
+			})
 	})
 
 	server.on('upgrade', (req, socket, head) => {
@@ -1058,8 +1060,7 @@ export function createDaemon(
 				timeout.unref()
 				server.close(() => {
 					clearTimeout(timeout)
-					store.close()
-					resolveClose()
+					store.close().finally(resolveClose)
 				})
 				imageGeneration.close()
 				mai?.close()

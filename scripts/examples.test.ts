@@ -38,44 +38,46 @@ function readJsonExample(file: string): unknown[] {
 	return parsed
 }
 
-function applyExample(operations: unknown[]): { board: Board; close: () => void } {
+async function applyExample(
+	operations: unknown[],
+): Promise<{ board: Board; close: () => Promise<void> }> {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-example-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
 	try {
-		const board = store.apply({ operations })
+		const board = await store.apply({ operations })
 		return {
 			board,
-			close: () => {
-				store.close()
+			close: async () => {
+				await store.close()
 				rmSync(directory, { recursive: true, force: true })
 			},
 		}
 	} catch (error) {
-		store.close()
+		await store.close()
 		rmSync(directory, { recursive: true, force: true })
 		throw error
 	}
 }
 
-function assertExample(operations: unknown[], check: (board: Board) => void): void {
-	const applied = applyExample(operations)
+async function assertExample(operations: unknown[], check: (board: Board) => void): Promise<void> {
+	const applied = await applyExample(operations)
 	try {
 		check(applied.board)
 	} finally {
-		applied.close()
+		await applied.close()
 	}
 	const directory = mkdtempSync(join(tmpdir(), 'mico-example-'))
 	const store = new BoardStore(join(directory, 'board.sqlite'))
 	try {
-		store.apply({ operations })
-		assert.throws(
-			() => store.apply({ operations }),
+		await store.apply({ operations })
+		await assert.rejects(
+			async () => await store.apply({ operations }),
 			(error: unknown) =>
 				error instanceof OperationError && error.code === 'DUPLICATE_ID' && error.status === 400,
 			'fixed example ids must fail explicitly on a second application',
 		)
 	} finally {
-		store.close()
+		await store.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
@@ -83,16 +85,16 @@ function assertExample(operations: unknown[], check: (board: Board) => void): vo
 const count = (board: Board, type: Shape['type']) =>
 	board.shapes.filter((shape) => shape.type === type).length
 
-test('JSON example batches apply through the validated store', () => {
+test('JSON example batches apply through the validated store', async () => {
 	const architecture = readJsonExample('examples/architecture.json')
-	assertExample(architecture, (board) => {
+	await assertExample(architecture, (board) => {
 		assert.ok(board.shapes.length >= 5)
 		assert.ok(count(board, 'connector') > 0)
 		assert.ok(count(board, 'rectangle') > 0)
 	})
 
 	const canvasMap = readJsonExample('examples/agent-canvas-map.json')
-	assertExample(canvasMap, (board) => {
+	await assertExample(canvasMap, (board) => {
 		assert.equal(board.shapes.length, 34)
 		assert.ok(count(board, 'text') > 0)
 		assert.ok(count(board, 'ellipse') > 0)
@@ -102,7 +104,7 @@ test('JSON example batches apply through the validated store', () => {
 
 test('agent TypeScript examples print operations accepted by the store', async () => {
 	const sketch = await runExample('examples/sketch.ts')
-	assertExample(sketch, (board) => {
+	await assertExample(sketch, (board) => {
 		assert.equal(count(board, 'path'), 23)
 		assert.equal(count(board, 'text'), 1)
 		for (const shape of board.shapes) {
@@ -117,7 +119,7 @@ test('agent TypeScript examples print operations accepted by the store', async (
 	})
 
 	const distributed = await runExample('examples/distributed-architecture.ts')
-	assertExample(distributed, (board) => {
+	await assertExample(distributed, (board) => {
 		assert.equal(board.shapes.length, 53)
 		assert.equal(count(board, 'connector'), 27)
 		assert.equal(count(board, 'ellipse'), 4)
@@ -127,7 +129,7 @@ test('agent TypeScript examples print operations accepted by the store', async (
 
 test('frame and html agent example exercises the current API contract', async () => {
 	const dashboard = await runExample('examples/frame-dashboard.ts')
-	assertExample(dashboard, (board) => {
+	await assertExample(dashboard, (board) => {
 		assert.equal(board.shapes.length, 8)
 		assert.equal(count(board, 'frame'), 2)
 		assert.equal(count(board, 'html'), 1)

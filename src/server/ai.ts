@@ -183,8 +183,8 @@ export async function streamAiChat({
 	imageGeneration,
 	lectureReasoning,
 }: AiResponseOptions): Promise<void> {
-	const canvasId = request.canvasId ?? store.getActiveCanvasId()
-	const board = store.getBoard(canvasId)
+	const canvasId = request.canvasId ?? (await store.getActiveCanvasId())
+	const board = await store.getBoard(canvasId)
 	const abort = new AbortController()
 	res.on('close', () => abort.abort())
 	const headers: Record<string, string> = { 'Cache-Control': 'private, no-store' }
@@ -196,7 +196,7 @@ export async function streamAiChat({
 		model,
 		instructions: buildInstructions(board, request.selection, request.mode),
 		messages: await convertToModelMessages(request.messages),
-		tools: createCanvasTools({
+		tools: await createCanvasTools({
 			store,
 			broadcast,
 			selection: request.selection,

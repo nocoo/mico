@@ -29,11 +29,11 @@ class MockMossStore implements MossStore {
 	activeCanvasId = 'canvas-a'
 	boards = new Map<string, Board>([['canvas-a', { revision: 3, shapes: [] }]])
 
-	getActiveCanvasId(): string {
+	async getActiveCanvasId(): Promise<string> {
 		return this.activeCanvasId
 	}
 
-	getBoard(canvasId = this.activeCanvasId): Board {
+	async getBoard(canvasId = this.activeCanvasId): Promise<Board> {
 		const board = this.boards.get(canvasId)
 		if (!board) throw new OperationError(404, 'NOT_FOUND', `Canvas not found: ${canvasId}`)
 		return {
@@ -42,10 +42,10 @@ class MockMossStore implements MossStore {
 		}
 	}
 
-	applyRequest(request: unknown): unknown {
+	async applyRequest(request: unknown): Promise<unknown> {
 		const record = request as Record<string, unknown>
 		const canvasId = typeof record.canvasId === 'string' ? record.canvasId : this.activeCanvasId
-		const board = this.getBoard(canvasId)
+		const board = await this.getBoard(canvasId)
 		if (record.expectedRevision !== undefined && record.expectedRevision !== board.revision) {
 			throw new OperationError(409, 'REVISION_CONFLICT', 'Canvas revision changed')
 		}
@@ -311,7 +311,7 @@ test('MOSS compact context keeps astral selection and user text as valid untrust
 	assert.equal(session.instructions.match(/# Current canvas \(untrusted JSON data\)/g)?.length, 1)
 })
 
-test('MOSS session and tool envelopes reject unknown and extra fields', () => {
+test('MOSS session and tool envelopes reject unknown and extra fields', async () => {
 	assert.equal(mossSessionSchema.safeParse({ canvasId: 'a', extra: true }).success, false)
 	assert.equal(mossSessionSchema.safeParse({ selection: ['a'] }).success, true)
 	assert.equal(
@@ -342,8 +342,8 @@ test('MOSS tool args are validated and results come only after real execution', 
 	assert.equal(reply.ok, true)
 	assert.equal(reply.revision, 1)
 	assert.deepEqual(reply.created, [{ id: 'pinned', type: 'text' }])
-	assert.equal(store.getBoard('canvas-a').shapes.length, 0)
-	assert.equal(store.getBoard('canvas-b').shapes.length, 1)
+	assert.equal((await store.getBoard('canvas-a')).shapes.length, 0)
+	assert.equal((await store.getBoard('canvas-b')).shapes.length, 1)
 
 	await assert.rejects(
 		executeMossTool(store, () => {}, {
@@ -371,7 +371,7 @@ test('another editor can be recovered with stale get_board then a correct retry'
 	const store = new MockMossStore()
 	store.boards.set('canvas-a', { revision: 0, shapes: [] })
 
-	store.applyRequest({
+	await store.applyRequest({
 		canvasId: 'canvas-a',
 		operations: [
 			{
@@ -402,7 +402,7 @@ test('another editor can be recovered with stale get_board then a correct retry'
 	})
 	assert.equal((retried.result as { ok: boolean; revision: number }).ok, true)
 	assert.equal((retried.result as { revision: number }).revision, 2)
-	assert.ok(store.getBoard('canvas-a').shapes.some((shape) => shape.id === 'moss-retry'))
+	assert.ok((await store.getBoard('canvas-a')).shapes.some((shape) => shape.id === 'moss-retry'))
 })
 
 test('MOSS mutations reject stale revisions with get_board guidance', async () => {
@@ -492,7 +492,7 @@ test('MOSS HTTP routes validate host and origin and expose the fixed contract', 
 	})
 })
 
-test('MOSS proxy origin checks use same-origin loopback or mico.dev.hexly.ai', () => {
+test('MOSS proxy origin checks use same-origin loopback or mico.dev.hexly.ai', async () => {
 	assert.equal(isMossUpgradeAllowed('http://127.0.0.1:7063', '127.0.0.1:7063'), true)
 	assert.equal(isMossUpgradeAllowed('http://localhost:7063', 'localhost:7063'), true)
 	assert.equal(isMossUpgradeAllowed(DEV_ORIGIN, 'mico.dev.hexly.ai'), true)
@@ -503,7 +503,7 @@ test('MOSS proxy origin checks use same-origin loopback or mico.dev.hexly.ai', (
 	assert.doesNotMatch(DEFAULT_MOSS_URL, /Bearer|MOSS_API_KEY|api[_-]?key/i)
 })
 
-test('MOSS proxy forwards binary and text frames and applies buffered backpressure', () => {
+test('MOSS proxy forwards binary and text frames and applies buffered backpressure', async () => {
 	class FakeSocket {
 		readyState = WebSocket.OPEN
 		bufferedAmount = 0
