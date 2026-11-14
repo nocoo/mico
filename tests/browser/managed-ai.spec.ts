@@ -44,14 +44,18 @@ test.describe('managed AI runtime', () => {
 		await mockManagedSettings(page)
 
 		let mossRequests = 0
+		let mossSockets = 0
 		page.on('request', (request) => {
 			const url = new URL(request.url())
-			if (url.pathname.startsWith('/api/moss/') || url.pathname.startsWith('/moss/')) {
+			if (url.pathname.startsWith('/api/moss/') || url.pathname === '/moss') {
 				mossRequests++
 			}
 		})
 		await page.route('**/api/moss/**', (route) => route.abort())
-		await page.routeWebSocket(/\/moss\/(?:live|realtime)(?:\?.*)?$/, (socket) => socket.close())
+		await page.routeWebSocket(/\/moss(?:\?.*)?$/, (socket) => {
+			mossSockets++
+			socket.close()
+		})
 
 		await page.goto('/')
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
@@ -68,6 +72,20 @@ test.describe('managed AI runtime', () => {
 		await moss.click({ force: true })
 		await expect(moss).toHaveAttribute('data-state', 'off')
 		await expect(mai).toHaveAttribute('data-state', 'on')
+		await mai.focus()
+		await page.keyboard.press('ArrowLeft')
+		await expect(moss).toBeFocused()
+		await page.keyboard.press('Tab')
+		await expect(moss).not.toBeFocused()
+		await mai.focus()
+		await page.keyboard.press('ArrowLeft')
+		await expect(moss).toBeFocused()
+		await page.keyboard.press('Shift+Tab')
+		await expect(moss).not.toBeFocused()
+		await mai.focus()
+		await page.keyboard.press('ArrowLeft')
+		await page.keyboard.press('ArrowRight')
+		await expect(mai).toBeFocused()
 		await moss.focus()
 		await page.keyboard.press('Enter')
 		await page.keyboard.press('Space')
@@ -87,6 +105,7 @@ test.describe('managed AI runtime', () => {
 		await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0)
 		await expect(settings.getByRole('button', { name: 'Save settings' })).toBeDisabled()
 		expect(mossRequests).toBe(0)
+		expect(mossSockets).toBe(0)
 	})
 
 	test('local runtime keeps MOSS enabled and selected by default', async ({ page }) => {

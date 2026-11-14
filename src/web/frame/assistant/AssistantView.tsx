@@ -483,7 +483,8 @@ export function AssistantView({
 								if (!state.mossEnabled) event.preventDefault()
 							}}
 							onKeyDown={(event) => {
-								if (!state.mossEnabled) event.preventDefault()
+								if (!state.mossEnabled && (event.key === 'Enter' || event.key === ' '))
+									event.preventDefault()
 							}}
 						>
 							MOSS Live
