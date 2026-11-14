@@ -27,6 +27,7 @@
 	"dependencies": {
 		"@ai-sdk/openai-compatible": "3.0.80",
 		"@ai-sdk/react": "4.0.159",
+		"@azure/identity": "4.14.1",
 		"@azure/msal-browser": "5.29.1",
 		"@radix-ui/themes": "3.3.0",
 		"ai": "7.0.155",
