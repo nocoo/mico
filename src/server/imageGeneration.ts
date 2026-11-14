@@ -155,7 +155,6 @@ export class ImageGenerationService {
 			throw new OperationError(400, 'INVALID_REQUEST', 'width must be between 1 and 4096 pixels')
 		}
 
-		const board = await this.store.getBoard(request.canvasId)
 		const shapeId = request.shapeId ?? `image-${randomUUID().slice(0, 8)}`
 		if (
 			typeof shapeId !== 'string' ||
@@ -169,6 +168,8 @@ export class ImageGenerationService {
 				'shapeId must use letters, digits, dash or underscore',
 			)
 		}
+
+		const board = await this.store.getBoard(request.canvasId)
 		if (board.shapes.some((shape) => shape.id === shapeId)) {
 			throw new OperationError(400, 'DUPLICATE_ID', `shape id already exists: ${shapeId}`)
 		}
@@ -219,6 +220,17 @@ export class ImageGenerationService {
 					`Frame ${request.frameId} already has a background image. Choose a frame without an existing background or unlink its background first.`,
 				)
 			}
+		}
+
+		if (this.closed) {
+			throw new OperationError(503, 'IMAGE_GENERATION_CLOSED', 'Image generation service is closed')
+		}
+		if (this.busyJobId) {
+			throw new OperationError(
+				409,
+				'IMAGE_GENERATION_BUSY',
+				`Image generation is already running as job ${this.busyJobId}. Wait for image_generation_status to report completed or failed before starting another.`,
+			)
 		}
 
 		const jobId = `image-job-${randomUUID().slice(0, 8)}`
@@ -379,7 +391,21 @@ export class ImageGenerationService {
 
 	private async run(job: Job): Promise<void> {
 		try {
+			if (this.closed) {
+				throw new OperationError(
+					503,
+					'IMAGE_GENERATION_CLOSED',
+					'Image generation service is closed',
+				)
+			}
 			const bytes = await this.generate({ prompt: job.prompt, aspect: job.aspect })
+			if (this.closed) {
+				throw new OperationError(
+					503,
+					'IMAGE_GENERATION_CLOSED',
+					'Image generation service is closed',
+				)
+			}
 			if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0) {
 				throw new OperationError(
 					502,

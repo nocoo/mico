@@ -239,6 +239,128 @@ test('busy is daemon-wide and occupied placement is rejected before generation',
 	})
 })
 
+test('concurrent starts reserve one slot only after SQL validation', async () => {
+	await withStore(async (store) => {
+		const originalIsPlacementClear = store.isPlacementClear.bind(store)
+		let entered = 0
+		let bothEnteredResolve: (() => void) | undefined
+		const bothEntered = new Promise<void>((resolve) => {
+			bothEnteredResolve = resolve
+		})
+		let releaseValidation: (() => void) | undefined
+		const release = new Promise<void>((resolve) => {
+			releaseValidation = resolve
+		})
+		store.isPlacementClear = async (canvasId, x, y, width, height) => {
+			entered += 1
+			if (entered === 2) bothEnteredResolve?.()
+			await release
+			return originalIsPlacementClear(canvasId, x, y, width, height)
+		}
+		let calls = 0
+		let resolveGenerator: ((bytes: Uint8Array) => void) | undefined
+		const service = new ImageGenerationService(store, () => {}, {
+			generator: () => {
+				calls += 1
+				return new Promise<Uint8Array>((resolve) => {
+					resolveGenerator = resolve
+				})
+			},
+		})
+		try {
+			const canvasId = await store.getActiveCanvasId()
+			const starts = Promise.allSettled([
+				service.start({
+					prompt: 'First concurrent illustration',
+					aspect: '1:1',
+					canvasId,
+					x: 500,
+					y: 500,
+					width: 200,
+				}),
+				service.start({
+					prompt: 'Second concurrent illustration',
+					aspect: '1:1',
+					canvasId,
+					x: 900,
+					y: 500,
+					width: 200,
+				}),
+			])
+			await bothEntered
+			releaseValidation?.()
+			const settled = await starts
+			const fulfilled = settled.filter((result) => result.status === 'fulfilled')
+			const rejected = settled.filter((result) => result.status === 'rejected')
+			assert.equal(fulfilled.length, 1)
+			assert.equal(rejected.length, 1)
+			assert.ok(
+				rejected[0] &&
+					rejected[0].status === 'rejected' &&
+					rejected[0].reason instanceof OperationError &&
+					rejected[0].reason.code === 'IMAGE_GENERATION_BUSY',
+			)
+			assert.equal(calls, 1)
+			resolveGenerator?.(PNG)
+			const first = fulfilled[0]
+			assert.ok(first && first.status === 'fulfilled')
+			await waitForStatus(service, first.value.jobId)
+		} finally {
+			store.isPlacementClear = originalIsPlacementClear
+			service.close()
+		}
+	})
+})
+
+test('close before SQL validation completes prevents registration and provider traffic', async () => {
+	await withStore(async (store) => {
+		const originalIsPlacementClear = store.isPlacementClear.bind(store)
+		let enteredResolve: (() => void) | undefined
+		const entered = new Promise<void>((resolve) => {
+			enteredResolve = resolve
+		})
+		let releaseValidation: (() => void) | undefined
+		const release = new Promise<void>((resolve) => {
+			releaseValidation = resolve
+		})
+		store.isPlacementClear = async (canvasId, x, y, width, height) => {
+			enteredResolve?.()
+			await release
+			return originalIsPlacementClear(canvasId, x, y, width, height)
+		}
+		let calls = 0
+		const service = new ImageGenerationService(store, () => {}, {
+			generator: async () => {
+				calls += 1
+				return PNG
+			},
+		})
+		try {
+			const starting = service.start({
+				prompt: 'Close while validation is held',
+				aspect: '1:1',
+				canvasId: await store.getActiveCanvasId(),
+				x: 500,
+				y: 500,
+				width: 200,
+			})
+			await entered
+			service.close()
+			releaseValidation?.()
+			await assert.rejects(
+				starting,
+				(error: unknown) =>
+					error instanceof OperationError && error.code === 'IMAGE_GENERATION_CLOSED',
+			)
+			assert.equal(calls, 0)
+			assert.equal(service.getBusyJobId(), undefined)
+		} finally {
+			store.isPlacementClear = originalIsPlacementClear
+			service.close()
+		}
+	})
+})
+
 test('pinned connector anchor bounds block image placement', async () => {
 	await withStore(async (store) => {
 		await store.apply({

@@ -280,3 +280,50 @@ test('AI preflight uses compensated note height when removing a label', async ()
 		assert.equal(member.h, 141)
 	})
 })
+
+test('tool.add_boxes frame membership create rejects a racing frame move', async () => {
+	await withStore(async (store) => {
+		await store.apply({
+			operations: [{ type: 'create', shape: frame({ w: 400, h: 240 }) }],
+		})
+		const tools = await toolsFor(store)
+		const originalApplyRequest = store.applyRequest.bind(store)
+		let enteredResolve: (() => void) | undefined
+		const entered = new Promise<void>((resolve) => {
+			enteredResolve = resolve
+		})
+		let releaseApply: (() => void) | undefined
+		const release = new Promise<void>((resolve) => {
+			releaseApply = resolve
+		})
+		store.applyRequest = async (request: unknown) => {
+			enteredResolve?.()
+			await release
+			return originalApplyRequest(request)
+		}
+		try {
+			const adding = run(tools.add_boxes, {
+				boxes: [{ id: 'member', x: 40, y: 40, w: 100, h: 100, frameId: 'f' }],
+			}) as Promise<{ ok?: boolean; error?: string }>
+			await entered
+			await store.apply({
+				operations: [{ type: 'update', id: 'f', patch: { x: 1000, y: 1000 } }],
+				expectedRevision: (await store.getBoard()).revision,
+			})
+			releaseApply?.()
+			const reply = await adding
+			assert.equal(reply.error, 'REVISION_CONFLICT')
+			const board = await store.getBoard()
+			const movedFrame = board.shapes.find((shape) => shape.id === 'f')
+			assert.ok(movedFrame && movedFrame.type === 'frame')
+			assert.equal(movedFrame.x, 1000)
+			assert.equal(movedFrame.y, 1000)
+			assert.equal(
+				board.shapes.some((shape) => shape.id === 'member'),
+				false,
+			)
+		} finally {
+			store.applyRequest = originalApplyRequest
+		}
+	})
+})

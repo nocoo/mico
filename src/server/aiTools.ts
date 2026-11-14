@@ -417,9 +417,7 @@ async function apply(
 		const result = await store.applyRequest({
 			operations: fullOperations,
 			canvasId,
-			...(fullOperations.some((operation) => operation.type !== 'create')
-				? { expectedRevision: observedRevision }
-				: {}),
+			...(mutatesExisting ? { expectedRevision: observedRevision } : {}),
 		})
 		broadcast({
 			type: 'board',
