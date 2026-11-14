@@ -2,6 +2,8 @@
 
 ## Managed Foundry integration
 
+- An arbitrarily clipped recording ended mid-thought, so the live-session rules correctly returned `WAIT` and the strict lecture-write check failed. Keep the write/partial-event assertions; use a complete, self-contained synthetic utterance for connectivity acceptance instead of weakening the validator or changing the product's incomplete-speech behavior. The complete-sentence deployed SDK check produced Chat labels, partial/final transcription and a new lecture note.
+
 - A successful bare Chat Completions reply did not prove tool compatibility: the target reasoning model rejected tools on that endpoint during the deployed SDK check. Use the native Azure Responses provider and verify a real function invocation/continuation, not an `OK` probe alone. Keep response storage disabled and preserve the model's reasoning metadata through the SDK.
 - The newest Azure provider used a newer V4 stream union (`ping`) than the pinned AI core. Select the latest provider release compatible with the existing protocol dependency and run TypeScript; do not cast away the mismatch or force dependency overrides.
 - Container App configuration can report success before the new revision is ready. An early console probe selected the previous ready replica and could not find the new verification script. Require latest-ready to equal latest and verify the image digest before selecting a replica.
