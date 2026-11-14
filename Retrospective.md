@@ -9,6 +9,10 @@
 - `Shape` is only partially discriminated, so filtering by `type === 'image'` did not narrow a later callback enough to access `imageId`. Assert the discriminant at the access point instead of casting away the error. Remove unused transaction predecessors before the final test freeze; discovering the obsolete batch API afterward required stopping and restarting the owned browser run.
 - A targeted daemon test started while a worker was editing its storage dependency and observed a transient syntax error. Wait for the owning worker to finish and freeze the shared source tree before cross-module verification; preserve that failure separately from product regression evidence. Worker Node/type checks also omitted formatting, which the index-snapshot gate correctly rejected; run zero-warning Biome on the completed owned files before staging. File discovery must pass an explicit match-all pattern before an `fd` search root, rather than treating a directory path as the pattern.
 
+## Deployment preflight sequencing
+
+- An expired conditional-access session stopped the Azure preflight, but the surrounding shell still launched the build command, which repeated the same failed authentication check. The build's own preflight prevented any cloud mutation. Chain deployment stages only after successful preflight, and request operator reauthentication instead of retrying an expired session or logging out automatically.
+
 ## Managed Foundry integration
 
 - An arbitrarily clipped recording ended mid-thought, so the live-session rules correctly returned `WAIT` and the strict lecture-write check failed. Keep the write/partial-event assertions; use a complete, self-contained synthetic utterance for connectivity acceptance instead of weakening the validator or changing the product's incomplete-speech behavior. The complete-sentence deployed SDK check produced Chat labels, partial/final transcription and a new lecture note.
