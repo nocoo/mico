@@ -10,6 +10,7 @@ const INTEGRATION = [
 	'src/server/auth.integration.test.ts',
 	'src/server/imageGeneration.test.ts',
 	'src/server/index.test.ts',
+	'src/server/managedIdentity.integration.test.ts',
 	'src/server/moss.test.ts',
 	'src/server/production.test.ts',
 	'src/server/realtimeProxy.test.ts',

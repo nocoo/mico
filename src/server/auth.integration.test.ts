@@ -179,6 +179,7 @@ test('hosted auth verifies Entra claims, uses opaque sessions and returns 204 fo
 				redirectUri: `${ORIGIN}/auth/callback`,
 			},
 			aiEnabled: true,
+			mossEnabled: true,
 			ephemeral: false,
 		})
 
@@ -616,6 +617,7 @@ test('AI-disabled daemon blocks every AI route and provider-backed WebSocket wit
 				baseURL: '',
 				model: '',
 				hasApiKey: false,
+				authMode: 'api-key',
 				readOnly: true,
 			})
 

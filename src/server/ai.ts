@@ -21,16 +21,15 @@ export function createMagpieModel(
 	settings: ChatSettings,
 	chatBearer?: () => Promise<string>,
 ): LanguageModel {
+	if (settings.authMode === 'managed-identity' && !chatBearer) {
+		throw new Error('Managed identity token provider is required')
+	}
 	const provider = createOpenAICompatible({
 		name: 'magpie',
 		baseURL: settings.baseURL,
-		...(settings.authMode === 'managed-identity'
-			? chatBearer
-				? { fetch: createBearerFetch(chatBearer) }
-				: {}
-			: settings.apiKey
-				? { apiKey: settings.apiKey, fetch: createRedirectSafeFetch() }
-				: { fetch: createRedirectSafeFetch() }),
+		...(settings.authMode === 'managed-identity' && chatBearer
+			? { fetch: createBearerFetch(chatBearer) }
+			: { apiKey: settings.apiKey || undefined, fetch: createRedirectSafeFetch() }),
 	})
 	return provider.chatModel(settings.model)
 }

@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
+import { isMossEnabled } from '../shared/runtime.ts'
 
 export type RuntimeMode = 'laptop' | 'deploy'
 
@@ -139,38 +140,19 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 			moss: { url: '', apiKey: '' },
 		}
 	}
-	const local = runtime === 'laptop'
+	const local = runtime === 'laptop' && aiAuthMode === 'api-key'
 	const baseURL = env.MAGPIE_BASE_URL?.trim() || (local ? DEFAULT_CHAT_BASE_URL : '')
 	const model = env.MAGPIE_MODEL?.trim() || (local ? DEFAULT_CHAT_MODEL : '')
 	if (!local && (!baseURL || !model)) {
-		throw new Error('MAGPIE_BASE_URL and MAGPIE_MODEL are required when MICO_RUNTIME=deploy')
+		throw new Error(
+			'MAGPIE_BASE_URL and MAGPIE_MODEL are required for deployed or managed identity AI',
+		)
 	}
-	let host = env.AZURE_MAI_HOST?.trim() ?? ''
-	const maiEndpoint = env.AZURE_MAI_ENDPOINT?.trim() ?? ''
-	if (maiEndpoint) {
-		let maiUrl: URL
-		try {
-			maiUrl = new URL(maiEndpoint)
-		} catch {
-			throw new Error('Invalid AZURE_MAI_ENDPOINT')
-		}
-		if (
-			maiUrl.protocol !== 'https:' ||
-			maiUrl.port ||
-			maiUrl.username ||
-			maiUrl.password ||
-			maiUrl.pathname !== '/' ||
-			maiUrl.search ||
-			maiUrl.hash
-		) {
-			throw new Error('Invalid AZURE_MAI_ENDPOINT')
-		}
-		host = maiUrl.hostname
-	}
+	const host = env.AZURE_MAI_HOST?.trim() ?? ''
 	if (host) {
 		const url = new URL(endpoint(`https://${host}`, 'AZURE_MAI_HOST'))
 		if (url.host !== host || url.pathname !== '/') throw new Error('Invalid AZURE_MAI_HOST')
-		if (aiAuthMode === 'managed-identity' && !isAllowedAzureAiHost(url.hostname)) {
+		if (aiAuthMode === 'managed-identity' && (url.port || !isAllowedAzureAiHost(url.hostname))) {
 			throw new Error('AZURE_MAI resource host must use an allowed Azure AI HTTPS suffix')
 		}
 	}
@@ -194,10 +176,7 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 		}
 	}
 	const image = loadImageConfig(env)
-	const maiApiKey =
-		aiAuthMode === 'managed-identity'
-			? ''
-			: apiKey(env, 'AZURE_MAI_API_KEY') || apiKey(env, 'AZURE_OPENAI_API_KEY')
+	const maiApiKey = aiAuthMode === 'managed-identity' ? '' : image.apiKey
 	return {
 		runtime,
 		authMode: aiAuthMode,
@@ -215,15 +194,16 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 		mai: {
 			host,
 			apiKey: maiApiKey,
-			deployment:
-				env.AZURE_MAI_DEPLOYMENT_NAME?.trim() || env.AZURE_OPENAI_DEPLOYMENT?.trim() || '',
+			deployment: env.AZURE_OPENAI_DEPLOYMENT?.trim() || '',
 		},
 		image,
-		moss: {
-			url: endpoint(env.MOSS_REALTIME_URL?.trim() || DEFAULT_MOSS_URL, 'MOSS_REALTIME_URL', [
-				'wss:',
-			]),
-			apiKey: apiKey(env, 'MOSS_API_KEY'),
-		},
+		moss: isMossEnabled(env)
+			? {
+					url: endpoint(env.MOSS_REALTIME_URL?.trim() || DEFAULT_MOSS_URL, 'MOSS_REALTIME_URL', [
+						'wss:',
+					]),
+					apiKey: apiKey(env, 'MOSS_API_KEY'),
+				}
+			: { url: '', apiKey: '' },
 	}
 }

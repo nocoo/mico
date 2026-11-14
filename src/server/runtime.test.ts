@@ -48,31 +48,6 @@ test('MOSS is enabled by default and always disabled with AI', () => {
 		() => loadRuntimeConfig({ MICO_MOSS_ENABLED: 'sometimes' }),
 		/MICO_MOSS_ENABLED must be true or false/,
 	)
-
-	assert.throws(
-		() =>
-			loadRuntimeConfig({
-				MICO_AI_AUTH_MODE: 'managed-identity',
-				MICO_AI_ENABLED: 'true',
-			}),
-		/AZURE_CLIENT_ID is required/,
-	)
-	assert.throws(
-		() =>
-			loadRuntimeConfig({
-				MICO_AI_AUTH_MODE: 'managed-identity',
-				MICO_AI_ENABLED: 'true',
-				AZURE_CLIENT_ID: 'not-a-guid',
-			}),
-		/AZURE_CLIENT_ID must be a GUID/,
-	)
-	const managed = loadRuntimeConfig({
-		MICO_AI_AUTH_MODE: 'managed-identity',
-		MICO_AI_ENABLED: 'true',
-		AZURE_CLIENT_ID: CLIENT_ID,
-	})
-	assert.equal(managed.aiAuthMode, 'managed-identity')
-	assert.equal(managed.azureClientId, CLIENT_ID)
 })
 
 test('hosted auth configuration fails closed on incomplete or unsafe values', () => {

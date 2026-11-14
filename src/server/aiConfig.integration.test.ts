@@ -137,6 +137,7 @@ test('deploy HTTP routes use environment credentials and reject browser configur
 			baseURL,
 			model: 'cloud-chat',
 			hasApiKey: true,
+			authMode: 'api-key',
 			readOnly: true,
 		})
 		const changed = await fetch(`${url}/api/ai/settings`, {
@@ -174,7 +175,12 @@ test('deploy HTTP routes use environment credentials and reject browser configur
 		assert.equal(chat.status, 200)
 		const text = await chat.text()
 		assert.doesNotMatch(text, /cloud-chat-secret|cloud-azure-secret|cloud-moss-secret|stale-secret/)
-		assert.deepEqual(received, { baseURL, model: 'cloud-chat', apiKey: 'cloud-chat-secret' })
+		assert.deepEqual(received, {
+			baseURL,
+			model: 'cloud-chat',
+			apiKey: 'cloud-chat-secret',
+			authMode: 'api-key',
+		})
 		assert.deepEqual(model.doStreamCalls[0]?.providerOptions, {
 			magpie: { reasoningEffort: 'medium' },
 		})

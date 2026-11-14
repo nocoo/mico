@@ -706,6 +706,7 @@ test('AI settings updates create the model used by subsequent chats', async () =
 			baseURL: 'https://chat.example/v1',
 			model: 'chat-model',
 			apiKey: 'chat-secret',
+			authMode: 'api-key',
 		})
 	} finally {
 		for (const client of daemon.wss.clients) client.terminate()

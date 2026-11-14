@@ -28,10 +28,12 @@ export function createMaiProxy(options: MaiProxyOptions): {
 	upgrade(req: IncomingMessage, socket: Duplex, head: Buffer): void
 	close(): void
 } {
-	const wss = new WebSocketServer({ noServer: true })
+	const wss = new WebSocketServer({ noServer: true, maxPayload: 1024 * 1024 })
 	const upstreams = new Set<WebSocket>()
 	const createUpstream =
-		options.createUpstream ?? ((url, upstreamOptions) => new WebSocket(url, upstreamOptions))
+		options.createUpstream ??
+		((url, upstreamOptions) =>
+			new WebSocket(url, { ...upstreamOptions, handshakeTimeout: 15000, maxPayload: 1024 * 1024 }))
 	let closed = false
 
 	const upgrade = (req: IncomingMessage, socket: Duplex, head: Buffer) => {
@@ -79,6 +81,10 @@ export function createMaiProxy(options: MaiProxyOptions): {
 			client.on('message', (data, isBinary) => {
 				if (clientClosed) return
 				if (upstream?.readyState === WebSocket.OPEN) {
+					if (upstream.bufferedAmount >= maxBytes) {
+						client.close(1013, 'MAI upstream backpressure exceeded')
+						return
+					}
 					upstream.send(data, { binary: isBinary })
 					return
 				}
@@ -92,6 +98,8 @@ export function createMaiProxy(options: MaiProxyOptions): {
 									? data.length
 									: (data as unknown as Buffer[]).reduce((total, part) => total + part.length, 0)
 					if (backlog.length >= maxFrames || backlogBytes + frameBytes > maxBytes) {
+						backlog.length = 0
+						backlogBytes = 0
 						client.close(1013, 'MAI client backlog exceeded')
 						return
 					}
@@ -101,6 +109,8 @@ export function createMaiProxy(options: MaiProxyOptions): {
 			})
 			client.on('close', () => {
 				clientClosed = true
+				backlog.length = 0
+				backlogBytes = 0
 				if (
 					upstream &&
 					(upstream.readyState === WebSocket.CONNECTING || upstream.readyState === WebSocket.OPEN)
@@ -135,8 +145,8 @@ export function createMaiProxy(options: MaiProxyOptions): {
 					upstream = createUpstream(`wss://${options.host}${UPSTREAM_PATH}`, {
 						headers: authHeaders,
 					})
-				} catch (error) {
-					options.onError?.(error instanceof Error ? error : new Error(String(error)))
+				} catch {
+					options.onError?.(new Error('MAI upstream unavailable'))
 					if (!clientClosed && client.readyState === WebSocket.OPEN) {
 						client.send(
 							JSON.stringify({
@@ -159,10 +169,14 @@ export function createMaiProxy(options: MaiProxyOptions): {
 					backlogBytes = 0
 				})
 				activeUpstream.on('message', (data, isBinary) => {
+					if (client.bufferedAmount >= maxBytes) {
+						client.close(1013, 'MAI client backpressure exceeded')
+						return
+					}
 					if (client.readyState === WebSocket.OPEN) client.send(data, { binary: isBinary })
 				})
-				activeUpstream.on('error', (error) => {
-					options.onError?.(error)
+				activeUpstream.on('error', () => {
+					options.onError?.(new Error('MAI upstream unavailable'))
 					if (client.readyState === WebSocket.OPEN) client.close(1011, 'MAI upstream unavailable')
 				})
 				activeUpstream.on('close', (code, reason) => {

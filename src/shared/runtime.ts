@@ -24,8 +24,6 @@ export interface RuntimeConfig {
 	mode: RuntimeMode
 	auth: RuntimeAuthContract
 	aiEnabled: boolean
-	aiAuthMode: 'api-key' | 'managed-identity'
-	azureClientId?: string
 	mossEnabled: boolean
 	ephemeral: boolean
 	publicOrigin?: string
@@ -64,6 +62,10 @@ function canonicalOrigin(value: string, name: string): string {
 	return url.origin
 }
 
+export function isMossEnabled(env: NodeJS.ProcessEnv): boolean {
+	return booleanValue(env, 'MICO_AI_ENABLED') && booleanValue(env, 'MICO_MOSS_ENABLED')
+}
+
 export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): RuntimeConfig {
 	const runtime = env.MICO_RUNTIME?.trim() || 'laptop'
 	if (runtime !== 'laptop' && runtime !== 'deploy') {
@@ -76,18 +78,8 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 	}
 
 	const aiEnabled = booleanValue(env, 'MICO_AI_ENABLED')
-	const aiAuthMode = env.MICO_AI_AUTH_MODE?.trim() || 'api-key'
-	if (aiAuthMode !== 'api-key' && aiAuthMode !== 'managed-identity') {
-		throw new Error('MICO_AI_AUTH_MODE must be api-key or managed-identity')
-	}
 	const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-	const azureClientId = env.AZURE_CLIENT_ID?.trim() || undefined
-	if (aiEnabled && aiAuthMode === 'managed-identity') {
-		if (!azureClientId)
-			throw new Error('AZURE_CLIENT_ID is required when managed identity AI is enabled')
-		if (!guidPattern.test(azureClientId)) throw new Error('AZURE_CLIENT_ID must be a GUID')
-	}
-	const mossEnabled = aiEnabled && booleanValue(env, 'MICO_MOSS_ENABLED')
+	const mossEnabled = isMossEnabled(env)
 	const ephemeral = booleanValue(env, 'MICO_EPHEMERAL')
 	const publicOrigin = env.MICO_PUBLIC_ORIGIN?.trim()
 		? canonicalOrigin(env.MICO_PUBLIC_ORIGIN.trim(), 'MICO_PUBLIC_ORIGIN')
@@ -121,8 +113,6 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 			mode: runtime,
 			publicOrigin,
 			aiEnabled,
-			aiAuthMode,
-			azureClientId,
 			mossEnabled,
 			ephemeral,
 			allowedObjectIds,
@@ -140,8 +130,6 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 		mode: runtime,
 		publicOrigin,
 		aiEnabled,
-		aiAuthMode,
-		azureClientId,
 		mossEnabled,
 		ephemeral,
 		allowedObjectIds: new Set(),

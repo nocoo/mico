@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
@@ -21,7 +21,7 @@ class MockCredential implements TokenCredential {
 		this.requestedScopes.push(normalized)
 		return {
 			token: `mock-${normalized[0].includes('cognitiveservices') ? 'mai' : 'chat'}`,
-			expiresOnTimestamp: Date.now() + 60_000,
+			expiresOnTimestamp: Date.now() + 3_600_000,
 		}
 	}
 }
@@ -30,20 +30,16 @@ async function closeHttpDaemon(daemon: ReturnType<typeof createDaemon>): Promise
 	await daemon.close()
 }
 
-test('Managed Identity providers use SDK bearer caching and separate scopes', async () => {
+test('Managed Identity providers use SDK bearer caching for the Foundry audience', async () => {
 	const credential = new MockCredential()
 	const auth = createManagedIdentityAuth(CLIENT_ID, credential)
 	assert.equal(await auth.chatBearer(), 'mock-chat')
 	assert.equal(await auth.chatBearer(), 'mock-chat')
-	assert.equal(await auth.maiBearer(), 'mock-mai')
-	assert.equal(await auth.maiBearer(), 'mock-mai')
+	assert.equal(await auth.maiBearer(), 'mock-chat')
+	assert.equal(await auth.maiBearer(), 'mock-chat')
+	assert.equal(credential.requestedScopes.length, 1)
 	assert.ok(
 		credential.requestedScopes.some((scopes) => scopes[0] === 'https://ai.azure.com/.default'),
-	)
-	assert.ok(
-		credential.requestedScopes.some(
-			(scopes) => scopes[0] === 'https://cognitiveservices.azure.com/.default',
-		),
 	)
 })
 
@@ -119,6 +115,112 @@ test('MAI queues session.update before async bearer retrieval and forwards Autho
 	}
 })
 
+test('real daemon Chat and model routes use managed bearer credentials, not saved keys', async (t) => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-managed-http-'))
+	const settingsPath = join(directory, 'settings.json')
+	const saved = JSON.stringify({
+		baseURL: 'https://stale.example/v1',
+		model: 'stale',
+		apiKey: 'stale-secret',
+	})
+	writeFileSync(settingsPath, saved)
+	const originalFetch = globalThis.fetch
+	const outbound: string[] = []
+	t.mock.method(globalThis, 'fetch', async (input: RequestInfo | URL, init?: RequestInit) => {
+		const url = new URL(input instanceof Request ? input.url : String(input))
+		if (url.hostname !== 'resource.services.ai.azure.com') return originalFetch(input, init)
+		outbound.push(url.pathname)
+		const headers = new Headers(init?.headers)
+		assert.equal(headers.get('Authorization'), 'Bearer mock-chat')
+		assert.equal(headers.get('api-key'), null)
+		assert.equal(init?.redirect, 'manual')
+		if (url.pathname === '/openai/v1/models')
+			return Response.json({ data: [{ id: 'chat-deployment' }] })
+		assert.equal(url.pathname, '/openai/v1/chat/completions')
+		const body = JSON.parse(String(init?.body))
+		assert.equal(body.model, 'chat-deployment')
+		assert.equal(body.reasoning_effort, 'low')
+		assert.ok(
+			body.tools.some((tool: { function: { name: string } }) => tool.function.name === 'get_board'),
+		)
+		const events = [
+			{
+				id: 'fixture',
+				object: 'chat.completion.chunk',
+				created: 1,
+				model: 'chat-deployment',
+				choices: [
+					{
+						index: 0,
+						delta: { role: 'assistant', content: 'Managed identity ready' },
+						finish_reason: null,
+					},
+				],
+			},
+			{
+				id: 'fixture',
+				object: 'chat.completion.chunk',
+				created: 1,
+				model: 'chat-deployment',
+				choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
+				usage: { prompt_tokens: 5, completion_tokens: 3, total_tokens: 8 },
+			},
+		]
+		return new Response(
+			`${events.map((event) => `data: ${JSON.stringify(event)}\n\n`).join('')}data: [DONE]\n\n`,
+			{ headers: { 'Content-Type': 'text/event-stream' } },
+		)
+	})
+	const credential = new MockCredential()
+	const daemon = createDaemon({
+		port: 0,
+		dbPath: join(directory, 'board.sqlite'),
+		settingsPath,
+		managedIdentityCredential: credential,
+		env: {
+			MICO_RUNTIME: 'laptop',
+			MICO_AI_AUTH_MODE: 'managed-identity',
+			AZURE_CLIENT_ID: CLIENT_ID,
+			MICO_MOSS_ENABLED: 'false',
+			MAGPIE_BASE_URL: 'https://resource.services.ai.azure.com/openai/v1',
+			MAGPIE_MODEL: 'chat-deployment',
+			MAGPIE_LECTURE_REASONING: 'low',
+		},
+	})
+	try {
+		await new Promise<void>((resolve) => daemon.server.listen(0, '127.0.0.1', resolve))
+		const url = `http://127.0.0.1:${(daemon.server.address() as AddressInfo).port}`
+		const settings = await (await originalFetch(`${url}/api/ai/settings`)).json()
+		assert.deepEqual(settings, {
+			baseURL: 'https://resource.services.ai.azure.com/openai/v1',
+			model: 'chat-deployment',
+			hasApiKey: false,
+			authMode: 'managed-identity',
+			readOnly: true,
+		})
+		const models = await originalFetch(`${url}/api/ai/models`)
+		assert.deepEqual(await models.json(), { models: ['chat-deployment'] })
+		const chat = await originalFetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'lecture',
+				messages: [
+					{ id: 'mi-user', role: 'user', parts: [{ type: 'text', text: 'Draw a short label.' }] },
+				],
+			}),
+		})
+		assert.equal(chat.status, 200)
+		assert.match(await chat.text(), /Managed identity ready/)
+		assert.deepEqual(outbound, ['/openai/v1/models', '/openai/v1/chat/completions'])
+		assert.equal(credential.requestedScopes.length, 1)
+		assert.equal(readFileSync(settingsPath, 'utf8'), saved)
+	} finally {
+		await daemon.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('MOSS-disabled daemon routes keep AI-disabled precedence and never construct MOSS', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-managed-moss-'))
 	const daemon = createDaemon({
@@ -133,8 +235,8 @@ test('MOSS-disabled daemon routes keep AI-disabled precedence and never construc
 			MICO_MOSS_ENABLED: 'false',
 			MAGPIE_BASE_URL: 'https://resource.services.ai.azure.com/openai/v1',
 			MAGPIE_MODEL: 'chat-deployment',
-			AZURE_MAI_ENDPOINT: 'https://resource.services.ai.azure.com',
-			AZURE_MAI_DEPLOYMENT_NAME: 'voice-deployment',
+			AZURE_MAI_HOST: 'resource.services.ai.azure.com',
+			AZURE_OPENAI_DEPLOYMENT: 'voice-deployment',
 		},
 		managedIdentityCredential: new MockCredential(),
 		createMossUpstream() {

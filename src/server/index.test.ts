@@ -146,6 +146,7 @@ test('AI settings expose only public fields and preserve the existing key contra
 			baseURL: 'http://127.0.0.1:3425/v1',
 			model: 'auto/gpt-6-luna',
 			hasApiKey: true,
+			authMode: 'api-key',
 			readOnly: false,
 		})
 
@@ -165,6 +166,7 @@ test('AI settings expose only public fields and preserve the existing key contra
 			baseURL: 'https://example.test/v1',
 			model: 'group/test',
 			hasApiKey: true,
+			authMode: 'api-key',
 			readOnly: false,
 		})
 		assert.equal(JSON.stringify(publicSettings).includes(secret), false)
@@ -197,6 +199,7 @@ test('AI settings expose only public fields and preserve the existing key contra
 			baseURL: 'https://example.test/v2',
 			model: 'group/test-2',
 			hasApiKey: false,
+			authMode: 'api-key',
 			readOnly: false,
 		})
 

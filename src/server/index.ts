@@ -285,11 +285,8 @@ export function createDaemon(
 	const port = options.port ?? parsePort(env)
 	const config = loadAiConfig(env)
 	const managedIdentityAuth =
-		runtimeConfig.aiEnabled && runtimeConfig.aiAuthMode === 'managed-identity'
-			? createManagedIdentityAuth(
-					runtimeConfig.azureClientId as string,
-					options.managedIdentityCredential,
-				)
+		runtimeConfig.aiEnabled && config.authMode === 'managed-identity'
+			? createManagedIdentityAuth(config.azureClientId as string, options.managedIdentityCredential)
 			: undefined
 	if (options.staticDir && !statSync(resolve(options.staticDir, 'index.html')).isFile()) {
 		throw new Error('MICO_STATIC_DIR must contain a built index.html')

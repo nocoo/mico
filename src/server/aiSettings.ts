@@ -95,11 +95,7 @@ export class AiSettingsStore {
 			const saved = JSON.parse(text) as unknown
 			if (!isRecord(saved)) throw new Error('Invalid AI settings')
 			const keys = Object.keys(saved)
-			if (
-				!keys.every(
-					(key) => key === 'baseURL' || key === 'model' || key === 'apiKey' || key === 'authMode',
-				)
-			) {
+			if (!keys.every((key) => key === 'baseURL' || key === 'model' || key === 'apiKey')) {
 				throw new Error('Invalid AI settings')
 			}
 			if (typeof saved.baseURL !== 'string' || typeof saved.model !== 'string') {
@@ -190,7 +186,14 @@ export class AiSettingsStore {
 		let handle: Awaited<ReturnType<typeof open>> | undefined
 		try {
 			handle = await open(temporary, 'wx', 0o600)
-			await handle.writeFile(JSON.stringify(settings), 'utf8')
+			await handle.writeFile(
+				JSON.stringify({
+					baseURL: settings.baseURL,
+					model: settings.model,
+					apiKey: settings.apiKey,
+				}),
+				'utf8',
+			)
 			await handle.sync()
 			await handle.close()
 			handle = undefined
