@@ -32,7 +32,7 @@ pnpm build
 
 ## Quality slots
 
-`.github/workflows/ci.yml` calls `nocoo/base-ci`'s `quality.yml`, pinned to a full commit SHA, and declares every System0 slot in `slot-status`. Only one check needs branch protection: `quality / Z1: Gate`.
+`.github/workflows/ci.yml` delegates to `./.github/workflows/quality-slots.yml` in System1 native mode (using `nocoo/base-ci` composite actions pinned to a full commit SHA). Only one check needs branch protection: `quality / Z1: Gate`.
 
 | Slot                   | Command                                 | Scope                                                       |
 | ---------------------- | --------------------------------------- | ----------------------------------------------------------- |
