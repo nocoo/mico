@@ -1,6 +1,11 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '../shared/types'
+import type { WhiteboardSession } from '../shared/whiteboards'
+import { canvasFetch as fetch } from './whiteboards/client'
+import { usePresence } from './whiteboards/usePresence'
+import { WhiteboardCursors, WhiteboardPresence } from './whiteboards/WhiteboardPresence'
+import './whiteboards/whiteboards.css'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
@@ -52,7 +57,29 @@ const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'co
 
 const randomId = () => crypto.randomUUID()
 
-export default function App() {
+export interface AppProps {
+	whiteboard?: WhiteboardSession
+	aiEnabled?: boolean
+	aiSettingsVisible: boolean
+	mossEnabled: boolean
+	ephemeral?: boolean
+	user?: { name: string; expiresAt: number } | null
+	avatarUrl?: string | null
+	onSignOut?: () => void
+}
+
+export default function App({
+	whiteboard,
+	aiEnabled = true,
+	aiSettingsVisible,
+	mossEnabled,
+	ephemeral = false,
+	user = null,
+	avatarUrl = null,
+	onSignOut,
+}: AppProps) {
+	const readOnly = Boolean(whiteboard && !whiteboard.member.sharer)
+	const canUseAi = aiEnabled && !readOnly
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -77,16 +104,19 @@ export default function App() {
 	const imageInputRef = useRef<HTMLInputElement>(null)
 	const connectionResetRef = useRef<() => void>(() => {})
 	const cancelInteractionRef = useRef<() => void>(() => {})
-	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
-	const [aiPrompt, setAiPrompt] = useState(
-		() => new URLSearchParams(window.location.search).get('ai')?.trim() ?? '',
+	const [identityPanelOpen, setIdentityPanelOpen] = useState<'canvases' | 'debug' | null>(null)
+	const canvasPanelOpen = identityPanelOpen === 'canvases'
+	const debugPanelOpen = identityPanelOpen === 'debug'
+	const [aiPrompt, setAiPrompt] = useState(() =>
+		canUseAi ? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '') : '',
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(
-		() => aiPrompt.length > 0 || window.innerWidth >= 900,
+		() => canUseAi && (aiPrompt.length > 0 || window.innerWidth >= 900),
 	)
 	const aiPanelOpenRef = useRef(aiPanelOpen)
 	aiPanelOpenRef.current = aiPanelOpen
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
+	const presence = usePresence(whiteboard, svgRef, viewport, setViewport)
 	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
 	const [connectionHover, setConnectionHover] = useState<{
@@ -191,14 +221,14 @@ export default function App() {
 				setDragPreviews(new Map())
 				setCreation(null)
 				setBrushPoints(null)
-				fitShapesInCanvas(next.shapes)
+				if (!readOnly) fitShapesInCanvas(next.shapes)
 				return
 			}
 			setSelectedIds((current) =>
 				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[fitShapesInCanvas],
+		[fitShapesInCanvas, readOnly],
 	)
 
 	const {
@@ -207,6 +237,8 @@ export default function App() {
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
+		roomError,
+		sendPresence,
 		postOperations,
 		undo,
 		redo,
@@ -221,7 +253,15 @@ export default function App() {
 		getCurrentBoard,
 		getActiveCanvasId,
 		isCanvasTargetCurrent,
-	} = useCanvasSessionViewModel({ announce, onBoardTransition, onBoardAccepted })
+	} = useCanvasSessionViewModel({
+		announce,
+		onBoardTransition,
+		onBoardAccepted,
+		whiteboard,
+		onPresence: presence.onEvent,
+		onSocketReady: presence.queueView,
+	})
+	presence.send.current = sendPresence
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
 	const emptyState = useEmptyStateViewModel({
 		canvasId: activeCanvasId,
@@ -232,7 +272,7 @@ export default function App() {
 	const connection = useConnectionGesture(board, viewport.zoom, postOperations)
 	const clearConnectionHover = useCallback(() => setConnectionHover(null), [])
 	const canHoverConnection =
-		tool === 'connector' && !spacePressed && !isPanning && !connection.draft
+		!readOnly && tool === 'connector' && !spacePressed && !isPanning && !connection.draft
 	const hoverHitShape = board.shapes.find(
 		(shape): shape is CanvasShape =>
 			shape.id === connectionHover?.hitShapeId && isCanvasShape(shape),
@@ -280,11 +320,13 @@ export default function App() {
 			const rx = cx - (rect?.left ?? 0)
 			const ry = cy - (rect?.top ?? 0)
 			const zoom = Math.min(3, Math.max(0.05, nextZoom))
+			if (zoom === viewport.zoom) return
+			presence.detach()
 			const worldX = (rx - viewport.x) / viewport.zoom
 			const worldY = (ry - viewport.y) / viewport.zoom
 			setViewport({ x: rx - worldX * zoom, y: ry - worldY * zoom, zoom })
 		},
-		[viewport],
+		[viewport, presence.detach],
 	)
 
 	const fitBoard = useCallback(() => {
@@ -417,23 +459,23 @@ export default function App() {
 		connectionResetRef.current = connection.reset
 	}, [connection.reset])
 
-	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
+	const closeCanvasPanel = useCallback(() => setIdentityPanelOpen(null), [])
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
 	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
 
 	const toggleCanvasPanel = () => {
-		setCanvasPanelOpen((open) => {
-			if (!open) void refreshCanvases()
-			return !open
-		})
+		const open = !canvasPanelOpen
+		if (open) void refreshCanvases()
+		setIdentityPanelOpen(open ? 'canvases' : null)
 	}
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
 			if (event.key === 'Escape') {
+				if (debugPanelOpen) return
 				cancelInteraction()
 				setTool('select')
 				return
@@ -464,12 +506,12 @@ export default function App() {
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction])
+	}, [cancelInteraction, debugPanelOpen])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
 
-		const shouldPan = event.button === 1 || spacePressed || tool === 'hand'
+		const shouldPan = readOnly || event.button === 1 || spacePressed || tool === 'hand'
 		if (shouldPan) {
 			clearConnectionHover()
 			event.preventDefault()
@@ -596,6 +638,8 @@ export default function App() {
 	}
 
 	const onCanvasPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+		const rect = svgRef.current?.getBoundingClientRect()
+		if (rect) presence.pointer({ x: event.clientX - rect.left, y: event.clientY - rect.top })
 		const interaction = interactionRef.current
 		if (!interaction && canHoverConnection) {
 			setConnectionHover({
@@ -608,6 +652,11 @@ export default function App() {
 		if (!interaction || interaction.pointerId !== event.pointerId) return
 
 		if (interaction.mode === 'pan') {
+			if (
+				event.clientX !== interaction.startClient.x ||
+				event.clientY !== interaction.startClient.y
+			)
+				presence.detach()
 			setViewport((current) => ({
 				...current,
 				x: interaction.startViewport.x + event.clientX - interaction.startClient.x,
@@ -829,6 +878,7 @@ export default function App() {
 	}
 
 	const beginInlineEdit = (shape: CanvasShape) => {
+		if (readOnly) return
 		if (
 			shape.type !== 'frame' &&
 			shape.type !== 'html' &&
@@ -849,6 +899,7 @@ export default function App() {
 	}
 
 	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
+		if (readOnly) return
 		if (interactionRef.current) {
 			event.stopPropagation()
 			return
@@ -997,14 +1048,14 @@ export default function App() {
 		onEntryAnimationConsumed: consumeEntryAnimation,
 		editingId: editing?.id ?? null,
 		onActionToggle: toggleActionDone,
-		actionsDisabled: !apiConnected,
+		actionsDisabled: readOnly || !apiConnected,
 		onPointerDown: onShapePointerDown,
 		onDoubleClick: onShapeDoubleClick,
 	}
 
 	return (
 		<main
-			className={`app ${aiPanelOpen ? 'ai-open' : ''}`}
+			className={`app ${aiPanelOpen ? 'ai-open' : ''} ${readOnly ? 'whiteboard-read-only' : ''}`}
 			style={
 				{
 					'--control-size': `${CONTROL_SIZE}px`,
@@ -1018,6 +1069,26 @@ export default function App() {
 			}
 		>
 			<CanvasBackdrop />
+			{whiteboard ? (
+				<>
+					<WhiteboardPresence
+						session={whiteboard}
+						members={presence.members}
+						following={presence.following}
+						presenterId={presence.presenterId}
+						connected={wsConnected}
+						error={roomError}
+						onFollow={presence.follow}
+						zoom={viewport.zoom}
+						onZoom={(factor) => zoomAt(viewport.zoom * factor)}
+					/>
+					<WhiteboardCursors session={whiteboard} members={presence.members} viewport={viewport} />
+				</>
+			) : (
+				<a className="shared-whiteboards-link" href="/?whiteboards=1">
+					Shared whiteboards
+				</a>
+			)}
 			<CanvasMinimap
 				shapes={visibleShapes}
 				viewport={viewport}
@@ -1025,6 +1096,7 @@ export default function App() {
 				canvasId={activeCanvasId}
 				onViewportChange={(next) => {
 					if (isGestureActive()) cancelInteraction()
+					presence.detach()
 					setViewport(next)
 				}}
 			/>
@@ -1040,97 +1112,115 @@ export default function App() {
 					if (file) void uploadImage(file)
 				}}
 			/>
-			<IdentityFrame
-				state={{
-					canvases,
-					activeCanvasId,
-					canvasesOpen: canvasPanelOpen,
-				}}
-				actions={{
-					toggleCanvases: toggleCanvasPanel,
-					closeCanvases: closeCanvasPanel,
-					createCanvas,
-					switchCanvas,
-					renameCanvas,
-					deleteCanvas,
-				}}
-			/>
-			<Toolbar
-				state={{
-					tool,
-					zoom: viewport.zoom,
-					canDelete: selectedIds.length > 0,
-					canFrame: selectedIds.length > 0,
-					canUndo,
-					canRedo,
-					brushStyle,
-					brushWidth,
-					noteColor,
-					textFont,
-					textSize,
-					textWeight,
-				}}
-				actions={{
-					reportLayout: reportDockLayout,
-					selectTool: (next) => {
-						cancelInteraction()
-						if (next !== 'select') emptyState.dismiss()
-						if (next === 'image') {
-							setTool('select')
-							imageInputRef.current?.click()
-							return
-						}
-						setTool(next)
-					},
-					zoom: (factor) => zoomAt(viewport.zoom * factor),
-					resetView: () => setViewport({ x: 0, y: 0, zoom: 1 }),
-					fitBoard,
-					deleteSelection: deleteSelected,
-					frameSelection,
-					undo: () => {
-						cancelInteraction()
-						void undo()
-					},
-					redo: () => {
-						cancelInteraction()
-						void redo()
-					},
-					setBrushStyle,
-					setBrushWidth,
-					setNoteColor,
-					setTextFont,
-					setTextSize,
-					setTextWeight,
-				}}
-			/>
-			<AssistantFrame
-				state={{
-					connection: {
-						apiConnected,
-						wsConnected,
-						revision: board.revision,
-						objectCount: board.shapes.length,
-					},
-					open: aiPanelOpen,
-					canvasId: activeCanvasId,
-					selectedIds,
-					initialPrompt: aiPrompt,
-				}}
-				actions={{
-					close: closeAiPanel,
-					toggle: () => setAiPanelOpen((open) => !open),
-					clearSelection,
-					consumeInitialPrompt: consumeAiPrompt,
-					createCanvas: createLessonCanvas,
-					isGestureActive,
-				}}
-			/>
+			{!whiteboard && (
+				<IdentityFrame
+					state={{
+						canvases,
+						activeCanvasId,
+						canvasesOpen: canvasPanelOpen,
+					}}
+					actions={{
+						toggleCanvases: toggleCanvasPanel,
+						closeCanvases: closeCanvasPanel,
+						createCanvas,
+						switchCanvas,
+						renameCanvas,
+						deleteCanvas,
+					}}
+					debug={{
+						open: debugPanelOpen,
+						onOpenChange: (open) => setIdentityPanelOpen(open ? 'debug' : null),
+						user,
+						avatarUrl,
+						ephemeral,
+						aiEnabled,
+						onSignOut,
+					}}
+				/>
+			)}
+			{!readOnly && (
+				<Toolbar
+					state={{
+						tool,
+						zoom: viewport.zoom,
+						canDelete: selectedIds.length > 0,
+						canFrame: selectedIds.length > 0,
+						canUndo,
+						canRedo,
+						brushStyle,
+						brushWidth,
+						noteColor,
+						textFont,
+						textSize,
+						textWeight,
+					}}
+					actions={{
+						reportLayout: reportDockLayout,
+						selectTool: (next) => {
+							cancelInteraction()
+							if (next !== 'select') emptyState.dismiss()
+							if (next === 'image') {
+								setTool('select')
+								imageInputRef.current?.click()
+								return
+							}
+							setTool(next)
+						},
+						zoom: (factor) => zoomAt(viewport.zoom * factor),
+						resetView: () => setViewport({ x: 0, y: 0, zoom: 1 }),
+						fitBoard,
+						deleteSelection: deleteSelected,
+						frameSelection,
+						undo: () => {
+							cancelInteraction()
+							void undo()
+						},
+						redo: () => {
+							cancelInteraction()
+							void redo()
+						},
+						setBrushStyle,
+						setBrushWidth,
+						setNoteColor,
+						setTextFont,
+						setTextSize,
+						setTextWeight,
+					}}
+				/>
+			)}
+			{canUseAi && (
+				<AssistantFrame
+					state={{
+						sharedWhiteboard: Boolean(whiteboard),
+						connection: {
+							apiConnected,
+							wsConnected,
+							revision: board.revision,
+							objectCount: board.shapes.length,
+						},
+						open: aiPanelOpen,
+						mossEnabled,
+						aiSettingsVisible: aiSettingsVisible && !whiteboard,
+						canvasId: activeCanvasId,
+						selectedIds,
+						initialPrompt: aiPrompt,
+					}}
+					actions={{
+						close: closeAiPanel,
+						toggle: () => setAiPanelOpen((open) => !open),
+						clearSelection,
+						consumeInitialPrompt: consumeAiPrompt,
+						createCanvas: createLessonCanvas,
+						isGestureActive,
+					}}
+				/>
+			)}
 
-			{emptyState.visible && (
+			{canUseAi && emptyState.visible && (
 				<EmptyState onOpenAssistant={emptyState.openAssistant} onDismiss={emptyState.dismiss} />
 			)}
 
-			{tool === 'select' && (
+			{!readOnly && tool === 'select' && (
 				<SelectionPanel
 					shape={selected}
 					count={selectedIds.length}
@@ -1162,10 +1252,15 @@ export default function App() {
 			<CanvasView
 				svgRef={svgRef}
 				viewport={viewport}
-				cursor={isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default'}
+				cursor={
+					isPanning ? 'grabbing' : readOnly || tool === 'hand' || spacePressed ? 'grab' : 'default'
+				}
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
-				onPointerLeave={clearConnectionHover}
+				onPointerLeave={() => {
+					clearConnectionHover()
+					presence.pointer(null)
+				}}
 				onPointerUp={onCanvasPointerUp}
 				onPointerCancel={(event) => {
 					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()

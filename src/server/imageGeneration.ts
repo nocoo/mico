@@ -1,7 +1,8 @@
 import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
-import type { BoardStore, GeneratedImagePlacement } from './store.ts'
+import { type ImageProviderConfig, loadImageConfig } from './aiConfig.ts'
+import type { GeneratedImagePlacement, TenantStore } from './store.ts'
 import { MAX_CANVAS_IMAGES, OperationError } from './store.ts'
 
 export type ImageAspect = '1:1' | '3:2' | '2:3'
@@ -73,6 +74,7 @@ interface Job {
 
 interface ImageGenerationOptions {
 	generator?: ImageGenerator
+	config?: ImageProviderConfig
 	env?: NodeJS.ProcessEnv
 	scriptPath?: string
 	timeoutMs?: number
@@ -84,7 +86,7 @@ const MAX_WIDTH = 4096
 
 export class ImageGenerationService {
 	private readonly jobs = new Map<string, Job>()
-	private readonly store: BoardStore
+	private readonly store: TenantStore
 	private readonly broadcast: (event: unknown) => void
 	private readonly generator?: ImageGenerator
 	private readonly env: NodeJS.ProcessEnv
@@ -96,14 +98,20 @@ export class ImageGenerationService {
 	private closed = false
 
 	constructor(
-		store: BoardStore,
+		store: TenantStore,
 		broadcast: (event: unknown) => void,
 		options: ImageGenerationOptions = {},
 	) {
 		this.store = store
 		this.broadcast = broadcast
 		this.generator = options.generator
-		this.env = options.env ?? process.env
+		const config = options.config ?? loadImageConfig()
+		this.env = {
+			...(options.env ?? process.env),
+			AZURE_OPENAI_ENDPOINT: config.endpoint,
+			AZURE_OPENAI_API_KEY: config.apiKey,
+			AZURE_OPENAI_IMAGE_MODEL: config.model,
+		}
 		this.scriptPath =
 			options.scriptPath ??
 			fileURLToPath(new URL('../../scripts/generate-image.ts', import.meta.url))
@@ -114,13 +122,13 @@ export class ImageGenerationService {
 		return this.busyJobId
 	}
 
-	start(request: ImageGenerationRequest): {
+	async start(request: ImageGenerationRequest): Promise<{
 		ok: true
 		status: 'pending'
 		jobId: string
 		shapeId: string
 		canvasId: string
-	} {
+	}> {
 		if (this.busyJobId) {
 			throw new OperationError(
 				409,
@@ -147,7 +155,6 @@ export class ImageGenerationService {
 			throw new OperationError(400, 'INVALID_REQUEST', 'width must be between 1 and 4096 pixels')
 		}
 
-		const board = this.store.getBoard(request.canvasId)
 		const shapeId = request.shapeId ?? `image-${randomUUID().slice(0, 8)}`
 		if (
 			typeof shapeId !== 'string' ||
@@ -161,10 +168,12 @@ export class ImageGenerationService {
 				'shapeId must use letters, digits, dash or underscore',
 			)
 		}
+
+		const board = await this.store.getBoard(request.canvasId)
 		if (board.shapes.some((shape) => shape.id === shapeId)) {
 			throw new OperationError(400, 'DUPLICATE_ID', `shape id already exists: ${shapeId}`)
 		}
-		if (this.store.countImageShapes(request.canvasId) >= MAX_CANVAS_IMAGES) {
+		if ((await this.store.countImageShapes(request.canvasId)) >= MAX_CANVAS_IMAGES) {
 			throw new OperationError(
 				409,
 				'IMAGE_CAP_REACHED',
@@ -178,7 +187,13 @@ export class ImageGenerationService {
 					? (request.width * 2) / 3
 					: (request.width * 3) / 2
 		if (
-			!this.store.isPlacementClear(request.canvasId, request.x, request.y, request.width, height)
+			!(await this.store.isPlacementClear(
+				request.canvasId,
+				request.x,
+				request.y,
+				request.width,
+				height,
+			))
 		) {
 			throw new OperationError(
 				409,
@@ -205,6 +220,17 @@ export class ImageGenerationService {
 					`Frame ${request.frameId} already has a background image. Choose a frame without an existing background or unlink its background first.`,
 				)
 			}
+		}
+
+		if (this.closed) {
+			throw new OperationError(503, 'IMAGE_GENERATION_CLOSED', 'Image generation service is closed')
+		}
+		if (this.busyJobId) {
+			throw new OperationError(
+				409,
+				'IMAGE_GENERATION_BUSY',
+				`Image generation is already running as job ${this.busyJobId}. Wait for image_generation_status to report completed or failed before starting another.`,
+			)
 		}
 
 		const jobId = `image-job-${randomUUID().slice(0, 8)}`
@@ -365,7 +391,21 @@ export class ImageGenerationService {
 
 	private async run(job: Job): Promise<void> {
 		try {
+			if (this.closed) {
+				throw new OperationError(
+					503,
+					'IMAGE_GENERATION_CLOSED',
+					'Image generation service is closed',
+				)
+			}
 			const bytes = await this.generate({ prompt: job.prompt, aspect: job.aspect })
+			if (this.closed) {
+				throw new OperationError(
+					503,
+					'IMAGE_GENERATION_CLOSED',
+					'Image generation service is closed',
+				)
+			}
 			if (!(bytes instanceof Uint8Array) || bytes.byteLength === 0) {
 				throw new OperationError(
 					502,
@@ -387,7 +427,7 @@ export class ImageGenerationService {
 				h: job.height,
 				bytes: png,
 			}
-			const result = this.store.placeGeneratedImage(placement)
+			const result = await this.store.placeGeneratedImage(placement)
 			job.status = 'completed'
 			job.imageId = result.imageId
 			job.x = result.position.x

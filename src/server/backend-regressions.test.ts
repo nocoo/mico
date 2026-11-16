@@ -5,15 +5,16 @@ import { join } from 'node:path'
 import { test } from 'node:test'
 import { boardDigest, formatBoardContext } from './aiBoard.ts'
 import { createCanvasTools } from './aiTools.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, LOCAL_TENANT, type TenantStore } from './store.ts'
 
-async function withStore(run: (store: BoardStore) => Promise<void>) {
+async function withStore(run: (store: TenantStore) => Promise<void>) {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-backend-regressions-'))
-	const store = new BoardStore(join(directory, 'board.sqlite'))
+	const board = new BoardStore(join(directory, 'board.sqlite'))
+	const store = board.forTenant(LOCAL_TENANT)
 	try {
 		await run(store)
 	} finally {
-		store.close()
+		await board.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 }
@@ -23,8 +24,13 @@ const run = (tool: unknown, input: unknown) =>
 		toolCallId: 'regression',
 		messages: [],
 	})
-const toolsFor = (store: BoardStore, selection: string[] = []) =>
-	createCanvasTools({ store, broadcast: () => {}, selection, canvasId: store.getActiveCanvasId() })
+const toolsFor = async (store: TenantStore, selection: string[] = []) =>
+	createCanvasTools({
+		store,
+		broadcast: () => {},
+		selection,
+		canvasId: await store.getActiveCanvasId(),
+	})
 const note = (id: string, values = {}) => ({
 	id,
 	type: 'note' as const,
@@ -50,7 +56,7 @@ const frame = (values = {}) => ({
 
 test('additive AI writes do not acknowledge unread concurrent edits', async () => {
 	await withStore(async (store) => {
-		const tools = toolsFor(store)
+		const tools = await toolsFor(store)
 		const input = {
 			id: 'a',
 			title: 'Actions',
@@ -59,7 +65,7 @@ test('additive AI writes do not acknowledge unread concurrent edits', async () =
 			items: [{ id: 'one', text: 'Original deadline' }],
 		}
 		await run(tools.upsert_action_card, input)
-		store.apply({
+		await store.apply({
 			expectedRevision: 1,
 			operations: [
 				{
@@ -75,7 +81,7 @@ test('additive AI writes do not acknowledge unread concurrent edits', async () =
 		assert.equal(created.ok, true)
 		const stale = (await run(tools.upsert_action_card, input)) as { error?: string }
 		assert.equal(stale.error, 'REVISION_CONFLICT')
-		const action = store.getBoard().shapes.find((shape) => shape.id === 'a')
+		const action = (await store.getBoard()).shapes.find((shape) => shape.id === 'a')
 		assert.ok(action && action.type === 'actions')
 		assert.deepEqual(action.items, [{ id: 'one', text: 'Corrected by user', done: true }])
 		await run(tools.get_board, { ids: ['a'] })
@@ -86,7 +92,7 @@ test('additive AI writes do not acknowledge unread concurrent edits', async () =
 
 test('label growth keeps connectors between members of the same frame', async () => {
 	await withStore(async (store) => {
-		store.apply({
+		await store.apply({
 			operations: [
 				{ type: 'create', shape: frame() },
 				{ type: 'create', shape: note('n', { frameId: 'f' }) },
@@ -105,7 +111,7 @@ test('label growth keeps connectors between members of the same frame', async ()
 				},
 			],
 		})
-		const result = store.apply({
+		const result = await store.apply({
 			operations: [{ type: 'update', id: 'n', patch: { label: 'Risk' } }],
 		})
 		const region = result.shapes.find((shape) => shape.id === 'f')
@@ -117,7 +123,7 @@ test('label growth keeps connectors between members of the same frame', async ()
 
 test('AI frame growth allows connectors between frame members', async () => {
 	await withStore(async (store) => {
-		store.apply({
+		await store.apply({
 			operations: [
 				{ type: 'create', shape: frame() },
 				{ type: 'create', shape: note('n', { frameId: 'f' }) },
@@ -136,11 +142,11 @@ test('AI frame growth allows connectors between frame members', async () => {
 				},
 			],
 		})
-		const reply = (await run(toolsFor(store).update_shapes, {
+		const reply = (await run((await toolsFor(store)).update_shapes, {
 			updates: [{ id: 'n', patch: { y: 20, label: 'Risk' } }],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const region = store.getBoard().shapes.find((shape) => shape.id === 'f')
+		const region = (await store.getBoard()).shapes.find((shape) => shape.id === 'f')
 		assert.ok(region && region.type === 'frame')
 		assert.equal(region.y + region.h, 219)
 	})
@@ -148,7 +154,7 @@ test('AI frame growth allows connectors between frame members', async () => {
 
 test('selected action cards remain bounded until explicitly inspected', async () => {
 	await withStore(async (store) => {
-		const tools = toolsFor(store)
+		const tools = await toolsFor(store)
 		await run(tools.upsert_action_card, {
 			id: 'a',
 			title: 'Actions',
@@ -159,10 +165,10 @@ test('selected action cards remain bounded until explicitly inspected', async ()
 				text: '界'.repeat(1000),
 			})),
 		})
-		const board = store.getBoard()
+		const board = await store.getBoard()
 		assert.equal(boardDigest(board, ['a']).shapes[0].items?.length, 3)
 		assert.ok(formatBoardContext(board, ['a']).length < 5000)
-		const selected = toolsFor(store, ['a'])
+		const selected = await toolsFor(store, ['a'])
 		const normal = (await run(selected.get_board, {})) as { shapes: { items: unknown[] }[] }
 		const full = (await run(selected.get_board, { ids: ['a'] })) as {
 			shapes: { items: unknown[] }[]
@@ -174,7 +180,7 @@ test('selected action cards remain bounded until explicitly inspected', async ()
 
 test('AI frame growth rejects unrelated connectors in the newly occupied area', async () => {
 	await withStore(async (store) => {
-		const before = store.apply({
+		const before = await store.apply({
 			operations: [
 				{ type: 'create', shape: frame({ h: 220 }) },
 				{ type: 'create', shape: note('n', { y: 40, frameId: 'f' }) },
@@ -194,18 +200,18 @@ test('AI frame growth rejects unrelated connectors in the newly occupied area', 
 				},
 			],
 		})
-		const reply = (await run(toolsFor(store).update_shapes, {
+		const reply = (await run((await toolsFor(store)).update_shapes, {
 			updates: [{ id: 'n', patch: { y: 40, label: 'Risk' } }],
 		})) as { ok: boolean; error?: string }
 		assert.equal(reply.error, 'FRAME_COLLISION')
-		assert.deepEqual(store.getBoard(), before)
+		assert.deepEqual(await store.getBoard(), before)
 	})
 })
 
 test('AI frame preflight uses connector rewiring from the same atomic batch', async () => {
 	for (const initiallyLow of [true, false]) {
 		await withStore(async (store) => {
-			const before = store.apply({
+			const before = await store.apply({
 				operations: [
 					{ type: 'create', shape: frame({ h: 220 }) },
 					{ type: 'create', shape: note('n', { y: 40, frameId: 'f' }) },
@@ -227,7 +233,7 @@ test('AI frame preflight uses connector rewiring from the same atomic batch', as
 					},
 				],
 			})
-			const reply = (await run(toolsFor(store).update_shapes, {
+			const reply = (await run((await toolsFor(store)).update_shapes, {
 				updates: [
 					{ id: 'n', patch: { y: 40, label: 'Risk' } },
 					{
@@ -241,12 +247,12 @@ test('AI frame preflight uses connector rewiring from the same atomic batch', as
 			})) as { ok: boolean; error?: string }
 			if (initiallyLow) {
 				assert.equal(reply.ok, true)
-				const edge = store.getBoard().shapes.find((shape) => shape.id === 'edge')
+				const edge = (await store.getBoard()).shapes.find((shape) => shape.id === 'edge')
 				assert.ok(edge && edge.type === 'connector')
 				assert.equal(edge.from, 'left-high')
 			} else {
 				assert.equal(reply.error, 'FRAME_COLLISION')
-				assert.deepEqual(store.getBoard(), before)
+				assert.deepEqual(await store.getBoard(), before)
 			}
 		})
 	}
@@ -254,23 +260,70 @@ test('AI frame preflight uses connector rewiring from the same atomic batch', as
 
 test('AI preflight uses compensated note height when removing a label', async () => {
 	await withStore(async (store) => {
-		store.apply({
+		await store.apply({
 			operations: [
 				{ type: 'create', shape: frame({ w: 400, h: 240 }) },
 				{ type: 'create', shape: note('n', { y: 40, h: 160, label: 'Risk', frameId: 'f' }) },
 				{ type: 'create', shape: note('external', { x: 300, y: 250, w: 100, h: 100 }) },
 			],
 		})
-		const reply = (await run(toolsFor(store).update_shapes, {
+		const reply = (await run((await toolsFor(store)).update_shapes, {
 			updates: [{ id: 'n', patch: { y: 60, label: '' } }],
 		})) as { ok: boolean }
 		assert.equal(reply.ok, true)
-		const board = store.getBoard()
+		const board = await store.getBoard()
 		const region = board.shapes.find((shape) => shape.id === 'f')
 		const member = board.shapes.find((shape) => shape.id === 'n')
 		assert.ok(region && region.type === 'frame')
 		assert.ok(member && member.type === 'note')
 		assert.equal(region.h, 241)
 		assert.equal(member.h, 141)
+	})
+})
+
+test('tool.add_boxes frame membership create rejects a racing frame move', async () => {
+	await withStore(async (store) => {
+		await store.apply({
+			operations: [{ type: 'create', shape: frame({ w: 400, h: 240 }) }],
+		})
+		const tools = await toolsFor(store)
+		const originalApplyRequest = store.applyRequest.bind(store)
+		let enteredResolve: (() => void) | undefined
+		const entered = new Promise<void>((resolve) => {
+			enteredResolve = resolve
+		})
+		let releaseApply: (() => void) | undefined
+		const release = new Promise<void>((resolve) => {
+			releaseApply = resolve
+		})
+		store.applyRequest = async (request: unknown) => {
+			enteredResolve?.()
+			await release
+			return originalApplyRequest(request)
+		}
+		try {
+			const adding = run(tools.add_boxes, {
+				boxes: [{ id: 'member', x: 40, y: 40, w: 100, h: 100, frameId: 'f' }],
+			}) as Promise<{ ok?: boolean; error?: string }>
+			await entered
+			await store.apply({
+				operations: [{ type: 'update', id: 'f', patch: { x: 1000, y: 1000 } }],
+				expectedRevision: (await store.getBoard()).revision,
+			})
+			releaseApply?.()
+			const reply = await adding
+			assert.equal(reply.error, 'REVISION_CONFLICT')
+			const board = await store.getBoard()
+			const movedFrame = board.shapes.find((shape) => shape.id === 'f')
+			assert.ok(movedFrame && movedFrame.type === 'frame')
+			assert.equal(movedFrame.x, 1000)
+			assert.equal(movedFrame.y, 1000)
+			assert.equal(
+				board.shapes.some((shape) => shape.id === 'member'),
+				false,
+			)
+		} finally {
+			store.applyRequest = originalApplyRequest
+		}
 	})
 })

@@ -52,6 +52,7 @@ async function withLiveDaemon(run: (context: LiveContext) => Promise<void>): Pro
 			port: 0,
 			dbPath: join(directory, 'board.sqlite'),
 			settingsPath: join(directory, 'ai-settings', 'settings.json'),
+			env: {},
 		})
 		daemon.server.listen(0, '127.0.0.1')
 		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
@@ -66,7 +67,7 @@ async function withLiveDaemon(run: (context: LiveContext) => Promise<void>): Pro
 	} finally {
 		if (daemon) {
 			for (const client of daemon.wss.clients) client.terminate()
-			daemon.close()
+			await daemon.close()
 		}
 		rmSync(directory, { recursive: true, force: true })
 	}
@@ -136,6 +137,61 @@ test('HTTPS-origin subscribers receive API writes and reconnect to the latest bo
 	})
 })
 
+test('health rejects failed storage initialization and cleanup still closes the daemon', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-failed-storage-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const lock = new DatabaseSync(dbPath)
+	lock.exec('CREATE TABLE held (id INTEGER); BEGIN IMMEDIATE')
+	let daemon: Daemon | undefined
+	try {
+		daemon = createDaemon({ dbPath, settingsPath: join(directory, 'settings.json'), env: {} })
+		await assert.rejects(daemon.boards.waitUntilReady(), /database is locked/)
+		lock.exec('ROLLBACK')
+		daemon.server.listen(0, '127.0.0.1')
+		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(WAIT_MS) })
+		const address = daemon.server.address()
+		assert.ok(address && typeof address !== 'string')
+		const url = `http://127.0.0.1:${address.port}`
+		const health = await fetch(`${url}/api/live`)
+		assert.equal(health.status, 503)
+		assert.deepEqual(await health.json(), {
+			error: 'UNAVAILABLE',
+			message: 'Storage initialization failed',
+		})
+		assert.equal((await fetch(`${url}/api/state`)).status, 500)
+		await daemon.close()
+		assert.equal(daemon.server.listening, false)
+	} finally {
+		await daemon?.close()
+		lock.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('daemon close propagates storage failure and returns the same shutdown promise', async (t) => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-close-failure-'))
+	const daemon = createDaemon({
+		dbPath: join(directory, 'board.sqlite'),
+		settingsPath: join(directory, 'settings.json'),
+		env: {},
+	})
+	const closeStorage = daemon.boards.close.bind(daemon.boards)
+	try {
+		await daemon.boards.waitUntilReady()
+		t.mock.method(daemon.boards, 'close', async () => {
+			await closeStorage()
+			throw new Error('Synthetic close failure')
+		})
+		const closing = daemon.close()
+		assert.equal(daemon.close(), closing)
+		await assert.rejects(closing, /Synthetic close failure/)
+	} finally {
+		t.mock.restoreAll()
+		await closeStorage()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
 test('AI settings expose only public fields and preserve the existing key contract', async () => {
 	await withLiveDaemon(async ({ url, port, directory }) => {
 		const headers = { origin: DEV_ORIGIN }
@@ -145,6 +201,8 @@ test('AI settings expose only public fields and preserve the existing key contra
 			baseURL: 'http://127.0.0.1:3425/v1',
 			model: 'auto/gpt-6-luna',
 			hasApiKey: true,
+			authMode: 'api-key',
+			readOnly: false,
 		})
 
 		const secret = 'test-api-secret'
@@ -163,6 +221,8 @@ test('AI settings expose only public fields and preserve the existing key contra
 			baseURL: 'https://example.test/v1',
 			model: 'group/test',
 			hasApiKey: true,
+			authMode: 'api-key',
+			readOnly: false,
 		})
 		assert.equal(JSON.stringify(publicSettings).includes(secret), false)
 
@@ -194,6 +254,8 @@ test('AI settings expose only public fields and preserve the existing key contra
 			baseURL: 'https://example.test/v2',
 			model: 'group/test-2',
 			hasApiKey: false,
+			authMode: 'api-key',
+			readOnly: false,
 		})
 
 		const invalid = await fetch(`${url}/api/ai/settings`, {
@@ -409,7 +471,12 @@ test('AI models use the saved effective gateway, preserve prefixes, and hide cre
 
 		await assert.rejects(
 			fetchAiModels(
-				{ baseURL: `${mockBaseURL}/slow`, apiKey: 'timeout-secret', model: 'slow' },
+				{
+					baseURL: `${mockBaseURL}/slow`,
+					apiKey: 'timeout-secret',
+					model: 'slow',
+					authMode: 'api-key',
+				},
 				20,
 			),
 			(error: unknown) =>

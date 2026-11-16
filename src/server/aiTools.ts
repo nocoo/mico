@@ -13,9 +13,9 @@ import { boardDigest } from './aiBoard.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
 import {
 	addedPlacement,
-	type BoardStore,
 	connectorPlacementBounds,
 	OperationError,
+	type TenantStore,
 } from './store.ts'
 import { expandLucideIcons } from './summaryIcons.ts'
 
@@ -123,7 +123,7 @@ type ToolReply =
 	| { ok: false; error: string; message: string; hint?: string }
 
 interface ToolContext {
-	store: BoardStore
+	store: TenantStore
 	broadcast: (event: unknown) => void
 	selection: string[]
 	canvasId: string
@@ -261,15 +261,15 @@ function normalizeOperations(current: Shape[], operations: Operation[]): Operati
 	return normalized
 }
 
-function apply(
+async function apply(
 	{ store, broadcast, canvasId }: ToolContext,
 	operations: Operation[],
 	observedRevision: number,
-): ToolReply | { ok: true; revision: number; updated: string[] } {
+): Promise<ToolReply | { ok: true; revision: number; updated: string[] }> {
 	if (operations.length === 0) {
-		return { ok: true, revision: store.getBoard(canvasId).revision, created: [] }
+		return { ok: true, revision: (await store.getBoard(canvasId)).revision, created: [] }
 	}
-	const current = store.getBoard(canvasId)
+	const current = await store.getBoard(canvasId)
 	const normalized = normalizeOperations(current.shapes, operations)
 	const projected = projectOperations(current.shapes, normalized)
 	const explicitFrameIdCreates = normalized.some(
@@ -414,12 +414,10 @@ function apply(
 
 	const fullOperations = [...normalized, ...growthOperations]
 	try {
-		const result = store.applyRequest({
+		const result = await store.applyRequest({
 			operations: fullOperations,
 			canvasId,
-			...(fullOperations.some((operation) => operation.type !== 'create')
-				? { expectedRevision: observedRevision }
-				: {}),
+			...(mutatesExisting ? { expectedRevision: observedRevision } : {}),
 		})
 		broadcast({
 			type: 'board',
@@ -462,16 +460,16 @@ const baseShape = (id: string | undefined, kind: string, color: string) => ({
 	color,
 })
 
-const imageServices = new WeakMap<BoardStore, ImageGenerationService>()
+const imageServices = new WeakMap<TenantStore, ImageGenerationService>()
 
-export function createCanvasTools(
+export async function createCanvasTools(
 	input: Omit<ToolContext, 'revision' | 'imageGeneration'> & {
 		revision?: number
 		imageGeneration?: ImageGenerationService
 	},
 ) {
 	const { store, selection, canvasId } = input
-	let observedRevision = input.revision ?? store.getBoard(canvasId).revision
+	let observedRevision = input.revision ?? (await store.getBoard(canvasId)).revision
 	let imageGeneration = input.imageGeneration
 	if (!imageGeneration) {
 		imageGeneration = imageServices.get(store)
@@ -481,9 +479,9 @@ export function createCanvasTools(
 		}
 	}
 	const context: ToolContext = { ...input, revision: observedRevision, imageGeneration }
-	const applyOperations = (operations: Operation[]) => {
+	const applyOperations = async (operations: Operation[]) => {
 		context.revision = observedRevision
-		const reply = apply(context, operations, observedRevision)
+		const reply = await apply(context, operations, observedRevision)
 		if (reply.ok && operations.length > 0 && reply.revision === observedRevision + 1) {
 			observedRevision = reply.revision
 		}
@@ -501,7 +499,7 @@ export function createCanvasTools(
 					.describe('Include the full HTML of selected html cards (max 6000 characters each).'),
 			}),
 			execute: async ({ ids, include_html }) => {
-				const board = store.getBoard(canvasId)
+				const board = await store.getBoard(canvasId)
 				observedRevision = board.revision
 				return {
 					ok: true,
@@ -582,7 +580,9 @@ export function createCanvasTools(
 					.max(16),
 			}),
 			execute: async ({ notes }) => {
-				const current = new Map(store.getBoard(canvasId).shapes.map((shape) => [shape.id, shape]))
+				const current = new Map(
+					(await store.getBoard(canvasId)).shapes.map((shape) => [shape.id, shape]),
+				)
 				const operations: Operation[] = notes.map((note) => {
 					const existing = note.id ? current.get(note.id) : undefined
 					if (existing?.type === 'note') {
@@ -721,7 +721,7 @@ export function createCanvasTools(
 			}),
 			execute: async ({ prompt, aspect, x, y, width, shapeId, frameId }) => {
 				try {
-					return context.imageGeneration.start({
+					return await context.imageGeneration.start({
 						prompt,
 						aspect,
 						canvasId,
@@ -843,7 +843,7 @@ export function createCanvasTools(
 					.max(8),
 			}),
 			execute: async ({ frames }) => {
-				const current = store.getBoard(canvasId)
+				const current = await store.getBoard(canvasId)
 				const allocatedIds = new Set(current.shapes.map((shape) => shape.id))
 				const memberFrames = new Map<string, string>()
 				const candidates: Array<{ id: string; bounds: Bounds; memberIds: Set<string> }> = []
@@ -1108,7 +1108,7 @@ export function createCanvasTools(
 				})
 				.strict(),
 			execute: async (card) => {
-				const current = store.getBoard(canvasId)
+				const current = await store.getBoard(canvasId)
 				const existing = current.shapes.find((shape) => shape.id === card.id)
 				if (existing && existing.type !== 'actions') {
 					return {
@@ -1248,7 +1248,9 @@ export function createCanvasTools(
 					.max(24),
 			}),
 			execute: async ({ updates }) => {
-				const shapes = new Map(store.getBoard(canvasId).shapes.map((shape) => [shape.id, shape]))
+				const shapes = new Map(
+					(await store.getBoard(canvasId)).shapes.map((shape) => [shape.id, shape]),
+				)
 				const operations: Operation[] = updates.map((update) => {
 					const color =
 						update.patch.color === undefined
@@ -1280,7 +1282,7 @@ export function createCanvasTools(
 			}),
 			execute: async ({ ids }) => {
 				const operations: Operation[] = ids.map((id) => ({ type: 'delete', id }))
-				const reply = applyOperations(operations)
+				const reply = await applyOperations(operations)
 				if (!reply.ok) return reply
 				return {
 					ok: true as const,

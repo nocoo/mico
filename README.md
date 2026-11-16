@@ -9,7 +9,34 @@
 
 Mico 是一个本地优先的画布实验：人和本地 Agent 编辑同一批画板。浏览器负责渲染画布，守护进程管理一组命名画布并存入 SQLite，CLI 与 HTTP API 让 Agent 能完整访问同一批画布和同一套操作。
 
-它是一台机器上的本地画布集合，不是多人服务器。除了限制浏览器来源和主机之外没有其他鉴权，本机运行的进程都被视为可信；不要把守护进程暴露到网络。调整尺寸、远程部署和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
+它默认是一台机器上的本地画布集合。本地模式信任本机进程，普通请求落在同一个 `local` 租户。开启 Entra 登录后，每个身份（object id）有独立的私人画布、活动画布和图片素材。另有独立的共享白板集合，支持单演示者和多个只读参与者，不会公开或迁移已有私人画布。Cloud hosting uses the same container with a configured public origin and optional Entra login; Azure supports a disposable preview with optional managed-identity Chat and MAI transcription; MOSS is disabled in that profile. See [deployment options](docs/deployment.md). A public deployment without login is accessible to every reachable caller. 调整尺寸和 MCP 尚未实现。实时麦克风采集需要所选服务的凭据和代理；Chat 与 MAI 绘制依赖已配置的 AI 网关，MOSS Live 用自己的语音模型和原生工具调用。
+
+## 共享白板
+
+调用方开发者及 Agent 请阅读[共享白板接入文档](docs/shared-whiteboards-api.md)：包含查询、创建、加入接口、页面链接、会话生命周期、错误处理及接入清单。
+
+点击 **Shared whiteboards** 或打开 `/?whiteboards=1`，输入名字后查询已有白板 ID、创建白板或加入。创建后直接作为演示者进入；也可使用链接：
+
+```text
+/?whiteboardid=<id>&username=Jason%20Huang&sharer=true
+/?whiteboardid=<id>&username=Alice&sharer=false
+```
+
+同一白板显示在线成员和鼠标；每人的名字背景与鼠标同色。演示者保留绘图、编辑、AI 生成和语音输入能力（仍需配置对应服务）。参与者只有平移与缩放能力，默认跟随演示者；手动调整视角后出现彩色边框及“回到演示者视角”，点击恢复跟随。跟随同步世界坐标中心和缩放比例，适配不同窗口大小。演示者离线时保留视图并显示等待提示；第二位演示者加入返回 `409`，原演示者离线后可接替。
+
+这是**可信演示模式，不是安全的角色授权系统**：任何能访问服务的人都可以修改 `sharer=true` 请求演示者角色。开启 Entra 后仍须登录，但所有获准登录的身份都能访问共享集合；私人画布仍隔离。服务器限制参与者会话的写入、AI 与语音连接，并将演示者请求固定在加入的白板。共享白板内容存入现有 SQLite，在线成员、鼠标与视角只保留在单个守护进程内；不支持跨副本协作。每个白板最多 64 个保留中的会话，实例最多 512 个；未建立连接的加入预留 10 秒，断线身份保留 60 秒供重连，心跳会清理失联连接。
+
+HTTP 接口（启用登录时还需现有会话 cookie）：
+
+| 接口                         | 请求 / 返回                                                                                                              |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `GET /api/whiteboards`       | `{whiteboards: [{id, name, ...}]}`，独立共享集合，首次访问含默认空白板                                                   |
+| `POST /api/whiteboards`      | `{"name":"Workshop"}` → `201 {whiteboard: {id, name, ...}}`                                                              |
+| `POST /api/whiteboards/join` | `{"whiteboardid":"…","username":"Jason Huang","sharer":true,"clientId":"<随机 UUID>"}` → `{token, whiteboardid, member}` |
+
+加入后，HTTP 请求带 `X-Mico-Whiteboard: <token>`；WebSocket 使用 `/api/events?whiteboardSession=<token>`。`clientId` 是客户端私有的重连标识，不要共享；名字不是身份凭证。连接后收到 `snapshot`、`presence`，白板变更仍用 `board`。客户端发送 `{type:"cursor",point:{x,y}}`（离开画布时为 `null`），演示者还可发送 `{type:"presenter-view",viewport:{centerX,centerY,zoom}}`；服务器按房间广播。加入的白板不会随着私人工作区的活动画布切换而改变。语音连接走 `/api/whiteboard-voice/mai/realtime` 或 `/api/whiteboard-voice/moss` 并携带会话参数，以便开发环境和生产环境都经过权限检查。
+
+[`examples/shared-whiteboard.ts`](examples/shared-whiteboard.ts) 演示查询、创建并输出加入链接，例如 `node examples/shared-whiteboard.ts http://127.0.0.1:7063 Workshop "Jason Huang"`（匿名本地模式；登录部署使用浏览器入口）。
 
 ## 功能
 
@@ -39,7 +66,9 @@ Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.
 
 ### AI 网关
 
-助手使用兼容 OpenAI 的 Chat Completions API。打开 **AI → Settings** 设置端点、模型和 API Key。改动在下一次请求生效，并保存到 `~/.config/mico/settings.json`（仅所有者可读写）。密钥以明文存在本机，不会返回给浏览器。密钥输入框留空表示保留当前值，也可以选 **Remove current API key** 让后续请求不带密钥。远端端点请用 HTTPS。
+The server uses one [AI configuration contract](docs/ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration. `MICO_AI_AUTH_MODE=managed-identity` uses the attached Azure identity for Chat and MAI, ignores saved keys and makes Settings read-only. User login remains independent. `MICO_MOSS_ENABLED=false` disables MOSS in both the UI and server; Live then uses MAI.
+
+Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure uses the Responses API for reasoning and canvas tools. 以下设置说明适用于本地 API-key 模式。打开 **AI → Settings** 设置端点、模型和 API Key。改动在下一次请求生效，并保存到 `~/.config/mico/settings.json`（仅所有者可读写）。密钥以明文存在本机，不会返回给浏览器。密钥输入框留空表示保留当前值，也可以选 **Remove current API key** 让后续请求不带密钥。远端端点请用 HTTPS。
 
 在保存设置之前，守护进程读取以下环境变量和默认值：
 
@@ -90,6 +119,22 @@ pnpm dev
 ```
 
 打开 <https://mico.dev.hexly.ai/>。Caddy 把请求代理到 `127.0.0.1:7063` 的 Vite；Vite 把 `/api`（含 WebSocket 升级）代理到只监听回环地址的 `127.0.0.1:37063` 守护进程。浏览器始终用同源 HTTPS/WSS，不会向回环地址发混合内容请求。所有画布保存在 `.mico/board.sqlite`；旧的单画板版本创建的数据库会在首次启动时迁移成名为「My canvas」的画布。
+
+### Local Docker deployment
+
+```sh
+docker compose up --build -d --wait
+```
+
+Open <http://127.0.0.1:47063/>. One non-root container serves the production UI, API, canvas WebSocket and both voice proxies. Named volumes retain canvases, images and AI settings across container recreation without touching the host's daily board. Provider credentials are optional for ordinary drawing. The port is published on loopback only; Mico is not an authenticated public server.
+
+See [the Docker guide](docs/docker.md) for provider configuration, persistence, shutdown and the isolated Chrome acceptance check.
+
+### Cloud preview
+
+Hosting, login and AI availability are independent settings. The [deployment guide](docs/deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](docs/deployment-azure.md): optional Microsoft SPA login, optional managed-identity Chat/MAI, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** No real tenant, subscription, resource group, App ID or user ID belongs in the repository; supply them through operator environment configuration.
+
+For subsequent hosted updates, use the project [mico-deploy skill](.agents/skills/mico-deploy/SKILL.md) (`/skill:mico-deploy` in agents that expose skill commands). It keeps private deployment configuration outside Git and verifies the exact deployed image.
 
 ### Agent CLI
 
@@ -142,7 +187,7 @@ node src/cli/index.ts shape update <frame-id> '{"backgroundImageId":"photo","bac
 - `GET /api/board` — 活动画布的 `{revision, shapes}`。
 - `POST /api/images` — 上传 PNG、JPEG、WebP 或 GIF 原始字节，需带匹配的 `Content-Type`，最大 10 MiB；返回 `{id}`。`GET /api/images/:id` 读取已存字节。不会抓取远端图片 URL。
 - `POST /api/operations` — `{operations, expectedRevision?, canvasId?}`；默认作用于活动画布，也可以指定其他画布而不切换。返回该画布的画板。
-- `GET /api/ai/settings` / `PUT /api/ai/settings` — 读取或更新 `{baseURL, model, apiKey?}`。读取结果只返回 `{baseURL, model, hasApiKey}`，不含密钥；更新时省略 `apiKey` 表示保留，传空字符串表示移除。
+- `GET /api/ai/settings` / `PUT /api/ai/settings` — 读取或更新 `{baseURL, model, apiKey?}`。Reads return `{baseURL, model, hasApiKey, readOnly}` without the key. Local updates preserve an omitted key and remove an empty key; deploy mode rejects updates with `403 AI_SETTINGS_READ_ONLY`.
 - `GET /api/ai/models` — `{models: string[]}`。用服务端密钥访问当前生效 `baseURL` 下兼容 OpenAI 的 `/models` 端点；密钥不会返回或发给浏览器，配置的前缀会保留，例如 `/v1/models`。
 - `POST /api/ai/chat` — `{messages, selection}`；流式返回 Vercel AI SDK 的 UI 消息块。服务端工具读取并修改活动画布，广播与 `POST /api/operations` 相同的 `board` 事件。`selection` 是用户框选的形状 ID 数组，助手会把它们的几何信息和标签作为主要上下文。
 - `GET /api/events` — WebSocket 事件。连接时以及画布创建/重命名/删除/切换后，守护进程发送 `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`；操作后发送 `{type: "board", canvasId, canvas, board}`。画布元数据变化时 `stateVersion` 递增，客户端可据此忽略延迟到达的快照；客户端从 `canvas` 更新预览元数据，并且只在 `canvasId` 是自己的活动画布时应用 `board`。
@@ -161,7 +206,7 @@ After a recorded or MAI session ends, the summary request asks AI to create or u
 
 评估脚本 [`scripts/run-ai-cases.ts`](scripts/run-ai-cases.ts) 把案例脚本逐句喂给守护进程，然后请求会后摘要。轮次产物、画板快照和截图放在 [`evals/runs/`](evals/runs/)。经明确授权的实时案例运行器使用固定虚构稿 `evals/cases/c11-er-handover.zh.txt` 或 `evals/cases/c12-service-incident.zh.txt`：`pnpm eval:live-case 4 --case incident --confirm-live-canvas` 会为 incident 轮次创建并激活新画布，不会删除或恢复其他画布。
 
-MOSS 和 MAI 代理走 Vite。静态生产构建需要为这两个实时服务各配一个等价的服务端 WebSocket 代理。
+Development uses the Vite adapters for MOSS and MAI. The [Docker runtime](docs/docker.md) serves the built frontend and reuses the same server-side proxies without Vite.
 
 ## 测试
 
@@ -199,6 +244,7 @@ pnpm hooks:install    # 一次性：把 core.hooksPath 指向 .githooks
 
 ## 文档
 
+- [`docs/docker.md`](docs/docker.md) — Local Docker deployment, persistence and acceptance checks.
 - [`docs/testing.md`](docs/testing.md) — 测试分层、隔离与 Agent API 契约。
 - [`docs/prototypes/`](docs/prototypes/) — 独立界面原型。
 - [`examples/`](examples/) — Agent 批量示例和 TypeScript 生成器。

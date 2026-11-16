@@ -24,6 +24,7 @@ async function withDaemon(run: (url: string, daemon: Daemon) => Promise<void>): 
 			port: 0,
 			dbPath: join(directory, 'board.sqlite'),
 			settingsPath: join(directory, 'ai-settings', 'settings.json'),
+			env: {},
 		})
 		daemon.server.listen(0, '127.0.0.1')
 		await once(daemon.server, 'listening', { signal: AbortSignal.timeout(10_000) })
@@ -33,7 +34,7 @@ async function withDaemon(run: (url: string, daemon: Daemon) => Promise<void>): 
 	} finally {
 		if (daemon) {
 			for (const client of daemon.wss.clients) client.terminate()
-			daemon.close()
+			await daemon.close()
 		}
 		rmSync(directory, { recursive: true, force: true })
 	}
@@ -961,7 +962,10 @@ test('HTTP hardening covers origins, hosts, preflight and unknown endpoints', as
 			preflight.headers.get('access-control-allow-methods'),
 			'GET, POST, PUT, PATCH, DELETE, OPTIONS',
 		)
-		assert.equal(preflight.headers.get('access-control-allow-headers'), 'Content-Type')
+		assert.equal(
+			preflight.headers.get('access-control-allow-headers'),
+			'Content-Type, X-Mico-Whiteboard',
+		)
 
 		const unknownPreflight = await api(url, '/api/unknown', { method: 'OPTIONS' })
 		assert.equal(unknownPreflight.status, 404)

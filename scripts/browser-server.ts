@@ -15,6 +15,7 @@ const daemon = createDaemon({
 	port,
 	dbPath: join(directory, 'board.sqlite'),
 	settingsPath: join(directory, 'ai-settings', 'settings.json'),
+	env: {},
 	aiModel: process.env.MICO_AI_MOCK === '1' ? createMockAiModel() : undefined,
 })
 const base = micoViteConfig()
@@ -44,7 +45,7 @@ const shutdown = async () => {
 	stopping = true
 	await vite.close()
 	for (const client of daemon.wss.clients) client.terminate()
-	daemon.close()
+	await daemon.close()
 	rmSync(directory, { recursive: true, force: true })
 }
 

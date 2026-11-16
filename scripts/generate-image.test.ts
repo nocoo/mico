@@ -5,6 +5,7 @@ import { createServer, type Server } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { loadImageConfig } from '../src/server/aiConfig.ts'
 import {
 	decodeGenerationResponse,
 	generateImage,
@@ -31,6 +32,7 @@ async function runScript(
 	input: unknown,
 	endpoint: string,
 	apiKey = 'fake-local-test-key',
+	model?: string,
 ): Promise<ScriptResult> {
 	const child = spawn(process.execPath, ['scripts/generate-image.ts'], {
 		cwd: root,
@@ -38,6 +40,7 @@ async function runScript(
 			...process.env,
 			AZURE_OPENAI_ENDPOINT: endpoint,
 			AZURE_OPENAI_API_KEY: apiKey,
+			AZURE_OPENAI_IMAGE_MODEL: model,
 		},
 		stdio: ['pipe', 'pipe', 'pipe'],
 	})
@@ -217,7 +220,14 @@ test('generateImage bounds provider timeouts with fake credentials', async () =>
 	const endpoint = await listen(server)
 	try {
 		await assert.rejects(
-			generateImage({ prompt: 'fake timeout', aspect: '1:1' }, endpoint, 'fake-timeout-key', 20),
+			generateImage(
+				{ prompt: 'fake timeout', aspect: '1:1' },
+				loadImageConfig({
+					AZURE_OPENAI_ENDPOINT: endpoint,
+					AZURE_OPENAI_API_KEY: 'fake-timeout-key',
+				}),
+				20,
+			),
 			(error: unknown) => error instanceof Error,
 		)
 	} finally {

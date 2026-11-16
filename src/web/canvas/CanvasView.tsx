@@ -16,7 +16,7 @@ interface CanvasViewProps {
 	children: ReactNode
 	onPointerDown: PointerEventHandler<SVGSVGElement>
 	onPointerMove: PointerEventHandler<SVGSVGElement>
-	onPointerLeave: PointerEventHandler<SVGSVGElement>
+	onPointerLeave?: PointerEventHandler<SVGSVGElement>
 	onPointerUp: PointerEventHandler<SVGSVGElement>
 	onPointerCancel: PointerEventHandler<SVGSVGElement>
 	onWheel: WheelEventHandler<SVGSVGElement>

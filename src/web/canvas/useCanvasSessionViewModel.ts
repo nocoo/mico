@@ -7,13 +7,18 @@ import type {
 	Operation,
 	ServerEvent,
 } from '../../shared/types'
+import type { PresenceEvent, PresenceMessage, WhiteboardSession } from '../../shared/whiteboards'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from '../canvasState'
+import { canvasFetch as fetch, reconnectWhiteboard, whiteboardUrl } from '../whiteboards/client'
 import { CanvasHistory, HistoryConflict, type HistoryDirection } from './history'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
 interface CanvasSessionViewModelProps {
+	whiteboard?: WhiteboardSession
+	onPresence?: (event: PresenceEvent) => void
+	onSocketReady?: () => void
 	announce: (message: string) => void
 	onBoardTransition: (previous: Board, next: Board, switching: boolean, canvasId: string) => void
 	onBoardAccepted: (next: Board, switching: boolean) => void
@@ -30,6 +35,9 @@ interface PendingReplay {
 }
 
 export function useCanvasSessionViewModel({
+	whiteboard,
+	onPresence,
+	onSocketReady,
 	announce,
 	onBoardTransition,
 	onBoardAccepted,
@@ -39,6 +47,16 @@ export function useCanvasSessionViewModel({
 	const [activeCanvasId, setActiveCanvasId] = useState('')
 	const [apiConnected, setApiConnected] = useState(false)
 	const [wsConnected, setWsConnected] = useState(false)
+	const [roomError, setRoomError] = useState('')
+	const socketRef = useRef<WebSocket | null>(null)
+	const presenceRef = useRef(onPresence)
+	presenceRef.current = onPresence
+	const readyRef = useRef(onSocketReady)
+	readyRef.current = onSocketReady
+	const sendPresence = useCallback((message: PresenceMessage) => {
+		if (socketRef.current?.readyState === WebSocket.OPEN)
+			socketRef.current.send(JSON.stringify(message))
+	}, [])
 	const revisionRef = useRef(0)
 	const boardRef = useRef<Board>({ revision: 0, shapes: [] })
 	const operationQueue = useRef<Promise<void>>(Promise.resolve())
@@ -146,6 +164,10 @@ export function useCanvasSessionViewModel({
 			expectedRevision?: number,
 			canRebase?: (board: Board) => boolean,
 		) => {
+			if (whiteboard && !whiteboard.member.sharer) {
+				announceRef.current('Participants can only pan and zoom.')
+				return Promise.resolve(false)
+			}
 			const targetCanvasId = activeCanvasIdRef.current
 			setPendingOperations((count) => count + 1)
 			const result = operationQueue.current.then(async () => {
@@ -249,7 +271,7 @@ export function useCanvasSessionViewModel({
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[applyBoard, applySnapshot, cacheBoard, completeReplay],
+		[applyBoard, applySnapshot, cacheBoard, completeReplay, whiteboard],
 	)
 
 	const postOperations = useCallback(
@@ -293,46 +315,69 @@ export function useCanvasSessionViewModel({
 		let socket: WebSocket | null = null
 		let retry: number | null = null
 
-		const connect = () => {
+		const connect = async () => {
 			if (stopped) return
-			const current = new WebSocket(WS_URL)
+			if (whiteboard) {
+				try {
+					await reconnectWhiteboard()
+				} catch (error) {
+					if (stopped) return
+					setRoomError(error instanceof Error ? error.message : 'Could not reconnect.')
+					retry = window.setTimeout(() => void connect(), 2000)
+					return
+				}
+			}
+			if (stopped) return
+			const current = new WebSocket(whiteboardUrl(WS_URL))
 			socket = current
+			socketRef.current = current
 			current.onopen = () => {
-				if (!stopped) setWsConnected(true)
+				if (!stopped) {
+					setWsConnected(true)
+					setRoomError('')
+					readyRef.current?.()
+				}
 			}
 			current.onmessage = (event) => {
 				if (stopped) return
 				try {
-					const message = JSON.parse(event.data) as ServerEvent
+					const message = JSON.parse(event.data) as ServerEvent | PresenceEvent
 					if (message.type === 'snapshot') {
 						applySnapshot(message)
 					} else if (message.type === 'board') {
 						cacheBoard(message.canvasId, message.board)
 						mergeCanvas(message.canvas)
 						if (message.canvasId === activeCanvasIdRef.current) applyBoard(message.board)
+					} else {
+						presenceRef.current?.(message)
 					}
 					setApiConnected(true)
 				} catch {
 					announceRef.current('Invalid board event')
 				}
 			}
-			current.onclose = () => {
+			current.onclose = (event) => {
 				if (stopped) return
 				setWsConnected(false)
-				retry = window.setTimeout(connect, 2000)
+				if (whiteboard && event.code === 1008) {
+					setRoomError(event.reason)
+					return
+				}
+				retry = window.setTimeout(() => void connect(), 2000)
 			}
 			current.onerror = () => current.close()
 		}
 
-		queueMicrotask(connect)
+		queueMicrotask(() => void connect())
 
 		return () => {
 			stopped = true
 			window.clearInterval(poll)
 			if (retry) window.clearTimeout(retry)
 			socket?.close()
+			socketRef.current = null
 		}
-	}, [applyBoard, applySnapshot, mergeCanvas, cacheBoard])
+	}, [applyBoard, applySnapshot, mergeCanvas, cacheBoard, whiteboard])
 
 	const refreshCanvases = useCallback(async () => {
 		try {
@@ -388,12 +433,16 @@ export function useCanvasSessionViewModel({
 
 	const createLessonCanvas = useCallback(
 		(name: string) => {
+			if (whiteboard) {
+				announceRef.current('The lesson will use this shared whiteboard.')
+				return
+			}
 			void requestCanvas('/api/canvases', {
 				method: 'POST',
 				body: JSON.stringify({ name, activate: true }),
 			})
 		},
-		[requestCanvas],
+		[requestCanvas, whiteboard],
 	)
 
 	const switchCanvas = useCallback(
@@ -443,6 +492,8 @@ export function useCanvasSessionViewModel({
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
+		roomError,
+		sendPresence,
 		postOperations,
 		undo,
 		redo,

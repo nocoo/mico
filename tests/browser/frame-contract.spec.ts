@@ -55,18 +55,18 @@ test('desktop frame follows reference geometry while preserving Mico identity', 
 	for (const button of await meeting.getByRole('button').all()) await expect(button).toBeDisabled()
 
 	const panel = page.getByRole('region', { name: 'AI assistant' })
-	expectBox(await getBox(panel), { x: 1078, y: 14, width: 348, height: 932 })
+	expectBox(await getBox(panel), { x: 1054, y: 14, width: 372, height: 932 })
 	await expect(panel.getByRole('tab', { name: 'Audio' })).toHaveAttribute('aria-selected', 'true')
 	const empty = await getBox(page.locator('.frame-empty'))
-	expectBox(empty, { x: 272, y: 283, width: 520, height: 316 })
+	expectBox(empty, { x: 260, y: 283, width: 520, height: 316 })
 	const toolbar = await getBox(page.locator('.toolbar-module'))
 	expect(toolbar.y).toBe(890)
 	expect(toolbar.height).toBe(56)
-	expect(Math.abs(toolbar.x + toolbar.width / 2 - 631)).toBeLessThanOrEqual(1)
+	expect(Math.abs(toolbar.x + toolbar.width / 2 - 619)).toBeLessThanOrEqual(1)
 	const status = await getBox(page.locator('.ai-status-pill'))
 	expect(status.y).toBe(840)
 	expect(status.height).toBe(38)
-	expect(Math.abs(status.x + status.width / 2 - 532)).toBeLessThanOrEqual(1)
+	expect(Math.abs(status.x + status.width / 2 - 520)).toBeLessThanOrEqual(1)
 	await expect(page.locator('.identity-panel')).toHaveCSS(
 		'backdrop-filter',
 		'blur(22px) saturate(1.7)',
@@ -98,7 +98,7 @@ test('assistant open and close re-centres the toolbar and keeps canvas managemen
 			const box = await getBox(page.locator('.toolbar-module'))
 			return Math.round(box.x + box.width / 2)
 		})
-		.toBe(631)
+		.toBe(619)
 })
 
 test('Escape closes the assistant after opening it from its trigger', async ({ page }) => {

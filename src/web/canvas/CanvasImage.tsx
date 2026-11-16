@@ -1,4 +1,5 @@
 import type { CanvasShape } from '../../shared/types'
+import { whiteboardUrl } from '../whiteboards/client'
 import './canvas-image.css'
 
 export function CanvasImage({ shape }: { shape: CanvasShape }) {
@@ -26,7 +27,7 @@ export function CanvasImage({ shape }: { shape: CanvasShape }) {
 				y={shape.y}
 				width={shape.w}
 				height={shape.h}
-				href={`/api/images/${encodeURIComponent(shape.imageId)}`}
+				href={whiteboardUrl(`/api/images/${encodeURIComponent(shape.imageId)}`)}
 				preserveAspectRatio="xMidYMid meet"
 				style={{ clipPath: `inset(0 round ${radiusX}px / ${radiusY}px)` }}
 				pointerEvents="none"

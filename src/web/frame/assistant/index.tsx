@@ -44,7 +44,8 @@ function useAssistantMossStatus({
 export function AssistantFrame({ state, actions }: AssistantFrameProps) {
 	const model = useAssistantSession({ state, actions })
 	const moss = useAssistantMossStatus({
-		enabled: state.open && model.tab === 'live' && model.liveProvider === 'moss',
+		enabled:
+			state.mossEnabled && state.open && model.tab === 'live' && model.liveProvider === 'moss',
 		canvasId: state.canvasId,
 		fallback: model.activity,
 	})

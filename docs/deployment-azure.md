@@ -1,0 +1,141 @@
+# Azure Container Apps preview
+
+This is the first cloud adapter for the [provider-neutral deployment contract](deployment.md). It deploys a single disposable preview with optional user authentication and optional managed-identity Chat/MAI. Data remains ephemeral; MOSS stays disabled. It does not create an Entra application or change its redirect URIs. The project [mico-deploy skill](../.agents/skills/mico-deploy/SKILL.md) provides the repeatable preparation, publication and acceptance workflow.
+
+## Resources and costs
+
+Use an existing, intentionally selected resource group. The adapter creates:
+
+- A Basic Container Registry with admin access disabled.
+- A user-assigned managed identity with `AcrPull` scoped only to that registry.
+- A Container Apps environment, without a Log Analytics destination for this minimal preview.
+- One Container App with external HTTPS, 0.5 CPU / 1 GiB memory, one replica and single-revision mode.
+
+A provider-free preview needs no database, storage account, Key Vault, AI resource or client secret. Enabling managed AI additionally requires a provisioned Foundry account and Chat/MAI streaming deployments; no provider key or client secret is introduced. ACR and the running replica incur Azure charges. Log streaming is available through the CLI; historical Log Analytics retention is not configured. Azure may manage additional environment infrastructure; the script does not create a second application resource group.
+
+The preview has **no durability promise**. Replacing the replica can erase every canvas and image. `MICO_EPHEMERAL=true` makes this visible in the product. This is not a production deployment template.
+
+## Operator configuration
+
+Keep configuration in a private file outside the repository, such as `$HOME/.config/mico/deploy/azure-preview.env`, with owner-only permissions. Export these values before invoking scripts; no default subscription, resource group or tenant is embedded in code.
+
+| Variable                       | Required value                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------ |
+| `MICO_AZ_SUBSCRIPTION_ID`      | Subscription that owns the existing resource group                             |
+| `MICO_AZ_TENANT_ID`            | Tenant owning that subscription; used for preflight, not login                 |
+| `MICO_AZ_RESOURCE_GROUP`       | Existing resource group name                                                   |
+| `MICO_AZ_LOCATION`             | Resource group location; resources are created there                           |
+| `MICO_AZ_REGISTRY`             | Globally unique lowercase alphanumeric ACR name                                |
+| `MICO_AZ_IDENTITY`             | User-assigned managed identity name                                            |
+| `MICO_AZ_ENVIRONMENT`          | Container Apps environment name                                                |
+| `MICO_AZ_APP`                  | Container App name                                                             |
+| `MICO_AUTH_MODE`               | Explicitly `entra` or `none`; there is no implicit choice in the Azure adapter |
+| `MICO_AUTH_TENANT_ID`          | With Entra: login tenant, which may differ from the resource tenant            |
+| `MICO_AUTH_CLIENT_ID`          | With Entra: SPA application client ID                                          |
+| `MICO_AUTH_ALLOWED_OBJECT_IDS` | With Entra: comma-separated user object IDs from the login tenant              |
+| `NPM_REGISTRY`                 | Optional reachable build registry; defaults to the Microsoft npm mirror        |
+
+Do not put real values in tracked `.env.example`, scripts or documentation. The build uses a Git archive of the committed revision, not the working directory; local environment files and untracked files never enter the image build context.
+
+Requirements: Node.js 24+, Docker with `linux/amd64` builds, Azure CLI with Container Apps commands, and an existing Azure login. The operator needs resource-creation permissions, the ability to assign the registry-scoped role, and ACR push permission. The script never logs in or changes the CLI default subscription. Every resource command passes the configured subscription explicitly.
+
+## Managed AI profile
+
+AI is disabled by default in this adapter. To enable the verified Chat + MAI path, configure these additional values in the private operator environment:
+
+| Variable                   | Value                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------- |
+| `MICO_AI_ENABLED`          | `true`                                                                                |
+| `MICO_AI_AUTH_MODE`        | `managed-identity`; this adapter does not forward provider keys                       |
+| `MICO_MOSS_ENABLED`        | `false`; enabling MOSS is rejected by this adapter                                    |
+| `AZURE_CLIENT_ID`          | Client ID of `MICO_AZ_IDENTITY`; deployment verifies it matches the attached identity |
+| `MAGPIE_BASE_URL`          | Full HTTPS Foundry Chat prefix, including `/openai/v1`                                |
+| `MAGPIE_MODEL`             | Chat deployment name                                                                  |
+| `MAGPIE_LECTURE_REASONING` | A model-supported effort; the verified GPT 6.1 sol profile uses `low`                 |
+| `AZURE_MAI_HOST`           | Foundry hostname only                                                                 |
+| `AZURE_OPENAI_DEPLOYMENT`  | MAI streaming deployment name                                                         |
+
+The adapter validates both endpoints and requires both deployments when AI is enabled. All values come from environment configuration; actual identifiers and hosts stay outside Git. The inference resource may be in a different region from the Container App. Check model availability and quota first: MAI Streaming is not interchangeable with non-streaming MAI Transcribe.
+
+Grant the attached identity `Cognitive Services User` at the selected Foundry account scope only, retain registry-scoped `AcrPull`, and keep the Foundry account's local key authentication disabled. Resource creation, model deployment, quota changes and account deletion are separately authorized provisioning steps; `scripts/deploy-azure.ts provision` creates only the web-hosting infrastructure. See [AI configuration](ai-configuration.md) for token audience, Settings isolation and streaming behavior.
+
+Run local tests and Git hooks in a clean shell, not one that has sourced the deployment profile: runtime/auth environment values can contaminate test fixtures. Load private deployment configuration only in the shell/subshell used for Azure operations.
+
+## First deployment
+
+```sh
+source "$HOME/.config/mico/deploy/azure-preview.env"
+node scripts/deploy-azure.ts plan
+node scripts/deploy-azure.ts provision
+```
+
+`plan` validates local configuration without accessing Azure. `provision` verifies the subscription's resource tenant and the resource group's location, creates missing resources and prints the canonical HTTPS origin and SPA callback. Existing resources are reused only by the configured names/types; other resource groups are not modified. Errors stop execution instead of being silently ignored.
+
+When `MICO_AUTH_MODE=entra`, add the printed callback to the existing login application under **Authentication → Single-page application**:
+
+```text
+${MICO_PUBLIC_ORIGIN}/auth/callback
+```
+
+The actual origin is derived from the app name and Azure environment's default domain. Keep existing application redirects. Do not create a secret or change the application's tenant/platform type. The application remains protected even if the callback has not yet been registered; sign-in simply cannot finish.
+
+After the code and tests are committed:
+
+```sh
+node scripts/deploy-azure.ts build
+node scripts/deploy-azure.ts deploy
+```
+
+`build` rejects tracked uncommitted changes, exports the current Git commit to a temporary directory, builds `linux/amd64`, signs in to ACR through Azure CLI and pushes `mico:<full-git-sha>`. It removes only its own temporary directory afterward. Untracked files are not packaged.
+
+`deploy` resolves that commit's image digest and pins it on the Container App. It configures runtime environment variables, the independent user-auth choice, the selected AI profile, disabled MOSS, ephemeral SQLite under `/tmp`, and explicit startup/liveness/readiness probes. Updates use the same command; the canonical domain stays stable while the environment and app names remain unchanged.
+
+Do not repoint this preview adapter at an existing durable/production app: it deliberately installs a disposable configuration and does not preserve unrelated container settings. A clean dedicated resource group is the recommended first target.
+
+## Verify
+
+Use the printed origin as a shell variable, not a committed URL:
+
+```sh
+curl --fail "$MICO_PUBLIC_ORIGIN/api/live"
+curl -i "$MICO_PUBLIC_ORIGIN/api/state"
+az containerapp revision list \
+  --subscription "$MICO_AZ_SUBSCRIPTION_ID" \
+  --resource-group "$MICO_AZ_RESOURCE_GROUP" --name "$MICO_AZ_APP" \
+  --query '[].{name:name,active:properties.active,health:properties.healthState}'
+az containerapp logs show \
+  --subscription "$MICO_AZ_SUBSCRIPTION_ID" \
+  --resource-group "$MICO_AZ_RESOURCE_GROUP" --name "$MICO_AZ_APP" --tail 50
+```
+
+With Entra enabled, the anonymous state request must return 401. Check the login page, real Microsoft sign-in, drawing, refresh, WebSocket updates and logout in a browser. Real login is a separate manual gate; HTTP health alone is not end-to-end acceptance.
+
+For a provider-free preview, verify AI remains disabled. For an enabled managed profile, verify Chat tool writes, live/recorded MAI transcription and disabled MOSS. Do not copy the host's provider credentials or local gateway URL into the app. Paid-provider checks require explicit authorization and synthetic input; `node scripts/verify-managed-ai.ts --confirm-provider-usage --audio <pcm16-file>` runs an isolated loopback daemon/database inside the actual managed-identity container and cleans up only that test's resources. Never disable authentication on the public app to run a probe.
+
+Use short container-console startup commands. Azure CLI embeds `--command` into the console URL; large inline scripts/audio can hit the gateway URL limit. Transfer larger test input through the authorized console's stdin rather than putting it or credentials into command URLs.
+
+## Preview acceptance record
+
+Application commit `042682b` was built for `linux/amd64`, pushed to ACR and deployed by immutable digest. The actual origin, resource identifiers and digest are retained only in the operator's private deployment record, not this document.
+
+Verified locally:
+
+- TypeScript, zero-warning Biome, frozen dependency installation, Gitleaks and OSV checks passed.
+- All 408 Node tests passed on the application commit.
+- The gated browser suite passed 105 tests plus 2 audio-recovery tests before the final SSE cache-header fix; the final commit then passed 38 hosted-login, Chat and Audio browser regressions.
+- The final production image passed health, real Chrome manual drawing and reload checks with AI disabled and no page exceptions.
+- Three bounded review rounds closed the identified request-path, session-revocation, callback-retry and cache-policy issues.
+
+Verified on Azure:
+
+- One active Healthy revision, with the expected digest, login enabled, AI disabled and ephemeral storage declared.
+- Public health and login page work; anonymous canvas/image APIs and canvas WebSocket upgrades reject access.
+- The rendered sign-in button navigates to the configured login tenant and App ID using authorization code + S256 PKCE and the expected callback.
+
+The operator subsequently confirmed successful real Microsoft account sign-in for this initial preview. This is operator-confirmed evidence, separate from the automated identity doubles and login-navigation checks. Other hosting providers, paid AI providers and durable cloud storage are not accepted by this preview. GitHub CI was not triggered because this change did not push source or publish a GitHub release.
+
+## Stop, update and recover
+
+A new code deployment replaces ephemeral state. Treat that loss as expected, not as a migration. Keep exact Git SHAs/digests in operator release records outside the repository. Redeploying a previous digest can restore its code but not an earlier canvas or in-memory session.
+
+To stop spending, explicitly remove the preview app/environment/registry/identity when no longer needed, after checking ownership and any shared use. The scripts intentionally have no resource-group deletion command and never delete data or resources automatically. Do not delete a group just because it has the same name as a sample configuration.

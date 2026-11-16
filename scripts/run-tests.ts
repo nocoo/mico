@@ -5,10 +5,16 @@ import { join } from 'node:path'
 const INTEGRATION = [
 	'src/cli/index.test.ts',
 	'src/server/ai.test.ts',
+	'src/server/aiConfig.integration.test.ts',
 	'src/server/api.test.ts',
+	'src/server/auth.integration.test.ts',
 	'src/server/imageGeneration.test.ts',
 	'src/server/index.test.ts',
+	'src/server/managedIdentity.integration.test.ts',
 	'src/server/moss.test.ts',
+	'src/server/production.test.ts',
+	'src/server/realtimeProxy.test.ts',
+	'src/server/whiteboards.integration.test.ts',
 	'scripts/examples.test.ts',
 ]
 

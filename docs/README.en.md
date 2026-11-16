@@ -7,9 +7,19 @@
 
 ## What it does
 
-A local-first canvas experiment where people and local agents edit the same boards. The browser renders the canvas; the daemon owns a collection of named canvases and stores them in SQLite; the CLI and HTTP API give agents complete access to the same boards, canvases and operations.
+A local-first canvas experiment where people and local agents edit the same boards. The browser renders the canvas; the daemon owns a collection of named canvases and stores them in SQLite; the CLI and HTTP API give agents complete access to the same boards, canvases and operations. Anonymous mode keeps one `local` tenant for ordinary requests, while Entra login gives every verified identity its own private tenant. An explicit, separate shared-whiteboard collection supports one presenter and multiple read-only participants without exposing existing private canvases.
 
-This is a single local canvas collection, not a multi-user server. It has no authentication beyond restricting browser origins and hosts, and trusts processes running on the local machine. Do not expose the daemon to a network. Resizing, remote deployment, and MCP are not implemented yet. Live microphone capture needs the selected provider's credentials and proxy. Chat and MAI drawing depend on the configured AI gateway; MOSS Live uses its own voice model and native tool calls.
+Local mode trusts processes running on the machine. Cloud hosting uses the same container with a configured public origin and optional Entra login; Azure supports a disposable preview with optional managed-identity Chat and MAI transcription; MOSS is disabled in that profile. See [deployment options](deployment.md). A public deployment without login is accessible to every reachable caller. Resizing and MCP are not implemented yet. Live microphone capture needs the selected provider's credentials and proxy. Chat and MAI drawing depend on the configured AI gateway; MOSS Live uses its own voice model and native tool calls.
+
+## Shared whiteboards
+
+For caller developers and agents, see the [shared-whiteboard integration guide](shared-whiteboards-api.md) (Chinese): list/create/join contracts, browser links, session lifecycle, errors, and an implementation checklist.
+
+Open `/?whiteboards=1` to list IDs, create a board or join one. Direct links use `/?whiteboardid=<id>&username=Jason%20Huang&sharer=true` (presenter) or `sharer=false` (participant). Everyone sees member names and matching-color cursors. Participants can only pan/zoom, initially following the presenter's world-space center and zoom. Exploring independently shows a colored border and a **回到演示者视角** button to resume following. A second presenter receives `409`; a disconnected presenter releases the slot. AI, microphone input and editing remain available to the presenter, subject to existing provider configuration.
+
+**Trusted presentation mode:** roles are self-declared in the URL, not securely authorized. Anyone with service access may request presenter status. Entra authentication is still required when enabled; shared boards are visible to all admitted identities, while private tenants remain isolated. Boards persist in SQLite; presence/viewports are single-process, in-memory state, not cross-replica collaboration. Pending joins reserve a slot for 10 seconds, disconnected identities are retained for 60 seconds, and heartbeat checks remove dead sockets. Limits are 64 retained sessions per board and 512 per daemon.
+
+`GET /api/whiteboards` returns `{whiteboards: [...]}` (including an initial blank board). `POST /api/whiteboards` accepts `{name}` and returns `201 {whiteboard}`. `POST /api/whiteboards/join` accepts `{whiteboardid, username, sharer, clientId}`; `clientId` is a private random UUID used for reconnects. The response includes `{token, whiteboardid, member}`. Send `X-Mico-Whiteboard: <token>` on subsequent HTTP requests and connect `/api/events?whiteboardSession=<token>`. Existing `snapshot`/`board` events are joined by `presence`, `cursor` and `presenter-view` events. Presenter writes are pinned to the joined board; participant writes, AI requests and voice upgrades are rejected. Shared voice connections use `/api/whiteboard-voice/mai/realtime` and `/api/whiteboard-voice/moss`, including in development. See the [API details](../README.md#共享白板) and [executable example](../examples/shared-whiteboard.ts).
 
 ## Features
 
@@ -39,7 +49,9 @@ The identity panel holds the logo and Canvases button. A separate AI button in t
 
 ### AI gateway
 
-The assistant uses the OpenAI-compatible Chat Completions API. Open **AI → Settings** to set the endpoint, model and API key. Changes apply to the next request and persist in `~/.config/mico/settings.json` (owner-only permissions). The key is stored as plaintext on the local machine and is never returned to the browser. Leave the key field blank to keep the current key, or select **Remove current API key** to send requests without one. Use HTTPS for remote endpoints.
+The server uses one [AI configuration contract](ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration. `MICO_AI_AUTH_MODE=managed-identity` uses the attached Azure identity for Chat and MAI, ignores saved keys and makes Settings read-only. User login remains independent. `MICO_MOSS_ENABLED=false` disables MOSS in both the UI and server; Live then uses MAI.
+
+Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure uses the Responses API for reasoning and canvas tools. The following settings apply to local API-key mode. Open **AI → Settings** to set the endpoint, model and API key. Changes apply to the next request and persist in `~/.config/mico/settings.json` (owner-only permissions). The key is stored as plaintext on the local machine and is never returned to the browser. Leave the key field blank to keep the current key, or select **Remove current API key** to send requests without one. Use HTTPS for remote endpoints.
 
 Until settings are saved, the daemon uses these environment variables and defaults:
 
@@ -90,6 +102,22 @@ pnpm dev
 ```
 
 Open <https://mico.dev.hexly.ai/>. Caddy proxies to Vite on `127.0.0.1:7063`; Vite proxies `/api` (including WebSocket upgrades) to the loopback-only daemon on `127.0.0.1:37063`. The browser uses same-origin HTTPS/WSS, never mixed-content loopback requests. The daemon stores all canvases in `.mico/board.sqlite`; a database created by an older single-board version is migrated to a canvas named “My canvas” on first start.
+
+### Local Docker deployment
+
+```sh
+docker compose up --build -d --wait
+```
+
+Open <http://127.0.0.1:47063/>. One non-root container serves the production UI, API, canvas WebSocket and both voice proxies. Named volumes retain canvases, images and AI settings across container recreation without touching the host's daily board. Provider credentials are optional for ordinary drawing. The port is published on loopback only; Mico is not an authenticated public server.
+
+See [the Docker guide](docker.md) for provider configuration, persistence, shutdown and the isolated Chrome acceptance check.
+
+### Cloud preview
+
+Hosting, login and AI availability are independent settings. The [deployment guide](deployment.md) compares Azure Container Apps, other container/VM hosts and Cloudflare paths. The first automated target is an [Azure preview](deployment-azure.md): optional Microsoft SPA login, optional managed-identity Chat/MAI, manual drawing, one replica and temporary SQLite. **Container replacement or redeployment may erase every canvas and image.** Supply tenant, subscription, resource group, App ID and user IDs through operator environment configuration, never committed source.
+
+For subsequent hosted updates, use the project [mico-deploy skill](../.agents/skills/mico-deploy/SKILL.md) (`/skill:mico-deploy` in agents that expose skill commands). It keeps private deployment configuration outside Git and verifies the exact deployed image.
 
 ### Agent CLI
 
@@ -142,7 +170,7 @@ A canvas shape has `id`, `type` (`rectangle`, `ellipse`, `text`, `line`, `note`,
 - `GET /api/board` — the active canvas's `{revision, shapes}`.
 - `POST /api/images` — upload raw PNG, JPEG, WebP or GIF bytes with the matching `Content-Type`, up to 10 MiB; returns `{id}`. `GET /api/images/:id` serves the stored bytes. Remote image URLs are not fetched.
 - `POST /api/operations` — `{operations, expectedRevision?, canvasId?}`; defaults to the active canvas and can target any canvas without switching. Returns that canvas's board.
-- `GET /api/ai/settings` / `PUT /api/ai/settings` — read or update `{baseURL, model, apiKey?}`. Reads return `{baseURL, model, hasApiKey}` without the key; omit `apiKey` on update to keep it, or send an empty string to remove it.
+- `GET /api/ai/settings` / `PUT /api/ai/settings` — read or update `{baseURL, model, apiKey?}`. Reads return `{baseURL, model, hasApiKey, readOnly}` without the key; omit `apiKey` on local updates to keep it, or send an empty string to remove it. Deploy mode rejects updates with `403 AI_SETTINGS_READ_ONLY`.
 - `GET /api/ai/models` — `{models: string[]}`. Fetches the OpenAI-compatible `/models` endpoint from the currently saved effective `baseURL` with the server-side API key; the key is never returned or sent to the browser. The configured baseURL prefix is preserved, for example `/v1/models`.
 - `POST /api/ai/chat` — `{messages, selection}`; streams Vercel AI SDK UI message chunks. Server-side tools read and mutate the active canvas and broadcast the same `board` events as `POST /api/operations`. `selection` is an array of shape ids that the user marqueed; the assistant receives their geometry and labels as primary context.
 - `GET /api/events` — WebSocket events. On connect and after canvas create/rename/delete/switch the daemon sends `{type: "snapshot", stateVersion, activeCanvasId, canvases, board}`; after operations it sends `{type: "board", canvasId, canvas, board}`. `stateVersion` increases on canvas metadata changes so clients can ignore delayed snapshots; clients update preview metadata from `canvas` and only apply `board` when `canvasId` is their active canvas.
@@ -161,7 +189,7 @@ After a recorded or MAI session ends, the summary request asks AI to create or u
 
 The evaluation harness [`../scripts/run-ai-cases.ts`](../scripts/run-ai-cases.ts) feeds the case scripts to the daemon sentence by sentence, then requests the post-session summary. Round artifacts, board snapshots and screenshots live under [`../evals/runs/`](../evals/runs/). The explicitly authorized live-case runner uses fixed fictional transcripts in `evals/cases/c11-er-handover.zh.txt` or `evals/cases/c12-service-incident.zh.txt`: `pnpm eval:live-case 4 --case incident --confirm-live-canvas` creates and activates a new canvas for the incident round; it never deletes or restores another canvas.
 
-The MOSS and MAI proxies run through Vite. A static production build needs equivalent server-side WebSocket proxies for either live provider.
+Development uses the Vite adapters for MOSS and MAI. The [Docker runtime](docker.md) serves the built frontend and reuses the same server-side proxies without Vite.
 
 ## Tests
 
@@ -198,6 +226,8 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 | Playwright    | Browser interaction tests                           |
 
 ## Documentation
+
+- [`docker.md`](docker.md) — Local Docker deployment, persistence and acceptance checks.
 
 - [`testing.md`](testing.md) — testing layers, isolation and the agent API contract.
 - [`prototypes/`](prototypes/) — standalone interface prototypes.

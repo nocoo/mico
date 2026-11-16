@@ -1,6 +1,6 @@
 .ai-assistant {
 	--ai-inset: 14px;
-	--ai-panel-width: 348px;
+	--ai-panel-width: 372px;
 	--ai-radius: 30px;
 	--ai-motion: 650ms;
 	--ai-danger: oklch(0.63 0.2 20);
@@ -1491,6 +1491,11 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	}
 }
 
+.ai-assistant .live-provider .rt-SegmentedControlItem[data-moss-disabled="true"] {
+	opacity: 0.48;
+	cursor: default;
+}
+
 .ai-assistant .microphone-panel {
 	position: relative;
 	padding: 0;
@@ -1916,7 +1921,7 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	}
 }
 
-@media (max-width: 390px) {
+@media (max-width: 400px) {
 	.ai-assistant .ai-panel-header {
 		padding-inline: 8px;
 	}

@@ -32,7 +32,7 @@ pnpm build
 
 ## Quality slots
 
-`.github/workflows/ci.yml` calls `nocoo/base-ci`'s `quality.yml`, pinned to a full commit SHA, and declares every System0 slot in `slot-status`. Only one check needs branch protection: `quality / Z1: Gate`.
+`.github/workflows/ci.yml` delegates to `./.github/workflows/quality-slots.yml` in System1 native mode (using `nocoo/base-ci` composite actions pinned to a full commit SHA). Only one check needs branch protection: `quality / Z1: Gate`.
 
 | Slot                   | Command                                 | Scope                                                       |
 | ---------------------- | --------------------------------------- | ----------------------------------------------------------- |
@@ -101,24 +101,25 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 
 ## Coverage map
 
-| Area                                | Primary coverage                                                                                                             |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Tool buttons and shortcuts          | `controls.spec.ts` keyboard/tool tests, `canvas.spec.ts` toolbar test                                                        |
-| Shape creation by drag/click        | `controls.spec.ts` primitive tests, `canvas.spec.ts` note/text/brush tests                                                   |
-| Dock options (colors, brush, fonts) | `controls.spec.ts` option and panel tests                                                                                    |
-| Selection, marquee, delete          | `canvas.spec.ts` marquee/snap tests, `controls.spec.ts` keyboard test                                                        |
-| Properties panel                    | `controls.spec.ts` panel test, `canvas.spec.ts` note/text/html/frame edits                                                   |
-| Frame label, membership, travel     | `canvas.spec.ts` frame tests, `controls.spec.ts` membership test, `containers.test.ts`                                       |
-| Connector creation/rebind/classes   | `canvas.spec.ts` connector tests, `connections.test.ts`, `api.test.ts`                                                       |
-| HTML cards                          | `controls.spec.ts`, `canvas.spec.ts` HTML test, `store.test.ts`, `api.test.ts`, examples test                                |
-| Pan/zoom/fit                        | `controls.spec.ts` zoom test, `canvas.spec.ts` grid/viewport test                                                            |
-| Canvas management and previews      | `canvases.spec.ts`, `canvasState.test.ts`, `store.test.ts`, `preview.test.ts`, `api.test.ts`, `index.test.ts` (HTTP and CLI) |
-| AI assistant panel                  | `ai.spec.ts`, `ai.test.ts`, `aiAudio.test.ts`                                                                                |
-| Palette and tokens                  | `design.test.ts`, `controls.spec.ts` panel/default-colour checks                                                             |
-| Store schema and atomicity          | `store.test.ts`, `api.test.ts`                                                                                               |
-| HTTP/WebSocket contract             | `api.test.ts`, `index.test.ts`                                                                                               |
-| CLI                                 | `src/cli/index.test.ts`                                                                                                      | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures. |
-| Agent examples                      | `examples.test.ts`                                                                                                           |
+| Area                                | Primary coverage                                                                                                                                                                                       |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Tool buttons and shortcuts          | `controls.spec.ts` keyboard/tool tests, `canvas.spec.ts` toolbar test                                                                                                                                  |
+| Shape creation by drag/click        | `controls.spec.ts` primitive tests, `canvas.spec.ts` note/text/brush tests                                                                                                                             |
+| Dock options (colors, brush, fonts) | `controls.spec.ts` option and panel tests                                                                                                                                                              |
+| Selection, marquee, delete          | `canvas.spec.ts` marquee/snap tests, `controls.spec.ts` keyboard test                                                                                                                                  |
+| Properties panel                    | `controls.spec.ts` panel test, `canvas.spec.ts` note/text/html/frame edits                                                                                                                             |
+| Frame label, membership, travel     | `canvas.spec.ts` frame tests, `controls.spec.ts` membership test, `containers.test.ts`                                                                                                                 |
+| Connector creation/rebind/classes   | `canvas.spec.ts` connector tests, `connections.test.ts`, `api.test.ts`                                                                                                                                 |
+| HTML cards                          | `controls.spec.ts`, `canvas.spec.ts` HTML test, `store.test.ts`, `api.test.ts`, examples test                                                                                                          |
+| Pan/zoom/fit                        | `controls.spec.ts` zoom test, `canvas.spec.ts` grid/viewport test                                                                                                                                      |
+| Canvas management and previews      | `canvases.spec.ts`, `canvasState.test.ts`, `store.test.ts`, `preview.test.ts`, `api.test.ts`, `index.test.ts` (HTTP and CLI)                                                                           |
+| AI assistant panel                  | `ai.spec.ts`, `ai.test.ts`, `aiAudio.test.ts`                                                                                                                                                          |
+| Palette and tokens                  | `design.test.ts`, `controls.spec.ts` panel/default-colour checks                                                                                                                                       |
+| Store schema and atomicity          | `store.test.ts`, `api.test.ts`                                                                                                                                                                         |
+| Tenant isolation                    | `tenant.test.ts` (separate lists, canvases, active canvas, state version, images; cross-tenant 404), `auth.integration.test.ts` (a signed-in identity edits a workspace the `local` tenant cannot see) |
+| HTTP/WebSocket contract             | `api.test.ts`, `index.test.ts`                                                                                                                                                                         |
+| CLI                                 | `src/cli/index.test.ts`                                                                                                                                                                                | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures. |
+| Agent examples                      | `examples.test.ts`                                                                                                                                                                                     |
 
 ## Overview and browser history
 
@@ -126,9 +127,49 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 - `src/web/canvas/history.test.ts` and `src/server/history.test.ts` cover the fixed 20-step limit, branching, exact optional fields, delete cascades, frame/image references, stacking order, image limits and conflicts with external work.
 - `tests/browser/minimap.spec.ts` and `tests/browser/history.spec.ts` cover real pointer/keyboard navigation, canvas-list previews, responsive placement, undo/redo buttons and shortcuts, native text editing, canvas switching, refresh, request rejection and unrelated/concurrent API edits.
 
+## Tenancy
+
+`src/server/tenant.test.ts` covers the resolver (anonymous requests map to `local`, each identity to its own stable opaque tenant) and storage isolation: separate canvas lists, defaults, active canvas, `stateVersion` and image assets, plus not-found answers for another tenant's canvas id and image id. `src/server/auth.integration.test.ts` proves a signed-in user's private workspace stays invisible to the `local` tenant, and that two verified identities can explicitly join the separate shared-whiteboard collection without sharing their private data or session credentials.
+
+`src/server/whiteboards.integration.test.ts` covers shared list/create/join, presenter admission races, role and canvas scope enforcement, room-scoped broadcasts, cursor/view events and presenter departure. `tests/browser/whiteboards.spec.ts` uses independent pages with different viewport sizes to exercise names/cursors, presenter editing, viewer pan/zoom and return-to-presenter, invalid links, presenter replacement, AI generation, mock microphone input and shared images. All fixtures use isolated databases and mock AI; they do not prove live provider access. `scripts/examples.test.ts` exercises `examples/shared-whiteboard.ts` against its own port-0 daemon.
+
+## Asynchronous storage safety
+
+`src/server/sql.test.ts` exercises transaction rollback and concurrent SQLite handles. `store.test.ts`, `tenant.test.ts` and `storage-concurrency.test.ts` cover atomic initialization/migration, reopening personal workspaces without duplicate defaults, draining accepted writes before close, last-canvas protection across handles, generated-image revision rollback and concurrent image limits without orphan assets. A per-handle mutex alone is not evidence of database atomicity.
+
+`index.test.ts` checks that failed storage initialization cannot return healthy and that daemon cleanup propagates errors. `production.test.ts` runs the actual process entrypoint to prove initialization failure exits before listening and SIGTERM drains an in-flight write. `backend-regressions.test.ts` gates an AI frame-member write behind a concurrent frame move; `imageGeneration.test.ts` controls job admission and completion around concurrent start/close calls. These fixtures use temporary databases and synthetic generators only.
+
+## AI runtime configuration
+
+`src/server/aiConfig.test.ts` and `aiSettings.test.ts` cover the laptop/deploy source policy, environment validation, managed-identity settings isolation and saved credentials. `managedIdentity.test.ts` verifies the shared Foundry audience cache, expiry refresh, cancellation and redirect/credential protection; `managedIdentity.integration.test.ts` belongs to L3 and exercises real daemon Chat/model HTTP routes and asynchronous MAI proxy authentication with mocks. `src/server/aiConfig.integration.test.ts` runs in L3 and verifies deploy startup never imports local `.env` values, HTTP updates are blocked, and environment credentials reach mock model requests. Realtime and image tests check configured endpoints, headers and image model forwarding. `tests/browser/assistant-dialog.spec.ts` verifies the read-only UI without upstream model requests; editable local settings remain covered in `tests/browser/ai.spec.ts`.
+
+`tests/browser/managed-ai.spec.ts` verifies managed Settings without key fields and disabled MOSS with MAI selected. Normal automated suites never call paid providers. The separately authorized `node scripts/verify-managed-ai.ts --confirm-provider-usage --audio <pcm16-file>` check runs inside the actual managed-identity deployment, creates its own loopback daemon and temporary database, exercises real Chat tool writes and MAI transcription, and never changes the public daemon's authentication or live board. `scripts/verify-managed-ai.test.ts` checks its confirmation and audio-size guards without provider traffic.
+
+## Docker acceptance
+
+`docker compose --env-file /dev/null build && node scripts/docker-smoke.ts` checks the actual production image on `127.0.0.1:47063` using a unique Compose project, isolated volumes, empty provider credentials and headless Chrome. It covers UI drawing, API/WebSocket synchronization, audio ranges, image storage, CLI access, security boundaries and persistence after container recreation. It cleans up only its own containers and volumes, retaining screenshots and logs in the OS temporary directory. See [docker.md](docker.md).
+
+`src/server/production.test.ts` and `src/server/realtimeProxy.test.ts` run in L3 without Docker. They cover production asset serving, HTTP caching/ranges, missing-file and source-file rejection, same-origin API/events, provider upgrade routing, missing credentials and mock upstream forwarding.
+
+## Linux visual parity
+
+The action-card pixel comparison retains its 0.002 mismatch limit and attaches both reference and actual images for each checkbox state. Its heading must allow synthesized weight, like the frozen prototype, when Linux falls back to a CJK font without a bold face. Assistant geometry checks retain zero horizontal overflow and cover desktop plus the 401/400/391px label-to-icon boundary.
+
+When reproducing CI locally, use the repository's Playwright version on Ubuntu with `fonts-dejavu-core` installed, matching the GitHub runner's system-font fallback. The stock Playwright Docker image alone can select a narrower fallback and miss these defects. Do not solve font-dependent layout failures by relaxing pixel thresholds or adding retries.
+
+## Hosted preview
+
+`src/server/runtime.test.ts` covers independent hosting/auth/AI settings; `src/web/runtime.test.ts` and `src/web/msal.test.ts` cover browser session and callback policy. `src/server/auth.integration.test.ts` verifies real HTTP and WebSocket authentication against temporary SQLite and synthetic identity keys. It must remain in the L3 list in `scripts/run-tests.ts`.
+
+`tests/browser/hosted.spec.ts` belongs to the CI E2E subset. It checks fail-closed runtime bootstrap, optional login, callback/session handling, logout/expiry and manual drawing with AI disabled. Local identity doubles do not prove the real Entra redirect is registered.
+
+`tests/browser/debug-panel.spec.ts` and `avatar.spec.ts` also run in that subset. They cover the identity-entry order, Canvas List/Debug mutual exclusion, keyboard focus, outside pointer gestures, glass-token parity, 320px portrait and authenticated 812×375 landscape layout, optional photo display and object-URL revocation. Screenshots are captured after entrance animations complete. MSAL and Graph are intercepted only by the browser fixture; no production mock hook or real profile request is used. Missing photos, permission errors and invalid image bytes must leave a usable fallback. `src/web/avatar.test.ts` and `frame-debug.test.ts` cover the bounded photo request, cancellation, account choice and pure display state in L1.
+
+`scripts/cloud/azure.test.ts` verifies environment-driven target selection, distinct login/resource tenants, explicit optional authentication, digest pinning, one replica and the ephemeral/AI-disabled deployment contract. Azure provisioning and actual image health are separate live acceptance steps, not mocked unit-test results. Provider-specific IDs and deployment URLs must stay in operator configuration outside Git.
+
 ## Known gaps
 
 - Pixel comparisons cover the pinned prototype's light-theme backdrop, notes, shapes, text, ink, connector, selection marquee and HTML card shell. Other themes, arbitrary generated card contents and all animation frames are not exhaustively compared.
 - Browser tests run Chrome only. Safari/Firefox rendering of `foreignObject` and sandboxed iframes is unverified. MOSS Live does not automatically request a summary when stopped.
 - No load, soak or large-board performance tests; the 1 MB request limit is exercised for the 413 contract only.
-- Not yet supported by the product, so not tested: resizing, multi-user sessions, MCP, remote deployment.
+- Not yet supported by the product, so not tested: resizing, multi-user sessions, MCP and durable managed-cloud storage. Azure is the first automated disposable preview; other cloud adapters and a real Entra login require separate acceptance.

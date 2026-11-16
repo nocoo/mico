@@ -1,24 +1,36 @@
+import { readFileSync, statSync } from 'node:fs'
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { TokenCredential } from '@azure/identity'
 import type { LanguageModel } from 'ai'
+import type { JWTVerifyGetKey } from 'jose'
+import serveStatic from 'serve-static'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
-import {
-	createMagpieModel,
-	fetchAiModels,
-	type MagpieSettings,
-	parseAiChatRequest,
-	streamAiChat,
-} from './ai.ts'
+import { loadRuntimeConfig, publicRuntimeContract, type RuntimeConfig } from '../shared/runtime.ts'
+import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } from './ai.ts'
+import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
+import { AuthManager } from './auth.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
+import {
+	createMaiProxy,
+	MAI_CONFIG_PATH,
+	MAI_LOCAL_PATH,
+	type MaiProxyOptions,
+} from './maiProxy.ts'
+import { createManagedIdentityAuth } from './managedIdentity.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
-import { BoardStore, OperationError } from './store.ts'
+import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
+import { parseRequestTarget } from './requestTarget.ts'
+import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
+import { tenantScopeFor } from './tenant.ts'
+import { SHARED_WHITEBOARDS, Whiteboards } from './whiteboards.ts'
 
-function parsePort(): number {
-	const raw = process.env.MICO_PORT
+function parsePort(env: NodeJS.ProcessEnv): number {
+	const raw = env.MICO_PORT
 	if (!raw) return DAEMON_PORT
 	const port = Number(raw)
 	if (!Number.isInteger(port) || port < 1 || port > 65535) {
@@ -78,6 +90,37 @@ function readJson(req: IncomingMessage, allowRestore = false): Promise<unknown> 
 						? error
 						: new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'),
 				)
+			}
+		})
+		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
+		req.on('error', (error) => reject(error))
+	})
+}
+
+const MAX_AUTH_JSON_BYTES = 64 * 1024
+
+function readAuthJson(req: IncomingMessage): Promise<unknown> {
+	return new Promise((resolveBody, reject) => {
+		const chunks: Buffer[] = []
+		let size = 0
+		let tooLarge = false
+		req.on('data', (chunk: Buffer) => {
+			if (tooLarge) return
+			size += chunk.length
+			if (size > MAX_AUTH_JSON_BYTES) {
+				tooLarge = true
+				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 64 KB'))
+				return
+			}
+			chunks.push(chunk)
+		})
+		req.on('end', () => {
+			if (tooLarge) return
+			try {
+				const text = Buffer.concat(chunks).toString('utf8')
+				resolveBody(text.length === 0 ? undefined : JSON.parse(text))
+			} catch {
+				reject(new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'))
 			}
 		})
 		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
@@ -190,6 +233,7 @@ function knownPath(pathname: string): boolean {
 	if (segments.length === 2) {
 		return [
 			'live',
+			'runtime',
 			'state',
 			'board',
 			'operations',
@@ -197,10 +241,14 @@ function knownPath(pathname: string): boolean {
 			'canvases',
 			'images',
 			'active-canvas',
+			'auth',
+			'whiteboards',
 		].includes(segments[1])
 	}
 	if (segments.length === 3) {
 		return (
+			(segments[1] === 'auth' && ['session', 'logout'].includes(segments[2])) ||
+			(segments[1] === 'whiteboards' && segments[2] === 'join') ||
 			segments[1] === 'canvases' ||
 			segments[1] === 'images' ||
 			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
@@ -212,11 +260,13 @@ function knownPath(pathname: string): boolean {
 
 export interface Daemon {
 	server: ReturnType<typeof createServer>
-	store: BoardStore
+	runtimeConfig: RuntimeConfig
+	boards: BoardStore
+	store: TenantStore
 	aiSettings: AiSettingsStore
 	imageGeneration: ImageGenerationService
 	wss: WebSocketServer
-	close(): void
+	close(): Promise<void>
 }
 
 export function createDaemon(
@@ -226,42 +276,161 @@ export function createDaemon(
 		aiModel?: LanguageModel
 		settingsPath?: string
 		env?: NodeJS.ProcessEnv
-		createAiModel?: (settings: MagpieSettings) => LanguageModel
+		createAiModel?: (settings: ChatSettings) => LanguageModel
 		imageGenerator?: ImageGenerator
+		staticDir?: string
+		authJwksResolver?: JWTVerifyGetKey
+		createMaiUpstream?: MaiProxyOptions['createUpstream']
+		createMossUpstream?: MossRealtimeProxyOptions['createUpstream']
+		managedIdentityCredential?: TokenCredential
 	} = {},
 ): Daemon {
-	const port = options.port ?? parsePort()
-	const dbPath = options.dbPath ?? process.env.MICO_DB_PATH ?? '.mico/board.sqlite'
-	const store = new BoardStore(dbPath)
+	const env = options.env ?? process.env
+	const runtimeConfig = loadRuntimeConfig(env)
+	const port = options.port ?? parsePort(env)
+	const config = loadAiConfig(env)
+	const managedIdentityAuth =
+		runtimeConfig.aiEnabled && config.authMode === 'managed-identity'
+			? createManagedIdentityAuth(config.azureClientId as string, options.managedIdentityCredential)
+			: undefined
+	if (options.staticDir && !statSync(resolve(options.staticDir, 'index.html')).isFile()) {
+		throw new Error('MICO_STATIC_DIR must contain a built index.html')
+	}
+	const assets = options.staticDir
+		? serveStatic(options.staticDir, {
+				etag: true,
+				maxAge: 0,
+				setHeaders: (res) => {
+					res.setHeader('X-Content-Type-Options', 'nosniff')
+					if (runtimeConfig.auth.mode === 'entra')
+						res.setHeader('Cache-Control', 'private, no-store')
+				},
+			})
+		: undefined
+	const mai = runtimeConfig.aiEnabled
+		? createMaiProxy({
+				...config.mai,
+				allowedOrigin: runtimeConfig.publicOrigin,
+				isUpgradeAllowed: isVoiceUpgradeAllowed,
+				bearerProvider: managedIdentityAuth?.maiBearer,
+				createUpstream: options.createMaiUpstream,
+				onConnection: (req, client) => attachVoiceSession(req, client),
+			})
+		: undefined
+	const moss =
+		runtimeConfig.aiEnabled && runtimeConfig.mossEnabled
+			? createMossProxy({
+					enabled: true,
+					...config.moss,
+					allowedOrigin: runtimeConfig.publicOrigin,
+					isUpgradeAllowed: isVoiceUpgradeAllowed,
+					createUpstream: options.createMossUpstream,
+					onConnection: (req, client) => attachVoiceSession(req, client),
+				})
+			: undefined
+	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
+	const boards = new BoardStore(dbPath)
+	const store = boards.forTenant(LOCAL_TENANT)
 	const settingsPath = options.settingsPath
 	const aiSettings = new AiSettingsStore({
 		path: settingsPath ?? AI_SETTINGS_PATH,
-		env: options.env ?? process.env,
+		config,
 		persist: settingsPath !== undefined || options.aiModel === undefined,
+		aiEnabled: runtimeConfig.aiEnabled,
 	})
 	const aiModel = options.aiModel
-	const modelFactory = options.createAiModel ?? createMagpieModel
-	const wss = new WebSocketServer({ noServer: true })
-
-	const broadcast = (event: unknown): void => {
-		const payload = JSON.stringify(event)
-		for (const client of wss.clients) {
-			if (client.readyState === WebSocket.OPEN) client.send(payload)
+	const modelFactory =
+		options.createAiModel ??
+		((settings: ChatSettings) => createMagpieModel(settings, managedIdentityAuth?.chatBearer))
+	const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 })
+	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
+	const whiteboards = new Whiteboards(boards)
+	function attachVoiceSession(req: IncomingMessage, client: WebSocket) {
+		auth.attachSocket(req, client)
+		try {
+			const member = whiteboards.resolve(
+				req,
+				parseRequestTarget(req.url).url,
+				tenantScopeFor(runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined)
+					.tenantId,
+			)
+			if (member) whiteboards.attachVoice(member, client)
+		} catch {
+			client.close(1008, 'Whiteboard session expired')
 		}
 	}
-	const imageGeneration = new ImageGenerationService(store, broadcast, {
-		generator: options.imageGenerator,
-		env: options.env ?? process.env,
-	})
 
-	function isAllowedHost(host: string | undefined): boolean {
+	const socketTenant = new WeakMap<WebSocket, string>()
+
+	const broadcast = (event: unknown, tenantId: string): void => {
+		if (
+			tenantId === SHARED_WHITEBOARDS.tenantId &&
+			isRecord(event) &&
+			typeof event.canvasId === 'string'
+		) {
+			whiteboards.emit(event.canvasId, event)
+			return
+		}
+		const payload = JSON.stringify(event)
+		for (const client of wss.clients) {
+			if (client.readyState !== WebSocket.OPEN) continue
+			if ((socketTenant.get(client) ?? LOCAL_TENANT.tenantId) !== tenantId) continue
+			client.send(payload)
+		}
+	}
+	const imageGenerators = new Map<string, ImageGenerationService>()
+	const imageGenerationFor = (tenantId: string): ImageGenerationService => {
+		const existing = imageGenerators.get(tenantId)
+		if (existing) return existing
+		const created = new ImageGenerationService(
+			boards.forTenant({ tenantId }),
+			(event) => broadcast(event, tenantId),
+			{
+				generator: options.imageGenerator,
+				config: config.image,
+				env,
+			},
+		)
+		imageGenerators.set(tenantId, created)
+		return created
+	}
+	const imageGeneration = imageGenerationFor(LOCAL_TENANT.tenantId)
+
+	function isAllowedHost(host: string | undefined, pathname: string): boolean {
+		if (runtimeConfig.publicOrigin) {
+			const publicUrl = new URL(runtimeConfig.publicOrigin)
+			if (host?.toLowerCase() === publicUrl.host.toLowerCase()) return true
+			if (pathname === '/api/live' && host) {
+				const address = server.address()
+				const listeningPort = address && typeof address !== 'string' ? address.port : port
+				if (host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`)
+					return true
+			}
+			return false
+		}
 		const address = server.address()
 		const listeningPort = address && typeof address !== 'string' ? address.port : port
 		return host === `127.0.0.1:${listeningPort}` || host === `localhost:${listeningPort}`
 	}
 
-	const broadcastState = (state = store.getState()): void => {
-		broadcast({ type: 'snapshot', ...state })
+	function isAllowedOrigin(origin: string | undefined): boolean {
+		if (runtimeConfig.publicOrigin) return origin === runtimeConfig.publicOrigin
+		return origin !== undefined && ALLOWED_ORIGINS.has(origin)
+	}
+
+	function isVoiceUpgradeAllowed(req: IncomingMessage): boolean {
+		return (
+			isAllowedHost(req.headers.host, parseRequestTarget(req.url).pathname) &&
+			isAllowedOrigin(req.headers.origin)
+		)
+	}
+
+	function canonicalRequestOrigin(req: IncomingMessage): string | undefined {
+		return typeof req.headers.origin === 'string' ? req.headers.origin : undefined
+	}
+
+	function sendAiDisabled(res: ServerResponse, origin?: string): void {
+		sendError(res, 503, 'AI_DISABLED', 'AI features are disabled', origin)
 	}
 
 	const replyError = (res: ServerResponse, error: unknown, origin?: string): void => {
@@ -274,24 +443,26 @@ export function createDaemon(
 	}
 
 	const server = createServer(async (req, res) => {
-		if (!isAllowedHost(req.headers.host)) {
+		if (runtimeConfig.auth.mode === 'entra') res.setHeader('Cache-Control', 'private, no-store')
+		let pathname: string
+		let requestUrl: URL
+		try {
+			const target = parseRequestTarget(req.url)
+			requestUrl = target.url
+			pathname = target.pathname
+		} catch {
+			sendError(res, 400, 'INVALID_REQUEST', 'Invalid request URL')
+			return
+		}
+
+		if (!isAllowedHost(req.headers.host, pathname)) {
 			sendError(res, 403, 'FORBIDDEN_HOST', 'Host is not allowed')
 			return
 		}
 
-		const origin = req.headers.origin
-		if (origin && !ALLOWED_ORIGINS.has(origin)) {
+		const origin = canonicalRequestOrigin(req)
+		if (origin && !isAllowedOrigin(origin)) {
 			sendError(res, 403, 'FORBIDDEN_ORIGIN', 'Origin is not allowed', origin)
-			return
-		}
-
-		let pathname: string
-		let requestUrl: URL
-		try {
-			requestUrl = new URL(req.url ?? '/', 'http://127.0.0.1')
-			pathname = requestUrl.pathname
-		} catch {
-			sendError(res, 400, 'INVALID_REQUEST', 'Invalid request URL', origin)
 			return
 		}
 		const includePreviews = requestUrl.searchParams.get('previews') !== '0'
@@ -309,9 +480,9 @@ export function createDaemon(
 				sendError(res, 404, 'NOT_FOUND', 'Endpoint not found', origin)
 				return
 			}
-			if (origin && ALLOWED_ORIGINS.has(origin)) {
+			if (origin && isAllowedOrigin(origin)) {
 				res.setHeader('Access-Control-Allow-Origin', origin)
-				res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+				res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Mico-Whiteboard')
 				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 				res.setHeader('Vary', 'Origin')
 			}
@@ -321,10 +492,271 @@ export function createDaemon(
 		}
 
 		try {
+			if (isPath('api', 'runtime')) {
+				res.setHeader('Cache-Control', 'no-store')
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendJson(res, 200, publicRuntimeContract(runtimeConfig), origin)
+				return
+			}
+
+			if (isPath('api', 'auth', 'session')) {
+				res.setHeader('Cache-Control', 'no-store')
+				if (req.method === 'GET') {
+					if (runtimeConfig.auth.mode === 'entra') {
+						const session = auth.getSession(req)
+						if (!session) {
+							sendError(res, 401, 'UNAUTHENTICATED', 'Authentication required', origin)
+							return
+						}
+						sendJson(
+							res,
+							200,
+							{ user: { name: session.name, expiresAt: session.expiresAt } },
+							origin,
+						)
+						return
+					}
+					sendJson(res, 200, { user: null }, origin)
+					return
+				}
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'GET, POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				if (runtimeConfig.auth.mode !== 'entra') {
+					res.writeHead(204)
+					res.end()
+					return
+				}
+				if (!origin || !isAllowedOrigin(origin)) {
+					sendError(
+						res,
+						403,
+						'FORBIDDEN_ORIGIN',
+						'Origin is required and must match the public origin',
+						origin,
+					)
+					return
+				}
+				const contentType =
+					typeof req.headers['content-type'] === 'string'
+						? req.headers['content-type'].split(';', 1)[0].trim().toLowerCase()
+						: ''
+				if (contentType !== 'application/json') {
+					sendError(
+						res,
+						415,
+						'UNSUPPORTED_MEDIA_TYPE',
+						'Content-Type must be application/json',
+						origin,
+					)
+					return
+				}
+				const body = await readAuthJson(req)
+				if (
+					!isRecord(body) ||
+					Object.keys(body).length !== 1 ||
+					typeof body.id_token !== 'string'
+				) {
+					throw new OperationError(400, 'INVALID_REQUEST', 'id_token must be a string')
+				}
+				const user = await auth.verifyIdToken(body.id_token)
+				const token = auth.issueSession(user)
+				auth.setSessionCookie(res, token, user.expiresAt)
+				res.writeHead(204)
+				res.end()
+				return
+			}
+
+			if (isPath('api', 'auth', 'logout')) {
+				res.setHeader('Cache-Control', 'no-store')
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				if (
+					(runtimeConfig.auth.mode === 'entra' || runtimeConfig.publicOrigin) &&
+					(!origin || !isAllowedOrigin(origin))
+				) {
+					sendError(
+						res,
+						403,
+						'FORBIDDEN_ORIGIN',
+						'Origin is required and must match the public origin',
+						origin,
+					)
+					return
+				}
+				auth.revokeRequest(req)
+				auth.clearSessionCookie(res)
+				res.writeHead(204)
+				res.end()
+				return
+			}
+
+			if (
+				(runtimeConfig.auth.mode === 'entra' || runtimeConfig.publicOrigin) &&
+				(req.method === 'POST' ||
+					req.method === 'PUT' ||
+					req.method === 'PATCH' ||
+					req.method === 'DELETE') &&
+				(!origin || !isAllowedOrigin(origin))
+			) {
+				sendError(
+					res,
+					403,
+					'FORBIDDEN_ORIGIN',
+					'Origin is required and must match the canonical origin',
+					origin,
+				)
+				return
+			}
+
+			const session = runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined
+			if (
+				runtimeConfig.auth.mode === 'entra' &&
+				pathname !== '/api/live' &&
+				!session &&
+				(pathname.startsWith('/api/') || pathname.startsWith('/mai/') || pathname === '/moss')
+			) {
+				sendError(res, 401, 'UNAUTHENTICATED', 'Authentication required', origin)
+				return
+			}
+
+			const owner = tenantScopeFor(session).tenantId
+			const membership = whiteboards.resolve(req, requestUrl, owner)
+			if (membership) whiteboards.authorize(membership, req.method, pathname)
+			if (isPath('api', 'whiteboards')) {
+				const shared = boards.forTenant(SHARED_WHITEBOARDS)
+				if (req.method === 'GET') {
+					const list = await shared.getCanvasList(false)
+					sendJson(res, 200, { whiteboards: list.canvases }, origin)
+				} else if (req.method === 'POST') {
+					const body = await readJson(req)
+					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('Expected a whiteboard name')
+					const created = await shared.createCanvas(body.name, false)
+					sendJson(res, 201, { whiteboard: created.canvas }, origin)
+				} else {
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use GET or POST', origin)
+				}
+				return
+			}
+			if (isPath('api', 'whiteboards', 'join')) {
+				if (req.method !== 'POST') {
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use POST', origin)
+					return
+				}
+				sendJson(res, 200, await whiteboards.join(await readJson(req), owner), origin)
+				return
+			}
+			const tenantId = membership ? SHARED_WHITEBOARDS.tenantId : owner
+			const store = boards.forTenant({ tenantId })
+			const send = (event: unknown): void => broadcast(event, tenantId)
+			const readCanvasRequest = async (allowRestore = false) => {
+				const body = await readJson(req, allowRestore)
+				return membership ? whiteboards.scopeBody(membership, body) : body
+			}
+			let tenantImages: ImageGenerationService | undefined
+			const images = (): ImageGenerationService => {
+				tenantImages ??= imageGenerationFor(tenantId)
+				return tenantImages
+			}
+
+			if (
+				runtimeConfig.auth.mode === 'entra' &&
+				req.method === 'GET' &&
+				(pathname === '/login' || pathname === '/auth/callback')
+			) {
+				if (assets) {
+					res.writeHead(200, {
+						'Content-Type': 'text/html; charset=utf-8',
+						'Cache-Control': 'no-store',
+					})
+					res.end(readFileSync(resolve(options.staticDir as string, 'index.html')))
+					return
+				}
+				sendError(res, 404, 'NOT_FOUND', 'Built index.html is not configured', origin)
+				return
+			}
+
+			const publicAsset =
+				pathname.startsWith('/assets/') || pathname === '/favicon.ico' || pathname === '/logo.png'
+			if (
+				runtimeConfig.auth.mode === 'entra' &&
+				assets &&
+				(req.method === 'GET' || req.method === 'HEAD') &&
+				!pathname.startsWith('/api/') &&
+				!publicAsset
+			) {
+				if (!auth.getSession(req)) {
+					const sharedLink =
+						requestUrl.searchParams.has('whiteboardid') ||
+						requestUrl.searchParams.has('whiteboards')
+					res.writeHead(302, {
+						Location: `/login${sharedLink ? requestUrl.search : ''}`,
+						'Cache-Control': 'no-store',
+					})
+					res.end()
+					return
+				}
+			}
+
+			if (runtimeConfig.aiEnabled === false && pathname === MAI_CONFIG_PATH) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendAiDisabled(res, origin)
+				return
+			}
+			if (runtimeConfig.aiEnabled && assets && pathname === MAI_CONFIG_PATH) {
+				if (req.method !== 'GET') {
+					res.setHeader('Allow', 'GET')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				sendJson(
+					res,
+					200,
+					{
+						host: config.mai.host,
+						deployment: config.mai.deployment,
+						localPath: MAI_LOCAL_PATH,
+					},
+					origin,
+				)
+				return
+			}
+			if (assets && (req.method === 'GET' || req.method === 'HEAD') && segments[0] !== 'api') {
+				assets(req, res, (error) => {
+					if (res.headersSent) {
+						res.destroy()
+						return
+					}
+					res.removeHeader('Content-Length')
+					const status = error?.statusCode ?? 404
+					sendError(res, status, 'STATIC_FILE_ERROR', 'Could not serve file', origin)
+				})
+				return
+			}
+
 			if (isPath('api', 'live')) {
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				try {
+					await boards.waitUntilReady()
+				} catch {
+					sendError(res, 503, 'UNAVAILABLE', 'Storage initialization failed', origin)
 					return
 				}
 				sendJson(res, 200, { status: 'ok', version: manifest.version }, origin)
@@ -337,7 +769,14 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, store.getState(includePreviews), origin)
+				sendJson(
+					res,
+					200,
+					membership
+						? await whiteboards.snapshot(membership.whiteboardid)
+						: await store.getState(includePreviews),
+					origin,
+				)
 				return
 			}
 
@@ -347,7 +786,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, store.getBoard(), origin)
+				sendJson(res, 200, await store.getBoard(membership?.whiteboardid), origin)
 				return
 			}
 
@@ -388,7 +827,7 @@ export function createDaemon(
 						'Content-Type does not match image bytes',
 					)
 				}
-				const id = store.saveImage(bytes, detected)
+				const id = await store.saveImage(bytes, detected)
 				sendJson(res, 200, { id }, origin)
 				return
 			}
@@ -399,11 +838,11 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const asset = store.getImage(segments[2])
+				const asset = await store.getImage(segments[2])
 				if (!asset) {
 					throw new OperationError(404, 'NOT_FOUND', 'Image not found')
 				}
-				if (origin && ALLOWED_ORIGINS.has(origin)) {
+				if (origin && isAllowedOrigin(origin)) {
 					res.setHeader('Access-Control-Allow-Origin', origin)
 					res.setHeader('Vary', 'Origin')
 				}
@@ -420,7 +859,14 @@ export function createDaemon(
 
 			if (isPath('api', 'canvases')) {
 				if (req.method === 'GET') {
-					sendJson(res, 200, store.getCanvasList(includePreviews), origin)
+					sendJson(
+						res,
+						200,
+						membership
+							? await whiteboards.snapshot(membership.whiteboardid)
+							: await store.getCanvasList(includePreviews),
+						origin,
+					)
 					return
 				}
 				if (req.method !== 'POST') {
@@ -435,28 +881,28 @@ export function createDaemon(
 				if (record.activate !== undefined && typeof record.activate !== 'boolean') {
 					invalid('activate must be a boolean')
 				}
-				const created = store.createCanvas(record.name, record.activate === true)
-				broadcastState(created.state)
+				const created = await store.createCanvas(record.name, record.activate === true)
+				send({ type: 'snapshot', ...created.state })
 				sendJson(res, 200, { ...created.state, createdCanvasId: created.canvas.id }, origin)
 				return
 			}
 
 			if (canvasId !== null) {
 				if (req.method === 'GET') {
-					sendJson(res, 200, store.getCanvas(canvasId), origin)
+					sendJson(res, 200, await store.getCanvas(canvasId), origin)
 					return
 				}
 				if (req.method === 'PATCH') {
 					const body = await readJson(req)
 					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('invalid canvas request')
-					const state = store.renameCanvas(canvasId, body.name)
-					broadcastState(state)
+					const state = await store.renameCanvas(canvasId, body.name)
+					send({ type: 'snapshot', ...state })
 					sendJson(res, 200, state, origin)
 					return
 				}
 				if (req.method === 'DELETE') {
-					const state = store.deleteCanvas(canvasId)
-					broadcastState(state)
+					const state = await store.deleteCanvas(canvasId)
+					send({ type: 'snapshot', ...state })
 					sendJson(res, 200, state, origin)
 					return
 				}
@@ -474,40 +920,46 @@ export function createDaemon(
 				const body = await readJson(req)
 				if (!isRecord(body) || !exactKeys(body, ['id'])) invalid('invalid active canvas request')
 				if (typeof body.id !== 'string') invalid('canvas id must be a string')
-				const state = store.activateCanvas(body.id)
-				broadcastState(state)
+				const state = await store.activateCanvas(body.id)
+				send({ type: 'snapshot', ...state })
 				sendJson(res, 200, state, origin)
 				return
 			}
 
 			if (isPath('api', 'moss', 'session')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
+				if (!runtimeConfig.mossEnabled) {
+					sendError(res, 503, 'MOSS_DISABLED', 'MOSS Live is disabled', origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await createMossSession(
-					store,
-					broadcast,
-					await readJson(req),
-					imageGeneration,
-				)
+				const response = await createMossSession(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
 			}
 
 			if (isPath('api', 'moss', 'tool')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
+				if (!runtimeConfig.mossEnabled) {
+					sendError(res, 503, 'MOSS_DISABLED', 'MOSS Live is disabled', origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await executeMossTool(
-					store,
-					broadcast,
-					await readJson(req),
-					imageGeneration,
-				)
+				const response = await executeMossTool(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -528,25 +980,46 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'ai', 'models')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const models = await fetchAiModels(aiSettings.getEffective())
+				const models = await fetchAiModels(
+					aiSettings.getEffective(),
+					5000,
+					managedIdentityAuth?.chatBearer,
+				)
 				sendJson(res, 200, { models }, origin)
 				return
 			}
 
 			if (isPath('api', 'ai', 'chat')) {
+				if (!runtimeConfig.aiEnabled) {
+					sendAiDisabled(res, origin)
+					return
+				}
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const request = await parseAiChatRequest(await readJson(req))
-				const model = aiModel ?? modelFactory(aiSettings.getEffective())
-				await streamAiChat({ res, store, broadcast, model, request, origin, imageGeneration })
+				const request = await parseAiChatRequest(await readCanvasRequest())
+				const model = aiModel ? aiModel : modelFactory(aiSettings.getEffective())
+				await streamAiChat({
+					res,
+					store,
+					broadcast: send,
+					model,
+					request,
+					origin,
+					imageGeneration: images(),
+					lectureReasoning: config.lectureReasoning,
+				})
 				return
 			}
 
@@ -556,8 +1029,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const result = store.applyRequest(await readJson(req, true))
-				broadcast({
+				const result = await store.applyRequest(await readCanvasRequest(true))
+				send({
 					type: 'board',
 					canvasId: result.canvasId,
 					canvas: result.canvas,
@@ -585,35 +1058,116 @@ export function createDaemon(
 		sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 	})
 
-	wss.on('connection', (socket: WebSocket) => {
+	wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
 		socket.on('error', () => socket.terminate())
-		try {
-			socket.send(JSON.stringify({ type: 'snapshot', ...store.getState() }))
-		} catch (error) {
-			console.error(error)
-			socket.close(1011, 'Could not read the board')
+		const member = whiteboards.resolve(
+			req,
+			parseRequestTarget(req.url).url,
+			tenantScopeFor(runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined)
+				.tenantId,
+		)
+		if (member) {
+			socketTenant.set(socket, SHARED_WHITEBOARDS.tenantId)
+			whiteboards.attach(member, socket)
+			void whiteboards
+				.snapshot(member.whiteboardid)
+				.then((state) => {
+					if (socket.readyState === WebSocket.OPEN)
+						socket.send(JSON.stringify({ type: 'snapshot', ...state }))
+				})
+				.catch((error: unknown) => {
+					console.error(error)
+					socket.close(1011, 'Could not read the whiteboard')
+				})
+			return
 		}
+		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
+		boards
+			.forTenant(socketScope)
+			.getState()
+			.then((state) => socket.send(JSON.stringify({ type: 'snapshot', ...state })))
+			.catch((error: unknown) => {
+				console.error(error)
+				socket.close(1011, 'Could not read the board')
+			})
 	})
 
 	server.on('upgrade', (req, socket, head) => {
-		if (!isAllowedHost(req.headers.host)) {
+		let pathname: string
+		let sharedVoice = false
+		try {
+			pathname = parseRequestTarget(req.url).pathname
+			sharedVoice =
+				pathname === '/api/whiteboard-voice/mai/realtime' ||
+				pathname === '/api/whiteboard-voice/moss'
+			if (sharedVoice) pathname = pathname.slice('/api/whiteboard-voice'.length)
+		} catch {
+			socket.write('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')
+			socket.destroy()
+			return
+		}
+		if (!isAllowedHost(req.headers.host, pathname)) {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return
 		}
 
 		const origin = req.headers.origin
-		if (origin && !ALLOWED_ORIGINS.has(origin)) {
+		if (
+			(runtimeConfig.auth.mode === 'entra' || runtimeConfig.publicOrigin) &&
+			(!origin || !isAllowedOrigin(origin))
+		) {
+			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
+			socket.destroy()
+			return
+		}
+		if (origin && !isAllowedOrigin(origin)) {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
 			socket.destroy()
 			return
 		}
 
-		let pathname: string
-		try {
-			pathname = new URL(req.url ?? '/', 'http://127.0.0.1').pathname
-		} catch {
+		const session = runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined
+		if (runtimeConfig.auth.mode === 'entra' && !session) {
+			socket.write('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')
 			socket.destroy()
+			return
+		}
+		const tenantId = tenantScopeFor(session).tenantId
+		try {
+			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
+			if (sharedVoice && !member)
+				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
+			if (member) whiteboards.authorize(member, 'GET', pathname)
+			if (member) req.headers['x-mico-whiteboard'] = member.token
+		} catch {
+			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
+			socket.destroy()
+			return
+		}
+
+		if (!runtimeConfig.aiEnabled && (pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)) {
+			socket.write(
+				'HTTP/1.1 503 Service Unavailable\r\nX-Mico-Error: AI_DISABLED\r\nConnection: close\r\n\r\n',
+			)
+			socket.destroy()
+			return
+		}
+		if (runtimeConfig.aiEnabled && !runtimeConfig.mossEnabled && pathname === MOSS_LOCAL_PATH) {
+			socket.write(
+				'HTTP/1.1 503 Service Unavailable\r\nX-Mico-Error: MOSS_DISABLED\r\nConnection: close\r\n\r\n',
+			)
+			socket.destroy()
+			return
+		}
+		if (mai && pathname === MAI_LOCAL_PATH) {
+			req.url = pathname
+			mai.upgrade(req, socket, head)
+			return
+		}
+		if (moss && pathname === MOSS_LOCAL_PATH) {
+			req.url = pathname
+			moss.upgrade(req, socket, head)
 			return
 		}
 		if (pathname !== '/api/events') {
@@ -622,42 +1176,83 @@ export function createDaemon(
 			return
 		}
 
-		wss.handleUpgrade(req, socket, head, (socket) => {
-			wss.emit('connection', socket, req)
+		wss.handleUpgrade(req, socket, head, (client) => {
+			socketTenant.set(client, tenantId)
+			if (runtimeConfig.auth.mode === 'entra') auth.attachSocket(req, client)
+			wss.emit('connection', client, req)
 		})
 	})
 
+	let closing: Promise<void> | undefined
 	return {
 		server,
+		runtimeConfig,
+		boards,
 		store,
 		aiSettings,
 		imageGeneration,
 		wss,
-		close(): void {
-			imageGeneration.close()
-			wss.close()
-			store.close()
-			server.close()
+		close(): Promise<void> {
+			closing ??= new Promise<void>((resolveClose, rejectClose) => {
+				auth.close()
+				whiteboards.close()
+				const timeout = setTimeout(() => server.closeAllConnections(), 5000)
+				timeout.unref()
+				server.close(() => {
+					clearTimeout(timeout)
+					void boards.close().then(resolveClose, rejectClose)
+				})
+				for (const service of imageGenerators.values()) service.close()
+				mai?.close()
+				moss?.close()
+				for (const client of wss.clients) client.terminate()
+				wss.close()
+			})
+			return closing
 		},
 	}
 }
 
-export function startDaemon(): Daemon {
-	const port = parsePort()
-	const daemon = createDaemon({ port })
-	daemon.server.listen(port, '127.0.0.1', () => {
-		console.log(`MICO daemon listening on http://127.0.0.1:${port}`)
-	})
-	return daemon
+export async function startDaemon(): Promise<Daemon> {
+	const env = loadRuntimeEnv()
+	const port = parsePort(env)
+	const host = env.MICO_HOST || '127.0.0.1'
+	const daemon = createDaemon({ port, staticDir: env.MICO_STATIC_DIR, env })
+	try {
+		await daemon.boards.waitUntilReady()
+		await new Promise<void>((resolveListen, rejectListen) => {
+			daemon.server.once('error', rejectListen)
+			daemon.server.listen(port, host, () => {
+				daemon.server.off('error', rejectListen)
+				resolveListen()
+			})
+		})
+		console.log(`MICO daemon listening on http://${host}:${port}`)
+		return daemon
+	} catch (error) {
+		await daemon.close()
+		throw error
+	}
 }
 
 const entry = process.argv[1] ? resolve(process.argv[1]) : undefined
 if (entry === fileURLToPath(import.meta.url)) {
-	const daemon = startDaemon()
-	const shutdown = (): void => {
-		daemon.close()
-		process.exit(0)
+	try {
+		const daemon = await startDaemon()
+		const shutdown = (): void => {
+			console.log('MICO daemon stopping')
+			void daemon.close().then(
+				() => process.exit(0),
+				(error: unknown) => {
+					console.error('MICO daemon shutdown failed', error)
+					process.exit(1)
+				},
+			)
+		}
+		process.on('SIGINT', shutdown)
+		process.on('SIGTERM', shutdown)
+	} catch (error) {
+		console.error('MICO daemon startup failed', error)
+		process.exitCode = 1
 	}
-	process.on('SIGINT', shutdown)
-	process.on('SIGTERM', shutdown)
 }

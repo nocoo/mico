@@ -3,7 +3,7 @@ import { chmodSync, readFileSync } from 'node:fs'
 import { chmod, mkdir, open, rename, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { type MagpieSettings, magpieSettings } from './ai.ts'
+import { type AiConfig, type ChatSettings, loadAiConfig } from './aiConfig.ts'
 import { OperationError } from './store.ts'
 
 export const AI_SETTINGS_DIRECTORY = join(homedir(), '.config', 'mico')
@@ -13,12 +13,15 @@ export interface PublicAiSettings {
 	baseURL: string
 	model: string
 	hasApiKey: boolean
+	authMode: 'api-key' | 'managed-identity'
+	readOnly: boolean
 }
 
 export interface AiSettingsStoreOptions {
 	path?: string
-	env?: NodeJS.ProcessEnv
+	config?: AiConfig
 	persist?: boolean
+	aiEnabled?: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -63,20 +66,26 @@ function validateApiKey(value: unknown): string {
 }
 
 export class AiSettingsStore {
-	private settings: MagpieSettings
+	private settings: ChatSettings
+	private readonly readOnly: boolean
 	private readonly path: string
 	private readonly persist: boolean
+	private readonly aiEnabled: boolean
 	private loadError = false
 
 	constructor({
 		path = AI_SETTINGS_PATH,
-		env = process.env,
+		config = loadAiConfig(),
 		persist = true,
+		aiEnabled = true,
 	}: AiSettingsStoreOptions = {}) {
 		this.path = path
-		this.persist = persist
-		this.settings = magpieSettings(env)
-		if (!persist) return
+		this.aiEnabled = aiEnabled
+		this.readOnly =
+			config.runtime === 'deploy' || config.authMode === 'managed-identity' || !aiEnabled
+		this.persist = persist && !this.readOnly
+		this.settings = { ...config.chat }
+		if (!this.persist) return
 		try {
 			const text = readFileSync(path, 'utf8')
 			if (text.length === 0) {
@@ -99,7 +108,7 @@ export class AiSettingsStore {
 			const model = validateModel(saved.model)
 			const apiKey =
 				saved.apiKey === undefined ? this.settings.apiKey : validateApiKey(saved.apiKey)
-			this.settings = { baseURL, model, apiKey }
+			this.settings = { baseURL, model, apiKey, authMode: this.settings.authMode }
 			try {
 				chmodSync(path, 0o600)
 			} catch {}
@@ -116,10 +125,12 @@ export class AiSettingsStore {
 			baseURL: this.settings.baseURL,
 			model: this.settings.model,
 			hasApiKey: this.settings.apiKey.length > 0,
+			authMode: this.settings.authMode,
+			readOnly: this.readOnly,
 		}
 	}
 
-	getEffective(): MagpieSettings {
+	getEffective(): ChatSettings {
 		if (this.loadError) {
 			throw new OperationError(500, 'AI_SETTINGS_LOAD_FAILED', 'Could not load AI settings')
 		}
@@ -127,6 +138,15 @@ export class AiSettingsStore {
 	}
 
 	async update(body: unknown): Promise<PublicAiSettings> {
+		if (this.readOnly) {
+			throw new OperationError(
+				this.aiEnabled ? 403 : 503,
+				this.aiEnabled ? 'AI_SETTINGS_READ_ONLY' : 'AI_DISABLED',
+				this.aiEnabled
+					? 'AI settings are managed by the deployment environment'
+					: 'AI features are disabled',
+			)
+		}
 		if (!isRecord(body)) invalid('request must be an object')
 		const keys = Object.keys(body)
 		if (!keys.every((key) => key === 'baseURL' || key === 'model' || key === 'apiKey')) {
@@ -138,7 +158,7 @@ export class AiSettingsStore {
 		const baseURL = validateBaseURL(body.baseURL)
 		const model = validateModel(body.model)
 		const apiKey = body.apiKey === undefined ? this.settings.apiKey : validateApiKey(body.apiKey)
-		const next = { baseURL, model, apiKey }
+		const next = { baseURL, model, apiKey, authMode: this.settings.authMode }
 
 		if (this.persist) {
 			try {
@@ -153,10 +173,12 @@ export class AiSettingsStore {
 			baseURL: next.baseURL,
 			model: next.model,
 			hasApiKey: next.apiKey.length > 0,
+			authMode: next.authMode,
+			readOnly: this.readOnly,
 		}
 	}
 
-	private async persistSettings(settings: MagpieSettings): Promise<void> {
+	private async persistSettings(settings: ChatSettings): Promise<void> {
 		const directory = dirname(this.path)
 		await mkdir(directory, { recursive: true, mode: 0o700 })
 		await chmod(directory, 0o700)
@@ -164,7 +186,14 @@ export class AiSettingsStore {
 		let handle: Awaited<ReturnType<typeof open>> | undefined
 		try {
 			handle = await open(temporary, 'wx', 0o600)
-			await handle.writeFile(JSON.stringify(settings), 'utf8')
+			await handle.writeFile(
+				JSON.stringify({
+					baseURL: settings.baseURL,
+					model: settings.model,
+					apiKey: settings.apiKey,
+				}),
+				'utf8',
+			)
 			await handle.sync()
 			await handle.close()
 			handle = undefined

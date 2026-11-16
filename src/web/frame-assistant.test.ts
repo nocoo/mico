@@ -2,11 +2,13 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import {
 	appendCompletedTranscript,
+	assistantTabs,
 	buildAssistantRequestBody,
 	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
 	initialAssistantTab,
 	nextAssistantTab,
+	resolveAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
@@ -55,13 +57,25 @@ test('assistant tab keyboard protocol opens recordings and reaches endpoints', (
 	assert.equal(DEFAULT_ASSISTANT_TAB, 'audio')
 	assert.equal(initialAssistantTab(''), 'audio')
 	assert.equal(initialAssistantTab('Draw a diagram'), 'chat')
-	assert.equal(nextAssistantTab('chat', 'ArrowLeft'), 'settings')
-	assert.equal(nextAssistantTab('settings', 'ArrowRight'), 'chat')
-	assert.equal(nextAssistantTab('chat', 'ArrowRight'), 'audio')
-	assert.equal(nextAssistantTab('audio', 'ArrowRight'), 'live')
-	assert.equal(nextAssistantTab('live', 'ArrowRight'), 'settings')
-	assert.equal(nextAssistantTab('live', 'Home'), 'chat')
-	assert.equal(nextAssistantTab('chat', 'End'), 'settings')
+	assert.equal(nextAssistantTab('chat', 'ArrowLeft', true), 'settings')
+	assert.equal(nextAssistantTab('settings', 'ArrowRight', true), 'chat')
+	assert.equal(nextAssistantTab('chat', 'ArrowRight', true), 'audio')
+	assert.equal(nextAssistantTab('audio', 'ArrowRight', true), 'live')
+	assert.equal(nextAssistantTab('live', 'ArrowRight', true), 'settings')
+	assert.equal(nextAssistantTab('live', 'Home', true), 'chat')
+	assert.equal(nextAssistantTab('chat', 'End', true), 'settings')
+})
+
+test('deployment tabs and selection never enter hidden Settings', () => {
+	assert.deepEqual(assistantTabs(false), ['chat', 'audio', 'live'])
+	assert.deepEqual(assistantTabs(true), ['chat', 'audio', 'live', 'settings'])
+	assert.equal(resolveAssistantTab('settings', false), 'chat')
+	assert.equal(resolveAssistantTab('settings', true), 'settings')
+	assert.equal(nextAssistantTab('chat', 'End', false), 'live')
+	assert.equal(nextAssistantTab('live', 'ArrowRight', false), 'chat')
+	assert.equal(nextAssistantTab('chat', 'ArrowLeft', false), 'live')
+	assert.equal(nextAssistantTab('live', 'Home', false), 'chat')
+	assert.equal(nextAssistantTab('settings', 'ArrowRight', false), 'audio')
 })
 
 test('final live transcript remains readable across completed segments', () => {

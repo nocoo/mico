@@ -65,8 +65,11 @@ export interface ToolbarActions {
 }
 
 export interface AssistantState {
+	sharedWhiteboard?: boolean
 	connection: ConnectionState
 	open: boolean
+	mossEnabled: boolean
+	aiSettingsVisible: boolean
 	canvasId: string
 	selectedIds: string[]
 	initialPrompt: string

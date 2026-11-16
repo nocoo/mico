@@ -1,4 +1,5 @@
 import type { ServerResponse } from 'node:http'
+import { createAzure } from '@ai-sdk/azure'
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import {
 	convertToModelMessages,
@@ -10,39 +11,39 @@ import {
 	type UIMessage,
 } from 'ai'
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
+import type { ChatSettings } from './aiConfig.ts'
 import { buildInstructions } from './aiPrompt.ts'
 import { createCanvasTools } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
-import { type BoardStore, OperationError } from './store.ts'
+import { createRedirectSafeFetch } from './managedIdentity.ts'
+import { OperationError, type TenantStore } from './store.ts'
 
-export const MAGPIE_DEFAULT_BASE_URL = 'http://127.0.0.1:3425/v1'
-export const MAGPIE_DEFAULT_MODEL = 'auto/gpt-6-luna'
-export const MAGPIE_DEFAULT_API_KEY = 'magpie'
-
-export interface MagpieSettings {
-	baseURL: string
-	apiKey: string
-	model: string
-}
-
-export function magpieSettings(env: NodeJS.ProcessEnv = process.env): MagpieSettings {
-	return {
-		baseURL: (env.MAGPIE_BASE_URL?.trim() || MAGPIE_DEFAULT_BASE_URL).replace(/\/+$/, ''),
-		model: env.MAGPIE_MODEL?.trim() || MAGPIE_DEFAULT_MODEL,
-		apiKey: env.MAGPIE_API_KEY === undefined ? MAGPIE_DEFAULT_API_KEY : env.MAGPIE_API_KEY,
+export function createMagpieModel(
+	settings: ChatSettings,
+	chatBearer?: () => Promise<string>,
+): LanguageModel {
+	if (settings.authMode === 'managed-identity') {
+		if (!chatBearer) throw new Error('Managed identity token provider is required')
+		return createAzure({
+			baseURL: settings.baseURL,
+			tokenProvider: chatBearer,
+			fetch: createRedirectSafeFetch(),
+		}).responses(settings.model)
 	}
-}
-
-export function createMagpieModel(settings = magpieSettings()): LanguageModel {
 	const provider = createOpenAICompatible({
 		name: 'magpie',
 		baseURL: settings.baseURL,
-		...(settings.apiKey ? { apiKey: settings.apiKey } : {}),
+		apiKey: settings.apiKey || undefined,
+		fetch: createRedirectSafeFetch(),
 	})
 	return provider.chatModel(settings.model)
 }
 
-export async function fetchAiModels(settings: MagpieSettings, timeoutMs = 5000): Promise<string[]> {
+export async function fetchAiModels(
+	settings: ChatSettings,
+	timeoutMs = 5000,
+	chatBearer?: () => Promise<string>,
+): Promise<string[]> {
 	const unavailable = () =>
 		new OperationError(502, 'AI_MODELS_UNAVAILABLE', 'Could not fetch AI models')
 
@@ -59,12 +60,16 @@ export async function fetchAiModels(settings: MagpieSettings, timeoutMs = 5000):
 
 	let response: Response
 	try {
+		const headers = new Headers({ Accept: 'application/json' })
+		if (settings.authMode === 'managed-identity') {
+			if (!chatBearer) throw unavailable()
+			headers.set('Authorization', `Bearer ${await chatBearer()}`)
+		} else if (settings.apiKey) {
+			headers.set('Authorization', `Bearer ${settings.apiKey}`)
+		}
 		response = await fetch(modelsURL, {
 			method: 'GET',
-			headers: {
-				Accept: 'application/json',
-				...(settings.apiKey ? { Authorization: `Bearer ${settings.apiKey}` } : {}),
-			},
+			headers,
 			redirect: 'manual',
 			signal: AbortSignal.timeout(timeoutMs),
 		})
@@ -159,12 +164,13 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 
 interface AiResponseOptions {
 	res: ServerResponse
-	store: BoardStore
+	store: TenantStore
 	broadcast: (event: unknown) => void
 	model: LanguageModel
 	request: AiChatRequest
 	origin?: string
 	imageGeneration?: ImageGenerationService
+	lectureReasoning: string
 }
 
 export async function streamAiChat({
@@ -175,12 +181,13 @@ export async function streamAiChat({
 	request,
 	origin,
 	imageGeneration,
+	lectureReasoning,
 }: AiResponseOptions): Promise<void> {
-	const canvasId = request.canvasId ?? store.getActiveCanvasId()
-	const board = store.getBoard(canvasId)
+	const canvasId = request.canvasId ?? (await store.getActiveCanvasId())
+	const board = await store.getBoard(canvasId)
 	const abort = new AbortController()
 	res.on('close', () => abort.abort())
-	const headers: Record<string, string> = {}
+	const headers: Record<string, string> = { 'Cache-Control': 'private, no-store' }
 	if (origin && ALLOWED_ORIGINS.has(origin)) {
 		headers['Access-Control-Allow-Origin'] = origin
 		headers.Vary = 'Origin'
@@ -189,7 +196,7 @@ export async function streamAiChat({
 		model,
 		instructions: buildInstructions(board, request.selection, request.mode),
 		messages: await convertToModelMessages(request.messages),
-		tools: createCanvasTools({
+		tools: await createCanvasTools({
 			store,
 			broadcast,
 			selection: request.selection,
@@ -207,19 +214,23 @@ export async function streamAiChat({
 				: isStepCount(40),
 		maxRetries: 1,
 		abortSignal: abort.signal,
-		providerOptions: {
-			magpie: {
-				reasoningEffort:
-					request.mode === 'lecture' ? process.env.MAGPIE_LECTURE_REASONING || 'none' : 'low',
-			},
-		},
+		providerOptions:
+			typeof model === 'object' && model.provider === 'azure.responses'
+				? {
+						azure: {
+							reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low',
+							store: false,
+							strictJsonSchema: false,
+						},
+					}
+				: { magpie: { reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low' } },
 		prepareStep:
 			request.mode === 'lecture'
 				? undefined
 				: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
 		onError: () => {
 			console.error('AI request failed')
-			return 'The assistant could not reach the Magpie model gateway. Check the daemon log and AI settings.'
+			return 'The assistant could not reach the configured AI provider. Check the daemon log and AI settings.'
 		},
 	})
 	await result.pipeUIMessageStreamToResponse(res, { headers })

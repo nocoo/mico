@@ -4,15 +4,18 @@ import type { FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
 import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
+import { canvasFetch } from '../../whiteboards/client'
 import { deriveConnectionStatus } from '../connection'
 import type { AssistantActions, AssistantState } from '../contracts'
 import type { LessonSegment } from './LessonPanel'
 import {
 	type AssistantTab,
+	assistantTabs,
 	buildAssistantRequestBody,
 	deriveAssistantActivity,
 	initialAssistantTab,
 	nextAssistantTab,
+	resolveAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldRestoreAssistantTriggerFocus,
@@ -29,8 +32,18 @@ export type LiveProvider = 'moss' | 'mai'
 
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
-	const [tab, setTab] = useState<AssistantTab>(() => initialAssistantTab(state.initialPrompt))
-	const [liveProvider, setLiveProvider] = useState<LiveProvider>('moss')
+	const [selectedTab, setSelectedTab] = useState<AssistantTab>(() =>
+		initialAssistantTab(state.initialPrompt),
+	)
+	const tabs = assistantTabs(state.aiSettingsVisible)
+	const tab = resolveAssistantTab(selectedTab, state.aiSettingsVisible)
+	const setTab = useCallback(
+		(next: AssistantTab) => {
+			setSelectedTab(resolveAssistantTab(next, state.aiSettingsVisible))
+		},
+		[state.aiSettingsVisible],
+	)
+	const [liveProvider, setLiveProvider] = useState<LiveProvider>(state.mossEnabled ? 'moss' : 'mai')
 	const [draft, setDraft] = useState('')
 	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
@@ -56,7 +69,10 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const canvasIdRef = useRef(state.canvasId)
 	canvasIdRef.current = state.canvasId
 
-	const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chat' }), [])
+	const transport = useMemo(
+		() => new DefaultChatTransport({ api: '/api/ai/chat', fetch: canvasFetch }),
+		[],
+	)
 	const { messages, setMessages, sendMessage, status, error, stop, clearError } = useChat({
 		transport,
 		throttle: 40,
@@ -305,17 +321,29 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		(event: KeyboardEvent<HTMLDivElement>) => {
 			if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
 			event.preventDefault()
-			const next = nextAssistantTab(tab, event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End')
+			const next = nextAssistantTab(
+				tab,
+				event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End',
+				state.aiSettingsVisible,
+			)
 			keyboardTabSelection.current = next !== tab && next === 'chat'
 			setTab(next)
 			document.getElementById(`ai-tab-${next}`)?.focus()
 		},
-		[tab],
+		[tab, setTab, state.aiSettingsVisible],
 	)
 
-	const selectLiveProvider = useCallback((value: string) => {
-		if (value === 'moss' || value === 'mai') setLiveProvider(value)
-	}, [])
+	const selectLiveProvider = useCallback(
+		(value: string) => {
+			if (value === 'mai') setLiveProvider('mai')
+			if (value === 'moss' && state.mossEnabled) setLiveProvider('moss')
+		},
+		[state.mossEnabled],
+	)
+
+	useEffect(() => {
+		if (!state.mossEnabled) setLiveProvider('mai')
+	}, [state.mossEnabled])
 
 	const continueChat = useCallback(() => {
 		if (requestLock.current) return
@@ -337,6 +365,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	}, [sendMessage, state.selectedIds, state.canvasId, clearError, requestSummary])
 
 	return {
+		tabs,
 		tab,
 		setTab,
 		focusTab,
