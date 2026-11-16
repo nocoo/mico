@@ -1,5 +1,5 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { ISOLATED_ORIGIN, resetBoard } from './support'
+import { flexContentWidth, ISOLATED_ORIGIN, resetBoard } from './support'
 
 interface Box {
 	x: number
@@ -41,13 +41,17 @@ test('desktop frame follows reference geometry while preserving Mico identity', 
 	await openApp(page)
 	await expect(page.locator('.frame-empty')).toBeVisible()
 
-	expectBox(await getBox(page.locator('.identity-panel')), { x: 14, y: 14, width: 148, height: 56 })
+	const identity = await getBox(page.locator('.identity-panel'))
+	expect(identity.x).toBe(14)
+	expect(identity.y).toBe(14)
+	expect(identity.height).toBe(56)
+	expect(identity.width).toBeCloseTo(await flexContentWidth(page.locator('.identity-panel')), 1)
 	expectBox(await getBox(page.locator('.brand-mark')), { x: 24, y: 24, width: 36, height: 36 })
 	await expect(page.locator('.brand-mark-icon')).toHaveAttribute('src', '/logo.png')
 	await expect(page.locator('.brand strong')).toHaveText('mico')
 	const meeting = page.locator('.meeting-frame')
 	const meetingBox = await getBox(meeting)
-	expect(meetingBox.x).toBe(172)
+	expect(meetingBox.x).toBeCloseTo(identity.x + identity.width + 10, 1)
 	expect(meetingBox.y).toBe(14)
 	expect(meetingBox.height).toBe(56)
 	await expect(meeting).toContainText('Demo · no meeting connected')
@@ -137,7 +141,14 @@ test('mobile frame opens with a scrollable toolbar even when the assistant is op
 	await page.setViewportSize({ width: 390, height: 844 })
 	await openApp(page)
 	await expect(page.locator('#ai-panel')).toHaveAttribute('aria-hidden', 'true')
-	expectBox(await getBox(page.locator('.identity-panel')), { x: 14, y: 14, width: 100, height: 56 })
+	const mobileIdentity = await getBox(page.locator('.identity-panel'))
+	expect(mobileIdentity.x).toBe(14)
+	expect(mobileIdentity.y).toBe(14)
+	expect(mobileIdentity.height).toBe(56)
+	expect(mobileIdentity.width).toBeCloseTo(
+		await flexContentWidth(page.locator('.identity-panel')),
+		1,
+	)
 	await page.getByRole('button', { name: 'Open AI assistant' }).click()
 	await expect(page.locator('#ai-panel')).toHaveAttribute('aria-hidden', 'false')
 	const box = await getBox(page.locator('.toolbar-module'))

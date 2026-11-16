@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import packageJson from '../../package.json' with { type: 'json' }
-import { board, ISOLATED_ORIGIN, resetBoard } from './support'
+import { board, flexContentWidth, ISOLATED_ORIGIN, resetBoard } from './support'
 
 function runtime(
 	options: {
@@ -119,7 +119,11 @@ test('debug entry is adjacent, focused, exclusive with Canvases, and dismisses o
 	const debug = page.getByRole('button', { name: 'Debug', exact: true })
 	await expect(debug).toHaveAttribute('aria-controls', 'debug-panel')
 	await expect(debug).toHaveAttribute('title', 'Debug')
-	await expect(identity).toHaveCSS('width', '192px')
+	const identityBox = await identity.boundingBox()
+	if (!identityBox) throw new Error('Expected the identity pill to be measurable')
+	expect(identityBox.x).toBe(14)
+	expect(identityBox.height).toBe(56)
+	expect(identityBox.width).toBeCloseTo(await flexContentWidth(identity), 1)
 	await expect(debug).toHaveCSS('width', '34px')
 	await expect(debug).toHaveText('')
 	await expect(debug.locator('.debug-avatar svg')).toBeVisible()
@@ -179,12 +183,19 @@ test('Debug reports configured AI without claiming provider connectivity', async
 	await expect(panel.getByText('Manual drawing is available', { exact: true })).toHaveCount(0)
 })
 
-test('default local identity geometry stays unchanged without a Debug entry', async ({ page }) => {
+test('default local identity keeps the content-sized pill without a Debug entry', async ({
+	page,
+}) => {
 	await mockRuntime(page, runtime({ ephemeral: false, aiEnabled: true }))
 	await page.goto('/')
 	await expect(page.locator('.app')).toBeVisible()
 	await expect(page.getByRole('button', { name: 'Debug', exact: true })).toHaveCount(0)
-	await expect(page.locator('.identity-panel')).toHaveCSS('width', '148px')
+	const identity = page.locator('.identity-panel')
+	const identityBox = await identity.boundingBox()
+	if (!identityBox) throw new Error('Expected the identity pill to be measurable')
+	expect(identityBox.x).toBe(14)
+	expect(identityBox.height).toBe(56)
+	expect(identityBox.width).toBeCloseTo(await flexContentWidth(identity), 1)
 })
 
 test('debug panel fits a narrow viewport and visually shares the canvas glass tokens', async ({
@@ -195,7 +206,10 @@ test('debug panel fits a narrow viewport and visually shares the canvas glass to
 	await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' })
 
 	const debug = page.getByRole('button', { name: 'Debug', exact: true })
-	await expect(page.locator('.identity-panel')).toHaveCSS('width', '160px')
+	const identity = page.locator('.identity-panel')
+	const identityBox = await identity.boundingBox()
+	if (!identityBox) throw new Error('Expected the identity pill to be measurable')
+	expect(identityBox.width).toBeCloseTo(await flexContentWidth(identity), 1)
 	await debug.click()
 	const panel = page.getByRole('dialog', { name: 'Debug' })
 	await expect(panel).toBeVisible()
