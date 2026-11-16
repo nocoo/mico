@@ -862,6 +862,8 @@ test('frames connect only to frames through the canvas and the API', async ({ pa
 	const leftBox = await pillBox(page, 'link-left')
 	const rightInside = await worldPoint(page, 1200, 420)
 	await page.mouse.move(leftBox.x + leftBox.width / 2, leftBox.y + leftBox.height / 2)
+	await expect(page.locator('[data-snap-target="link-left"] .snap-anchor')).toHaveCount(12)
+	await expect(page.locator('[data-snap-target="a"]')).toHaveCount(0)
 	await page.mouse.down()
 	await page.mouse.move(rightInside.x, rightInside.y, { steps: 8 })
 	await expect(page.locator('[data-snap-target="link-right"]')).toHaveCount(1)
@@ -1235,6 +1237,92 @@ test('freehand brush draws a persisted tapered path and API sketches render', as
 	})
 	expect(apiPath.ok()).toBe(true)
 	await expect(page.locator('[data-shape-id="api-figure"] path')).toHaveCount(1)
+})
+
+test('connector hover reveals source anchors and clears on leave, pan, tool change and Escape', async ({
+	page,
+	request,
+}) => {
+	const initial = await board(request)
+	await page.getByRole('button', { name: 'Connector', exact: true }).click()
+	const source = await targetPoint(page, 'a', 'right')
+	const anchors = page.locator('[data-snap-target="a"] .snap-anchor')
+	await page.mouse.move(source.x, source.y)
+	await expect(anchors).toHaveCount(12)
+	await expect(page.locator('[data-snap-target="a"] .snap-anchor.is-active')).toHaveAttribute(
+		'data-anchor-index',
+		'3',
+	)
+	await page.mouse.move(source.x + 13, source.y)
+	await expect(anchors).toHaveCount(12)
+	await page.mouse.move(source.x + 26, source.y)
+	await expect(anchors).toHaveCount(0)
+	await page.mouse.move(source.x, source.y)
+	await expect(anchors).toHaveCount(12)
+	await page.getByRole('button', { name: 'Connector', exact: true }).hover()
+	await expect(anchors).toHaveCount(0)
+	await page.mouse.move(source.x - 1, source.y)
+	await expect(anchors).toHaveCount(12)
+	await page.keyboard.down('Space')
+	await expect(anchors).toHaveCount(0)
+	await page.keyboard.up('Space')
+	await page.mouse.move(source.x, source.y)
+	await expect(anchors).toHaveCount(12)
+	await page.getByRole('button', { name: 'Select', exact: true }).click()
+	await expect(anchors).toHaveCount(0)
+	await page.getByRole('button', { name: 'Connector', exact: true }).click()
+	await page.mouse.move(source.x, source.y)
+	await expect(anchors).toHaveCount(12)
+	await page.keyboard.press('Escape')
+	await expect(anchors).toHaveCount(0)
+	expect(await board(request)).toEqual(initial)
+})
+
+test('connector hover tracks zoom and removes deleted source anchors', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Zoom in', exact: true }).click()
+	await page.getByRole('button', { name: 'Connector', exact: true }).click()
+	const source = await targetPoint(page, 'a', 'right')
+	await page.mouse.move(source.x + 13, source.y)
+	await expect(page.locator('[data-snap-target="a"] .snap-anchor')).toHaveCount(12)
+	await page.mouse.move(source.x + 26, source.y)
+	await expect(page.locator('[data-snap-target="a"]')).toHaveCount(0)
+	await page.mouse.move(source.x, source.y)
+	await expect(page.locator('[data-snap-target="a"] .snap-anchor')).toHaveCount(12)
+	const current = await board(request)
+	const response = await request.post('/api/operations', {
+		data: { expectedRevision: current.revision, operations: [{ type: 'delete', id: 'a' }] },
+	})
+	expect(response.ok()).toBe(true)
+	await expect(page.locator('[data-shape-id="a"]')).toHaveCount(0)
+	await expect(page.locator('[data-snap-target="a"]')).toHaveCount(0)
+})
+
+test('connector hover starts a drag outside the source using the highlighted anchor', async ({
+	page,
+	request,
+}) => {
+	await page.getByRole('button', { name: 'Connector', exact: true }).click()
+	const source = await targetPoint(page, 'a', 'right')
+	await page.mouse.move(source.x + 13, source.y)
+	const sourceAnchor = page.locator('[data-snap-target="a"] .snap-anchor.is-active')
+	await expect(sourceAnchor).toBeVisible()
+	const fromAnchor = Number(await sourceAnchor.getAttribute('data-anchor-index'))
+	const destination = await targetPoint(page, 'c')
+	await page.mouse.down()
+	await page.mouse.move(destination.x, destination.y, { steps: 8 })
+	const targetAnchor = page.locator('[data-snap-target="c"] .snap-anchor.is-active')
+	await expect(targetAnchor).toBeVisible()
+	const toAnchor = Number(await targetAnchor.getAttribute('data-anchor-index'))
+	await page.mouse.up()
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(6)
+	expect(
+		(await board(request)).shapes.find(
+			(shape) => shape.type === 'connector' && shape.id !== 'edge',
+		),
+	).toMatchObject({ from: 'a', to: 'c', fromAnchor, toAnchor })
 })
 
 test('drag creates a connector with exactly the highlighted target anchor', async ({
