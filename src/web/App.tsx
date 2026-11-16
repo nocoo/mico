@@ -244,6 +244,10 @@ export default function App({
 	const selectedId = selectedIds.length === 1 ? selectedIds[0] : null
 	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
+	const creationRef = useRef<CanvasShape | null>(null)
+	const [pendingCreations, setPendingCreations] = useState<Map<string, CanvasShape>>(
+		() => new Map(),
+	)
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
 	>(() => new Map())
@@ -325,6 +329,7 @@ export default function App({
 				setMarquee(null)
 				setGuides([])
 				setDragPreviews(new Map())
+				creationRef.current = null
 				setCreation(null)
 				setBrushPoints(null)
 				if (!readOnly) fitShapesInCanvas(next.shapes)
@@ -452,10 +457,20 @@ export default function App({
 			shape.type === 'frame'
 				? null
 				: membershipFor(getCurrentBoard().shapes, shapeBounds(shape), shape.id)
+		const created = frameId ? { ...shape, frameId } : shape
+		setPendingCreations((current) => {
+			const next = new Map(current)
+			next.set(created.id, created)
+			return next
+		})
 		selectOnly(shape.id)
-		void postOperations([
-			{ type: 'create', shape: frameId ? { ...shape, frameId } : shape },
-		]).finally(() => {
+		void postOperations([{ type: 'create', shape: created }]).finally(() => {
+			setPendingCreations((current) => {
+				if (!current.has(created.id)) return current
+				const next = new Map(current)
+				next.delete(created.id)
+				return next
+			})
 			if (!suppressEntry || !canvasId) return
 			const ids = suppressedEntryIdsRef.current.get(canvasId)
 			ids?.delete(shape.id)
@@ -541,6 +556,8 @@ export default function App({
 	const cancelInteraction = useCallback(() => {
 		const interaction = interactionRef.current
 		interactionRef.current = null
+		creationRef.current = null
+		creationRef.current = null
 		setCreation(null)
 		setIsPanning(false)
 		setGuides([])
@@ -726,7 +743,7 @@ export default function App({
 			startWorld: world,
 			startViewport: { x: 0, y: 0 },
 		}
-		setCreation({
+		const initialCreation: CanvasShape = {
 			id: randomId(),
 			type: tool as 'rectangle' | 'ellipse' | 'line',
 			x: world.x,
@@ -739,7 +756,9 @@ export default function App({
 					: tool === 'ellipse'
 						? JELLY_COLORS.peach
 						: CANDY_COLORS.blue,
-		})
+		}
+		creationRef.current = initialCreation
+		setCreation(initialCreation)
 	}
 
 	const onCanvasPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
@@ -792,24 +811,24 @@ export default function App({
 			return
 		}
 
-		if (interaction.mode === 'create' && creation) {
-			if (creation.type === 'line') {
-				setCreation({
-					...creation,
-					w: world.x - interaction.startWorld.x,
-					h: world.y - interaction.startWorld.y,
-				})
-			} else {
-				const x = Math.min(interaction.startWorld.x, world.x)
-				const y = Math.min(interaction.startWorld.y, world.y)
-				setCreation({
-					...creation,
-					x,
-					y,
-					w: Math.abs(world.x - interaction.startWorld.x),
-					h: Math.abs(world.y - interaction.startWorld.y),
-				})
-			}
+		const activeCreation = creationRef.current
+		if (interaction.mode === 'create' && activeCreation) {
+			const nextCreation: CanvasShape =
+				activeCreation.type === 'line'
+					? {
+							...activeCreation,
+							w: world.x - interaction.startWorld.x,
+							h: world.y - interaction.startWorld.y,
+						}
+					: {
+							...activeCreation,
+							x: Math.min(interaction.startWorld.x, world.x),
+							y: Math.min(interaction.startWorld.y, world.y),
+							w: Math.abs(world.x - interaction.startWorld.x),
+							h: Math.abs(world.y - interaction.startWorld.y),
+						}
+			creationRef.current = nextCreation
+			setCreation(nextCreation)
 			return
 		}
 
@@ -878,13 +897,29 @@ export default function App({
 		}
 		setBrushPoints(null)
 
-		if (interaction.mode === 'create' && creation) {
-			if (Math.abs(creation.w) >= 8 || Math.abs(creation.h) >= 8) {
+		const activeCreation = creationRef.current
+		if (interaction.mode === 'create' && activeCreation) {
+			const world = clientToWorld(event.clientX, event.clientY)
+			const finalized: CanvasShape =
+				activeCreation.type === 'line'
+					? {
+							...activeCreation,
+							w: world.x - interaction.startWorld.x,
+							h: world.y - interaction.startWorld.y,
+						}
+					: {
+							...activeCreation,
+							x: Math.min(interaction.startWorld.x, world.x),
+							y: Math.min(interaction.startWorld.y, world.y),
+							w: Math.abs(world.x - interaction.startWorld.x),
+							h: Math.abs(world.y - interaction.startWorld.y),
+						}
+			if (Math.abs(finalized.w) >= 8 || Math.abs(finalized.h) >= 8) {
 				const shape =
-					creation.type === 'line'
-						? creation
-						: { ...creation, w: Math.max(8, creation.w), h: Math.max(8, creation.h) }
-				createShape(shape, creation.type !== 'line')
+					finalized.type === 'line'
+						? finalized
+						: { ...finalized, w: Math.max(8, finalized.w), h: Math.max(8, finalized.h) }
+				createShape(shape, finalized.type !== 'line')
 			}
 		}
 
@@ -945,6 +980,7 @@ export default function App({
 			}
 		}
 
+		creationRef.current = null
 		setCreation(null)
 		setIsPanning(false)
 		setGuides([])
@@ -1405,6 +1441,11 @@ export default function App({
 					.filter((shape): shape is CanvasShape => shape.type === 'frame')
 					.map((shape) => (
 						<FrameLabel key={`label:${shape.id}`} shape={shape} {...shapeViewProps} />
+					))}
+				{[...pendingCreations.values()]
+					.filter((shape) => !visibleShapes.some((existing) => existing.id === shape.id))
+					.map((shape) => (
+						<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
 					))}
 				{creation && <ShapeView shape={creation} {...shapeViewProps} />}
 				{brushPoints && (

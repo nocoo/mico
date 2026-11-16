@@ -164,10 +164,6 @@ export function useCanvasSessionViewModel({
 			expectedRevision?: number,
 			canRebase?: (board: Board) => boolean,
 		) => {
-			if (whiteboard && !whiteboard.member.sharer) {
-				announceRef.current('Participants can only pan and zoom.')
-				return Promise.resolve(false)
-			}
 			const targetCanvasId = activeCanvasIdRef.current
 			setPendingOperations((count) => count + 1)
 			const result = operationQueue.current.then(async () => {
@@ -271,7 +267,7 @@ export function useCanvasSessionViewModel({
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[applyBoard, applySnapshot, cacheBoard, completeReplay, whiteboard],
+		[applyBoard, applySnapshot, cacheBoard, completeReplay],
 	)
 
 	const postOperations = useCallback(
