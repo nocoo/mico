@@ -1,4 +1,5 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
+import { canvasFetch as fetch } from '../../whiteboards/client.ts'
 
 export type AiAuthMode = 'api-key' | 'managed-identity'
 

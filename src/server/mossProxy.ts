@@ -20,6 +20,7 @@ export interface MossRealtimeProxyOptions {
 	url: string
 	apiKey: string
 	allowedOrigin?: string
+	isUpgradeAllowed?: (req: IncomingMessage) => boolean
 	onConnection?: (req: IncomingMessage, client: WebSocket) => void
 	createUpstream?: MossUpstreamFactory
 	maxPayload?: number
@@ -145,7 +146,11 @@ export function createMossProxy(options: MossRealtimeProxyOptions): {
 			return
 		}
 		if (pathname !== MOSS_LOCAL_PATH) return
-		if (!isMossUpgradeAllowed(req.headers.origin, req.headers.host, options.allowedOrigin)) {
+		if (
+			!(options.isUpgradeAllowed
+				? options.isUpgradeAllowed(req)
+				: isMossUpgradeAllowed(req.headers.origin, req.headers.host, options.allowedOrigin))
+		) {
 			socket.destroy()
 			return
 		}

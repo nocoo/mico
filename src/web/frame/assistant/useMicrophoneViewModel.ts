@@ -5,6 +5,7 @@ import { openMicrophone } from '../../stt/microphone.ts'
 import { dedupeHypothesis, formatClock } from '../../stt/transcript.ts'
 import { SilenceSegmenter } from '../../stt/vad.ts'
 import { drawWave } from '../../waveform.ts'
+import { canvasFetch as fetch } from '../../whiteboards/client.ts'
 import type { LessonSegment } from './LessonPanel'
 import { appendCompletedTranscript } from './protocol.ts'
 

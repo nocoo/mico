@@ -1,3 +1,4 @@
+import { canvasFetch as fetch, whiteboardUrl } from '../whiteboards/client.ts'
 import { openMicrophone } from './microphone.ts'
 import { MossLivePlayback } from './mossPlayback.ts'
 
@@ -297,7 +298,7 @@ export class MossLiveSession {
 	private openSocket(generation: number): void {
 		const protocol = globalThis.location?.protocol === 'https:' ? 'wss:' : 'ws:'
 		const host = globalThis.location?.host || 'localhost'
-		const socket = new WebSocket(`${protocol}//${host}/moss`)
+		const socket = new WebSocket(whiteboardUrl(`${protocol}//${host}/moss`))
 		socket.binaryType = 'arraybuffer'
 		this.socket = socket
 		this.connectTimer = setTimeout(() => {
