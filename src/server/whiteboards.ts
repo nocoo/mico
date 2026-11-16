@@ -82,7 +82,12 @@ export class Whiteboards {
 			(member) => member.owner === owner && member.clientId === input.clientId,
 		)
 		if (existing) {
-			if (existing.whiteboardid !== input.whiteboardid)
+			// Shared whiteboard identity is immutable; only presence rooms may update a profile in place.
+			if (
+				existing.whiteboardid !== input.whiteboardid ||
+				(existing.board &&
+					(existing.member.sharer !== input.sharer || existing.member.username !== input.username))
+			)
 				throw new OperationError(
 					409,
 					'SESSION_CONFLICT',

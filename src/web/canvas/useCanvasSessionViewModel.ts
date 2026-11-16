@@ -17,6 +17,7 @@ WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
 interface CanvasSessionViewModelProps {
 	whiteboard?: WhiteboardSession
+	readOnly?: boolean
 	onPresence?: (event: PresenceEvent) => void
 	onSocketReady?: () => void
 	announce: (message: string) => void
@@ -36,6 +37,7 @@ interface PendingReplay {
 
 export function useCanvasSessionViewModel({
 	whiteboard,
+	readOnly = false,
 	onPresence,
 	onSocketReady,
 	announce,
@@ -164,7 +166,7 @@ export function useCanvasSessionViewModel({
 			expectedRevision?: number,
 			canRebase?: (board: Board) => boolean,
 		) => {
-			if (whiteboard && !whiteboard.member.sharer) {
+			if (readOnly) {
 				announceRef.current('Participants can only pan and zoom.')
 				return Promise.resolve(false)
 			}
@@ -271,7 +273,7 @@ export function useCanvasSessionViewModel({
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[applyBoard, applySnapshot, cacheBoard, completeReplay, whiteboard],
+		[applyBoard, applySnapshot, cacheBoard, completeReplay, readOnly],
 	)
 
 	const postOperations = useCallback(

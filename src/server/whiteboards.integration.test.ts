@@ -309,6 +309,17 @@ test('presence, cursors and presenter view stay in one room, and presenter depar
 		const clientId = randomUUID()
 		const host = await joinRoom(id, true, 'Jason Huang', clientId)
 		assert.deepEqual(await joinRoom(id, true, 'Jason Huang', clientId), host)
+		for (const patch of [{ username: 'Renamed' }, { sharer: false }]) {
+			const changed = await request('/api/whiteboards/join', 'POST', {
+				whiteboardid: id,
+				username: 'Jason Huang',
+				sharer: true,
+				clientId,
+				...patch,
+			})
+			assert.equal(changed.status, 409, JSON.stringify(patch))
+			assert.equal((await changed.json()).error, 'SESSION_CONFLICT')
+		}
 		const duplicate = await request('/api/whiteboards/join', 'POST', {
 			whiteboardid: id,
 			username: 'Second',

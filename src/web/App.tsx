@@ -371,6 +371,7 @@ export default function App({
 		onBoardTransition,
 		onBoardAccepted,
 		whiteboard: whiteboard ?? demoSession,
+		readOnly,
 		onPresence: presence.onEvent,
 		onSocketReady: presence.queueView,
 	})
