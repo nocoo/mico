@@ -1,3 +1,5 @@
+import { whiteboardUrl } from '../whiteboards/client.ts'
+
 const B64_CHUNK = 0x8000
 
 export type MaiEvent = Record<string, unknown>
@@ -96,7 +98,9 @@ export class MaiClient {
 
 	open(): Promise<void> {
 		const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-		const ws = new WebSocket(`${protocol}//${location.host}${this.path}?intent=transcription`)
+		const ws = new WebSocket(
+			whiteboardUrl(`${protocol}//${location.host}${this.path}?intent=transcription`),
+		)
 		this.ws = ws
 
 		return new Promise((resolve, reject) => {

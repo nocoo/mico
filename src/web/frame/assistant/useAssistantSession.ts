@@ -4,6 +4,7 @@ import type { FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
 import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
+import { canvasFetch } from '../../whiteboards/client'
 import { deriveConnectionStatus } from '../connection'
 import type { AssistantActions, AssistantState } from '../contracts'
 import type { LessonSegment } from './LessonPanel'
@@ -68,7 +69,10 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const canvasIdRef = useRef(state.canvasId)
 	canvasIdRef.current = state.canvasId
 
-	const transport = useMemo(() => new DefaultChatTransport({ api: '/api/ai/chat' }), [])
+	const transport = useMemo(
+		() => new DefaultChatTransport({ api: '/api/ai/chat', fetch: canvasFetch }),
+		[],
+	)
 	const { messages, setMessages, sendMessage, status, error, stop, clearError } = useChat({
 		transport,
 		throttle: 40,

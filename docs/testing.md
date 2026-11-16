@@ -129,7 +129,9 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 
 ## Tenancy
 
-`src/server/tenant.test.ts` covers the resolver (anonymous requests map to `local`, each identity to its own stable opaque tenant) and storage isolation: separate canvas lists, defaults, active canvas, `stateVersion` and image assets, plus not-found answers for another tenant's canvas id and image id. `src/server/auth.integration.test.ts` proves a signed-in user's workspace stays invisible to the `local` tenant through the real HTTP API. Tenants are not shared yet, so there is no membership or workspace-switching coverage.
+`src/server/tenant.test.ts` covers the resolver (anonymous requests map to `local`, each identity to its own stable opaque tenant) and storage isolation: separate canvas lists, defaults, active canvas, `stateVersion` and image assets, plus not-found answers for another tenant's canvas id and image id. `src/server/auth.integration.test.ts` proves a signed-in user's private workspace stays invisible to the `local` tenant, and that two verified identities can explicitly join the separate shared-whiteboard collection without sharing their private data or session credentials.
+
+`src/server/whiteboards.integration.test.ts` covers shared list/create/join, presenter admission races, role and canvas scope enforcement, room-scoped broadcasts, cursor/view events and presenter departure. `tests/browser/whiteboards.spec.ts` uses independent pages with different viewport sizes to exercise names/cursors, presenter editing, viewer pan/zoom and return-to-presenter, invalid links, presenter replacement, AI generation, mock microphone input and shared images. All fixtures use isolated databases and mock AI; they do not prove live provider access. `scripts/examples.test.ts` exercises `examples/shared-whiteboard.ts` against its own port-0 daemon.
 
 ## Asynchronous storage safety
 

@@ -14,6 +14,7 @@ const INTEGRATION = [
 	'src/server/moss.test.ts',
 	'src/server/production.test.ts',
 	'src/server/realtimeProxy.test.ts',
+	'src/server/whiteboards.integration.test.ts',
 	'scripts/examples.test.ts',
 ]
 

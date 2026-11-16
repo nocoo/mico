@@ -10,6 +10,8 @@ import {
 	sessionExpired,
 } from './runtime'
 import { useUserAvatar } from './useUserAvatar'
+import { whiteboardDestination } from './whiteboards/client'
+import { WhiteboardGate } from './whiteboards/WhiteboardGate'
 
 function GateScreen({
 	title,
@@ -41,13 +43,15 @@ function LoginView({ runtime }: { runtime: RuntimeConfig }) {
 	const [signingIn, setSigningIn] = useState(false)
 
 	useEffect(() => {
+		const destination = whiteboardDestination(window.location.search)
+		if (destination) sessionStorage.setItem('mico.whiteboardReturn', destination)
 		if (runtime.auth.mode === 'none') {
-			window.location.replace('/')
+			window.location.replace(destination ?? '/')
 			return
 		}
 		void fetchSession()
 			.then((session) => {
-				if (session.user && !sessionExpired(session)) window.location.replace('/')
+				if (session.user && !sessionExpired(session)) window.location.replace(destination ?? '/')
 			})
 			.catch(() => undefined)
 	}, [runtime])
@@ -84,7 +88,11 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 		}
 		void completeCallback(runtime.auth)
 			.then(() => {
-				window.location.replace('/')
+				const saved = sessionStorage.getItem('mico.whiteboardReturn')
+				sessionStorage.removeItem('mico.whiteboardReturn')
+				window.location.replace(
+					saved?.startsWith('/?') ? (whiteboardDestination(saved.slice(1)) ?? '/') : '/',
+				)
 			})
 			.catch((cause: unknown) => {
 				setError(
@@ -263,8 +271,10 @@ export default function BootGate() {
 	if (runtime.auth.mode === 'entra' && (!session?.user || sessionExpired(session))) {
 		return <LoginView runtime={runtime} />
 	}
+	const query = new URLSearchParams(window.location.search)
+	const Workspace = query.has('whiteboardid') || query.has('whiteboards') ? WhiteboardGate : App
 	return (
-		<App
+		<Workspace
 			aiEnabled={runtime.aiEnabled}
 			aiSettingsVisible={runtime.aiSettingsVisible}
 			mossEnabled={runtime.mossEnabled}

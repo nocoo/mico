@@ -11,6 +11,7 @@ import {
 import { dedupeHypothesis, type LessonClip } from '../../stt/transcript'
 import { SilenceSegmenter } from '../../stt/vad'
 import { drawWave } from '../../waveform.ts'
+import { canvasFetch as fetch } from '../../whiteboards/client'
 
 export interface LessonSegment {
 	id: number

@@ -66,7 +66,7 @@ Durable deployment is a separate change: use a local disk on a single host with 
 
 Each signed-in identity gets its own workspace: a personal tenant with its own canvas list, active canvas and image assets, derived from the verified object id. A signed-in user never sees another user's canvases, and no request can reach a canvas belonging to a different tenant. Anonymous mode (`MICO_AUTH_MODE=none`) keeps one `local` tenant for the whole instance, so a public deployment without login still shares every canvas with every caller.
 
-Tenants are not shared: there is no collaboration surface for two identities on one workspace, and no UI to switch workspaces because each user has exactly one.
+Private tenants are not shared. The separate `/?whiteboards=1` collection is explicitly shared across admitted identities and never includes existing private canvases. It uses trusted, URL-declared presenter roles, not invitation-based authorization: anyone with access may request the single presenter slot with `sharer=true`. Participant sessions are read-only, with presence/cursor updates and presenter-view following. Shared content persists in the same SQLite database; presence, role reservations and viewports are in-memory and require one live replica. See the [shared-whiteboard contract](../README.md#共享白板).
 
 ## Acceptance
 

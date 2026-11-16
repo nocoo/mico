@@ -27,6 +27,7 @@ import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from 
 import { parseRequestTarget } from './requestTarget.ts'
 import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 import { tenantScopeFor } from './tenant.ts'
+import { SHARED_WHITEBOARDS, Whiteboards } from './whiteboards.ts'
 
 function parsePort(env: NodeJS.ProcessEnv): number {
 	const raw = env.MICO_PORT
@@ -241,11 +242,13 @@ function knownPath(pathname: string): boolean {
 			'images',
 			'active-canvas',
 			'auth',
+			'whiteboards',
 		].includes(segments[1])
 	}
 	if (segments.length === 3) {
 		return (
 			(segments[1] === 'auth' && ['session', 'logout'].includes(segments[2])) ||
+			(segments[1] === 'whiteboards' && segments[2] === 'join') ||
 			segments[1] === 'canvases' ||
 			segments[1] === 'images' ||
 			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
@@ -304,24 +307,25 @@ export function createDaemon(
 				},
 			})
 		: undefined
-	const mai =
-		runtimeConfig.aiEnabled && assets
-			? createMaiProxy({
-					...config.mai,
-					allowedOrigin: runtimeConfig.publicOrigin,
-					bearerProvider: managedIdentityAuth?.maiBearer,
-					createUpstream: options.createMaiUpstream,
-					onConnection: (req, client) => auth.attachSocket(req, client),
-				})
-			: undefined
+	const mai = runtimeConfig.aiEnabled
+		? createMaiProxy({
+				...config.mai,
+				allowedOrigin: runtimeConfig.publicOrigin,
+				isUpgradeAllowed: isVoiceUpgradeAllowed,
+				bearerProvider: managedIdentityAuth?.maiBearer,
+				createUpstream: options.createMaiUpstream,
+				onConnection: (req, client) => attachVoiceSession(req, client),
+			})
+		: undefined
 	const moss =
-		runtimeConfig.aiEnabled && runtimeConfig.mossEnabled && assets
+		runtimeConfig.aiEnabled && runtimeConfig.mossEnabled
 			? createMossProxy({
 					enabled: true,
 					...config.moss,
 					allowedOrigin: runtimeConfig.publicOrigin,
+					isUpgradeAllowed: isVoiceUpgradeAllowed,
 					createUpstream: options.createMossUpstream,
-					onConnection: (req, client) => auth.attachSocket(req, client),
+					onConnection: (req, client) => attachVoiceSession(req, client),
 				})
 			: undefined
 	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
@@ -338,12 +342,35 @@ export function createDaemon(
 	const modelFactory =
 		options.createAiModel ??
 		((settings: ChatSettings) => createMagpieModel(settings, managedIdentityAuth?.chatBearer))
-	const wss = new WebSocketServer({ noServer: true })
+	const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
+	const whiteboards = new Whiteboards(boards)
+	function attachVoiceSession(req: IncomingMessage, client: WebSocket) {
+		auth.attachSocket(req, client)
+		try {
+			const member = whiteboards.resolve(
+				req,
+				parseRequestTarget(req.url).url,
+				tenantScopeFor(runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined)
+					.tenantId,
+			)
+			if (member) whiteboards.attachVoice(member, client)
+		} catch {
+			client.close(1008, 'Whiteboard session expired')
+		}
+	}
 
 	const socketTenant = new WeakMap<WebSocket, string>()
 
 	const broadcast = (event: unknown, tenantId: string): void => {
+		if (
+			tenantId === SHARED_WHITEBOARDS.tenantId &&
+			isRecord(event) &&
+			typeof event.canvasId === 'string'
+		) {
+			whiteboards.emit(event.canvasId, event)
+			return
+		}
 		const payload = JSON.stringify(event)
 		for (const client of wss.clients) {
 			if (client.readyState !== WebSocket.OPEN) continue
@@ -389,6 +416,13 @@ export function createDaemon(
 	function isAllowedOrigin(origin: string | undefined): boolean {
 		if (runtimeConfig.publicOrigin) return origin === runtimeConfig.publicOrigin
 		return origin !== undefined && ALLOWED_ORIGINS.has(origin)
+	}
+
+	function isVoiceUpgradeAllowed(req: IncomingMessage): boolean {
+		return (
+			isAllowedHost(req.headers.host, parseRequestTarget(req.url).pathname) &&
+			isAllowedOrigin(req.headers.origin)
+		)
 	}
 
 	function canonicalRequestOrigin(req: IncomingMessage): string | undefined {
@@ -448,7 +482,7 @@ export function createDaemon(
 			}
 			if (origin && isAllowedOrigin(origin)) {
 				res.setHeader('Access-Control-Allow-Origin', origin)
-				res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+				res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Mico-Whiteboard')
 				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 				res.setHeader('Vary', 'Origin')
 			}
@@ -595,9 +629,39 @@ export function createDaemon(
 				return
 			}
 
-			const tenantId = tenantScopeFor(session).tenantId
+			const owner = tenantScopeFor(session).tenantId
+			const membership = whiteboards.resolve(req, requestUrl, owner)
+			if (membership) whiteboards.authorize(membership, req.method, pathname)
+			if (isPath('api', 'whiteboards')) {
+				const shared = boards.forTenant(SHARED_WHITEBOARDS)
+				if (req.method === 'GET') {
+					const list = await shared.getCanvasList(false)
+					sendJson(res, 200, { whiteboards: list.canvases }, origin)
+				} else if (req.method === 'POST') {
+					const body = await readJson(req)
+					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('Expected a whiteboard name')
+					const created = await shared.createCanvas(body.name, false)
+					sendJson(res, 201, { whiteboard: created.canvas }, origin)
+				} else {
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use GET or POST', origin)
+				}
+				return
+			}
+			if (isPath('api', 'whiteboards', 'join')) {
+				if (req.method !== 'POST') {
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use POST', origin)
+					return
+				}
+				sendJson(res, 200, await whiteboards.join(await readJson(req), owner), origin)
+				return
+			}
+			const tenantId = membership ? SHARED_WHITEBOARDS.tenantId : owner
 			const store = boards.forTenant({ tenantId })
 			const send = (event: unknown): void => broadcast(event, tenantId)
+			const readCanvasRequest = async (allowRestore = false) => {
+				const body = await readJson(req, allowRestore)
+				return membership ? whiteboards.scopeBody(membership, body) : body
+			}
 			let tenantImages: ImageGenerationService | undefined
 			const images = (): ImageGenerationService => {
 				tenantImages ??= imageGenerationFor(tenantId)
@@ -631,7 +695,13 @@ export function createDaemon(
 				!publicAsset
 			) {
 				if (!auth.getSession(req)) {
-					res.writeHead(302, { Location: '/login', 'Cache-Control': 'no-store' })
+					const sharedLink =
+						requestUrl.searchParams.has('whiteboardid') ||
+						requestUrl.searchParams.has('whiteboards')
+					res.writeHead(302, {
+						Location: `/login${sharedLink ? requestUrl.search : ''}`,
+						'Cache-Control': 'no-store',
+					})
 					res.end()
 					return
 				}
@@ -699,7 +769,14 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, await store.getState(includePreviews), origin)
+				sendJson(
+					res,
+					200,
+					membership
+						? await whiteboards.snapshot(membership.whiteboardid)
+						: await store.getState(includePreviews),
+					origin,
+				)
 				return
 			}
 
@@ -709,7 +786,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, await store.getBoard(), origin)
+				sendJson(res, 200, await store.getBoard(membership?.whiteboardid), origin)
 				return
 			}
 
@@ -782,7 +859,14 @@ export function createDaemon(
 
 			if (isPath('api', 'canvases')) {
 				if (req.method === 'GET') {
-					sendJson(res, 200, await store.getCanvasList(includePreviews), origin)
+					sendJson(
+						res,
+						200,
+						membership
+							? await whiteboards.snapshot(membership.whiteboardid)
+							: await store.getCanvasList(includePreviews),
+						origin,
+					)
 					return
 				}
 				if (req.method !== 'POST') {
@@ -856,7 +940,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await createMossSession(store, send, await readJson(req), images())
+				const response = await createMossSession(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -875,7 +959,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const response = await executeMossTool(store, send, await readJson(req), images())
+				const response = await executeMossTool(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
 			}
@@ -924,7 +1008,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const request = await parseAiChatRequest(await readJson(req))
+				const request = await parseAiChatRequest(await readCanvasRequest())
 				const model = aiModel ? aiModel : modelFactory(aiSettings.getEffective())
 				await streamAiChat({
 					res,
@@ -945,7 +1029,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				const result = await store.applyRequest(await readJson(req, true))
+				const result = await store.applyRequest(await readCanvasRequest(true))
 				send({
 					type: 'board',
 					canvasId: result.canvasId,
@@ -974,8 +1058,29 @@ export function createDaemon(
 		sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 	})
 
-	wss.on('connection', (socket: WebSocket) => {
+	wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
 		socket.on('error', () => socket.terminate())
+		const member = whiteboards.resolve(
+			req,
+			parseRequestTarget(req.url).url,
+			tenantScopeFor(runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined)
+				.tenantId,
+		)
+		if (member) {
+			socketTenant.set(socket, SHARED_WHITEBOARDS.tenantId)
+			whiteboards.attach(member, socket)
+			void whiteboards
+				.snapshot(member.whiteboardid)
+				.then((state) => {
+					if (socket.readyState === WebSocket.OPEN)
+						socket.send(JSON.stringify({ type: 'snapshot', ...state }))
+				})
+				.catch((error: unknown) => {
+					console.error(error)
+					socket.close(1011, 'Could not read the whiteboard')
+				})
+			return
+		}
 		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
 		boards
 			.forTenant(socketScope)
@@ -989,8 +1094,13 @@ export function createDaemon(
 
 	server.on('upgrade', (req, socket, head) => {
 		let pathname: string
+		let sharedVoice = false
 		try {
 			pathname = parseRequestTarget(req.url).pathname
+			sharedVoice =
+				pathname === '/api/whiteboard-voice/mai/realtime' ||
+				pathname === '/api/whiteboard-voice/moss'
+			if (sharedVoice) pathname = pathname.slice('/api/whiteboard-voice'.length)
 		} catch {
 			socket.write('HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n')
 			socket.destroy()
@@ -1024,6 +1134,17 @@ export function createDaemon(
 			return
 		}
 		const tenantId = tenantScopeFor(session).tenantId
+		try {
+			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
+			if (sharedVoice && !member)
+				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
+			if (member) whiteboards.authorize(member, 'GET', pathname)
+			if (member) req.headers['x-mico-whiteboard'] = member.token
+		} catch {
+			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')
+			socket.destroy()
+			return
+		}
 
 		if (!runtimeConfig.aiEnabled && (pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)) {
 			socket.write(
@@ -1074,6 +1195,7 @@ export function createDaemon(
 		close(): Promise<void> {
 			closing ??= new Promise<void>((resolveClose, rejectClose) => {
 				auth.close()
+				whiteboards.close()
 				const timeout = setTimeout(() => server.closeAllConnections(), 5000)
 				timeout.unref()
 				server.close(() => {
