@@ -2,7 +2,7 @@ import { type APIRequestContext, expect, type Locator, type Page, test } from '@
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
 import { jellyStyle } from '../../src/web/canvas/jelly'
 import { CANDY_COLORS, CANDY_TINTS, SHAPE_COLORS } from '../../src/web/design'
-import { closeAssistant, resetBoard } from './support'
+import { closeAssistant, flexContentWidth, resetBoard } from './support'
 
 async function board(request: APIRequestContext): Promise<Board> {
 	const response = await request.get('/api/board')
@@ -224,12 +224,15 @@ test('selected object properties live inside the dock and edit the board', async
 test('frame controls follow the reference geometry without overlapping', async ({ page }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' })
 	await page.setViewportSize({ width: 1453, height: 969 })
-	const identity = await page.locator('.identity-panel').boundingBox()
+	const identityPanel = page.locator('.identity-panel')
+	const identity = await identityPanel.boundingBox()
 	const canvases = await page.getByRole('button', { name: 'Canvases', exact: true }).boundingBox()
 	const assistant = await page.locator('.ai-trigger').boundingBox()
 	const dock = await page.locator('.toolbar').boundingBox()
 	if (!identity || !canvases || !assistant || !dock) throw new Error('Missing reference frame')
-	expect(identity).toMatchObject({ x: 14, y: 14, width: 148, height: 56 })
+	expect(identity).toMatchObject({ x: 14, y: 14, height: 56 })
+	expect(identity.width).toBeCloseTo(await flexContentWidth(identityPanel), 1)
+	expect(identity.x + identity.width).toBeLessThan(assistant.x)
 	expect(canvases).toMatchObject({ width: 34, height: 34 })
 	expect(assistant).toMatchObject({ y: 14, width: 56, height: 56 })
 	expect(assistant.x + assistant.width).toBe(1453 - 14)

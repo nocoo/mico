@@ -28,7 +28,7 @@ import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from 
 import { parseRequestTarget } from './requestTarget.ts'
 import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 import { tenantScopeFor } from './tenant.ts'
-import { Whiteboards } from './whiteboards.ts'
+import { SHARED_WHITEBOARDS, Whiteboards } from './whiteboards.ts'
 
 function parsePort(env: NodeJS.ProcessEnv): number {
 	const raw = env.MICO_PORT
@@ -243,6 +243,7 @@ function knownPath(pathname: string): boolean {
 			'images',
 			'active-canvas',
 			'auth',
+			'whiteboards',
 		].includes(segments[1])
 	}
 	if (segments.length === 3) {
@@ -361,7 +362,7 @@ export function createDaemon(
 		((settings: ChatSettings) => createMagpieModel(settings, managedIdentityAuth?.chatBearer))
 	const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
-	const whiteboards = new Whiteboards()
+	const whiteboards = new Whiteboards(boards)
 	function attachVoiceSession(req: IncomingMessage, client: WebSocket) {
 		auth.attachSocket(req, client)
 		try {
@@ -382,6 +383,14 @@ export function createDaemon(
 	const socketTenant = new WeakMap<WebSocket, string>()
 
 	const broadcast = (event: unknown, tenantId: string): void => {
+		if (
+			tenantId === SHARED_WHITEBOARDS.tenantId &&
+			isRecord(event) &&
+			typeof event.canvasId === 'string'
+		) {
+			whiteboards.emit(event.canvasId, event)
+			return
+		}
 		const payload = JSON.stringify(event)
 		for (const client of wss.clients) {
 			if (client.readyState !== WebSocket.OPEN) continue
@@ -676,18 +685,50 @@ export function createDaemon(
 			}
 
 			const owner = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
+			const membership = whiteboards.resolve(req, requestUrl, owner)
+			if (membership?.board) whiteboards.authorize(membership, req.method, pathname)
+			if (isPath('api', 'whiteboards')) {
+				const shared = boards.forTenant(SHARED_WHITEBOARDS)
+				if (req.method === 'GET') {
+					const list = await shared.getCanvasList(false)
+					sendJson(res, 200, { whiteboards: list.canvases }, origin)
+					return
+				}
+				if (req.method === 'POST') {
+					const body = await readJson(req)
+					if (!isRecord(body) || !exactKeys(body, ['name'])) {
+						invalid('Expected a whiteboard name')
+					}
+					const created = await shared.createCanvas(body.name, false)
+					sendJson(res, 201, { whiteboard: created.canvas }, origin)
+					return
+				}
+				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use GET or POST', origin)
+				return
+			}
 			if (isPath('api', 'whiteboards', 'join')) {
 				if (req.method !== 'POST') {
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use POST', origin)
 					return
 				}
-				sendJson(res, 200, whiteboards.join(await readJson(req), owner), origin)
+				sendJson(
+					res,
+					200,
+					await whiteboards.join(await readJson(req), owner, {
+						// Demo rooms share presence only; every other mode backs the room with a shared canvas.
+						board: runtimeConfig.auth.mode !== 'demo',
+					}),
+					origin,
+				)
 				return
 			}
-			const tenantId = owner
+			const tenantId = membership?.board ? SHARED_WHITEBOARDS.tenantId : owner
 			const store = boards.forTenant({ tenantId })
 			const send = (event: unknown): void => broadcast(event, tenantId)
-			const readCanvasRequest = async (allowRestore = false) => readJson(req, allowRestore)
+			const readCanvasRequest = async (allowRestore = false) => {
+				const body = await readJson(req, allowRestore)
+				return membership?.board ? whiteboards.scopeBody(membership, body) : body
+			}
 			let tenantImages: ImageGenerationService | undefined
 			const images = (): ImageGenerationService => {
 				tenantImages ??= imageGenerationFor(tenantId)
@@ -796,7 +837,14 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, await store.getState(includePreviews), origin)
+				sendJson(
+					res,
+					200,
+					membership?.board
+						? await whiteboards.snapshot(membership.whiteboardid)
+						: await store.getState(includePreviews),
+					origin,
+				)
 				return
 			}
 
@@ -806,7 +854,12 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, await store.getBoard(), origin)
+				sendJson(
+					res,
+					200,
+					await store.getBoard(membership?.board ? membership.whiteboardid : undefined),
+					origin,
+				)
 				return
 			}
 
@@ -889,7 +942,14 @@ export function createDaemon(
 					return
 				}
 				if (req.method === 'GET') {
-					sendJson(res, 200, await store.getCanvasList(includePreviews), origin)
+					sendJson(
+						res,
+						200,
+						membership?.board
+							? await whiteboards.snapshot(membership.whiteboardid)
+							: await store.getCanvasList(includePreviews),
+						origin,
+					)
 					return
 				}
 				if (req.method !== 'POST') {
@@ -1105,6 +1165,20 @@ export function createDaemon(
 		)
 		if (member) {
 			whiteboards.attach(member, socket)
+			if (member.board) {
+				socketTenant.set(socket, SHARED_WHITEBOARDS.tenantId)
+				void whiteboards
+					.snapshot(member.whiteboardid)
+					.then((state) => {
+						if (socket.readyState === WebSocket.OPEN)
+							socket.send(JSON.stringify({ type: 'snapshot', ...state }))
+					})
+					.catch((error: unknown) => {
+						console.error(error)
+						socket.close(1011, 'Could not read the whiteboard')
+					})
+				return
+			}
 		}
 		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
 		boards
@@ -1163,6 +1237,7 @@ export function createDaemon(
 			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
 			if (sharedVoice && !member)
 				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
+			if (member?.board) whiteboards.authorize(member, 'GET', pathname)
 			if (member) req.headers['x-mico-whiteboard'] = member.token
 		} catch {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')

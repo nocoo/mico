@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { IncomingMessage } from 'node:http'
 import WebSocket from 'ws'
+import type { CanvasSnapshot } from '../shared/types.ts'
 import {
 	joinWhiteboardSchema,
 	PRESENCE_COLORS,
@@ -8,11 +9,14 @@ import {
 	presenceMessageSchema,
 	type WhiteboardSession,
 } from '../shared/whiteboards.ts'
-import { OperationError } from './store.ts'
+import { type BoardStore, OperationError } from './store.ts'
+
+export const SHARED_WHITEBOARDS = { tenantId: 'shared-whiteboards' }
 
 interface Membership extends WhiteboardSession {
 	owner: string
 	clientId: string
+	board: boolean
 	socket?: WebSocket
 	voiceSockets: Set<WebSocket>
 	expiresAt: number
@@ -23,11 +27,13 @@ interface Membership extends WhiteboardSession {
 }
 
 export class Whiteboards {
+	private readonly boards: BoardStore
 	private readonly sessions = new Map<string, Membership>()
 	private readonly views = new Map<string, PresenterView>()
 	private readonly timer: ReturnType<typeof setInterval>
 
-	constructor() {
+	constructor(boards: BoardStore) {
+		this.boards = boards
 		this.timer = setInterval(() => {
 			this.prune()
 			for (const member of this.sessions.values()) {
@@ -60,15 +66,33 @@ export class Whiteboards {
 		)
 	}
 
-	join(body: unknown, owner: string): WhiteboardSession {
+	async join(
+		body: unknown,
+		owner: string,
+		options: { board: boolean },
+	): Promise<WhiteboardSession> {
 		const parsed = joinWhiteboardSchema.safeParse(body)
 		if (!parsed.success) throw new OperationError(400, 'INVALID_REQUEST', parsed.error.message)
 		const input = parsed.data
+		if (options.board) {
+			await this.boards.forTenant(SHARED_WHITEBOARDS).getCanvas(input.whiteboardid)
+		}
 		this.prune()
 		const existing = [...this.sessions.values()].find(
 			(member) => member.owner === owner && member.clientId === input.clientId,
 		)
 		if (existing) {
+			// Shared whiteboard identity is immutable; only presence rooms may update a profile in place.
+			if (
+				existing.whiteboardid !== input.whiteboardid ||
+				(existing.board &&
+					(existing.member.sharer !== input.sharer || existing.member.username !== input.username))
+			)
+				throw new OperationError(
+					409,
+					'SESSION_CONFLICT',
+					'Join details changed; open a new session.',
+				)
 			if (input.sharer && this.presenter(input.whiteboardid, existing)) {
 				throw new OperationError(
 					409,
@@ -113,6 +137,7 @@ export class Whiteboards {
 				cursor: null,
 			},
 			owner,
+			board: options.board,
 			voiceSockets: new Set(),
 			clientId: input.clientId,
 			expiresAt: Date.now() + 10000,
@@ -144,6 +169,62 @@ export class Whiteboards {
 		return member
 	}
 
+	authorize(member: Membership, method: string | undefined, pathname: string) {
+		const readable =
+			[
+				'/api/state',
+				'/api/board',
+				'/api/canvases',
+				'/api/ai/settings',
+				'/api/ai/models',
+				'/mai/config',
+				'/api/events',
+			].includes(pathname) ||
+			pathname === `/api/canvases/${member.whiteboardid}` ||
+			/^\/api\/images\/[^/]+$/.test(pathname)
+		if (method === 'GET' && readable) return
+		const writable = [
+			'/api/operations',
+			'/api/images',
+			'/api/ai/chat',
+			'/api/moss/session',
+			'/api/moss/tool',
+			'/mai/realtime',
+			'/moss',
+		].includes(pathname)
+		if (
+			writable &&
+			member.member.sharer &&
+			member.socket?.readyState === WebSocket.OPEN &&
+			(method === 'POST' || (method === 'GET' && ['/mai/realtime', '/moss'].includes(pathname)))
+		)
+			return
+		throw new OperationError(
+			403,
+			'WHITEBOARD_READ_ONLY',
+			'This action is not allowed in your whiteboard session.',
+		)
+	}
+
+	scopeBody(member: Membership, body: unknown): Record<string, unknown> {
+		if (typeof body !== 'object' || body === null || Array.isArray(body))
+			throw new OperationError(400, 'INVALID_REQUEST', 'Request must be an object')
+		const record = body as Record<string, unknown>
+		if (record.canvasId !== undefined && record.canvasId !== member.whiteboardid)
+			throw new OperationError(403, 'WHITEBOARD_SCOPE', 'The request targets another whiteboard.')
+		return { ...record, canvasId: member.whiteboardid }
+	}
+
+	async snapshot(whiteboardid: string): Promise<CanvasSnapshot> {
+		const detail = await this.boards.forTenant(SHARED_WHITEBOARDS).getCanvas(whiteboardid)
+		return {
+			activeCanvasId: whiteboardid,
+			stateVersion: detail.board.revision,
+			canvases: [detail.canvas],
+			board: detail.board,
+		}
+	}
+
 	attach(member: Membership, socket: WebSocket) {
 		if (member.member.sharer && this.presenter(member.whiteboardid, member)) {
 			socket.close(1008, 'This whiteboard already has a presenter')
@@ -163,6 +244,7 @@ export class Whiteboards {
 			try {
 				const message = presenceMessageSchema.parse(JSON.parse(data.toString()))
 				if (message.type === 'presenter-view' && !member.member.sharer) {
+					socket.close(1008, 'Only the presenter can publish a view')
 					return
 				}
 				if (message.type === 'cursor') {
@@ -209,7 +291,7 @@ export class Whiteboards {
 		})
 	}
 
-	private emit(whiteboardid: string, event: unknown) {
+	emit(whiteboardid: string, event: unknown) {
 		const payload = JSON.stringify(event)
 		for (const member of this.sessions.values()) {
 			if (member.whiteboardid === whiteboardid && member.socket?.readyState === WebSocket.OPEN) {

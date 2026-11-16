@@ -1,6 +1,6 @@
 import type { WhiteboardJoin, WhiteboardSession } from '../../shared/whiteboards'
 
-let active: { input: WhiteboardJoin; session: WhiteboardSession } | null = null
+let active: { input: WhiteboardJoin; session: WhiteboardSession; scoped: boolean } | null = null
 
 export function whiteboardDestination(search: string): string | undefined {
 	const input = new URLSearchParams(search)
@@ -33,7 +33,11 @@ export async function joinWhiteboard(
 }
 
 export function configureWhiteboard(input: WhiteboardJoin, session: WhiteboardSession) {
-	active = { input, session }
+	active = { input, session, scoped: true }
+}
+
+export function configurePresence(input: WhiteboardJoin, session: WhiteboardSession) {
+	active = { input, session, scoped: false }
 }
 
 export function clearWhiteboard() {
@@ -56,8 +60,15 @@ export function whiteboardUrl(path: string | URL): string {
 	return url.toString()
 }
 
+export function whiteboardAssetUrl(path: string | URL): string {
+	if (!active?.scoped) return path.toString()
+	const url = new URL(path, window.location.href)
+	url.searchParams.set('whiteboardSession', active.session.token)
+	return url.toString()
+}
+
 export const canvasFetch: typeof fetch = (input, init) => {
-	if (!active) return fetch(input, init)
+	if (!active?.scoped) return fetch(input, init)
 	const url = new URL(input instanceof Request ? input.url : input.toString(), window.location.href)
 	if (
 		url.origin !== window.location.origin ||

@@ -11,6 +11,7 @@ import {
 } from './runtime'
 import { useUserAvatar } from './useUserAvatar'
 import { whiteboardDestination } from './whiteboards/client'
+import { WhiteboardGate } from './whiteboards/WhiteboardGate'
 
 let initialRuntimeRequest: Promise<RuntimeConfig> | null =
 	typeof window === 'undefined' ? null : fetchRuntime().catch((error) => Promise.reject(error))
@@ -279,8 +280,13 @@ export default function BootGate() {
 	if (runtime.auth.mode === 'entra' && (!session?.user || sessionExpired(session))) {
 		return <LoginView runtime={runtime} />
 	}
+	const query = new URLSearchParams(window.location.search)
+	const Workspace =
+		runtime.auth.mode !== 'demo' && (query.has('whiteboardid') || query.has('whiteboards'))
+			? WhiteboardGate
+			: App
 	return (
-		<App
+		<Workspace
 			authMode={runtime.auth.mode}
 			aiEnabled={runtime.aiEnabled}
 			aiSettingsVisible={runtime.aiSettingsVisible}

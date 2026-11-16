@@ -1,4 +1,10 @@
-import { type APIRequestContext, type BrowserContext, expect, type Page } from '@playwright/test'
+import {
+	type APIRequestContext,
+	type BrowserContext,
+	expect,
+	type Locator,
+	type Page,
+} from '@playwright/test'
 import type { Board, CanvasShape, Shape } from '../../src/shared/types'
 
 export const ISOLATED_ORIGIN = 'http://127.0.0.1:27063'
@@ -232,6 +238,24 @@ export async function mockMaiTranscription(
 	})
 
 	return state
+}
+
+export async function flexContentWidth(locator: Locator): Promise<number> {
+	return locator.evaluate((element) => {
+		const style = getComputedStyle(element)
+		const children = [...element.children]
+			.map((child) => child.getBoundingClientRect())
+			.filter((rect) => rect.width > 0 && rect.height > 0)
+		const gaps = children
+			.slice(1)
+			.reduce((total, rect, index) => total + rect.left - children[index].right, 0)
+		return (
+			Number.parseFloat(style.paddingLeft) +
+			Number.parseFloat(style.paddingRight) +
+			gaps +
+			children.reduce((total, rect) => total + rect.width, 0)
+		)
+	})
 }
 
 export async function board(request: APIRequestContext): Promise<Board> {

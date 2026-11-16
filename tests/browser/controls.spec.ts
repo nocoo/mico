@@ -9,6 +9,7 @@ import {
 	clickWorld,
 	closeAssistant,
 	dragWorld,
+	flexContentWidth,
 	ISOLATED_ORIGIN,
 	pillBox,
 	resetBoard,
@@ -1151,7 +1152,10 @@ test('properties icon is centered and the panel clears top surfaces at every wid
 		throw new Error('Expected mobile open geometry')
 	expect(mobileAi).toEqual({ x: 14, y: 14, width: 362, height: 816 })
 	expect(mobileTrigger).toEqual({ x: 332, y: 24, width: 34, height: 34 })
-	expect(mobileIdentity).toEqual({ x: 14, y: 14, width: 100, height: 56 })
+	expect(mobileIdentity.x).toBe(14)
+	expect(mobileIdentity.y).toBe(14)
+	expect(mobileIdentity.height).toBe(56)
+	expect(mobileIdentity.width).toBeCloseTo(await flexContentWidth(identity), 1)
 	expect(mobileTrigger.x).toBeGreaterThan(mobileAi.x)
 	expect(mobileTrigger.y).toBeLessThan(mobileAi.y + mobileAi.height)
 	expect(mobileIdentity.x + mobileIdentity.width).toBeLessThan(mobileTrigger.x)

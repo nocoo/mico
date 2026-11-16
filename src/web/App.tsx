@@ -5,12 +5,12 @@ import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '..
 import type { WhiteboardSession } from '../shared/whiteboards'
 import {
 	clearWhiteboard,
-	configureWhiteboard,
+	configurePresence,
 	canvasFetch as fetch,
 	joinWhiteboard,
 } from './whiteboards/client'
 import { usePresence } from './whiteboards/usePresence'
-import { WhiteboardCursors } from './whiteboards/WhiteboardPresence'
+import { WhiteboardCursors, WhiteboardPresence } from './whiteboards/WhiteboardPresence'
 import './whiteboards/whiteboards.css'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
@@ -90,6 +90,7 @@ function initialDemoSharer(): boolean {
 
 export interface AppProps {
 	authMode?: AuthMode
+	whiteboard?: WhiteboardSession
 	aiEnabled?: boolean
 	aiSettingsVisible: boolean
 	mossEnabled: boolean
@@ -101,6 +102,7 @@ export interface AppProps {
 
 export default function App({
 	authMode,
+	whiteboard,
 	aiEnabled = true,
 	aiSettingsVisible,
 	mossEnabled,
@@ -109,8 +111,8 @@ export default function App({
 	avatarUrl = null,
 	onSignOut,
 }: AppProps) {
-	const readOnly = false
-	const canUseAi = aiEnabled
+	const readOnly = Boolean(whiteboard && !whiteboard.member.sharer)
+	const canUseAi = aiEnabled && !readOnly
 	const [demoClientId] = useState(() => crypto.randomUUID())
 	const [demoUsername, setDemoUsername] = useState(initialDemoUsername)
 	const [demoSharer, setDemoSharer] = useState(initialDemoSharer)
@@ -153,7 +155,7 @@ export default function App({
 	const aiPanelOpenRef = useRef(aiPanelOpen)
 	aiPanelOpenRef.current = aiPanelOpen
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
-	const presence = usePresence(demoSession, svgRef, viewport, setViewport)
+	const presence = usePresence(whiteboard ?? demoSession, svgRef, viewport, setViewport)
 
 	useEffect(() => {
 		if (authMode !== 'demo') return
@@ -168,7 +170,7 @@ export default function App({
 		void joinWhiteboard(joinInput, controller.signal)
 			.then((session) => {
 				if (controller.signal.aborted) return
-				configureWhiteboard(joinInput, session)
+				configurePresence(joinInput, session)
 				setDemoSession(session)
 				setDemoError('')
 			})
@@ -180,7 +182,7 @@ export default function App({
 					void joinWhiteboard(fallbackInput, controller.signal)
 						.then((session) => {
 							if (controller.signal.aborted) return
-							configureWhiteboard(fallbackInput, session)
+							configurePresence(fallbackInput, session)
 							setDemoSession(session)
 						})
 						.catch(() => undefined)
@@ -206,7 +208,7 @@ export default function App({
 			}
 			try {
 				const session = await joinWhiteboard(joinInput)
-				configureWhiteboard(joinInput, session)
+				configurePresence(joinInput, session)
 				setDemoSession(session)
 				setDemoUsername(session.member.username)
 				setDemoSharer(session.member.sharer)
@@ -339,7 +341,7 @@ export default function App({
 				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[fitShapesInCanvas],
+		[fitShapesInCanvas, readOnly],
 	)
 
 	const {
@@ -348,6 +350,7 @@ export default function App({
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
+		roomError,
 		sendPresence,
 		postOperations,
 		undo,
@@ -367,7 +370,8 @@ export default function App({
 		announce,
 		onBoardTransition,
 		onBoardAccepted,
-		whiteboard: demoSession,
+		whiteboard: whiteboard ?? demoSession,
+		readOnly,
 		onPresence: presence.onEvent,
 		onSocketReady: presence.queueView,
 	})
@@ -1210,8 +1214,36 @@ export default function App({
 			}
 		>
 			<CanvasBackdrop />
-			{demoSession && (
-				<WhiteboardCursors session={demoSession} members={presence.members} viewport={viewport} />
+			{whiteboard ? (
+				<>
+					<WhiteboardPresence
+						session={whiteboard}
+						members={presence.members}
+						following={presence.following}
+						presenterId={presence.presenterId}
+						connected={wsConnected}
+						error={roomError}
+						onFollow={presence.follow}
+						zoom={viewport.zoom}
+						onZoom={(factor) => zoomAt(viewport.zoom * factor)}
+					/>
+					<WhiteboardCursors session={whiteboard} members={presence.members} viewport={viewport} />
+				</>
+			) : (
+				<>
+					{demoSession && (
+						<WhiteboardCursors
+							session={demoSession}
+							members={presence.members}
+							viewport={viewport}
+						/>
+					)}
+					{authMode !== 'demo' && (
+						<a className="shared-whiteboards-link" href="/?whiteboards=1">
+							Shared whiteboards
+						</a>
+					)}
+				</>
 			)}
 			<CanvasMinimap
 				shapes={visibleShapes}
@@ -1236,51 +1268,53 @@ export default function App({
 					if (file) void uploadImage(file)
 				}}
 			/>
-			<IdentityFrame
-				state={{
-					canvases,
-					activeCanvasId,
-					canvasesOpen: canvasPanelOpen,
-				}}
-				actions={{
-					toggleCanvases: toggleCanvasPanel,
-					closeCanvases: closeCanvasPanel,
-					createCanvas,
-					switchCanvas,
-					renameCanvas,
-					deleteCanvas,
-				}}
-				debug={{
-					open: debugPanelOpen,
-					onOpenChange: setDebugPanelOpen,
-					authMode,
-					user,
-					avatarUrl,
-					ephemeral,
-					aiEnabled,
-					onSignOut,
-				}}
-				demo={
-					authMode === 'demo'
-						? {
-								open: demoPanelOpen,
-								onOpenChange: setDemoPanelOpen,
-								username: demoUsername,
-								sharer: demoSharer,
-								busy: demoBusy,
-								error: demoError,
-								members: presence.members,
-								presenterId: presence.presenterId,
-								selfId: demoSession?.member.id ?? null,
-								following: presence.following,
-								ephemeral,
-								aiEnabled,
-								onUpdateProfile: updateDemoProfile,
-								onFollowPresenter: presence.follow,
-							}
-						: undefined
-				}
-			/>
+			{!whiteboard && (
+				<IdentityFrame
+					state={{
+						canvases,
+						activeCanvasId,
+						canvasesOpen: canvasPanelOpen,
+					}}
+					actions={{
+						toggleCanvases: toggleCanvasPanel,
+						closeCanvases: closeCanvasPanel,
+						createCanvas,
+						switchCanvas,
+						renameCanvas,
+						deleteCanvas,
+					}}
+					debug={{
+						open: debugPanelOpen,
+						onOpenChange: setDebugPanelOpen,
+						authMode,
+						user,
+						avatarUrl,
+						ephemeral,
+						aiEnabled,
+						onSignOut,
+					}}
+					demo={
+						authMode === 'demo'
+							? {
+									open: demoPanelOpen,
+									onOpenChange: setDemoPanelOpen,
+									username: demoUsername,
+									sharer: demoSharer,
+									busy: demoBusy,
+									error: demoError,
+									members: presence.members,
+									presenterId: presence.presenterId,
+									selfId: demoSession?.member.id ?? null,
+									following: presence.following,
+									ephemeral,
+									aiEnabled,
+									onUpdateProfile: updateDemoProfile,
+									onFollowPresenter: presence.follow,
+								}
+							: undefined
+					}
+				/>
+			)}
 			{!readOnly && (
 				<Toolbar
 					state={{
@@ -1334,7 +1368,7 @@ export default function App({
 			{canUseAi && (
 				<AssistantFrame
 					state={{
-						sharedWhiteboard: false,
+						sharedWhiteboard: Boolean(whiteboard),
 						connection: {
 							apiConnected,
 							wsConnected,
@@ -1343,7 +1377,7 @@ export default function App({
 						},
 						open: aiPanelOpen,
 						mossEnabled,
-						aiSettingsVisible,
+						aiSettingsVisible: aiSettingsVisible && !whiteboard,
 						canvasId: activeCanvasId,
 						selectedIds,
 						initialPrompt: aiPrompt,

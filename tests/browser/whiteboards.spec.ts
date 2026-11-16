@@ -1,10 +1,12 @@
 import { expect, type Page, test } from '@playwright/test'
 import {
+	board,
 	closeAssistant,
 	ISOLATED_ORIGIN,
 	installMicrophoneMock,
 	mockMaiTranscription,
 	openAssistant,
+	resetBoard,
 } from './support'
 
 async function view(page: Page) {
@@ -239,4 +241,47 @@ test('presenter AI generation, voice input and images stay on the shared board',
 	const state = await (await request.get('/api/state')).json()
 	expect(state.canvases.some((canvas: { id: string }) => canvas.id === whiteboard.id)).toBe(false)
 	await viewer.close()
+})
+
+test('demo presence participants keep drawing on the shared demo board', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [])
+	await page.route('/api/runtime', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				auth: { mode: 'demo' },
+				aiEnabled: false,
+				aiSettingsVisible: false,
+				mossEnabled: false,
+				ephemeral: false,
+			}),
+		}),
+	)
+	await page.route('/api/whiteboards/join', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				token: 'demo-presence-token',
+				whiteboardid: 'demo',
+				member: {
+					id: 'demo-member',
+					username: 'Guest',
+					sharer: false,
+					color: '#6844bd',
+					cursor: null,
+				},
+			}),
+		}),
+	)
+	await page.goto('/')
+	await expect(page.locator('.whiteboard-cursors')).toHaveCount(1)
+	await expect(page.getByRole('button', { name: 'Workspace profile' })).toBeVisible()
+	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
+	await page.mouse.click(500, 400)
+	await expect
+		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'note'))
+		.toBe(true)
 })
