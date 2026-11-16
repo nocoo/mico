@@ -35,7 +35,7 @@
 	position: relative;
 	display: flex;
 	align-items: center;
-	width: 148px;
+	width: fit-content;
 	height: 56px;
 	padding-inline: 10px;
 	gap: var(--space-1);
@@ -67,7 +67,8 @@
 .frame-identity .brand {
 	display: flex;
 	align-items: center;
-	flex: 1;
+	flex: 0 0 auto;
+	padding-right: 4px;
 	gap: 6px;
 	white-space: nowrap;
 }
@@ -278,10 +279,6 @@
 	scrollbar-width: thin;
 }
 
-.frame-identity .identity-panel[data-debug-available="true"] {
-	width: 192px;
-}
-
 .frame-identity .canvas-item {
 	position: relative;
 	isolation: isolate;
@@ -485,14 +482,6 @@
 }
 
 @media (max-width: 760px) {
-	.frame-identity .identity-panel {
-		width: 100px;
-	}
-
-	.frame-identity .identity-panel[data-debug-available="true"] {
-		width: 160px;
-	}
-
 	.frame-identity .brand strong {
 		display: none;
 	}

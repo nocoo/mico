@@ -290,6 +290,20 @@ export function createDaemon(
 	const aiIpRanges = parseCidrList(runtimeConfig.aiIpAllowlist.join(','))
 	const isAiIpAllowed = (req: IncomingMessage): boolean =>
 		isIpAllowed(extractClientIp(req), aiIpRanges)
+	const logAiIpCheck = (req: IncomingMessage, route: string, allowed: boolean): void => {
+		if (aiIpRanges.length === 0) return
+		console.info(
+			JSON.stringify({
+				event: 'ai_ip_check',
+				route,
+				allowed,
+				clientIp: extractClientIp(req) ?? null,
+				xEnvoyExternalAddress: req.headers['x-envoy-external-address'] ?? null,
+				xForwardedFor: req.headers['x-forwarded-for'] ?? null,
+				remoteAddress: req.socket?.remoteAddress ?? null,
+			}),
+		)
+	}
 	const port = options.port ?? parsePort(env)
 	const config = loadAiConfig(env)
 	const managedIdentityAuth =
@@ -439,7 +453,9 @@ export function createDaemon(
 			sendAiDisabled(res, origin)
 			return false
 		}
-		if (!isAiIpAllowed(req)) {
+		const allowed = isAiIpAllowed(req)
+		if (!allowed) {
+			logAiIpCheck(req, req.url ?? 'unknown', false)
 			sendAiForbidden(res, origin)
 			return false
 		}
@@ -513,7 +529,9 @@ export function createDaemon(
 					return
 				}
 				const contract = publicRuntimeContract(runtimeConfig)
-				if (!isAiIpAllowed(req)) {
+				const allowed = isAiIpAllowed(req)
+				logAiIpCheck(req, '/api/runtime', allowed)
+				if (!allowed) {
 					sendJson(
 						res,
 						200,
