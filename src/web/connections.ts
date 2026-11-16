@@ -113,7 +113,7 @@ function isFiniteShape(shape: CanvasShape): boolean {
 export function findSnapTarget(
 	shapes: Shape[],
 	point: Point,
-	source: CanvasShape,
+	source: CanvasShape | undefined,
 	zoom: number,
 ): SnapTarget | null {
 	const scale = Number.isFinite(zoom) && zoom > 0 ? zoom : 1
@@ -122,8 +122,8 @@ export function findSnapTarget(
 
 	for (const [index, shape] of shapes.entries()) {
 		if (shape.type === 'connector') continue
-		if (shape.id === source.id) continue
-		if (!connectionCompatible(source.type, shape.type)) continue
+		if (source && shape.id === source.id) continue
+		if (source && !connectionCompatible(source.type, shape.type)) continue
 		if (!isFiniteShape(shape)) continue
 		const proximity = shapeProximity(point, shape)
 		if (!proximity.inside && proximity.distance > threshold) continue
@@ -146,7 +146,11 @@ export function findSnapTarget(
 
 	if (!chosen) return null
 
-	const anchors = getAnchors(chosen.shape)
+	return getNearestAnchor(chosen.shape, point)
+}
+
+export function getNearestAnchor(shape: CanvasShape, point: Point): SnapTarget {
+	const anchors = getAnchors(shape)
 	let anchorIndex = 0
 	let bestDistance = Number.POSITIVE_INFINITY
 	for (const [index, anchor] of anchors.entries()) {
@@ -156,7 +160,7 @@ export function findSnapTarget(
 			anchorIndex = index
 		}
 	}
-	return { shapeId: chosen.shape.id, anchorIndex, point: anchors[anchorIndex] }
+	return { shapeId: shape.id, anchorIndex, point: anchors[anchorIndex] }
 }
 
 export function canRebaseConnector(board: Board, original: Connector): boolean {

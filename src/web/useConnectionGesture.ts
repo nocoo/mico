@@ -1,7 +1,12 @@
 import { useCallback, useRef, useState } from 'react'
 import type { Board, CanvasShape, Connector, Operation, Point, Shape } from '../shared/types'
 import { getAnchors, getConnectorAnchors } from './anchors'
-import { canRebaseConnector, findSnapTarget, type SnapTarget } from './connections'
+import {
+	canRebaseConnector,
+	findSnapTarget,
+	getNearestAnchor,
+	type SnapTarget,
+} from './connections'
 import { CANDY_LAYOUT } from './design'
 
 export interface ConnectionDraft {
@@ -28,20 +33,6 @@ function node(shapes: Shape[], id: string): CanvasShape | undefined {
 	return shape?.type !== 'connector' ? shape : undefined
 }
 
-function snapFor(shape: CanvasShape, point: Point): SnapTarget {
-	const anchors = getAnchors(shape)
-	let anchorIndex = 0
-	let nearest = Number.POSITIVE_INFINITY
-	for (const [index, anchor] of anchors.entries()) {
-		const distance = Math.hypot(anchor.x - point.x, anchor.y - point.y)
-		if (distance < nearest) {
-			nearest = distance
-			anchorIndex = index
-		}
-	}
-	return { shapeId: shape.id, anchorIndex, point: anchors[anchorIndex] }
-}
-
 export function useConnectionGesture(board: Board, zoom: number, commit: Commit) {
 	const [draft, setDraft] = useState<ConnectionDraft | null>(null)
 	const draftRef = useRef<ConnectionDraft | null>(null)
@@ -63,7 +54,7 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 			token: Symbol(),
 			original: null,
 			endpoint: 'to',
-			fixed: snapFor(source, pointer),
+			fixed: getNearestAnchor(source, pointer),
 			origin: pointer,
 			pointer,
 			target: null,
@@ -89,10 +80,10 @@ export function useConnectionGesture(board: Board, zoom: number, commit: Commit)
 			token: Symbol(),
 			original,
 			endpoint,
-			fixed: snapFor(endpoint === 'from' ? to : from, endpoint === 'from' ? end : start),
+			fixed: getNearestAnchor(endpoint === 'from' ? to : from, endpoint === 'from' ? end : start),
 			origin: pointer,
 			pointer,
-			target: snapFor(endpoint === 'from' ? from : to, endpoint === 'from' ? start : end),
+			target: getNearestAnchor(endpoint === 'from' ? from : to, endpoint === 'from' ? start : end),
 			pending: false,
 			revision: board.revision,
 		})

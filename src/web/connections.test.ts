@@ -56,6 +56,29 @@ test('snapping picks the nearest anchor of the closest node', () => {
 	assert.deepEqual(target, { shapeId: 'a', anchorIndex: 0, point: { x: 50, y: 0 } })
 })
 
+test('source hover finds anchors without excluding a source or imposing target compatibility', () => {
+	assert.deepEqual(findSnapTarget([rectangle, connector], { x: 52, y: 2 }, undefined, 1), {
+		shapeId: 'a',
+		anchorIndex: 0,
+		point: { x: 50, y: 0 },
+	})
+	const frame: CanvasShape = { ...rectangle, id: 'frame', type: 'frame' }
+	assert.equal(findSnapTarget([frame], { x: 50, y: 50 }, undefined, 1)?.shapeId, 'frame')
+	assert.equal(findSnapTarget([connector], { x: 50, y: 50 }, undefined, 1), null)
+})
+
+test('source hover uses a 24-screen-pixel boundary at every zoom', () => {
+	for (const zoom of [0.5, 1, 2]) {
+		assert.equal(
+			findSnapTarget([rectangle], { x: 50, y: -24 / zoom }, undefined, zoom)?.shapeId,
+			'a',
+		)
+		assert.equal(findSnapTarget([rectangle], { x: 50, y: -25 / zoom }, undefined, zoom), null)
+	}
+	const top = { ...rectangle, id: 'top' }
+	assert.equal(findSnapTarget([rectangle, top], { x: 50, y: 50 }, undefined, 1)?.shapeId, 'top')
+})
+
 test('snapping stays within 24 screen pixels of the node boundary', () => {
 	assert.equal(findSnapTarget([rectangle], { x: 50, y: -20 }, source, 1)?.shapeId, 'a')
 	assert.equal(findSnapTarget([rectangle], { x: 50, y: -30 }, source, 1), null)

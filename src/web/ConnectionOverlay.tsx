@@ -15,6 +15,7 @@ interface ConnectionOverlayProps {
 	draft: ConnectionDraft | null
 	preview: ReturnType<typeof getConnectorAnchors> | null
 	target?: CanvasShape
+	hoverAnchorIndex?: number
 	selected: Connector | null
 	shapes: Shape[]
 	zoom: number
@@ -30,6 +31,7 @@ export function ConnectionOverlay({
 	draft,
 	preview,
 	target,
+	hoverAnchorIndex,
 	selected,
 	shapes,
 	zoom,
@@ -43,6 +45,7 @@ export function ConnectionOverlay({
 			? getConnectorAnchors(from, to, selected)
 			: null
 	const inset = 8 / zoom
+	const activeAnchorIndex = draft?.target?.anchorIndex ?? hoverAnchorIndex
 	const targetAnchors = target
 		? getAnchors(target).map((point, anchorIndex) => ({ point, anchorIndex }))
 		: []
@@ -102,7 +105,7 @@ export function ConnectionOverlay({
 					<ConnectorHead geometry={previewGeometry} interactive={false} />
 				</g>
 			)}
-			{target && draft && !draft.pending && (
+			{target && !draft?.pending && (
 				<g className="snap-target" data-snap-target={target.id} pointerEvents="none">
 					{target.type === 'ellipse' ? (
 						<ellipse
@@ -138,8 +141,8 @@ export function ConnectionOverlay({
 							key={`${point.x}:${point.y}`}
 							cx={point.x}
 							cy={point.y}
-							r={(draft.target?.anchorIndex === anchorIndex ? 6 : 3) / zoom}
-							className={`snap-anchor ${draft.target?.anchorIndex === anchorIndex ? 'is-active' : ''}`}
+							r={(activeAnchorIndex === anchorIndex ? 6 : 3) / zoom}
+							className={`snap-anchor ${activeAnchorIndex === anchorIndex ? 'is-active' : ''}`}
 							data-anchor-index={anchorIndex}
 							vectorEffect="non-scaling-stroke"
 						/>

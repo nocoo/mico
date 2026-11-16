@@ -12,7 +12,7 @@ import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { Marquee } from './canvas/Marquee'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { useCanvasSessionViewModel } from './canvas/useCanvasSessionViewModel'
-import { canRebaseConnector } from './connections'
+import { canRebaseConnector, findSnapTarget, getNearestAnchor } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
 import {
 	CANDY_COLORS,
@@ -89,6 +89,11 @@ export default function App() {
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
 	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
+	const [connectionHover, setConnectionHover] = useState<{
+		point: Point
+		viewport: typeof viewport
+		hitShapeId?: string
+	} | null>(null)
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
 	const [marquee, setMarquee] = useState<Rect | null>(null)
 	const [editing, setEditing] = useState<{
@@ -225,6 +230,28 @@ export default function App() {
 		openAssistant: () => setAiPanelOpen(true),
 	})
 	const connection = useConnectionGesture(board, viewport.zoom, postOperations)
+	const clearConnectionHover = useCallback(() => setConnectionHover(null), [])
+	const canHoverConnection =
+		tool === 'connector' && !spacePressed && !isPanning && !connection.draft
+	const hoverHitShape = board.shapes.find(
+		(shape): shape is CanvasShape =>
+			shape.id === connectionHover?.hitShapeId && isCanvasShape(shape),
+	)
+	const hoverSource =
+		canHoverConnection && connectionHover?.viewport === viewport
+			? hoverHitShape
+				? getNearestAnchor(hoverHitShape, connectionHover.point)
+				: findSnapTarget(board.shapes, connectionHover.point, undefined, viewport.zoom)
+			: null
+	const hoverShape = canHoverConnection
+		? board.shapes.find(
+				(shape): shape is CanvasShape => shape.id === hoverSource?.shapeId && isCanvasShape(shape),
+			)
+		: undefined
+
+	useEffect(() => {
+		if (tool !== 'connector' || spacePressed) clearConnectionHover()
+	}, [tool, spacePressed, clearConnectionHover])
 
 	const clientToWorld = (clientX: number, clientY: number) => {
 		const rect = svgRef.current?.getBoundingClientRect()
@@ -233,6 +260,16 @@ export default function App() {
 			x: (clientX - rect.left - viewport.x) / viewport.zoom,
 			y: (clientY - rect.top - viewport.y) / viewport.zoom,
 		}
+	}
+
+	const connectionHitShape = (event: React.PointerEvent<SVGElement>) => {
+		const element = event.target instanceof Element ? event.target : null
+		const id =
+			element?.closest('[data-card-handle]')?.getAttribute('data-card-handle') ??
+			element?.closest('[data-shape-id]')?.getAttribute('data-shape-id')
+		return board.shapes.find(
+			(shape): shape is CanvasShape => shape.id === id && isCanvasShape(shape),
+		)
 	}
 
 	const zoomAt = useCallback(
@@ -362,6 +399,7 @@ export default function App() {
 		setGuides([])
 		setBrushPoints(null)
 		setMarquee(null)
+		clearConnectionHover()
 		connection.cancel()
 		if (interaction?.previewToken && interaction.group) {
 			for (const shape of interaction.group) clearDragPreview(shape.id, interaction.previewToken)
@@ -369,7 +407,7 @@ export default function App() {
 		if (interaction && svgRef.current?.hasPointerCapture(interaction.pointerId)) {
 			svgRef.current.releasePointerCapture(interaction.pointerId)
 		}
-	}, [clearDragPreview, connection.cancel])
+	}, [clearDragPreview, clearConnectionHover, connection.cancel])
 
 	useEffect(() => {
 		cancelInteractionRef.current = cancelInteraction
@@ -433,6 +471,7 @@ export default function App() {
 
 		const shouldPan = event.button === 1 || spacePressed || tool === 'hand'
 		if (shouldPan) {
+			clearConnectionHover()
 			event.preventDefault()
 			svgRef.current?.setPointerCapture(event.pointerId)
 			setIsPanning(true)
@@ -463,6 +502,7 @@ export default function App() {
 
 		if (tool === 'connector') {
 			setSelectedIds([])
+			beginConnectionAt(event)
 			return
 		}
 
@@ -557,6 +597,14 @@ export default function App() {
 
 	const onCanvasPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
 		const interaction = interactionRef.current
+		if (!interaction && canHoverConnection) {
+			setConnectionHover({
+				point: clientToWorld(event.clientX, event.clientY),
+				viewport,
+				hitShapeId: connectionHitShape(event)?.id,
+			})
+			return
+		}
 		if (!interaction || interaction.pointerId !== event.pointerId) return
 
 		if (interaction.mode === 'pan') {
@@ -751,8 +799,9 @@ export default function App() {
 			svgRef.current.releasePointerCapture(event.pointerId)
 	}
 
-	const captureConnection = (event: React.PointerEvent<SVGGElement>, begin: () => boolean) => {
-		if (!begin()) return
+	const captureConnection = (event: React.PointerEvent<SVGElement>, begin: () => boolean) => {
+		if (!begin()) return false
+		clearConnectionHover()
 		event.preventDefault()
 		event.stopPropagation()
 		svgRef.current?.setPointerCapture(event.pointerId)
@@ -763,6 +812,20 @@ export default function App() {
 			startWorld: clientToWorld(event.clientX, event.clientY),
 			startViewport: { x: viewport.x, y: viewport.y },
 		}
+		return true
+	}
+
+	const beginConnectionAt = (event: React.PointerEvent<SVGElement>) => {
+		const pointer = clientToWorld(event.clientX, event.clientY)
+		const target = findSnapTarget(board.shapes, pointer, undefined, viewport.zoom)
+		const source =
+			connectionHitShape(event) ??
+			board.shapes.find(
+				(shape): shape is CanvasShape => shape.id === target?.shapeId && isCanvasShape(shape),
+			)
+		return source
+			? captureConnection(event, () => connection.begin(source, pointer, event.pointerId))
+			: false
 	}
 
 	const beginInlineEdit = (shape: CanvasShape) => {
@@ -793,11 +856,8 @@ export default function App() {
 		if (tool === 'hand' || spacePressed || event.button === 1 || event.button !== 0) return
 		event.stopPropagation()
 
-		if (tool === 'connector' && isCanvasShape(shape)) {
+		if (tool === 'connector' && beginConnectionAt(event)) {
 			setSelectedIds([])
-			captureConnection(event, () =>
-				connection.begin(shape, clientToWorld(event.clientX, event.clientY), event.pointerId),
-			)
 			return
 		}
 
@@ -1105,6 +1165,7 @@ export default function App() {
 				cursor={isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default'}
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
+				onPointerLeave={clearConnectionHover}
 				onPointerUp={onCanvasPointerUp}
 				onPointerCancel={(event) => {
 					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
@@ -1278,7 +1339,8 @@ export default function App() {
 				<ConnectionOverlay
 					draft={connection.draft}
 					preview={connection.preview}
-					target={connection.targetShape}
+					target={connection.draft ? connection.targetShape : hoverShape}
+					hoverAnchorIndex={hoverShape ? hoverSource?.anchorIndex : undefined}
 					selected={selected && isConnector(selected) ? selected : null}
 					shapes={visibleShapes}
 					zoom={viewport.zoom}
