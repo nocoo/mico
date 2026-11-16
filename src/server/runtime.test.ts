@@ -123,3 +123,14 @@ test('hosted auth configuration fails closed on incomplete or unsafe values', ()
 		/MICO_AI_ENABLED must be true or false/,
 	)
 })
+
+test('loadRuntimeConfig supports demo mode and AI IP allowlist', () => {
+	const demo = loadRuntimeConfig({
+		MICO_RUNTIME: 'deploy',
+		MICO_AUTH_MODE: 'demo',
+		MICO_AI_IP_ALLOWLIST: '167.220.0.0/16, 10.0.0.0/8',
+	})
+	assert.equal(demo.auth.mode, 'demo')
+	assert.deepEqual(demo.aiIpAllowlist, ['167.220.0.0/16', '10.0.0.0/8'])
+	assert.throws(() => loadRuntimeConfig({ MICO_AI_IP_ALLOWLIST: ' , ' }), /MICO_AI_IP_ALLOWLIST/)
+})

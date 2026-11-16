@@ -1,4 +1,6 @@
 import { loadAiConfig } from '../../src/server/aiConfig.ts'
+import { parseCidrList } from '../../src/server/ipAllowlist.ts'
+import type { AuthMode } from '../../src/shared/runtime.ts'
 
 export interface AzureTarget {
 	subscriptionId: string
@@ -9,11 +11,12 @@ export interface AzureTarget {
 	identity: string
 	environment: string
 	app: string
-	authMode: 'none' | 'entra'
+	authMode: AuthMode
 	authTenantId?: string
 	authClientId?: string
 	allowedObjectIds?: string
 	aiEnabled: boolean
+	aiIpAllowlist?: string
 	ai?: {
 		clientId: string
 		baseURL: string
@@ -34,12 +37,14 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 	}
 	const name = /^[a-z][a-z\d-]{1,30}[a-z\d]$/
 	const authMode = env.MICO_AUTH_MODE
-	if (authMode !== 'none' && authMode !== 'entra') {
-		throw new Error('Set MICO_AUTH_MODE explicitly to none or entra')
+	if (authMode !== 'none' && authMode !== 'entra' && authMode !== 'demo') {
+		throw new Error('Set MICO_AUTH_MODE explicitly to none, demo, or entra')
 	}
 	const aiEnabled = env.MICO_AI_ENABLED?.trim() || 'false'
 	if (aiEnabled !== 'true' && aiEnabled !== 'false')
 		throw new Error('MICO_AI_ENABLED must be true or false')
+	const rawAllowlist = env.MICO_AI_IP_ALLOWLIST?.trim()
+	if (rawAllowlist) parseCidrList(rawAllowlist)
 	const target: AzureTarget = {
 		subscriptionId: required('MICO_AZ_SUBSCRIPTION_ID', UUID),
 		tenantId: required('MICO_AZ_TENANT_ID', UUID),
@@ -51,6 +56,7 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 		app: required('MICO_AZ_APP', name),
 		authMode,
 		aiEnabled: aiEnabled === 'true',
+		aiIpAllowlist: rawAllowlist || undefined,
 	}
 	if (authMode === 'entra') {
 		target.authTenantId = required('MICO_AUTH_TENANT_ID', UUID)
@@ -121,6 +127,9 @@ export function containerApp(
 		MICO_MOSS_ENABLED: 'false',
 		MICO_EPHEMERAL: 'true',
 		MICO_AUTH_MODE: target.authMode,
+	}
+	if (target.aiIpAllowlist) {
+		env.MICO_AI_IP_ALLOWLIST = target.aiIpAllowlist
 	}
 	if (target.ai) {
 		env.MICO_AI_AUTH_MODE = 'managed-identity'

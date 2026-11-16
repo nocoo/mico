@@ -165,6 +165,7 @@ function httpRequest(
 		cookie?: string
 		contentType?: string
 		body?: string
+		headers?: Record<string, string>
 	} = {},
 ): Promise<HttpResult> {
 	return new Promise((resolve, reject) => {
@@ -180,6 +181,7 @@ function httpRequest(
 					...(options.origin ? { origin: options.origin } : {}),
 					...(options.cookie ? { cookie: options.cookie } : {}),
 					...(options.contentType ? { 'content-type': options.contentType } : {}),
+					...(options.headers ?? {}),
 				},
 			},
 			(res) => {
@@ -823,4 +825,86 @@ test('a signed-in identity edits a workspace the local tenant cannot see', async
 		)
 		assert.ok((await tenant.listCanvases()).some((canvas) => canvas.id === createdId))
 	})
+})
+
+test('demo mode shares one tenant without login and gates AI by IP allowlist', async () => {
+	await withHostedDaemon(
+		async ({ port, daemon }) => {
+			// Anonymous users share the demo tenant without logging in
+			const created = await httpRequest(port, '/api/canvases', {
+				method: 'POST',
+				host: HOST,
+				origin: ORIGIN,
+				contentType: 'application/json',
+				body: JSON.stringify({ name: 'Shared Demo Canvas', activate: true }),
+			})
+			assert.equal(created.status, 200)
+			const demoTenant = daemon.boards.forTenant({ tenantId: 'demo' })
+			assert.ok(
+				(await demoTenant.listCanvases()).some((canvas) => canvas.name === 'Shared Demo Canvas'),
+			)
+
+			// Whitelisted IP gets AI enabled
+			const allowedRuntime = await httpRequest(port, '/api/runtime', {
+				host: HOST,
+				headers: { 'x-forwarded-for': '167.220.42.10' },
+			})
+			assert.equal(allowedRuntime.status, 200)
+			assert.equal((JSON.parse(allowedRuntime.body) as { aiEnabled: boolean }).aiEnabled, true)
+
+			const allowedSettings = await httpRequest(port, '/api/ai/settings', {
+				host: HOST,
+				headers: { 'x-forwarded-for': '167.220.42.10' },
+			})
+			assert.equal(allowedSettings.status, 200)
+
+			// Non-whitelisted IP can read/edit canvases, but AI is disabled and blocked
+			const blockedRuntime = await httpRequest(port, '/api/runtime', {
+				host: HOST,
+				headers: { 'x-forwarded-for': '167.220.1.1, 203.0.113.9' },
+			})
+			assert.equal(blockedRuntime.status, 200)
+			assert.equal((JSON.parse(blockedRuntime.body) as { aiEnabled: boolean }).aiEnabled, false)
+
+			const blockedState = await httpRequest(port, '/api/state', {
+				host: HOST,
+				headers: { 'x-forwarded-for': '203.0.113.9' },
+			})
+			assert.equal(blockedState.status, 200)
+
+			const blockedAiChat = await httpRequest(port, '/api/ai/chat', {
+				method: 'POST',
+				host: HOST,
+				origin: ORIGIN,
+				contentType: 'application/json',
+				headers: { 'x-forwarded-for': '203.0.113.9' },
+				body: JSON.stringify({ messages: [] }),
+			})
+			assert.equal(blockedAiChat.status, 403)
+			assert.equal(JSON.parse(blockedAiChat.body).error, 'AI_FORBIDDEN')
+
+			const blockedMaiWs = await new Promise<number>((resolve) => {
+				const socket = new WebSocket(`ws://127.0.0.1:${port}/api/whiteboard-voice/mai/realtime`, {
+					headers: {
+						host: HOST,
+						origin: ORIGIN,
+						'x-forwarded-for': '203.0.113.9',
+					},
+				})
+				socket.once('unexpected-response', (_req, res) => {
+					resolve(res.statusCode ?? 0)
+				})
+			})
+			assert.equal(blockedMaiWs, 403)
+		},
+		{
+			MICO_AUTH_MODE: 'demo',
+			MICO_AI_ENABLED: 'true',
+			MICO_AI_IP_ALLOWLIST: '167.220.0.0/16',
+			MICO_RUNTIME: 'deploy',
+			MAGPIE_BASE_URL: 'https://ai.example.invalid/v1',
+			MAGPIE_MODEL: 'fixture-model',
+			MAGPIE_API_KEY: 'fixture-key',
+		},
+	)
 })

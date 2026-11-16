@@ -4,13 +4,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { BoardStore, LOCAL_TENANT, OperationError } from './store.ts'
-import { tenantScopeFor } from './tenant.ts'
+import { DEMO_TENANT, tenantScopeFor } from './tenant.ts'
 
 const IDENTITY = '11111111-1111-1111-1111-111111111111:33333333-3333-3333-3333-333333333333'
 
 test('an anonymous request resolves to the local tenant', () => {
 	assert.deepEqual(tenantScopeFor(undefined), LOCAL_TENANT)
 	assert.equal(tenantScopeFor(undefined).tenantId, 'local')
+})
+
+test('demo mode resolves all callers to a single shared demo tenant', () => {
+	assert.deepEqual(tenantScopeFor(undefined, 'demo'), DEMO_TENANT)
+	assert.deepEqual(tenantScopeFor({ identity: IDENTITY }, 'demo'), DEMO_TENANT)
+	assert.equal(tenantScopeFor(undefined, 'demo').tenantId, 'demo')
 })
 
 test('each identity resolves to its own stable opaque tenant', () => {

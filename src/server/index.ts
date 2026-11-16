@@ -15,6 +15,7 @@ import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { AuthManager } from './auth.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
+import { extractClientIp, isIpAllowed, parseCidrList } from './ipAllowlist.ts'
 import {
 	createMaiProxy,
 	MAI_CONFIG_PATH,
@@ -287,6 +288,9 @@ export function createDaemon(
 ): Daemon {
 	const env = options.env ?? process.env
 	const runtimeConfig = loadRuntimeConfig(env)
+	const aiIpRanges = parseCidrList(runtimeConfig.aiIpAllowlist.join(','))
+	const isAiIpAllowed = (req: IncomingMessage): boolean =>
+		isIpAllowed(extractClientIp(req), aiIpRanges)
 	const port = options.port ?? parsePort(env)
 	const config = loadAiConfig(env)
 	const managedIdentityAuth =
@@ -351,8 +355,10 @@ export function createDaemon(
 			const member = whiteboards.resolve(
 				req,
 				parseRequestTarget(req.url).url,
-				tenantScopeFor(runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined)
-					.tenantId,
+				tenantScopeFor(
+					runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined,
+					runtimeConfig.auth.mode,
+				).tenantId,
 			)
 			if (member) whiteboards.attachVoice(member, client)
 		} catch {
@@ -433,6 +439,22 @@ export function createDaemon(
 		sendError(res, 503, 'AI_DISABLED', 'AI features are disabled', origin)
 	}
 
+	function sendAiForbidden(res: ServerResponse, origin?: string): void {
+		sendError(res, 403, 'AI_FORBIDDEN', 'AI features are not enabled for this client IP', origin)
+	}
+
+	function ensureAiAllowed(req: IncomingMessage, res: ServerResponse, origin?: string): boolean {
+		if (!runtimeConfig.aiEnabled) {
+			sendAiDisabled(res, origin)
+			return false
+		}
+		if (!isAiIpAllowed(req)) {
+			sendAiForbidden(res, origin)
+			return false
+		}
+		return true
+	}
+
 	const replyError = (res: ServerResponse, error: unknown, origin?: string): void => {
 		if (error instanceof OperationError) {
 			sendError(res, error.status, error.code, error.message, origin)
@@ -499,7 +521,22 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, publicRuntimeContract(runtimeConfig), origin)
+				const contract = publicRuntimeContract(runtimeConfig)
+				if (!isAiIpAllowed(req)) {
+					sendJson(
+						res,
+						200,
+						{
+							...contract,
+							aiEnabled: false,
+							aiSettingsVisible: false,
+							mossEnabled: false,
+						},
+						origin,
+					)
+					return
+				}
+				sendJson(res, 200, contract, origin)
 				return
 			}
 
@@ -629,7 +666,7 @@ export function createDaemon(
 				return
 			}
 
-			const owner = tenantScopeFor(session).tenantId
+			const owner = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
 			const membership = whiteboards.resolve(req, requestUrl, owner)
 			if (membership) whiteboards.authorize(membership, req.method, pathname)
 			if (isPath('api', 'whiteboards')) {
@@ -707,13 +744,14 @@ export function createDaemon(
 				}
 			}
 
-			if (runtimeConfig.aiEnabled === false && pathname === MAI_CONFIG_PATH) {
+			if (pathname === MAI_CONFIG_PATH && (!runtimeConfig.aiEnabled || !isAiIpAllowed(req))) {
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendAiDisabled(res, origin)
+				if (!runtimeConfig.aiEnabled) sendAiDisabled(res, origin)
+				else sendAiForbidden(res, origin)
 				return
 			}
 			if (runtimeConfig.aiEnabled && assets && pathname === MAI_CONFIG_PATH) {
@@ -927,10 +965,7 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'moss', 'session')) {
-				if (!runtimeConfig.aiEnabled) {
-					sendAiDisabled(res, origin)
-					return
-				}
+				if (!ensureAiAllowed(req, res, origin)) return
 				if (!runtimeConfig.mossEnabled) {
 					sendError(res, 503, 'MOSS_DISABLED', 'MOSS Live is disabled', origin)
 					return
@@ -946,10 +981,7 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'moss', 'tool')) {
-				if (!runtimeConfig.aiEnabled) {
-					sendAiDisabled(res, origin)
-					return
-				}
+				if (!ensureAiAllowed(req, res, origin)) return
 				if (!runtimeConfig.mossEnabled) {
 					sendError(res, 503, 'MOSS_DISABLED', 'MOSS Live is disabled', origin)
 					return
@@ -965,6 +997,10 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'ai', 'settings')) {
+				if (runtimeConfig.aiEnabled && !isAiIpAllowed(req)) {
+					sendAiForbidden(res, origin)
+					return
+				}
 				if (req.method === 'GET') {
 					sendJson(res, 200, aiSettings.getPublic(), origin)
 					return
@@ -980,10 +1016,7 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'ai', 'models')) {
-				if (!runtimeConfig.aiEnabled) {
-					sendAiDisabled(res, origin)
-					return
-				}
+				if (!ensureAiAllowed(req, res, origin)) return
 				if (req.method !== 'GET') {
 					res.setHeader('Allow', 'GET, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -999,10 +1032,7 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'ai', 'chat')) {
-				if (!runtimeConfig.aiEnabled) {
-					sendAiDisabled(res, origin)
-					return
-				}
+				if (!ensureAiAllowed(req, res, origin)) return
 				if (req.method !== 'POST') {
 					res.setHeader('Allow', 'POST, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
@@ -1063,8 +1093,10 @@ export function createDaemon(
 		const member = whiteboards.resolve(
 			req,
 			parseRequestTarget(req.url).url,
-			tenantScopeFor(runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined)
-				.tenantId,
+			tenantScopeFor(
+				runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined,
+				runtimeConfig.auth.mode,
+			).tenantId,
 		)
 		if (member) {
 			socketTenant.set(socket, SHARED_WHITEBOARDS.tenantId)
@@ -1133,7 +1165,7 @@ export function createDaemon(
 			socket.destroy()
 			return
 		}
-		const tenantId = tenantScopeFor(session).tenantId
+		const tenantId = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
 		try {
 			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
 			if (sharedVoice && !member)
@@ -1149,6 +1181,17 @@ export function createDaemon(
 		if (!runtimeConfig.aiEnabled && (pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)) {
 			socket.write(
 				'HTTP/1.1 503 Service Unavailable\r\nX-Mico-Error: AI_DISABLED\r\nConnection: close\r\n\r\n',
+			)
+			socket.destroy()
+			return
+		}
+		if (
+			runtimeConfig.aiEnabled &&
+			!isAiIpAllowed(req) &&
+			(pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH)
+		) {
+			socket.write(
+				'HTTP/1.1 403 Forbidden\r\nX-Mico-Error: AI_FORBIDDEN\r\nConnection: close\r\n\r\n',
 			)
 			socket.destroy()
 			return

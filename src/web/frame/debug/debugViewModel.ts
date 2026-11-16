@@ -1,9 +1,12 @@
+import type { AuthMode } from '../../../shared/runtime'
+
 export interface DebugUser {
 	name: string
 	expiresAt: number
 }
 
 export interface DebugViewModelInput {
+	authMode?: AuthMode
 	user: DebugUser | null
 	avatarUrl: string | null
 	ephemeral: boolean
@@ -23,8 +26,9 @@ export interface DebugViewModel {
 }
 
 export function shouldShowDebug(
-	input: Pick<DebugViewModelInput, 'ephemeral' | 'user' | 'aiEnabled'>,
+	input: Pick<DebugViewModelInput, 'ephemeral' | 'user' | 'aiEnabled' | 'authMode'>,
 ) {
+	if (input.authMode === 'demo') return false
 	return input.ephemeral || input.user !== null || !input.aiEnabled
 }
 

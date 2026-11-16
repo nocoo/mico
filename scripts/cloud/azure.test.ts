@@ -142,3 +142,30 @@ test('Azure origin derives only from the selected app and actual environment dom
 		assert.throws(() => azureOrigin(azureTarget(env), domain), /domain/)
 	}
 })
+
+test('Azure target supports demo mode and AI IP allowlist', () => {
+	const demoEnv = {
+		...env,
+		MICO_AUTH_MODE: 'demo',
+		MICO_AUTH_TENANT_ID: '',
+		MICO_AUTH_CLIENT_ID: '',
+		MICO_AUTH_ALLOWED_OBJECT_IDS: '',
+		MICO_AI_IP_ALLOWLIST: '167.220.0.0/16',
+	}
+	const target = azureTarget(demoEnv)
+	assert.equal(target.authMode, 'demo')
+	assert.equal(target.aiIpAllowlist, '167.220.0.0/16')
+	const settings = Object.fromEntries(
+		containerApp(target, input).properties.template.containers[0].env.map(({ name, value }) => [
+			name,
+			value,
+		]),
+	)
+	assert.equal(settings.MICO_AUTH_MODE, 'demo')
+	assert.equal(settings.MICO_AI_IP_ALLOWLIST, '167.220.0.0/16')
+	assert.equal(settings.MICO_AUTH_TENANT_ID, undefined)
+	assert.throws(
+		() => azureTarget({ ...demoEnv, MICO_AI_IP_ALLOWLIST: 'invalid-cidr' }),
+		/Invalid IP/,
+	)
+})

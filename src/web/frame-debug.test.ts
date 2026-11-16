@@ -18,6 +18,10 @@ test('debug entry preserves the local reference geometry unless workspace state 
 	assert.equal(shouldShowDebug({ ephemeral: true, user: null, aiEnabled: true }), true)
 	assert.equal(shouldShowDebug({ ephemeral: false, user, aiEnabled: true }), true)
 	assert.equal(shouldShowDebug({ ephemeral: false, user: null, aiEnabled: false }), true)
+	assert.equal(
+		shouldShowDebug({ authMode: 'demo', ephemeral: true, user: null, aiEnabled: false }),
+		false,
+	)
 })
 
 test('debug view model exposes only supplied identity, preview, AI, version, and sign-out state', () => {

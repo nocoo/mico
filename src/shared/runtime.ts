@@ -1,4 +1,4 @@
-export type AuthMode = 'none' | 'entra'
+export type AuthMode = 'none' | 'entra' | 'demo'
 export type RuntimeMode = 'laptop' | 'deploy'
 
 export interface RuntimeAuthContract {
@@ -25,6 +25,7 @@ export interface RuntimeConfig {
 	mode: RuntimeMode
 	auth: RuntimeAuthContract
 	aiEnabled: boolean
+	aiIpAllowlist: string[]
 	mossEnabled: boolean
 	ephemeral: boolean
 	publicOrigin?: string
@@ -74,11 +75,21 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 	}
 
 	const authMode = env.MICO_AUTH_MODE?.trim() || 'none'
-	if (authMode !== 'none' && authMode !== 'entra') {
-		throw new Error('MICO_AUTH_MODE must be none or entra')
+	if (authMode !== 'none' && authMode !== 'entra' && authMode !== 'demo') {
+		throw new Error('MICO_AUTH_MODE must be none, demo, or entra')
 	}
 
 	const aiEnabled = booleanValue(env, 'MICO_AI_ENABLED')
+	const rawAllowlist = env.MICO_AI_IP_ALLOWLIST?.trim()
+	const aiIpAllowlist = rawAllowlist
+		? rawAllowlist
+				.split(',')
+				.map((entry) => entry.trim())
+				.filter(Boolean)
+		: []
+	if (rawAllowlist && aiIpAllowlist.length === 0) {
+		throw new Error('MICO_AI_IP_ALLOWLIST must contain at least one CIDR entry when set')
+	}
 	const guidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 	const mossEnabled = isMossEnabled(env)
 	const ephemeral = booleanValue(env, 'MICO_EPHEMERAL')
@@ -114,6 +125,7 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 			mode: runtime,
 			publicOrigin,
 			aiEnabled,
+			aiIpAllowlist,
 			mossEnabled,
 			ephemeral,
 			allowedObjectIds,
@@ -131,10 +143,11 @@ export function loadRuntimeConfig(env: NodeJS.ProcessEnv = process.env): Runtime
 		mode: runtime,
 		publicOrigin,
 		aiEnabled,
+		aiIpAllowlist,
 		mossEnabled,
 		ephemeral,
 		allowedObjectIds: new Set(),
-		auth: { mode: 'none' },
+		auth: { mode: authMode },
 	}
 }
 

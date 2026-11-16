@@ -2,6 +2,7 @@ import { Popover } from '@radix-ui/themes'
 import { Sparkles, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import packageJson from '../../../../package.json' with { type: 'json' }
+import type { AuthMode } from '../../../shared/runtime'
 import type { DebugUser } from './debugViewModel'
 import { createDebugViewModel } from './debugViewModel'
 import './debug.css'
@@ -9,6 +10,7 @@ import './debug.css'
 export interface DebugPanelProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
+	authMode?: AuthMode
 	user: DebugUser | null
 	avatarUrl: string | null
 	ephemeral: boolean

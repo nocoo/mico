@@ -11,6 +11,10 @@ test('runtime contract requires moss capability', () => {
 		mossEnabled: false,
 	}
 	assert.deepEqual(parseRuntimeConfig(valid), valid)
+	assert.deepEqual(parseRuntimeConfig({ ...valid, auth: { mode: 'demo' as const } }), {
+		...valid,
+		auth: { mode: 'demo' as const },
+	})
 	assert.throws(() => parseRuntimeConfig({ ...valid, aiSettingsVisible: undefined }), /invalid/i)
 	assert.throws(() => parseRuntimeConfig({ ...valid, aiSettingsVisible: 'false' }), /invalid/i)
 	assert.throws(() => parseRuntimeConfig({ ...valid, mossEnabled: undefined }), /invalid/i)

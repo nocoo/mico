@@ -11,7 +11,7 @@ export function parseRuntimeConfig(body: unknown): RuntimeConfig {
 		throw new Error('Runtime configuration is invalid.')
 	}
 	const auth = runtime.auth as Record<string, unknown>
-	if (auth.mode !== 'none' && auth.mode !== 'entra') {
+	if (auth.mode !== 'none' && auth.mode !== 'entra' && auth.mode !== 'demo') {
 		throw new Error('Runtime configuration is invalid.')
 	}
 	if (

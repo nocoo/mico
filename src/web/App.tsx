@@ -1,5 +1,6 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { AuthMode } from '../shared/runtime'
 import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '../shared/types'
 import type { WhiteboardSession } from '../shared/whiteboards'
 import { canvasFetch as fetch } from './whiteboards/client'
@@ -59,6 +60,7 @@ const randomId = () => crypto.randomUUID()
 
 export interface AppProps {
 	whiteboard?: WhiteboardSession
+	authMode?: AuthMode
 	aiEnabled?: boolean
 	aiSettingsVisible: boolean
 	mossEnabled: boolean
@@ -70,6 +72,7 @@ export interface AppProps {
 
 export default function App({
 	whiteboard,
+	authMode,
 	aiEnabled = true,
 	aiSettingsVisible,
 	mossEnabled,
@@ -1070,6 +1073,7 @@ export default function App({
 					debug={{
 						open: debugPanelOpen,
 						onOpenChange: (open) => setIdentityPanelOpen(open ? 'debug' : null),
+						authMode,
 						user,
 						avatarUrl,
 						ephemeral,

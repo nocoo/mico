@@ -45,7 +45,7 @@ function LoginView({ runtime }: { runtime: RuntimeConfig }) {
 	useEffect(() => {
 		const destination = whiteboardDestination(window.location.search)
 		if (destination) sessionStorage.setItem('mico.whiteboardReturn', destination)
-		if (runtime.auth.mode === 'none') {
+		if (runtime.auth.mode !== 'entra') {
 			window.location.replace(destination ?? '/')
 			return
 		}
@@ -82,7 +82,7 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 	const [retrying, setRetrying] = useState(false)
 
 	useEffect(() => {
-		if (runtime.auth.mode === 'none') {
+		if (runtime.auth.mode !== 'entra') {
 			window.location.replace('/')
 			return
 		}
@@ -160,7 +160,7 @@ export default function BootGate() {
 					setLoading(false)
 					return
 				}
-				if (nextRuntime.auth.mode === 'none') {
+				if (nextRuntime.auth.mode !== 'entra') {
 					setSession({ user: null })
 					setLoading(false)
 					return
@@ -194,7 +194,7 @@ export default function BootGate() {
 	}, [load])
 
 	useEffect(() => {
-		if (!session?.user || !runtime || runtime.auth.mode === 'none') return
+		if (!session?.user || !runtime || runtime.auth.mode !== 'entra') return
 		const expiresAt = expiresAtMilliseconds(session.user.expiresAt)
 		const check = () => {
 			if (Date.now() >= expiresAt) {
@@ -275,6 +275,7 @@ export default function BootGate() {
 	const Workspace = query.has('whiteboardid') || query.has('whiteboards') ? WhiteboardGate : App
 	return (
 		<Workspace
+			authMode={runtime.auth.mode}
 			aiEnabled={runtime.aiEnabled}
 			aiSettingsVisible={runtime.aiSettingsVisible}
 			mossEnabled={runtime.mossEnabled}
