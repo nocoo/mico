@@ -3,9 +3,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AuthMode } from '../shared/runtime'
 import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '../shared/types'
 import type { WhiteboardSession } from '../shared/whiteboards'
-import { canvasFetch as fetch } from './whiteboards/client'
+import {
+	clearWhiteboard,
+	configureWhiteboard,
+	canvasFetch as fetch,
+	joinWhiteboard,
+} from './whiteboards/client'
 import { usePresence } from './whiteboards/usePresence'
-import { WhiteboardCursors, WhiteboardPresence } from './whiteboards/WhiteboardPresence'
+import { WhiteboardCursors } from './whiteboards/WhiteboardPresence'
 import './whiteboards/whiteboards.css'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
@@ -58,8 +63,32 @@ const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'co
 
 const randomId = () => crypto.randomUUID()
 
+const DEMO_USERNAME_STORAGE_KEY = 'mico.demo.username'
+
+function initialDemoUsername(): string {
+	const fromUrl = new URLSearchParams(window.location.search).get('username')?.trim()
+	if (fromUrl) {
+		try {
+			localStorage.setItem(DEMO_USERNAME_STORAGE_KEY, fromUrl)
+		} catch {
+			// Ignore storage restrictions.
+		}
+		return fromUrl.slice(0, 80)
+	}
+	try {
+		const saved = localStorage.getItem(DEMO_USERNAME_STORAGE_KEY)?.trim()
+		if (saved) return saved.slice(0, 80)
+	} catch {
+		// Ignore storage restrictions.
+	}
+	return 'Guest'
+}
+
+function initialDemoSharer(): boolean {
+	return new URLSearchParams(window.location.search).get('sharer') === 'true'
+}
+
 export interface AppProps {
-	whiteboard?: WhiteboardSession
 	authMode?: AuthMode
 	aiEnabled?: boolean
 	aiSettingsVisible: boolean
@@ -71,7 +100,6 @@ export interface AppProps {
 }
 
 export default function App({
-	whiteboard,
 	authMode,
 	aiEnabled = true,
 	aiSettingsVisible,
@@ -81,8 +109,14 @@ export default function App({
 	avatarUrl = null,
 	onSignOut,
 }: AppProps) {
-	const readOnly = Boolean(whiteboard && !whiteboard.member.sharer)
-	const canUseAi = aiEnabled && !readOnly
+	const readOnly = false
+	const canUseAi = aiEnabled
+	const [demoClientId] = useState(() => crypto.randomUUID())
+	const [demoUsername, setDemoUsername] = useState(initialDemoUsername)
+	const [demoSharer, setDemoSharer] = useState(initialDemoSharer)
+	const [demoSession, setDemoSession] = useState<WhiteboardSession | undefined>(undefined)
+	const [demoBusy, setDemoBusy] = useState(false)
+	const [demoError, setDemoError] = useState('')
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -107,9 +141,8 @@ export default function App({
 	const imageInputRef = useRef<HTMLInputElement>(null)
 	const connectionResetRef = useRef<() => void>(() => {})
 	const cancelInteractionRef = useRef<() => void>(() => {})
-	const [identityPanelOpen, setIdentityPanelOpen] = useState<'canvases' | 'debug' | null>(null)
-	const canvasPanelOpen = identityPanelOpen === 'canvases'
-	const debugPanelOpen = identityPanelOpen === 'debug'
+	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
+	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
 		canUseAi ? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '') : '',
 	)
@@ -119,7 +152,76 @@ export default function App({
 	const aiPanelOpenRef = useRef(aiPanelOpen)
 	aiPanelOpenRef.current = aiPanelOpen
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
-	const presence = usePresence(whiteboard, svgRef, viewport, setViewport)
+	const presence = usePresence(demoSession, svgRef, viewport, setViewport)
+
+	useEffect(() => {
+		if (authMode !== 'demo') return
+		const controller = new AbortController()
+		const initialSharer = initialDemoSharer()
+		const joinInput = {
+			whiteboardid: 'demo',
+			username: initialDemoUsername(),
+			sharer: initialSharer,
+			clientId: demoClientId,
+		}
+		void joinWhiteboard(joinInput, controller.signal)
+			.then((session) => {
+				if (controller.signal.aborted) return
+				configureWhiteboard(joinInput, session)
+				setDemoSession(session)
+				setDemoError('')
+			})
+			.catch((error: unknown) => {
+				if (controller.signal.aborted) return
+				if (initialSharer) {
+					setDemoSharer(false)
+					const fallbackInput = { ...joinInput, sharer: false }
+					void joinWhiteboard(fallbackInput, controller.signal)
+						.then((session) => {
+							if (controller.signal.aborted) return
+							configureWhiteboard(fallbackInput, session)
+							setDemoSession(session)
+						})
+						.catch(() => undefined)
+				}
+				setDemoError(error instanceof Error ? error.message : 'Could not join presence session')
+			})
+		return () => {
+			controller.abort()
+			clearWhiteboard()
+		}
+	}, [authMode, demoClientId])
+
+	const updateDemoProfile = useCallback(
+		async (nextUsername: string, nextSharer: boolean) => {
+			if (authMode !== 'demo') return
+			setDemoBusy(true)
+			setDemoError('')
+			const joinInput = {
+				whiteboardid: 'demo',
+				username: nextUsername,
+				sharer: nextSharer,
+				clientId: demoClientId,
+			}
+			try {
+				const session = await joinWhiteboard(joinInput)
+				configureWhiteboard(joinInput, session)
+				setDemoSession(session)
+				setDemoUsername(session.member.username)
+				setDemoSharer(session.member.sharer)
+				try {
+					localStorage.setItem(DEMO_USERNAME_STORAGE_KEY, session.member.username)
+				} catch {
+					// Ignore storage restrictions.
+				}
+			} catch (error) {
+				setDemoError(error instanceof Error ? error.message : 'Could not update profile')
+			} finally {
+				setDemoBusy(false)
+			}
+		},
+		[authMode, demoClientId],
+	)
 	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
 	const [selectedIds, setSelectedIds] = useState<string[]>([])
@@ -226,28 +328,20 @@ export default function App({
 				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
 			)
 		},
-		[fitShapesInCanvas, readOnly],
+		[fitShapesInCanvas],
 	)
 
 	const {
 		board,
-		canvases,
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
-		roomError,
 		sendPresence,
 		postOperations,
 		undo,
 		redo,
 		canUndo,
 		canRedo,
-		refreshCanvases,
-		createCanvas,
-		createLessonCanvas,
-		switchCanvas,
-		renameCanvas,
-		deleteCanvas,
 		getCurrentBoard,
 		getActiveCanvasId,
 		isCanvasTargetCurrent,
@@ -255,7 +349,7 @@ export default function App({
 		announce,
 		onBoardTransition,
 		onBoardAccepted,
-		whiteboard,
+		whiteboard: demoSession,
 		onPresence: presence.onEvent,
 		onSocketReady: presence.queueView,
 	})
@@ -424,23 +518,16 @@ export default function App({
 		connectionResetRef.current = connection.reset
 	}, [connection.reset])
 
-	const closeCanvasPanel = useCallback(() => setIdentityPanelOpen(null), [])
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
 	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
 
-	const toggleCanvasPanel = () => {
-		const open = !canvasPanelOpen
-		if (open) void refreshCanvases()
-		setIdentityPanelOpen(open ? 'canvases' : null)
-	}
-
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
 			if (event.key === 'Escape') {
-				if (debugPanelOpen) return
+				if (debugPanelOpen || demoPanelOpen) return
 				cancelInteraction()
 				setTool('select')
 				return
@@ -471,7 +558,7 @@ export default function App({
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction, debugPanelOpen])
+	}, [cancelInteraction, debugPanelOpen, demoPanelOpen])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
@@ -1012,25 +1099,8 @@ export default function App({
 			}
 		>
 			<CanvasBackdrop />
-			{whiteboard ? (
-				<>
-					<WhiteboardPresence
-						session={whiteboard}
-						members={presence.members}
-						following={presence.following}
-						presenterId={presence.presenterId}
-						connected={wsConnected}
-						error={roomError}
-						onFollow={presence.follow}
-						zoom={viewport.zoom}
-						onZoom={(factor) => zoomAt(viewport.zoom * factor)}
-					/>
-					<WhiteboardCursors session={whiteboard} members={presence.members} viewport={viewport} />
-				</>
-			) : (
-				<a className="shared-whiteboards-link" href="/?whiteboards=1">
-					Shared whiteboards
-				</a>
+			{demoSession && (
+				<WhiteboardCursors session={demoSession} members={presence.members} viewport={viewport} />
 			)}
 			<CanvasMinimap
 				shapes={visibleShapes}
@@ -1055,33 +1125,38 @@ export default function App({
 					if (file) void uploadImage(file)
 				}}
 			/>
-			{!whiteboard && (
-				<IdentityFrame
-					state={{
-						canvases,
-						activeCanvasId,
-						canvasesOpen: canvasPanelOpen,
-					}}
-					actions={{
-						toggleCanvases: toggleCanvasPanel,
-						closeCanvases: closeCanvasPanel,
-						createCanvas,
-						switchCanvas,
-						renameCanvas,
-						deleteCanvas,
-					}}
-					debug={{
-						open: debugPanelOpen,
-						onOpenChange: (open) => setIdentityPanelOpen(open ? 'debug' : null),
-						authMode,
-						user,
-						avatarUrl,
-						ephemeral,
-						aiEnabled,
-						onSignOut,
-					}}
-				/>
-			)}
+			<IdentityFrame
+				debug={{
+					open: debugPanelOpen,
+					onOpenChange: setDebugPanelOpen,
+					authMode,
+					user,
+					avatarUrl,
+					ephemeral,
+					aiEnabled,
+					onSignOut,
+				}}
+				demo={
+					authMode === 'demo'
+						? {
+								open: demoPanelOpen,
+								onOpenChange: setDemoPanelOpen,
+								username: demoUsername,
+								sharer: demoSharer,
+								busy: demoBusy,
+								error: demoError,
+								members: presence.members,
+								presenterId: presence.presenterId,
+								selfId: demoSession?.member.id ?? null,
+								following: presence.following,
+								ephemeral,
+								aiEnabled,
+								onUpdateProfile: updateDemoProfile,
+								onFollowPresenter: presence.follow,
+							}
+						: undefined
+				}
+			/>
 			{!readOnly && (
 				<Toolbar
 					state={{
@@ -1135,7 +1210,7 @@ export default function App({
 			{canUseAi && (
 				<AssistantFrame
 					state={{
-						sharedWhiteboard: Boolean(whiteboard),
+						sharedWhiteboard: false,
 						connection: {
 							apiConnected,
 							wsConnected,
@@ -1144,7 +1219,7 @@ export default function App({
 						},
 						open: aiPanelOpen,
 						mossEnabled,
-						aiSettingsVisible: aiSettingsVisible && !whiteboard,
+						aiSettingsVisible,
 						canvasId: activeCanvasId,
 						selectedIds,
 						initialPrompt: aiPrompt,
@@ -1154,7 +1229,7 @@ export default function App({
 						toggle: () => setAiPanelOpen((open) => !open),
 						clearSelection,
 						consumeInitialPrompt: consumeAiPrompt,
-						createCanvas: createLessonCanvas,
+						createCanvas: () => {},
 						isGestureActive,
 					}}
 				/>

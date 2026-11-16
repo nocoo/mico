@@ -28,7 +28,7 @@ import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from 
 import { parseRequestTarget } from './requestTarget.ts'
 import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 import { tenantScopeFor } from './tenant.ts'
-import { SHARED_WHITEBOARDS, Whiteboards } from './whiteboards.ts'
+import { Whiteboards } from './whiteboards.ts'
 
 function parsePort(env: NodeJS.ProcessEnv): number {
 	const raw = env.MICO_PORT
@@ -219,38 +219,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function exactKeys(value: Record<string, unknown>, optional: string[] = []): boolean {
-	const allowed = new Set(optional)
-	return Object.keys(value).every((key) => allowed.has(key))
-}
-
-function invalid(message: string): never {
-	throw new OperationError(400, 'INVALID_REQUEST', message)
-}
-
 function knownPath(pathname: string): boolean {
 	const segments = pathname.split('/').filter(Boolean)
 	if (segments[0] !== 'api') return false
 	if (segments.length === 2) {
-		return [
-			'live',
-			'runtime',
-			'state',
-			'board',
-			'operations',
-			'events',
-			'canvases',
-			'images',
-			'active-canvas',
-			'auth',
-			'whiteboards',
-		].includes(segments[1])
+		return ['live', 'runtime', 'state', 'board', 'operations', 'events', 'images', 'auth'].includes(
+			segments[1],
+		)
 	}
 	if (segments.length === 3) {
 		return (
 			(segments[1] === 'auth' && ['session', 'logout'].includes(segments[2])) ||
 			(segments[1] === 'whiteboards' && segments[2] === 'join') ||
-			segments[1] === 'canvases' ||
 			segments[1] === 'images' ||
 			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
 			(segments[1] === 'ai' && ['chat', 'models', 'settings'].includes(segments[2]))
@@ -348,7 +328,7 @@ export function createDaemon(
 		((settings: ChatSettings) => createMagpieModel(settings, managedIdentityAuth?.chatBearer))
 	const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
-	const whiteboards = new Whiteboards(boards)
+	const whiteboards = new Whiteboards()
 	function attachVoiceSession(req: IncomingMessage, client: WebSocket) {
 		auth.attachSocket(req, client)
 		try {
@@ -369,14 +349,6 @@ export function createDaemon(
 	const socketTenant = new WeakMap<WebSocket, string>()
 
 	const broadcast = (event: unknown, tenantId: string): void => {
-		if (
-			tenantId === SHARED_WHITEBOARDS.tenantId &&
-			isRecord(event) &&
-			typeof event.canvasId === 'string'
-		) {
-			whiteboards.emit(event.canvasId, event)
-			return
-		}
 		const payload = JSON.stringify(event)
 		for (const client of wss.clients) {
 			if (client.readyState !== WebSocket.OPEN) continue
@@ -492,10 +464,6 @@ export function createDaemon(
 		const segments = pathname.split('/').filter(Boolean)
 		const isPath = (...parts: string[]) =>
 			segments.length === parts.length && parts.every((part, index) => segments[index] === part)
-		const canvasId =
-			segments[0] === 'api' && segments[1] === 'canvases' && segments.length === 3
-				? segments[2]
-				: null
 
 		if (req.method === 'OPTIONS') {
 			if (!knownPath(pathname)) {
@@ -667,38 +635,18 @@ export function createDaemon(
 			}
 
 			const owner = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
-			const membership = whiteboards.resolve(req, requestUrl, owner)
-			if (membership) whiteboards.authorize(membership, req.method, pathname)
-			if (isPath('api', 'whiteboards')) {
-				const shared = boards.forTenant(SHARED_WHITEBOARDS)
-				if (req.method === 'GET') {
-					const list = await shared.getCanvasList(false)
-					sendJson(res, 200, { whiteboards: list.canvases }, origin)
-				} else if (req.method === 'POST') {
-					const body = await readJson(req)
-					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('Expected a whiteboard name')
-					const created = await shared.createCanvas(body.name, false)
-					sendJson(res, 201, { whiteboard: created.canvas }, origin)
-				} else {
-					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use GET or POST', origin)
-				}
-				return
-			}
 			if (isPath('api', 'whiteboards', 'join')) {
 				if (req.method !== 'POST') {
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use POST', origin)
 					return
 				}
-				sendJson(res, 200, await whiteboards.join(await readJson(req), owner), origin)
+				sendJson(res, 200, whiteboards.join(await readJson(req), owner), origin)
 				return
 			}
-			const tenantId = membership ? SHARED_WHITEBOARDS.tenantId : owner
+			const tenantId = owner
 			const store = boards.forTenant({ tenantId })
 			const send = (event: unknown): void => broadcast(event, tenantId)
-			const readCanvasRequest = async (allowRestore = false) => {
-				const body = await readJson(req, allowRestore)
-				return membership ? whiteboards.scopeBody(membership, body) : body
-			}
+			const readCanvasRequest = async (allowRestore = false) => readJson(req, allowRestore)
 			let tenantImages: ImageGenerationService | undefined
 			const images = (): ImageGenerationService => {
 				tenantImages ??= imageGenerationFor(tenantId)
@@ -807,14 +755,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(
-					res,
-					200,
-					membership
-						? await whiteboards.snapshot(membership.whiteboardid)
-						: await store.getState(includePreviews),
-					origin,
-				)
+				sendJson(res, 200, await store.getState(includePreviews), origin)
 				return
 			}
 
@@ -824,7 +765,7 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				sendJson(res, 200, await store.getBoard(membership?.whiteboardid), origin)
+				sendJson(res, 200, await store.getBoard(), origin)
 				return
 			}
 
@@ -892,75 +833,6 @@ export function createDaemon(
 					'Cross-Origin-Resource-Policy': 'same-origin',
 				})
 				res.end(asset.bytes)
-				return
-			}
-
-			if (isPath('api', 'canvases')) {
-				if (req.method === 'GET') {
-					sendJson(
-						res,
-						200,
-						membership
-							? await whiteboards.snapshot(membership.whiteboardid)
-							: await store.getCanvasList(includePreviews),
-						origin,
-					)
-					return
-				}
-				if (req.method !== 'POST') {
-					res.setHeader('Allow', 'GET, POST, OPTIONS')
-					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
-					return
-				}
-				const body = await readJson(req)
-				if (body !== undefined && !isRecord(body)) invalid('request must be an object')
-				const record = isRecord(body) ? body : {}
-				if (!exactKeys(record, ['name', 'activate'])) invalid('invalid canvas request')
-				if (record.activate !== undefined && typeof record.activate !== 'boolean') {
-					invalid('activate must be a boolean')
-				}
-				const created = await store.createCanvas(record.name, record.activate === true)
-				send({ type: 'snapshot', ...created.state })
-				sendJson(res, 200, { ...created.state, createdCanvasId: created.canvas.id }, origin)
-				return
-			}
-
-			if (canvasId !== null) {
-				if (req.method === 'GET') {
-					sendJson(res, 200, await store.getCanvas(canvasId), origin)
-					return
-				}
-				if (req.method === 'PATCH') {
-					const body = await readJson(req)
-					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('invalid canvas request')
-					const state = await store.renameCanvas(canvasId, body.name)
-					send({ type: 'snapshot', ...state })
-					sendJson(res, 200, state, origin)
-					return
-				}
-				if (req.method === 'DELETE') {
-					const state = await store.deleteCanvas(canvasId)
-					send({ type: 'snapshot', ...state })
-					sendJson(res, 200, state, origin)
-					return
-				}
-				res.setHeader('Allow', 'GET, PATCH, DELETE, OPTIONS')
-				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
-				return
-			}
-
-			if (isPath('api', 'active-canvas')) {
-				if (req.method !== 'PUT') {
-					res.setHeader('Allow', 'PUT, OPTIONS')
-					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
-					return
-				}
-				const body = await readJson(req)
-				if (!isRecord(body) || !exactKeys(body, ['id'])) invalid('invalid active canvas request')
-				if (typeof body.id !== 'string') invalid('canvas id must be a string')
-				const state = await store.activateCanvas(body.id)
-				send({ type: 'snapshot', ...state })
-				sendJson(res, 200, state, origin)
 				return
 			}
 
@@ -1099,19 +971,7 @@ export function createDaemon(
 			).tenantId,
 		)
 		if (member) {
-			socketTenant.set(socket, SHARED_WHITEBOARDS.tenantId)
 			whiteboards.attach(member, socket)
-			void whiteboards
-				.snapshot(member.whiteboardid)
-				.then((state) => {
-					if (socket.readyState === WebSocket.OPEN)
-						socket.send(JSON.stringify({ type: 'snapshot', ...state }))
-				})
-				.catch((error: unknown) => {
-					console.error(error)
-					socket.close(1011, 'Could not read the whiteboard')
-				})
-			return
 		}
 		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
 		boards
@@ -1170,7 +1030,6 @@ export function createDaemon(
 			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
 			if (sharedVoice && !member)
 				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
-			if (member) whiteboards.authorize(member, 'GET', pathname)
 			if (member) req.headers['x-mico-whiteboard'] = member.token
 		} catch {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')

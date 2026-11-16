@@ -22,7 +22,7 @@ export const presenceMessageSchema = z.discriminatedUnion('type', [
 
 export const joinWhiteboardSchema = z
 	.object({
-		whiteboardid: z.string().min(1).max(80),
+		whiteboardid: z.string().min(1).max(80).default('demo'),
 		username: z
 			.string()
 			.trim()

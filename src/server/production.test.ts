@@ -134,15 +134,30 @@ test('production shares one origin for canvas API, events and provider routes', 
 			assert.equal(live.status, 200)
 			assert.equal((await live.json()).status, 'ok')
 			const event = once(socket, 'message', { signal: AbortSignal.timeout(5000) })
-			const created = await fetch(`${url}/api/canvases`, {
+			const created = await fetch(`${url}/api/operations`, {
 				method: 'POST',
 				headers: { ...headers, 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: 'Production canvas', activate: true }),
+				body: JSON.stringify({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'prod-note',
+								type: 'note',
+								x: 10,
+								y: 10,
+								w: 80,
+								h: 80,
+								color: '#fff8d4',
+								text: 'Prod',
+							},
+						},
+					],
+				}),
 			})
 			assert.equal(created.status, 200)
-			const state = await created.json()
 			const [message] = await event
-			assert.equal(JSON.parse(message.toString()).activeCanvasId, state.createdCanvasId)
+			assert.equal(JSON.parse(message.toString()).type, 'board')
 			const config = await fetch(`${url}/mai/config`, { headers })
 			assert.equal(config.status, 200)
 			assert.deepEqual(await config.json(), {

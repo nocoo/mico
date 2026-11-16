@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { randomUUID } from 'node:crypto'
 import { once } from 'node:events'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { request } from 'node:http'
@@ -9,7 +8,6 @@ import { test } from 'node:test'
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose'
 import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
-import type { WhiteboardSession } from '../shared/whiteboards.ts'
 import { createMockAiModel } from './aiMock.ts'
 import { createDaemon, type Daemon } from './index.ts'
 import { tenantScopeFor } from './tenant.ts'
@@ -19,110 +17,6 @@ const HOST = 'mico.test'
 const TENANT_ID = '11111111-1111-1111-1111-111111111111'
 const CLIENT_ID = '22222222-2222-2222-2222-222222222222'
 const ALLOWED_OID = '33333333-3333-3333-3333-333333333333'
-
-test('authenticated identities can share explicit whiteboards without sharing private tenants or sessions', async () => {
-	const otherOid = '44444444-4444-4444-4444-444444444444'
-	await withHostedDaemon(
-		async ({ port, privateKey }) => {
-			const call = (path: string, cookie?: string, body?: unknown) =>
-				httpRequest(port, path, {
-					host: HOST,
-					origin: ORIGIN,
-					cookie,
-					method: body === undefined ? 'GET' : 'POST',
-					contentType: 'application/json',
-					body: body === undefined ? undefined : JSON.stringify(body),
-				})
-			assert.equal((await call('/api/whiteboards')).status, 401)
-			const redirect = await call('/?whiteboardid=shared&username=Jason%20Huang&sharer=true')
-			assert.equal(
-				redirect.headers.location,
-				'/login?whiteboardid=shared&username=Jason%20Huang&sharer=true',
-			)
-			const cookies = await Promise.all(
-				[ALLOWED_OID, otherOid].map(async (objectId) =>
-					cookieFrom(
-						await call('/api/auth/session', undefined, {
-							id_token: await signToken(privateKey, { objectId }),
-						}),
-					),
-				),
-			)
-			const privateStates = await Promise.all(
-				cookies.map(async (cookie) => JSON.parse((await call('/api/state', cookie)).body)),
-			)
-			assert.notEqual(privateStates[0].activeCanvasId, privateStates[1].activeCanvasId)
-			const created = await call('/api/whiteboards', cookies[0], {
-				name: 'Shared across identities',
-			})
-			assert.equal(created.status, 201)
-			const id = JSON.parse(created.body).whiteboard.id
-			const list = JSON.parse((await call('/api/whiteboards', cookies[1])).body)
-			assert.ok(list.whiteboards.some((board: { id: string }) => board.id === id))
-			const members: WhiteboardSession[] = await Promise.all(
-				cookies.map(async (cookie, index) => {
-					const joined = await call('/api/whiteboards/join', cookie, {
-						whiteboardid: id,
-						username: `User ${index}`,
-						sharer: index === 0,
-						clientId: randomUUID(),
-					})
-					assert.equal(joined.status, 200)
-					return JSON.parse(joined.body)
-				}),
-			)
-			const socket = new WebSocket(
-				`ws://127.0.0.1:${port}/api/events?whiteboardSession=${members[0].token}`,
-				{ headers: { host: HOST, origin: ORIGIN, cookie: cookies[0] } },
-			)
-			try {
-				await once(socket, 'open', { signal: AbortSignal.timeout(5000) })
-				const body = {
-					operations: [
-						{
-							type: 'create',
-							shape: {
-								id: 'shared-text',
-								type: 'text',
-								x: 0,
-								y: 0,
-								w: 200,
-								h: 40,
-								color: '#333333',
-								text: 'Together',
-							},
-						},
-					],
-				}
-				assert.equal(
-					(await call(`/api/operations?whiteboardSession=${members[0].token}`, cookies[0], body))
-						.status,
-					200,
-				)
-				const shared = JSON.parse(
-					(await call(`/api/state?whiteboardSession=${members[1].token}`, cookies[1])).body,
-				)
-				assert.equal(shared.board.shapes[0].text, 'Together')
-				assert.equal(
-					(await call(`/api/state?whiteboardSession=${members[0].token}`, cookies[1])).status,
-					401,
-				)
-				assert.equal(
-					(await call(`/api/operations?whiteboardSession=${members[1].token}`, cookies[1], body))
-						.status,
-					403,
-				)
-				for (const cookie of cookies) {
-					assert.equal((await call(`/api/canvases/${id}`, cookie)).status, 404)
-					assert.equal(JSON.parse((await call('/api/state', cookie)).body).board.shapes.length, 0)
-				}
-			} finally {
-				socket.terminate()
-			}
-		},
-		{ MICO_AUTH_ALLOWED_OBJECT_IDS: `${ALLOWED_OID},${otherOid}` },
-	)
-})
 
 async function signToken(
 	privateKey: CryptoKey,
@@ -463,7 +357,6 @@ test('hosted protection covers APIs, assets, mutations and all WebSocket handsha
 		for (const path of [
 			'/api/state',
 			'/api/board',
-			'/api/canvases',
 			'/api/images/missing',
 			'/api/ai/settings',
 			'/api/ai/models',
@@ -542,13 +435,29 @@ test('hosted protection covers APIs, assets, mutations and all WebSocket handsha
 		for (const origin of [undefined, 'https://evil.test']) {
 			assert.equal(
 				(
-					await httpRequest(port, '/api/canvases', {
+					await httpRequest(port, '/api/operations', {
 						method: 'POST',
 						host: HOST,
 						origin,
 						cookie,
 						contentType: 'application/json',
-						body: JSON.stringify({ name: 'Rejected' }),
+						body: JSON.stringify({
+							operations: [
+								{
+									type: 'create',
+									shape: {
+										id: 'rejected-note',
+										type: 'note',
+										x: 0,
+										y: 0,
+										w: 80,
+										h: 80,
+										color: '#fff8d4',
+										text: 'Rejected',
+									},
+								},
+							],
+						}),
 					})
 				).status,
 				403,
@@ -565,19 +474,35 @@ test('hosted protection covers APIs, assets, mutations and all WebSocket handsha
 				403,
 			)
 		}
-		const created = await httpRequest(port, '/api/canvases', {
+		const created = await httpRequest(port, '/api/operations', {
 			method: 'POST',
 			host: HOST,
 			origin: ORIGIN,
 			cookie,
 			contentType: 'application/json',
-			body: JSON.stringify({ name: 'Authorized' }),
+			body: JSON.stringify({
+				operations: [
+					{
+						type: 'create',
+						shape: {
+							id: 'authorized-note',
+							type: 'note',
+							x: 0,
+							y: 0,
+							w: 80,
+							h: 80,
+							color: '#fff8d4',
+							text: 'Authorized',
+						},
+					},
+				],
+			}),
 		})
 		assert.equal(created.status, 200)
-		const canvases = await httpRequest(port, '/api/canvases', { host: HOST, cookie })
+		const state = await httpRequest(port, '/api/state', { host: HOST, cookie })
 		assert.ok(
-			JSON.parse(canvases.body).canvases.some(
-				(canvas: { name: string }) => canvas.name === 'Authorized',
+			JSON.parse(state.body).board.shapes.some(
+				(shape: { id: string }) => shape.id === 'authorized-note',
 			),
 		)
 		for (const path of ['/api/events', '/mai/realtime', '/moss']) {
@@ -633,7 +558,11 @@ test('non-canonical paths cannot bypass API or static authentication', async () 
 			tenantScopeFor({ identity: `${TENANT_ID}:${ALLOWED_OID}` }),
 		)
 		const count = (await tenant.listCanvases()).length
-		for (const path of ['//ignored//api/canvases', '/api//canvases', '/api/../api/canvases']) {
+		for (const path of [
+			'//ignored//api/operations',
+			'/api//operations',
+			'/api/../api/operations',
+		]) {
 			const response = await httpRequest(port, path, {
 				method: 'POST',
 				host: HOST,
@@ -794,36 +723,50 @@ test('a signed-in identity edits a workspace the local tenant cannot see', async
 		})
 		const cookie = cookieFrom(posted)
 
-		const created = await httpRequest(port, '/api/canvases', {
+		const created = await httpRequest(port, '/api/operations', {
 			method: 'POST',
 			host: HOST,
 			origin: ORIGIN,
 			cookie,
 			contentType: 'application/json',
-			body: JSON.stringify({ name: 'Integration workspace', activate: true }),
+			body: JSON.stringify({
+				operations: [
+					{
+						type: 'create',
+						shape: {
+							id: 'tenant-note',
+							type: 'note',
+							x: 0,
+							y: 0,
+							w: 80,
+							h: 80,
+							color: '#fff8d4',
+							text: 'Integration workspace',
+						},
+					},
+				],
+			}),
 		})
 		assert.equal(created.status, 200)
-		const createdId = (JSON.parse(created.body) as { createdCanvasId: string }).createdCanvasId
 
-		const listed = await httpRequest(port, '/api/canvases', {
+		const listed = await httpRequest(port, '/api/state', {
 			host: HOST,
 			origin: ORIGIN,
 			cookie,
 		})
 		assert.equal(listed.status, 200)
-		const names = (JSON.parse(listed.body) as { canvases: { name: string }[] }).canvases.map(
-			(canvas) => canvas.name,
+		assert.ok(
+			(JSON.parse(listed.body) as { board: { shapes: { id: string }[] } }).board.shapes.some(
+				(shape) => shape.id === 'tenant-note',
+			),
 		)
-		assert.ok(names.includes('Integration workspace'))
 
-		const local = await daemon.store.listCanvases()
-		assert.ok(local.every((canvas) => canvas.id !== createdId))
-		assert.ok(local.every((canvas) => canvas.name !== 'Integration workspace'))
+		assert.ok((await daemon.store.getBoard()).shapes.every((shape) => shape.id !== 'tenant-note'))
 
 		const tenant = daemon.boards.forTenant(
 			tenantScopeFor({ identity: `${TENANT_ID}:${ALLOWED_OID}` }),
 		)
-		assert.ok((await tenant.listCanvases()).some((canvas) => canvas.id === createdId))
+		assert.ok((await tenant.getBoard()).shapes.some((shape) => shape.id === 'tenant-note'))
 	})
 })
 
@@ -831,17 +774,33 @@ test('demo mode shares one tenant without login and gates AI by IP allowlist', a
 	await withHostedDaemon(
 		async ({ port, daemon }) => {
 			// Anonymous users share the demo tenant without logging in
-			const created = await httpRequest(port, '/api/canvases', {
+			const created = await httpRequest(port, '/api/operations', {
 				method: 'POST',
 				host: HOST,
 				origin: ORIGIN,
 				contentType: 'application/json',
-				body: JSON.stringify({ name: 'Shared Demo Canvas', activate: true }),
+				body: JSON.stringify({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'demo-shared-note',
+								type: 'note',
+								x: 10,
+								y: 10,
+								w: 80,
+								h: 80,
+								color: '#fff8d4',
+								text: 'Shared Demo',
+							},
+						},
+					],
+				}),
 			})
 			assert.equal(created.status, 200)
 			const demoTenant = daemon.boards.forTenant({ tenantId: 'demo' })
 			assert.ok(
-				(await demoTenant.listCanvases()).some((canvas) => canvas.name === 'Shared Demo Canvas'),
+				(await demoTenant.getBoard()).shapes.some((shape) => shape.id === 'demo-shared-note'),
 			)
 
 			// Whitelisted IP gets AI enabled

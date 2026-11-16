@@ -1,0 +1,138 @@
+.demo-panel-form {
+	display: grid;
+	gap: 8px;
+}
+
+.demo-field {
+	display: grid;
+	gap: 4px;
+	font-size: 12px;
+	color: var(--ink-muted, #4f5866);
+}
+
+.demo-name-row {
+	display: flex;
+	gap: 6px;
+}
+
+.demo-name-input {
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 30px;
+	padding: 0 9px;
+	border: 1px solid color-mix(in srgb, var(--ink, #171a20) 14%, transparent);
+	border-radius: 8px;
+	background: var(--surface, #ffffff);
+	color: var(--ink, #171a20);
+	font: inherit;
+	font-size: 13px;
+}
+
+.demo-name-save {
+	flex: 0 0 auto;
+	height: 30px;
+	padding: 0 10px;
+	border: 0;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--ink, #171a20) 88%, transparent);
+	color: #ffffff;
+	font: inherit;
+	font-size: 12px;
+	font-weight: 560;
+	cursor: pointer;
+}
+
+.demo-name-save:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.demo-presenter-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 2px;
+	font-size: 13px;
+	color: var(--ink, #171a20);
+	cursor: pointer;
+}
+
+.demo-error {
+	margin: 0;
+	font-size: 12px;
+	color: #b42318;
+}
+
+.demo-members {
+	display: grid;
+	gap: 6px;
+	padding-top: 4px;
+	border-top: 1px solid color-mix(in srgb, var(--ink, #171a20) 8%, transparent);
+}
+
+.demo-members-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	font-size: 11px;
+	font-weight: 600;
+	color: var(--ink-muted, #4f5866);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+.demo-follow-button {
+	height: 22px;
+	padding: 0 8px;
+	border: 1px solid color-mix(in srgb, var(--ink, #171a20) 14%, transparent);
+	border-radius: 999px;
+	background: transparent;
+	color: var(--ink, #171a20);
+	font: inherit;
+	font-size: 11px;
+	font-weight: 550;
+	cursor: pointer;
+}
+
+.demo-members-list {
+	display: grid;
+	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	max-height: 140px;
+	overflow-y: auto;
+}
+
+.demo-member-item {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	font-size: 12.5px;
+	color: var(--ink, #171a20);
+}
+
+.demo-member-dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 999px;
+	flex: 0 0 auto;
+}
+
+.demo-member-name {
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.demo-member-badge {
+	flex: 0 0 auto;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--ink, #171a20) 8%, transparent);
+	font-size: 11px;
+	color: var(--ink-muted, #4f5866);
+}

@@ -11,7 +11,6 @@ import {
 } from './runtime'
 import { useUserAvatar } from './useUserAvatar'
 import { whiteboardDestination } from './whiteboards/client'
-import { WhiteboardGate } from './whiteboards/WhiteboardGate'
 
 function GateScreen({
 	title,
@@ -271,10 +270,8 @@ export default function BootGate() {
 	if (runtime.auth.mode === 'entra' && (!session?.user || sessionExpired(session))) {
 		return <LoginView runtime={runtime} />
 	}
-	const query = new URLSearchParams(window.location.search)
-	const Workspace = query.has('whiteboardid') || query.has('whiteboards') ? WhiteboardGate : App
 	return (
-		<Workspace
+		<App
 			authMode={runtime.auth.mode}
 			aiEnabled={runtime.aiEnabled}
 			aiSettingsVisible={runtime.aiSettingsVisible}

@@ -802,45 +802,6 @@ test('WebSocket rejects foreign origins and broadcasts create, update and delete
 				assert.equal(event.type, 'board')
 				assert.deepEqual(event.board, afterDelete)
 			}
-
-			const createCanvasFirst = first.next('canvas-create-1')
-			const createCanvasSecond = second.next('canvas-create-2')
-			const createdCanvas = await fetch(`${url}/api/canvases`, {
-				method: 'POST',
-				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
-				body: JSON.stringify({ name: 'Live canvas', activate: true }),
-			})
-			assert.equal(createdCanvas.status, 200)
-			const createdCanvasState = (await createdCanvas.json()) as {
-				activeCanvasId: string
-				createdCanvasId: string
-				canvases: unknown[]
-				board: Board
-			}
-			assert.equal(createdCanvasState.activeCanvasId, createdCanvasState.createdCanvasId)
-			assert.equal(createdCanvasState.canvases.length, 2)
-			assert.deepEqual(createdCanvasState.board, { revision: 0, shapes: [] })
-			for (const event of [await createCanvasFirst, await createCanvasSecond]) {
-				assert.equal(event.type, 'snapshot')
-				assert.equal(event.activeCanvasId, createdCanvasState.createdCanvasId)
-				assert.equal(event.canvases.length, 2)
-			}
-
-			const activateFirst = first.next('canvas-activate-1')
-			const activateSecond = second.next('canvas-activate-2')
-			const activated = await fetch(`${url}/api/active-canvas`, {
-				method: 'PUT',
-				headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id: 'main' }),
-			})
-			assert.equal(activated.status, 200)
-			const activatedState = (await activated.json()) as { activeCanvasId: string; board: Board }
-			assert.equal(activatedState.activeCanvasId, 'main')
-			for (const event of [await activateFirst, await activateSecond]) {
-				assert.equal(event.type, 'snapshot')
-				assert.equal(event.activeCanvasId, 'main')
-				assert.deepEqual(event.board, activatedState.board)
-			}
 		} finally {
 			first.socket.terminate()
 			second.socket.terminate()
