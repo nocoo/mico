@@ -182,6 +182,8 @@ Content-Type: application/json
 | `sharer`       | boolean | JSON 布尔值 `true` / `false`，不能传字符串 `"true"` / `"false"`             |
 | `clientId`     | string  | 私有 UUID，建议 `crypto.randomUUID()`；每个独立客户端各生成一个，重连时复用 |
 
+演示模式（`MICO_AUTH_MODE=demo`）只共享光标与演示者视角，不绑定共享画布：此时 `whiteboardid` 不必是共享集合中已有的 ID，房间内的读写仍然作用于各自的私有画布。
+
 返回 `200 OK`，格式如下；`token`、`member.id` 和 `color` 的具体值由服务端生成：
 
 ```json
