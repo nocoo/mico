@@ -12,6 +12,15 @@ import {
 import { useUserAvatar } from './useUserAvatar'
 import { whiteboardDestination } from './whiteboards/client'
 
+let initialRuntimeRequest: Promise<RuntimeConfig> | null =
+	typeof window === 'undefined' ? null : fetchRuntime().catch((error) => Promise.reject(error))
+
+function consumeInitialRuntime(signal: AbortSignal): Promise<RuntimeConfig> {
+	const pending = initialRuntimeRequest
+	initialRuntimeRequest = null
+	return pending ?? fetchRuntime(signal)
+}
+
 function GateScreen({
 	title,
 	message,
@@ -147,7 +156,7 @@ export default function BootGate() {
 		setRuntimeError(false)
 		setLoginRequired(false)
 		setSession(null)
-		void fetchRuntime(controller.signal)
+		void consumeInitialRuntime(controller.signal)
 			.then(async (nextRuntime) => {
 				if (controller.signal.aborted) return
 				setRuntime(nextRuntime)
@@ -250,7 +259,7 @@ export default function BootGate() {
 			/>
 		)
 	}
-	if (loading) return <GateScreen title="Opening Mico" message="Loading workspace settings…" />
+	if (loading) return null
 	if (runtimeError) {
 		return (
 			<GateScreen
