@@ -141,6 +141,7 @@ export default function App({
 	const imageInputRef = useRef<HTMLInputElement>(null)
 	const connectionResetRef = useRef<() => void>(() => {})
 	const cancelInteractionRef = useRef<() => void>(() => {})
+	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
 	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
@@ -333,6 +334,7 @@ export default function App({
 
 	const {
 		board,
+		canvases,
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
@@ -342,6 +344,12 @@ export default function App({
 		redo,
 		canUndo,
 		canRedo,
+		refreshCanvases,
+		createCanvas,
+		createLessonCanvas,
+		switchCanvas,
+		renameCanvas,
+		deleteCanvas,
 		getCurrentBoard,
 		getActiveCanvasId,
 		isCanvasTargetCurrent,
@@ -518,10 +526,17 @@ export default function App({
 		connectionResetRef.current = connection.reset
 	}, [connection.reset])
 
+	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
 	const isGestureActive = useCallback(() => interactionRef.current !== null, [])
+
+	const toggleCanvasPanel = () => {
+		const open = !canvasPanelOpen
+		if (open) void refreshCanvases()
+		setCanvasPanelOpen(open)
+	}
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
@@ -1126,6 +1141,19 @@ export default function App({
 				}}
 			/>
 			<IdentityFrame
+				state={{
+					canvases,
+					activeCanvasId,
+					canvasesOpen: canvasPanelOpen,
+				}}
+				actions={{
+					toggleCanvases: toggleCanvasPanel,
+					closeCanvases: closeCanvasPanel,
+					createCanvas,
+					switchCanvas,
+					renameCanvas,
+					deleteCanvas,
+				}}
 				debug={{
 					open: debugPanelOpen,
 					onOpenChange: setDebugPanelOpen,
@@ -1229,7 +1257,7 @@ export default function App({
 						toggle: () => setAiPanelOpen((open) => !open),
 						clearSelection,
 						consumeInitialPrompt: consumeAiPrompt,
-						createCanvas: () => {},
+						createCanvas: createLessonCanvas,
 						isGestureActive,
 					}}
 				/>

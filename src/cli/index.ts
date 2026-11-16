@@ -41,6 +41,12 @@ function takeOption(args: string[], name: string): [string[], string | undefined
 	return [args.filter((_, i) => i !== index && i !== index + 1), value]
 }
 
+function takeFlag(args: string[], name: string): [string[], boolean] {
+	const index = args.indexOf(name)
+	if (index < 0) return [args, false]
+	return [args.filter((_, i) => i !== index), true]
+}
+
 async function readStdin(): Promise<string> {
 	let input = ''
 	for await (const chunk of process.stdin) input += chunk
@@ -72,11 +78,87 @@ async function main(args: string[]) {
 
 	let result: unknown
 	const [resource, action, ...restArgs] = args
-	const rest = restArgs
+	let rest = restArgs
+
+	if (resource === 'canvas') {
+		if (action === 'list') {
+			let preview = false
+			;[rest, preview] = takeFlag(rest, '--preview')
+			if (rest.length > 0) throw new Error(usage)
+			result = await request(Number(port), `/api/canvases${preview ? '' : '?previews=0'}`)
+			if (!preview && typeof result === 'object' && result !== null) {
+				const record = result as { canvases?: Array<Record<string, unknown>> }
+				if (record.canvases) {
+					record.canvases = record.canvases.map(({ preview: _preview, ...canvas }) => canvas)
+				}
+			}
+			console.log(JSON.stringify(result, null, 2))
+			return
+		}
+		if (action === 'create') {
+			let name: string | undefined
+			;[rest, name] = takeOption(rest, '--name')
+			let use = false
+			;[rest, use] = takeFlag(rest, '--use')
+			if (rest.length > 0) throw new Error(usage)
+			result = await request(Number(port), '/api/canvases', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name, activate: use }),
+			})
+			console.log(JSON.stringify(result, null, 2))
+			return
+		}
+		if (action === 'use') {
+			const id = rest[0]
+			if (!id || rest.length !== 1) throw new Error(usage)
+			result = await request(Number(port), '/api/active-canvas', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ id }),
+			})
+			console.log(JSON.stringify(result, null, 2))
+			return
+		}
+		if (action === 'rename') {
+			const [id, name] = rest
+			if (!id || name === undefined || rest.length !== 2) throw new Error(usage)
+			result = await request(Number(port), `/api/canvases/${encodeURIComponent(id)}`, {
+				method: 'PATCH',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ name }),
+			})
+			console.log(JSON.stringify(result, null, 2))
+			return
+		}
+		if (action === 'delete') {
+			const id = rest[0]
+			if (!id || rest.length !== 1) throw new Error(usage)
+			result = await request(Number(port), `/api/canvases/${encodeURIComponent(id)}`, {
+				method: 'DELETE',
+			})
+			console.log(JSON.stringify(result, null, 2))
+			return
+		}
+		if (action === 'get') {
+			const id = rest[0]
+			if (!id || rest.length !== 1) throw new Error(usage)
+			result = await request(Number(port), `/api/canvases/${encodeURIComponent(id)}`)
+			console.log(JSON.stringify(result, null, 2))
+			return
+		}
+		throw new Error(usage)
+	}
 
 	if (resource === 'board' && action === 'get') {
 		if (rest.length > 0) throw new Error(usage)
-		result = await request(Number(port), '/api/board')
+		result = canvasId
+			? (
+					(await request(Number(port), `/api/canvases/${encodeURIComponent(canvasId)}`)) as {
+						board: unknown
+					}
+				).board
+			: await request(Number(port), '/api/board')
 		console.log(JSON.stringify(result, null, 2))
 		return
 	}

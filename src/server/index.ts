@@ -219,18 +219,37 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 	return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function exactKeys(value: Record<string, unknown>, optional: string[] = []): boolean {
+	const allowed = new Set(optional)
+	return Object.keys(value).every((key) => allowed.has(key))
+}
+
+function invalid(message: string): never {
+	throw new OperationError(400, 'INVALID_REQUEST', message)
+}
+
 function knownPath(pathname: string): boolean {
 	const segments = pathname.split('/').filter(Boolean)
 	if (segments[0] !== 'api') return false
 	if (segments.length === 2) {
-		return ['live', 'runtime', 'state', 'board', 'operations', 'events', 'images', 'auth'].includes(
-			segments[1],
-		)
+		return [
+			'live',
+			'runtime',
+			'state',
+			'board',
+			'operations',
+			'events',
+			'canvases',
+			'images',
+			'active-canvas',
+			'auth',
+		].includes(segments[1])
 	}
 	if (segments.length === 3) {
 		return (
 			(segments[1] === 'auth' && ['session', 'logout'].includes(segments[2])) ||
 			(segments[1] === 'whiteboards' && segments[2] === 'join') ||
+			segments[1] === 'canvases' ||
 			segments[1] === 'images' ||
 			(segments[1] === 'moss' && ['session', 'tool'].includes(segments[2])) ||
 			(segments[1] === 'ai' && ['chat', 'models', 'settings'].includes(segments[2]))
@@ -464,6 +483,10 @@ export function createDaemon(
 		const segments = pathname.split('/').filter(Boolean)
 		const isPath = (...parts: string[]) =>
 			segments.length === parts.length && parts.every((part, index) => segments[index] === part)
+		const canvasId =
+			segments[0] === 'api' && segments[1] === 'canvases' && segments.length === 3
+				? segments[2]
+				: null
 
 		if (req.method === 'OPTIONS') {
 			if (!knownPath(pathname)) {
@@ -833,6 +856,98 @@ export function createDaemon(
 					'Cross-Origin-Resource-Policy': 'same-origin',
 				})
 				res.end(asset.bytes)
+				return
+			}
+
+			if (isPath('api', 'canvases')) {
+				if (runtimeConfig.auth.mode === 'demo') {
+					sendError(
+						res,
+						403,
+						'DEMO_SINGLE_CANVAS',
+						'Multi-canvas endpoints are disabled in demo mode',
+						origin,
+					)
+					return
+				}
+				if (req.method === 'GET') {
+					sendJson(res, 200, await store.getCanvasList(includePreviews), origin)
+					return
+				}
+				if (req.method !== 'POST') {
+					res.setHeader('Allow', 'GET, POST, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const body = await readJson(req)
+				if (body !== undefined && !isRecord(body)) invalid('request must be an object')
+				const record = isRecord(body) ? body : {}
+				if (!exactKeys(record, ['name', 'activate'])) invalid('invalid canvas request')
+				if (record.activate !== undefined && typeof record.activate !== 'boolean') {
+					invalid('activate must be a boolean')
+				}
+				const created = await store.createCanvas(record.name, record.activate === true)
+				send({ type: 'snapshot', ...created.state })
+				sendJson(res, 200, { ...created.state, createdCanvasId: created.canvas.id }, origin)
+				return
+			}
+
+			if (canvasId !== null) {
+				if (runtimeConfig.auth.mode === 'demo') {
+					sendError(
+						res,
+						403,
+						'DEMO_SINGLE_CANVAS',
+						'Multi-canvas endpoints are disabled in demo mode',
+						origin,
+					)
+					return
+				}
+				if (req.method === 'GET') {
+					sendJson(res, 200, await store.getCanvas(canvasId), origin)
+					return
+				}
+				if (req.method === 'PATCH') {
+					const body = await readJson(req)
+					if (!isRecord(body) || !exactKeys(body, ['name'])) invalid('invalid canvas request')
+					const state = await store.renameCanvas(canvasId, body.name)
+					send({ type: 'snapshot', ...state })
+					sendJson(res, 200, state, origin)
+					return
+				}
+				if (req.method === 'DELETE') {
+					const state = await store.deleteCanvas(canvasId)
+					send({ type: 'snapshot', ...state })
+					sendJson(res, 200, state, origin)
+					return
+				}
+				res.setHeader('Allow', 'GET, PATCH, DELETE, OPTIONS')
+				sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+				return
+			}
+
+			if (isPath('api', 'active-canvas')) {
+				if (runtimeConfig.auth.mode === 'demo') {
+					sendError(
+						res,
+						403,
+						'DEMO_SINGLE_CANVAS',
+						'Multi-canvas endpoints are disabled in demo mode',
+						origin,
+					)
+					return
+				}
+				if (req.method !== 'PUT') {
+					res.setHeader('Allow', 'PUT, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
+					return
+				}
+				const body = await readJson(req)
+				if (!isRecord(body) || !exactKeys(body, ['id'])) invalid('invalid active canvas request')
+				if (typeof body.id !== 'string') invalid('canvas id must be a string')
+				const state = await store.activateCanvas(body.id)
+				send({ type: 'snapshot', ...state })
+				sendJson(res, 200, state, origin)
 				return
 			}
 

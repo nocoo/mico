@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
 	Board,
+	CanvasDetail,
 	CanvasSnapshot,
 	CanvasSummary,
 	Operation,
@@ -236,8 +237,12 @@ export function useCanvasSessionViewModel({
 						setHistoryWaiting(true)
 						if (!replay.confirmed) {
 							try {
-								const response = await fetch('/api/board', { signal: AbortSignal.timeout(3000) })
-								if (response.ok) cacheBoard(targetCanvasId, (await response.json()) as Board)
+								const response = await fetch(
+									`/api/canvases/${encodeURIComponent(targetCanvasId)}`,
+									{ signal: AbortSignal.timeout(3000) },
+								)
+								if (response.ok)
+									cacheBoard(targetCanvasId, ((await response.json()) as CanvasDetail).board)
 							} catch {
 								// Only a verified successor snapshot proves that the replay committed.
 							}
@@ -290,8 +295,12 @@ export function useCanvasSessionViewModel({
 				if (!stopped) {
 					applySnapshot(snapshot)
 					const replay = replayRef.current
-					if (replay?.uncertain && replay.canvasId === snapshot.activeCanvasId) {
-						cacheBoard(replay.canvasId, snapshot.board)
+					if (replay?.uncertain && replay.canvasId !== snapshot.activeCanvasId) {
+						const detail = await fetch(`/api/canvases/${encodeURIComponent(replay.canvasId)}`, {
+							signal: AbortSignal.timeout(3000),
+						})
+						if (detail.ok && !stopped)
+							cacheBoard(replay.canvasId, ((await detail.json()) as CanvasDetail).board)
 					}
 					setApiConnected(true)
 				}
@@ -370,6 +379,100 @@ export function useCanvasSessionViewModel({
 		}
 	}, [applyBoard, applySnapshot, mergeCanvas, cacheBoard, whiteboard])
 
+	const refreshCanvases = useCallback(async () => {
+		try {
+			const response = await fetch('/api/canvases', { signal: AbortSignal.timeout(10000) })
+			if (!response.ok) return
+			const data = (await response.json()) as {
+				stateVersion: number
+				canvases: CanvasSummary[]
+			}
+			if (data.stateVersion < stateVersionRef.current) return
+			stateVersionRef.current = data.stateVersion
+			setCanvases((current) => mergeSnapshotCanvases(current, data.canvases))
+		} catch {
+			// The poll and WebSocket keep the list fresh if this request fails.
+		}
+	}, [])
+
+	const requestCanvas = useCallback(
+		async (path: string, init: RequestInit) => {
+			try {
+				const response = await fetch(path, {
+					...init,
+					headers: { 'Content-Type': 'application/json' },
+					signal: AbortSignal.timeout(10000),
+				})
+				if (!response.ok) {
+					let message = `Canvas request failed: HTTP ${response.status}`
+					try {
+						const body = (await response.json()) as { message?: string }
+						if (body.message) message = body.message
+					} catch {
+						// Keep the status fallback.
+					}
+					announceRef.current(message)
+					return
+				}
+				applySnapshot((await response.json()) as CanvasSnapshot)
+				setApiConnected(true)
+			} catch (error) {
+				setApiConnected(false)
+				announceRef.current(error instanceof Error ? error.message : 'Canvas request failed')
+			}
+		},
+		[applySnapshot],
+	)
+
+	const createCanvas = useCallback(() => {
+		void requestCanvas('/api/canvases', {
+			method: 'POST',
+			body: JSON.stringify({ name: `Canvas ${canvasesRef.current.length + 1}`, activate: true }),
+		})
+	}, [requestCanvas])
+
+	const createLessonCanvas = useCallback(
+		(name: string) => {
+			if (whiteboard) {
+				announceRef.current('The lesson will use this shared whiteboard.')
+				return
+			}
+			void requestCanvas('/api/canvases', {
+				method: 'POST',
+				body: JSON.stringify({ name, activate: true }),
+			})
+		},
+		[requestCanvas, whiteboard],
+	)
+
+	const switchCanvas = useCallback(
+		(id: string) => {
+			requestedCanvasIdRef.current = id
+			void requestCanvas('/api/active-canvas', {
+				method: 'PUT',
+				body: JSON.stringify({ id }),
+			})
+		},
+		[requestCanvas],
+	)
+
+	const renameCanvas = useCallback(
+		(id: string, name: string) => {
+			void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, {
+				method: 'PATCH',
+				body: JSON.stringify({ name }),
+			})
+		},
+		[requestCanvas],
+	)
+
+	const deleteCanvas = useCallback(
+		(id: string) => {
+			void requestCanvas(`/api/canvases/${encodeURIComponent(id)}`, { method: 'DELETE' })
+		},
+		[requestCanvas],
+	)
+
 	const getCurrentBoard = useCallback(() => boardRef.current, [])
 	const getActiveCanvasId = useCallback(() => activeCanvasIdRef.current, [])
 	const isCanvasTargetCurrent = useCallback(
@@ -402,6 +505,12 @@ export function useCanvasSessionViewModel({
 			!historyWaiting &&
 			pendingOperations === 0 &&
 			Boolean(historiesRef.current.get(activeCanvasId)?.canRedo),
+		refreshCanvases,
+		createCanvas,
+		createLessonCanvas,
+		switchCanvas,
+		renameCanvas,
+		deleteCanvas,
 		getCurrentBoard,
 		getActiveCanvasId,
 		isCanvasTargetCurrent,
