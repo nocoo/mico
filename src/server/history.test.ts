@@ -3,8 +3,8 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
+import { CanvasHistory } from '../shared/history.ts'
 import type { Board, CanvasShape, Shape } from '../shared/types.ts'
-import { CanvasHistory } from '../web/canvas/history.ts'
 import { BoardStore, LOCAL_TENANT, type TenantStore } from './store.ts'
 
 const note = (id: string): CanvasShape => ({

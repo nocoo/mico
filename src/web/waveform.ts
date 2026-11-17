@@ -5,6 +5,18 @@ export interface WaveformBucket {
 	max: number
 }
 
+export function observeWaveformCanvas(
+	canvas: HTMLCanvasElement | null,
+	redraw: () => void,
+): (() => void) | undefined {
+	const parent = canvas?.parentElement
+	if (!canvas || !parent) return undefined
+	const observer = new ResizeObserver(redraw)
+	observer.observe(parent)
+	redraw()
+	return () => observer.disconnect()
+}
+
 export function buildWaveformBuckets(
 	peaks: ArrayLike<number> | null,
 	bucketCount: number,

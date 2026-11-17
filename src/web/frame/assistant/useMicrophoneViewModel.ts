@@ -4,7 +4,7 @@ import { MaiClient, type MaiConfig } from '../../stt/maiClient.ts'
 import { openMicrophone } from '../../stt/microphone.ts'
 import { dedupeHypothesis, formatClock } from '../../stt/transcript.ts'
 import { SilenceSegmenter } from '../../stt/vad.ts'
-import { drawWave } from '../../waveform.ts'
+import { drawWave, observeWaveformCanvas } from '../../waveform.ts'
 import { canvasFetch as fetch } from '../../whiteboards/client.ts'
 import type { LessonSegment } from './LessonPanel'
 import { appendCompletedTranscript } from './protocol.ts'
@@ -214,12 +214,10 @@ export function useMicrophoneViewModel({
 			return
 		}
 		const canvas = waveRef.current
-		if (!canvas?.parentElement) return
-		const redraw = () => drawWave(canvas, runtime.current.peaks, 1, [], 1)
-		const observer = new ResizeObserver(redraw)
-		observer.observe(canvas.parentElement)
-		redraw()
-		return () => observer.disconnect()
+		return observeWaveformCanvas(
+			canvas,
+			() => canvas && drawWave(canvas, runtime.current.peaks, 1, [], 1),
+		)
 	}, [active])
 
 	useEffect(

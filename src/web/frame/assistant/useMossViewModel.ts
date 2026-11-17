@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { type MossLiveEvent, MossLiveSession } from '../../stt/mossLive.ts'
 import { formatClock } from '../../stt/transcript.ts'
-import { drawWave } from '../../waveform.ts'
+import { drawWave, observeWaveformCanvas } from '../../waveform.ts'
 
 export type MossPhase = 'idle' | 'connecting' | 'listening' | 'error'
 
@@ -119,13 +119,8 @@ export function useMossViewModel({
 
 	useEffect(() => {
 		const canvas = waveRef.current
-		const parent = canvas?.parentElement
-		if (!active || !canvas || !parent) return
-		const redraw = () => drawWave(canvas, peaks.current, 1, [], 1)
-		const observer = new ResizeObserver(redraw)
-		observer.observe(parent)
-		redraw()
-		return () => observer.disconnect()
+		if (!active) return
+		return observeWaveformCanvas(canvas, () => canvas && drawWave(canvas, peaks.current, 1, [], 1))
 	}, [active])
 
 	const start = () => {

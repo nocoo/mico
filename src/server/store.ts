@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { getConnectorAnchors } from '../shared/anchors.ts'
 import {
 	hasVisibleNoteLabel,
 	NOTE_MIN_LABELED_HEIGHT,
@@ -17,7 +18,6 @@ import type {
 	ShapeType,
 } from '../shared/types.ts'
 import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
-import { getConnectorAnchors } from '../web/anchors.ts'
 import { canvasPreview } from './preview.ts'
 import {
 	createMutex,

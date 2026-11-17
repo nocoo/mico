@@ -10,7 +10,7 @@ import {
 } from '../../stt/maiClient'
 import { dedupeHypothesis, type LessonClip } from '../../stt/transcript'
 import { SilenceSegmenter } from '../../stt/vad'
-import { drawWave } from '../../waveform.ts'
+import { drawWave, observeWaveformCanvas } from '../../waveform.ts'
 import { canvasFetch as fetch } from '../../whiteboards/client'
 
 export interface LessonSegment {
@@ -231,16 +231,11 @@ export function useLessonViewModel({
 
 	useEffect(() => {
 		const canvas = waveRef.current
-		const observedElement = canvas?.parentElement
-		if (!active || !canvas || !observedElement) return
-		const redraw = () => {
+		if (!active || !canvas) return
+		return observeWaveformCanvas(canvas, () => {
 			const data = waveDataRef.current
 			drawWave(canvas, data.peaks, data.progress, data.segments, data.duration)
-		}
-		const observer = new ResizeObserver(redraw)
-		observer.observe(observedElement)
-		redraw()
-		return () => observer.disconnect()
+		})
 	}, [active])
 
 	useEffect(() => {
