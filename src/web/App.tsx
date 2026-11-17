@@ -250,11 +250,13 @@ export default function App({
 	const [pendingCreations, setPendingCreations] = useState<Map<string, CanvasShape>>(
 		() => new Map(),
 	)
+	const pendingCreationsRef = useRef<Map<string, CanvasShape>>(new Map())
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
 	>(() => new Map())
 	const [guides, setGuides] = useState<AlignmentGuide[]>([])
 	const [brushPoints, setBrushPoints] = useState<Point[] | null>(null)
+	const brushPointsRef = useRef<Point[] | null>(null)
 	const [brushStyle, setBrushStyle] = useState<BrushStyle>('pencil')
 	const [brushWidth, setBrushWidth] = useState<BrushWidth>(4)
 	const [notice, setNotice] = useState('')
@@ -309,12 +311,18 @@ export default function App({
 
 	const onBoardTransition = useCallback(
 		(previous: Board, next: Board, switching: boolean, canvasId: string) => {
+			const globalSuppressed = suppressedEntryIdsRef.current.get('')
+			const canvasSuppressed = canvasId ? suppressedEntryIdsRef.current.get(canvasId) : undefined
+			const suppressed =
+				canvasSuppressed && globalSuppressed
+					? new Set([...canvasSuppressed, ...globalSuppressed])
+					: (canvasSuppressed ?? globalSuppressed ?? new Set<string>())
 			animatedObjectsRef.current = transitionEntryAnimations(
 				previous,
 				next,
 				switching,
 				animatedObjectsRef.current,
-				canvasId ? (suppressedEntryIdsRef.current.get(canvasId) ?? new Set()) : new Set(),
+				suppressed,
 			)
 			if (reducedMotion) animatedObjectsRef.current.clear()
 		},
@@ -322,8 +330,26 @@ export default function App({
 	)
 
 	const onBoardAccepted = useCallback(
-		(next: Board, switching: boolean) => {
+		(next: Board, switching: boolean, initialLoad = false) => {
 			if (switching) {
+				const preserveInitialDraw =
+					initialLoad &&
+					(interactionRef.current?.mode === 'create' ||
+						interactionRef.current?.mode === 'brush' ||
+						pendingCreationsRef.current.size > 0)
+				if (preserveInitialDraw) {
+					setSelectedIds((current) =>
+						current.filter(
+							(id) =>
+								pendingCreationsRef.current.has(id) || next.shapes.some((shape) => shape.id === id),
+						),
+					)
+					return
+				}
+				if (!initialLoad && pendingCreationsRef.current.size > 0) {
+					pendingCreationsRef.current.clear()
+					setPendingCreations(new Map())
+				}
 				cancelInteractionRef.current()
 				connectionResetRef.current()
 				setSelectedIds([])
@@ -333,12 +359,16 @@ export default function App({
 				setDragPreviews(new Map())
 				creationRef.current = null
 				setCreation(null)
+				brushPointsRef.current = null
 				setBrushPoints(null)
 				if (!readOnly) fitShapesInCanvas(next.shapes)
 				return
 			}
 			setSelectedIds((current) =>
-				current.filter((id) => next.shapes.some((shape) => shape.id === id)),
+				current.filter(
+					(id) =>
+						pendingCreationsRef.current.has(id) || next.shapes.some((shape) => shape.id === id),
+				),
 			)
 		},
 		[fitShapesInCanvas, readOnly],
@@ -449,7 +479,7 @@ export default function App({
 
 	const createShape = (shape: CanvasShape, suppressEntry = false) => {
 		const canvasId = getActiveCanvasId()
-		if (suppressEntry && canvasId) {
+		if (suppressEntry) {
 			let ids = suppressedEntryIdsRef.current.get(canvasId)
 			if (!ids) {
 				ids = new Set()
@@ -457,25 +487,30 @@ export default function App({
 			}
 			ids.add(shape.id)
 		}
-		const frameId =
-			shape.type === 'frame'
-				? null
-				: membershipFor(getCurrentBoard().shapes, shapeBounds(shape), shape.id)
-		const created = frameId ? { ...shape, frameId } : shape
+		const buildCreated = (shapes: Shape[]): CanvasShape => {
+			const frameId =
+				shape.type === 'frame' ? null : membershipFor(shapes, shapeBounds(shape), shape.id)
+			return frameId ? { ...shape, frameId } : shape
+		}
+		const created = buildCreated(getCurrentBoard().shapes)
+		pendingCreationsRef.current.set(created.id, created)
 		setPendingCreations((current) => {
 			const next = new Map(current)
 			next.set(created.id, created)
 			return next
 		})
 		selectOnly(shape.id)
-		void postOperations([{ type: 'create', shape: created }]).finally(() => {
+		void postOperations([{ type: 'create', shape: created }], undefined, (latest) => [
+			{ type: 'create', shape: buildCreated(latest.shapes) },
+		]).finally(() => {
+			pendingCreationsRef.current.delete(created.id)
 			setPendingCreations((current) => {
 				if (!current.has(created.id)) return current
 				const next = new Map(current)
 				next.delete(created.id)
 				return next
 			})
-			if (!suppressEntry || !canvasId) return
+			if (!suppressEntry) return
 			const ids = suppressedEntryIdsRef.current.get(canvasId)
 			ids?.delete(shape.id)
 			if (ids?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
@@ -564,6 +599,7 @@ export default function App({
 		setCreation(null)
 		setIsPanning(false)
 		setGuides([])
+		brushPointsRef.current = null
 		setBrushPoints(null)
 		setMarquee(null)
 		clearConnectionHover()
@@ -668,12 +704,14 @@ export default function App({
 		}
 
 		if (tool === 'connector') {
+			presence.detach()
 			setSelectedIds([])
 			beginConnectionAt(event)
 			return
 		}
 
 		const world = clientToWorld(event.clientX, event.clientY)
+		presence.detach()
 		if (tool === 'text') {
 			createShape({
 				id: randomId(),
@@ -733,7 +771,9 @@ export default function App({
 				startWorld: world,
 				startViewport: { x: 0, y: 0 },
 			}
-			setBrushPoints([world])
+			const initialBrush = [world]
+			brushPointsRef.current = initialBrush
+			setBrushPoints(initialBrush)
 			return
 		}
 
@@ -805,12 +845,18 @@ export default function App({
 		}
 
 		if (interaction.mode === 'brush') {
-			setBrushPoints((current) => {
-				if (!current?.length) return [world]
-				const last = current[current.length - 1]
-				if (Math.hypot(world.x - last.x, world.y - last.y) * viewport.zoom < 1.5) return current
-				return [...current, world]
-			})
+			const current = brushPointsRef.current
+			if (!current?.length) {
+				const next = [world]
+				brushPointsRef.current = next
+				setBrushPoints(next)
+				return
+			}
+			const last = current[current.length - 1]
+			if (Math.hypot(world.x - last.x, world.y - last.y) * viewport.zoom < 1.5) return
+			const next = [...current, world]
+			brushPointsRef.current = next
+			setBrushPoints(next)
 			return
 		}
 
@@ -874,30 +920,40 @@ export default function App({
 			setMarquee(null)
 		}
 
-		if (interaction.mode === 'brush' && brushPoints && brushPoints.length >= 2) {
-			const xs = brushPoints.map((point) => point.x)
-			const ys = brushPoints.map((point) => point.y)
-			const minX = Math.min(...xs)
-			const minY = Math.min(...ys)
-			const w = Math.max(...xs) - minX
-			const h = Math.max(...ys) - minY
-			const points = brushPoints.map((point) => ({
-				x: Math.min(w, Math.max(0, point.x - minX)),
-				y: Math.min(h, Math.max(0, point.y - minY)),
-			}))
-			createShape({
-				id: randomId(),
-				type: 'path',
-				x: minX,
-				y: minY,
-				w,
-				h,
-				color: JELLY_COLORS.grape,
-				points,
-				brush: brushStyle,
-				strokeWidth: brushWidth,
-			})
+		if (interaction.mode === 'brush') {
+			const world = clientToWorld(event.clientX, event.clientY)
+			const current = brushPointsRef.current
+			const last = current?.at(-1)
+			const strokePoints =
+				current && last && Math.hypot(world.x - last.x, world.y - last.y) * viewport.zoom >= 1.5
+					? [...current, world]
+					: current
+			if (strokePoints && strokePoints.length >= 2) {
+				const xs = strokePoints.map((point) => point.x)
+				const ys = strokePoints.map((point) => point.y)
+				const minX = Math.min(...xs)
+				const minY = Math.min(...ys)
+				const w = Math.max(...xs) - minX
+				const h = Math.max(...ys) - minY
+				const points = strokePoints.map((point) => ({
+					x: Math.min(w, Math.max(0, point.x - minX)),
+					y: Math.min(h, Math.max(0, point.y - minY)),
+				}))
+				createShape({
+					id: randomId(),
+					type: 'path',
+					x: minX,
+					y: minY,
+					w,
+					h,
+					color: JELLY_COLORS.grape,
+					points,
+					brush: brushStyle,
+					strokeWidth: brushWidth,
+				})
+			}
 		}
+		brushPointsRef.current = null
 		setBrushPoints(null)
 
 		const activeCreation = creationRef.current
@@ -1054,7 +1110,7 @@ export default function App({
 			event.stopPropagation()
 			return
 		}
-		if (tool === 'hand' || spacePressed || event.button === 1 || event.button !== 0) return
+		if ((tool !== 'select' && tool !== 'connector') || spacePressed || event.button !== 0) return
 		event.stopPropagation()
 
 		if (tool === 'connector' && beginConnectionAt(event)) {

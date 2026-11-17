@@ -280,3 +280,89 @@ test('custom black and white strokes remain distinct', async ({ page, request })
 		.evaluate((element) => getComputedStyle(element).stroke)
 	expect(black).not.toBe(white)
 })
+
+test('drawn shapes rebase through concurrent 409 conflicts and start over existing shapes', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [
+		{ id: 'backdrop', type: 'rectangle', x: 180, y: 180, w: 260, h: 180, color: '#00a2e1' },
+	])
+	await openCanvas(page)
+	await resetView(page)
+
+	let operationCalls = 0
+	let concurrentInjected = false
+	await page.route('**/api/operations', async (route) => {
+		if (route.request().method() !== 'POST') {
+			await route.continue()
+			return
+		}
+		operationCalls += 1
+		if (operationCalls === 1 && !concurrentInjected) {
+			concurrentInjected = true
+			const bump = await request.post('/api/operations', {
+				data: {
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'concurrent-note',
+								type: 'note',
+								x: 620,
+								y: 180,
+								w: 160,
+								h: 160,
+								color: '#fff8d4',
+								text: 'Concurrent edit',
+							},
+						},
+					],
+				},
+			})
+			expect(bump.ok()).toBe(true)
+		}
+		await route.continue()
+	})
+
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	const start = await worldPoint(page, 240, 240)
+	const end = await worldPoint(page, 400, 340)
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y, { steps: 6 })
+	await page.mouse.up()
+
+	await expect.poll(() => operationCalls).toBe(2)
+	await expect
+		.poll(async () => {
+			const res = await request.get('/api/board')
+			const data = (await res.json()) as { shapes: { id: string; type: string; x?: number }[] }
+			return data.shapes.filter((shape) => shape.type === 'rectangle').length
+		})
+		.toBe(2)
+	await expect(page.locator('[data-shape-id]')).toHaveCount(3)
+	await expect(page.locator('.notice')).toHaveCount(0)
+})
+
+test('fast brush stroke captures pointerup endpoint via ref', async ({ page, request }) => {
+	await resetBoard(request, [])
+	await openCanvas(page)
+	await resetView(page)
+
+	await page.getByRole('button', { name: 'Brush', exact: true }).click()
+	const start = await worldPoint(page, 300, 420)
+	const end = await worldPoint(page, 440, 500)
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y)
+	await page.mouse.up()
+
+	await expect
+		.poll(async () => {
+			const res = await request.get('/api/board')
+			const data = (await res.json()) as { shapes: { type: string }[] }
+			return data.shapes.filter((shape) => shape.type === 'path').length
+		})
+		.toBe(1)
+})

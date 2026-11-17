@@ -22,8 +22,10 @@ interface CanvasSessionViewModelProps {
 	onSocketReady?: () => void
 	announce: (message: string) => void
 	onBoardTransition: (previous: Board, next: Board, switching: boolean, canvasId: string) => void
-	onBoardAccepted: (next: Board, switching: boolean) => void
+	onBoardAccepted: (next: Board, switching: boolean, initialLoad?: boolean) => void
 }
+
+type RebaseCheck = (board: Board) => boolean | Operation[]
 
 interface PendingReplay {
 	canvasId: string
@@ -69,6 +71,7 @@ export function useCanvasSessionViewModel({
 	const [, refreshHistory] = useState(0)
 	const activeCanvasIdRef = useRef('')
 	const requestedCanvasIdRef = useRef('')
+	const initialFetchRef = useRef<Promise<void> | null>(null)
 	const stateVersionRef = useRef(-1)
 	const boardCacheRef = useRef<Map<string, Board>>(new Map())
 	const canvasesRef = useRef(canvases)
@@ -128,6 +131,7 @@ export function useCanvasSessionViewModel({
 		(snapshot: CanvasSnapshot) => {
 			if (snapshot.stateVersion < stateVersionRef.current) return
 			stateVersionRef.current = snapshot.stateVersion
+			const initialLoad = activeCanvasIdRef.current === ''
 			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
 			activeCanvasIdRef.current = snapshot.activeCanvasId
 			requestedCanvasIdRef.current = snapshot.activeCanvasId
@@ -146,6 +150,7 @@ export function useCanvasSessionViewModel({
 			}
 			cacheBoard(snapshot.activeCanvasId, snapshot.board)
 			if (!switching && snapshot.board.revision < revisionRef.current) return
+			if (!switching && !initialLoad && snapshot.board.revision === revisionRef.current) return
 			onBoardTransitionRef.current(
 				boardRef.current,
 				snapshot.board,
@@ -155,7 +160,7 @@ export function useCanvasSessionViewModel({
 			revisionRef.current = snapshot.board.revision
 			boardRef.current = snapshot.board
 			setBoard(snapshot.board)
-			onBoardAcceptedRef.current(snapshot.board, switching)
+			onBoardAcceptedRef.current(snapshot.board, switching, initialLoad)
 		},
 		[cacheBoard],
 	)
@@ -164,7 +169,7 @@ export function useCanvasSessionViewModel({
 		(
 			command: Operation[] | HistoryDirection,
 			expectedRevision?: number,
-			canRebase?: (board: Board) => boolean,
+			canRebase?: RebaseCheck,
 		) => {
 			if (readOnly) {
 				announceRef.current('Participants can only pan and zoom.')
@@ -173,85 +178,123 @@ export function useCanvasSessionViewModel({
 			const targetCanvasId = activeCanvasIdRef.current
 			setPendingOperations((count) => count + 1)
 			const result = operationQueue.current.then(async () => {
+				if (!activeCanvasIdRef.current && initialFetchRef.current) {
+					await initialFetchRef.current
+				}
+				const resolvedCanvasId = targetCanvasId || activeCanvasIdRef.current
 				try {
-					if (!targetCanvasId) return false
+					if (!resolvedCanvasId) return false
 					if (replayRef.current?.uncertain) {
 						announceRef.current(
 							'Waiting to confirm history replay. Reconnect or reload to reset local history.',
 						)
 						return false
 					}
-					const targetBoard = boardCacheRef.current.get(targetCanvasId)
-					if (!targetBoard) return false
-					let history = historiesRef.current.get(targetCanvasId)
+					let history = historiesRef.current.get(resolvedCanvasId)
 					if (!history) {
 						history = new CanvasHistory()
-						historiesRef.current.set(targetCanvasId, history)
+						historiesRef.current.set(resolvedCanvasId, history)
 					}
-					const operations =
-						typeof command === 'string' ? history.plan(targetBoard, command) : command
-					if (!operations) return false
-					if (canRebase && !canRebase(targetBoard)) {
-						announceRef.current('Object changed during drag')
-						return false
-					}
-					const revision = canRebase
-						? targetBoard.revision
-						: (expectedRevision ?? targetBoard.revision)
-					if (typeof command === 'string') {
-						replayRef.current = {
-							canvasId: targetCanvasId,
-							revision: revision + 1,
-							history,
-							direction: command,
+					const maxAttempts = canRebase && typeof command !== 'string' ? 4 : 1
+					for (let attempt = 0; attempt < maxAttempts; attempt++) {
+						const targetBoard = boardCacheRef.current.get(resolvedCanvasId)
+						if (!targetBoard) return false
+						let operations =
+							typeof command === 'string' ? history.plan(targetBoard, command) : command
+						if (!operations) return false
+						if (canRebase) {
+							const rebased = canRebase(targetBoard)
+							if (!rebased) {
+								announceRef.current('Object changed during drag')
+								return false
+							}
+							if (Array.isArray(rebased)) operations = rebased
 						}
-					}
-					const response = await fetch('/api/operations', {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						signal: AbortSignal.timeout(10000),
-						body: JSON.stringify({
-							operations,
-							expectedRevision: revision,
-							canvasId: targetCanvasId,
-						}),
-					})
-					if (!response.ok) {
-						const current = await fetch('/api/state?previews=0', {
+						const revision = canRebase
+							? targetBoard.revision
+							: (expectedRevision ?? targetBoard.revision)
+						if (typeof command === 'string') {
+							replayRef.current = {
+								canvasId: resolvedCanvasId,
+								revision: revision + 1,
+								history,
+								direction: command,
+							}
+						}
+						const response = await fetch('/api/operations', {
+							method: 'POST',
+							headers: { 'Content-Type': 'application/json' },
 							signal: AbortSignal.timeout(10000),
+							body: JSON.stringify({
+								operations,
+								expectedRevision: revision,
+								canvasId: resolvedCanvasId,
+							}),
 						})
-						if (current.ok) applySnapshot((await current.json()) as CanvasSnapshot)
-						announceRef.current(`Operation failed: HTTP ${response.status}`)
-						return false
+						if (!response.ok) {
+							let cached = boardCacheRef.current.get(resolvedCanvasId)
+							if (!(response.status === 409 && canRebase && cached && cached.revision > revision)) {
+								const current = await fetch('/api/state?previews=0', {
+									signal: AbortSignal.timeout(10000),
+								})
+								if (current.ok) applySnapshot((await current.json()) as CanvasSnapshot)
+								cached = boardCacheRef.current.get(resolvedCanvasId)
+							}
+							if (
+								response.status === 409 &&
+								canRebase &&
+								typeof command !== 'string' &&
+								attempt + 1 < maxAttempts &&
+								resolvedCanvasId === activeCanvasIdRef.current &&
+								cached &&
+								cached.revision > revision
+							) {
+								continue
+							}
+							announceRef.current(`Operation failed: HTTP ${response.status}`)
+							return false
+						}
+						const next = (await response.json()) as Board
+						if (typeof command === 'string') history.complete(command)
+						else history.record(targetBoard, next)
+						refreshHistory((version) => version + 1)
+						cacheBoard(resolvedCanvasId, next)
+						if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(next)
+						setApiConnected(true)
+						return true
 					}
-					const next = (await response.json()) as Board
-					if (typeof command === 'string') history.complete(command)
-					else history.record(targetBoard, next)
-					refreshHistory((version) => version + 1)
-					cacheBoard(targetCanvasId, next)
-					if (targetCanvasId === activeCanvasIdRef.current) applyBoard(next)
-					setApiConnected(true)
-					return true
+					return false
 				} catch (error) {
 					const replay = replayRef.current
 					if (replay && !(error instanceof HistoryConflict)) {
 						replay.uncertain = true
 						setHistoryWaiting(true)
-						if (!replay.confirmed) {
+						if (!replay.confirmed && resolvedCanvasId) {
 							try {
 								const response = await fetch(
-									`/api/canvases/${encodeURIComponent(targetCanvasId)}`,
+									`/api/canvases/${encodeURIComponent(resolvedCanvasId)}`,
 									{ signal: AbortSignal.timeout(3000) },
 								)
-								if (response.ok)
-									cacheBoard(targetCanvasId, ((await response.json()) as CanvasDetail).board)
+								if (response.ok) {
+									cacheBoard(resolvedCanvasId, ((await response.json()) as CanvasDetail).board)
+								} else if (resolvedCanvasId === activeCanvasIdRef.current) {
+									const stateResponse = await fetch('/api/state?previews=0', {
+										signal: AbortSignal.timeout(3000),
+									})
+									if (stateResponse.ok) {
+										const current = (await stateResponse.json()) as CanvasSnapshot
+										if (current.activeCanvasId === resolvedCanvasId) {
+											cacheBoard(resolvedCanvasId, current.board)
+										}
+									}
+								}
 							} catch {
 								// Only a verified successor snapshot proves that the replay committed.
 							}
 						}
 						if (replay.confirmed) {
 							completeReplay(replay)
-							if (targetCanvasId === activeCanvasIdRef.current) applyBoard(replay.confirmed)
+							if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(replay.confirmed)
 							setApiConnected(true)
 							return true
 						}
@@ -277,7 +320,7 @@ export function useCanvasSessionViewModel({
 	)
 
 	const postOperations = useCallback(
-		(operations: Operation[], expectedRevision?: number, canRebase?: (board: Board) => boolean) =>
+		(operations: Operation[], expectedRevision?: number, canRebase?: RebaseCheck) =>
 			submitOperations(operations, expectedRevision, canRebase),
 		[submitOperations],
 	)
@@ -311,15 +354,28 @@ export function useCanvasSessionViewModel({
 			}
 		}
 
-		void fetchState(true)
+		const initial = fetchState(true)
+		initialFetchRef.current = initial
+		void initial.finally(() => {
+			if (initialFetchRef.current === initial) initialFetchRef.current = null
+		})
 		const poll = window.setInterval(() => void fetchState(false), 3000)
 
+		return () => {
+			stopped = true
+			window.clearInterval(poll)
+		}
+	}, [applySnapshot, cacheBoard])
+
+	useEffect(() => {
+		let stopped = false
 		let socket: WebSocket | null = null
 		let retry: number | null = null
+		let shouldReconnectSession = false
 
 		const connect = async () => {
 			if (stopped) return
-			if (whiteboard) {
+			if (whiteboard && shouldReconnectSession) {
 				try {
 					await reconnectWhiteboard()
 				} catch (error) {
@@ -330,6 +386,7 @@ export function useCanvasSessionViewModel({
 				}
 			}
 			if (stopped) return
+			shouldReconnectSession = true
 			const current = new WebSocket(whiteboardUrl(WS_URL))
 			socket = current
 			socketRef.current = current
@@ -374,7 +431,6 @@ export function useCanvasSessionViewModel({
 
 		return () => {
 			stopped = true
-			window.clearInterval(poll)
 			if (retry) window.clearTimeout(retry)
 			socket?.close()
 			socketRef.current = null

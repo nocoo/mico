@@ -306,3 +306,86 @@ test('demo participants can draw, create and switch canvases while retaining the
 	await expect(page.getByRole('button', { name: 'Workspace profile' })).toBeVisible()
 	expect((await request.delete(`/api/canvases/${created.activeCanvasId}`)).ok()).toBe(true)
 })
+
+test('demo draw survives delayed initial state without duplicate whiteboard joins', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [
+		{ id: 'existing', type: 'rectangle', x: 180, y: 180, w: 120, h: 80, color: '#00a2e1' },
+	])
+	let releaseState!: () => void
+	const stateGate = new Promise<void>((resolve) => {
+		releaseState = resolve
+	})
+	let stateHeld = false
+	let joins = 0
+	await page.route('**/api/runtime', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				auth: { mode: 'demo' },
+				aiEnabled: false,
+				aiSettingsVisible: false,
+				mossEnabled: false,
+				ephemeral: false,
+			}),
+		}),
+	)
+	await page.route('**/api/whiteboards/join', (route) => {
+		joins += 1
+		return route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				token: `demo-presence-token-${joins}`,
+				whiteboardid: 'demo',
+				member: {
+					id: 'demo-member',
+					username: 'Guest',
+					sharer: false,
+					color: '#6844bd',
+					cursor: null,
+				},
+			}),
+		})
+	})
+	await page.route('**/api/state', async (route) => {
+		if (!stateHeld) {
+			stateHeld = true
+			await stateGate
+		}
+		await route.continue()
+	})
+	const tokenedSockets: string[] = []
+	await page.routeWebSocket(/\/api\/events/, async (socket) => {
+		const token = new URL(socket.url()).searchParams.get('whiteboardSession')
+		if (token) tokenedSockets.push(token)
+		await stateGate
+		const server = socket.connectToServer()
+		socket.onMessage((message) => server.send(message))
+		server.onMessage((message) => socket.send(message))
+		socket.onClose((code, reason) => server.close({ code, reason }))
+		server.onClose((code, reason) => socket.close({ code, reason }))
+	})
+
+	await page.goto('/')
+	await expect.poll(() => stateHeld).toBe(true)
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	await page.mouse.move(400, 300)
+	await page.mouse.down()
+	await page.mouse.move(540, 420, { steps: 4 })
+
+	releaseState()
+	await expect(page.locator('[data-shape-id="existing"]')).toBeVisible()
+	await page.mouse.up()
+
+	await expect
+		.poll(
+			async () =>
+				(await board(request)).shapes.filter((shape) => shape.type === 'rectangle').length,
+		)
+		.toBe(2)
+	await expect.poll(() => tokenedSockets.length).toBeGreaterThan(0)
+	expect(joins).toBeLessThanOrEqual(2)
+	expect(tokenedSockets.at(-1)).toBe(`demo-presence-token-${joins}`)
+})
