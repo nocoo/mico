@@ -50,7 +50,6 @@ export const joinWhiteboardSchema = z
 			),
 		sharer: z.boolean(),
 		clientId: z.uuid(),
-		presence: z.boolean().optional(),
 	})
 	.strict()
 

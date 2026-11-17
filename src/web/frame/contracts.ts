@@ -65,7 +65,6 @@ export interface ToolbarActions {
 }
 
 export interface AssistantState {
-	sharedWhiteboard?: boolean
 	connection: ConnectionState
 	open: boolean
 	mossEnabled: boolean

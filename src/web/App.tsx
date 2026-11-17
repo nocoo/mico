@@ -11,7 +11,7 @@ import {
 	updatePresenceSharer,
 } from './whiteboards/client'
 import { usePresence } from './whiteboards/usePresence'
-import { WhiteboardCursors, WhiteboardPresence } from './whiteboards/WhiteboardPresence'
+import { WhiteboardCursors } from './whiteboards/WhiteboardPresence'
 import './whiteboards/whiteboards.css'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
@@ -85,12 +85,8 @@ function initialDemoSharer(): boolean {
 	return new URLSearchParams(window.location.search).get('sharer') === 'true'
 }
 
-function initialLocalMode(
-	authMode?: AuthMode,
-	aiSettingsVisible?: boolean,
-	hasWhiteboard?: boolean,
-): LocalModeOption {
-	if (authMode !== 'none' || !aiSettingsVisible || hasWhiteboard) return 'local'
+function initialLocalMode(authMode?: AuthMode, aiSettingsVisible?: boolean): LocalModeOption {
+	if (authMode !== 'none' || !aiSettingsVisible) return 'local'
 	const raw = new URLSearchParams(window.location.search).get('localMode')
 	if (raw === 'presenter' || raw === 'guest') return raw
 	return 'local'
@@ -98,7 +94,6 @@ function initialLocalMode(
 
 export interface AppProps {
 	authMode?: AuthMode
-	whiteboard?: WhiteboardSession
 	aiEnabled?: boolean
 	aiSettingsVisible: boolean
 	mossEnabled: boolean
@@ -110,7 +105,6 @@ export interface AppProps {
 
 export default function App({
 	authMode,
-	whiteboard,
 	aiEnabled = true,
 	aiSettingsVisible,
 	mossEnabled,
@@ -119,10 +113,9 @@ export default function App({
 	avatarUrl = null,
 	onSignOut,
 }: AppProps) {
-	const readOnly = Boolean(whiteboard && !whiteboard.member.sharer)
-	const localModeAvailable = authMode === 'none' && aiSettingsVisible && !whiteboard
+	const localModeAvailable = authMode === 'none' && aiSettingsVisible
 	const [localPresenceMode, setLocalPresenceMode] = useState<LocalModeOption>(() =>
-		initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)),
+		initialLocalMode(authMode, aiSettingsVisible),
 	)
 	const [localModePanelOpen, setLocalModePanelOpen] = useState(false)
 	const presenceActive =
@@ -130,15 +123,13 @@ export default function App({
 	const [demoClientId] = useState(() => crypto.randomUUID())
 	const [demoUsername, setDemoUsername] = useState(() =>
 		initialDemoUsername(
-			initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) === 'presenter'
-				? 'Host'
-				: 'Guest',
+			initialLocalMode(authMode, aiSettingsVisible) === 'presenter' ? 'Host' : 'Guest',
 		),
 	)
 	const [demoSharer, setDemoSharer] = useState(() =>
 		authMode === 'demo'
 			? initialDemoSharer()
-			: initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) === 'presenter',
+			: initialLocalMode(authMode, aiSettingsVisible) === 'presenter',
 	)
 	const [demoSession, setDemoSession] = useState<WhiteboardSession | undefined>(undefined)
 	const [demoBusy, setDemoBusy] = useState(false)
@@ -157,7 +148,7 @@ export default function App({
 				}
 	}, [presenceActive, demoSession, demoSharer, demoUsername])
 	const isDemoPresenter = Boolean(activeDemoSession?.member.sharer)
-	const canUseAi = aiEnabled && !readOnly && (!presenceActive || isDemoPresenter)
+	const canUseAi = aiEnabled && (!presenceActive || isDemoPresenter)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -187,18 +178,16 @@ export default function App({
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
 		aiEnabled &&
-		!readOnly &&
 		(authMode !== 'demo' || initialDemoSharer()) &&
-		initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) !== 'guest'
+		initialLocalMode(authMode, aiSettingsVisible) !== 'guest'
 			? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '')
 			: '',
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(
 		() =>
 			aiEnabled &&
-			!readOnly &&
 			(authMode !== 'demo' || initialDemoSharer()) &&
-			initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) !== 'guest' &&
+			initialLocalMode(authMode, aiSettingsVisible) !== 'guest' &&
 			(aiPrompt.length > 0 || window.innerWidth >= 900),
 	)
 	const aiPanelOpenRef = useRef(aiPanelOpen)
@@ -214,10 +203,10 @@ export default function App({
 		}
 	}, [canUseAi, aiPrompt])
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
-	const presence = usePresence(whiteboard ?? activeDemoSession, svgRef, viewport, setViewport)
+	const presence = usePresence(activeDemoSession, svgRef, viewport, setViewport)
 
 	useEffect(() => {
-		const initialMode = initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard))
+		const initialMode = initialLocalMode(authMode, aiSettingsVisible)
 		const shouldAutoJoin = authMode === 'demo' || initialMode !== 'local'
 		if (!shouldAutoJoin) return
 		const controller = new AbortController()
@@ -227,7 +216,6 @@ export default function App({
 			username: initialDemoUsername(initialSharer ? 'Host' : 'Guest'),
 			sharer: initialSharer,
 			clientId: demoClientId,
-			...(authMode !== 'demo' ? { presence: true } : {}),
 		}
 		void joinWhiteboard(joinInput, controller.signal)
 			.then((session) => {
@@ -261,7 +249,7 @@ export default function App({
 			controller.abort()
 			clearWhiteboard()
 		}
-	}, [authMode, aiSettingsVisible, whiteboard, demoClientId])
+	}, [authMode, aiSettingsVisible, demoClientId])
 
 	useEffect(() => {
 		if (!presenceActive || !demoSession) return
@@ -286,7 +274,6 @@ export default function App({
 				username: nextUsername,
 				sharer: nextSharer,
 				clientId: demoClientId,
-				...(authMode !== 'demo' ? { presence: true } : {}),
 			}
 			try {
 				const session = await joinWhiteboard(joinInput)
@@ -308,7 +295,7 @@ export default function App({
 				setDemoBusy(false)
 			}
 		},
-		[presenceActive, localModeAvailable, authMode, demoClientId],
+		[presenceActive, localModeAvailable, demoClientId],
 	)
 
 	const selectLocalMode = useCallback(
@@ -335,7 +322,6 @@ export default function App({
 				username: nextUsername,
 				sharer: nextSharer,
 				clientId: demoClientId,
-				presence: true,
 			}
 			try {
 				const session = await joinWhiteboard(joinInput)
@@ -504,7 +490,7 @@ export default function App({
 				setCreation(null)
 				brushPointsRef.current = null
 				setBrushPoints(null)
-				if (!readOnly) fitShapesInCanvas(next.shapes)
+				fitShapesInCanvas(next.shapes)
 				return
 			}
 			setSelectedIds((current) =>
@@ -514,7 +500,7 @@ export default function App({
 				),
 			)
 		},
-		[fitShapesInCanvas, readOnly],
+		[fitShapesInCanvas],
 	)
 
 	const {
@@ -523,7 +509,6 @@ export default function App({
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
-		roomError,
 		sendPresence,
 		postOperations,
 		undo,
@@ -543,8 +528,8 @@ export default function App({
 		announce,
 		onBoardTransition,
 		onBoardAccepted,
-		whiteboard: whiteboard ?? demoSession,
-		readOnly,
+		whiteboard: demoSession,
+		readOnly: false,
 		onPresence: presence.onEvent,
 		onSocketReady: presence.queueView,
 	})
@@ -559,7 +544,7 @@ export default function App({
 	const connection = useConnectionGesture(board, viewport.zoom, postOperations)
 	const clearConnectionHover = useCallback(() => setConnectionHover(null), [])
 	const canHoverConnection =
-		!readOnly && tool === 'connector' && !spacePressed && !isPanning && !connection.draft
+		tool === 'connector' && !spacePressed && !isPanning && !connection.draft
 	const hoverHitShape = board.shapes.find(
 		(shape): shape is CanvasShape =>
 			shape.id === connectionHover?.hitShapeId && isCanvasShape(shape),
@@ -815,7 +800,7 @@ export default function App({
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
 
-		const shouldPan = readOnly || event.button === 1 || spacePressed || tool === 'hand'
+		const shouldPan = event.button === 1 || spacePressed || tool === 'hand'
 		if (shouldPan) {
 			clearConnectionHover()
 			event.preventDefault()
@@ -1220,24 +1205,20 @@ export default function App({
 			: false
 	}
 
-	const beginInlineEdit = useCallback(
-		(shape: CanvasShape) => {
-			if (readOnly) return
-			if (
-				shape.type !== 'frame' &&
-				shape.type !== 'html' &&
-				shape.type !== 'text' &&
-				shape.type !== 'note' &&
-				shape.type !== 'rectangle' &&
-				shape.type !== 'ellipse'
-			)
-				return
-			const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
-			const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
-			setEditing({ id: shape.id, field, value })
-		},
-		[readOnly],
-	)
+	const beginInlineEdit = useCallback((shape: CanvasShape) => {
+		if (
+			shape.type !== 'frame' &&
+			shape.type !== 'html' &&
+			shape.type !== 'text' &&
+			shape.type !== 'note' &&
+			shape.type !== 'rectangle' &&
+			shape.type !== 'ellipse'
+		)
+			return
+		const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
+		const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
+		setEditing({ id: shape.id, field, value })
+	}, [])
 
 	const onShapeDoubleClick = useCallback(
 		(event: React.MouseEvent<SVGGElement>, shape: CanvasShape) => {
@@ -1248,7 +1229,6 @@ export default function App({
 	)
 
 	const handleShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
-		if (readOnly) return
 		if (interactionRef.current) {
 			event.stopPropagation()
 			return
@@ -1415,7 +1395,7 @@ export default function App({
 		animatedObjectIds: animatedObjectsRef.current,
 		onEntryAnimationConsumed: consumeEntryAnimation,
 		onActionToggle: toggleActionDone,
-		actionsDisabled: readOnly || !apiConnected,
+		actionsDisabled: !apiConnected,
 		onPointerDown: onShapePointerDown,
 		onDoubleClick: onShapeDoubleClick,
 	}
@@ -1445,7 +1425,7 @@ export default function App({
 
 	return (
 		<main
-			className={`app ${aiPanelOpen ? 'ai-open' : ''} ${readOnly ? 'whiteboard-read-only' : ''}`}
+			className={`app ${aiPanelOpen ? 'ai-open' : ''}`}
 			style={
 				{
 					'--control-size': `${CONTROL_SIZE}px`,
@@ -1459,29 +1439,12 @@ export default function App({
 			}
 		>
 			<CanvasBackdrop />
-			{whiteboard ? (
-				<>
-					<WhiteboardPresence
-						session={whiteboard}
-						members={presence.members}
-						following={presence.following}
-						presenterId={presence.presenterId}
-						connected={wsConnected}
-						error={roomError}
-						onFollow={presence.follow}
-						zoom={viewport.zoom}
-						onZoom={(factor) => zoomAt(viewport.zoom * factor)}
-					/>
-					<WhiteboardCursors session={whiteboard} members={presence.members} viewport={viewport} />
-				</>
-			) : (
-				activeDemoSession && (
-					<WhiteboardCursors
-						session={activeDemoSession}
-						members={presence.members}
-						viewport={viewport}
-					/>
-				)
+			{activeDemoSession && (
+				<WhiteboardCursors
+					session={activeDemoSession}
+					members={presence.members}
+					viewport={viewport}
+				/>
 			)}
 			<CanvasMinimap
 				shapes={visibleShapes}
@@ -1506,134 +1469,129 @@ export default function App({
 					if (file) void uploadImage(file)
 				}}
 			/>
-			{!whiteboard && (
-				<IdentityFrame
-					state={{
-						canvases,
-						activeCanvasId,
-						canvasesOpen: canvasPanelOpen,
-					}}
-					actions={{
-						toggleCanvases: toggleCanvasPanel,
-						closeCanvases: closeCanvasPanel,
-						createCanvas,
-						switchCanvas,
-						renameCanvas,
-						deleteCanvas,
-					}}
-					debug={{
-						open: debugPanelOpen,
-						onOpenChange: setDebugPanelOpen,
-						authMode,
-						user,
-						avatarUrl,
-						ephemeral,
-						aiEnabled,
-						onSignOut,
-					}}
-					demo={
-						presenceActive
-							? {
-									open: demoPanelOpen,
-									onOpenChange: setDemoPanelOpen,
-									username: demoUsername,
-									sharer: demoSharer,
-									busy: demoBusy,
-									error: demoError,
-									members: presence.members,
-									presenterId: presence.presenterId,
-									selfId: demoSession?.member.id ?? null,
-									requesterIds: presence.requesterIds,
-									following: presence.following,
-									ephemeral,
-									aiEnabled,
-									onUpdateProfile: updateDemoProfile,
-									onFollowPresenter: presence.follow,
-									onRequestPresenter: presence.requestPresenter,
-									onTransferPresenter: presence.transferPresenter,
-									onDeclinePresenter: presence.declinePresenter,
-								}
-							: undefined
-					}
-					localMode={
-						localModeAvailable
-							? {
-									open: localModePanelOpen,
-									onOpenChange: setLocalModePanelOpen,
-									mode: localPresenceMode,
-									busy: demoBusy,
-									error: demoError,
-									otherPresenter: Boolean(
-										presence.presenterId && presence.presenterId !== demoSession?.member.id,
-									),
-									selfRequested: Boolean(
-										demoSession?.member.id && presence.requesterIds.includes(demoSession.member.id),
-									),
-									memberCount: presence.members.length,
-									onSelectMode: (mode) => {
-										void selectLocalMode(mode)
-									},
-									onRequestPresenter: presence.requestPresenter,
-									onOpenWindow: openLocalWindow,
-								}
-							: undefined
-					}
-				/>
-			)}
-			{!readOnly && (
-				<Toolbar
-					state={{
-						tool,
-						zoom: viewport.zoom,
-						canDelete: selectedIds.length > 0,
-						canFrame: selectedIds.length > 0,
-						canUndo,
-						canRedo,
-						brushStyle,
-						brushWidth,
-						noteColor,
-						textFont,
-						textSize,
-						textWeight,
-					}}
-					actions={{
-						reportLayout: reportDockLayout,
-						selectTool: (next) => {
-							cancelInteraction()
-							if (next !== 'select') emptyState.dismiss()
-							if (next === 'image') {
-								setTool('select')
-								imageInputRef.current?.click()
-								return
+			<IdentityFrame
+				state={{
+					canvases,
+					activeCanvasId,
+					canvasesOpen: canvasPanelOpen,
+				}}
+				actions={{
+					toggleCanvases: toggleCanvasPanel,
+					closeCanvases: closeCanvasPanel,
+					createCanvas,
+					switchCanvas,
+					renameCanvas,
+					deleteCanvas,
+				}}
+				debug={{
+					open: debugPanelOpen,
+					onOpenChange: setDebugPanelOpen,
+					authMode,
+					user,
+					avatarUrl,
+					ephemeral,
+					aiEnabled,
+					onSignOut,
+				}}
+				demo={
+					presenceActive
+						? {
+								open: demoPanelOpen,
+								onOpenChange: setDemoPanelOpen,
+								username: demoUsername,
+								sharer: demoSharer,
+								busy: demoBusy,
+								error: demoError,
+								members: presence.members,
+								presenterId: presence.presenterId,
+								selfId: demoSession?.member.id ?? null,
+								requesterIds: presence.requesterIds,
+								following: presence.following,
+								ephemeral,
+								aiEnabled,
+								onUpdateProfile: updateDemoProfile,
+								onFollowPresenter: presence.follow,
+								onRequestPresenter: presence.requestPresenter,
+								onTransferPresenter: presence.transferPresenter,
+								onDeclinePresenter: presence.declinePresenter,
 							}
-							setTool(next)
-						},
-						zoom: (factor) => zoomAt(viewport.zoom * factor),
-						resetView: () => setViewport({ x: 0, y: 0, zoom: 1 }),
-						fitBoard,
-						deleteSelection: deleteSelected,
-						frameSelection,
-						undo: () => {
-							cancelInteraction()
-							void undo()
-						},
-						redo: () => {
-							cancelInteraction()
-							void redo()
-						},
-						setBrushStyle,
-						setBrushWidth,
-						setNoteColor,
-						setTextFont,
-						setTextSize,
-						setTextWeight,
-					}}
-				/>
-			)}
+						: undefined
+				}
+				localMode={
+					localModeAvailable
+						? {
+								open: localModePanelOpen,
+								onOpenChange: setLocalModePanelOpen,
+								mode: localPresenceMode,
+								busy: demoBusy,
+								error: demoError,
+								otherPresenter: Boolean(
+									presence.presenterId && presence.presenterId !== demoSession?.member.id,
+								),
+								selfRequested: Boolean(
+									demoSession?.member.id && presence.requesterIds.includes(demoSession.member.id),
+								),
+								memberCount: presence.members.length,
+								onSelectMode: (mode) => {
+									void selectLocalMode(mode)
+								},
+								onRequestPresenter: presence.requestPresenter,
+								onOpenWindow: openLocalWindow,
+							}
+						: undefined
+				}
+			/>
+			<Toolbar
+				state={{
+					tool,
+					zoom: viewport.zoom,
+					canDelete: selectedIds.length > 0,
+					canFrame: selectedIds.length > 0,
+					canUndo,
+					canRedo,
+					brushStyle,
+					brushWidth,
+					noteColor,
+					textFont,
+					textSize,
+					textWeight,
+				}}
+				actions={{
+					reportLayout: reportDockLayout,
+					selectTool: (next) => {
+						cancelInteraction()
+						if (next !== 'select') emptyState.dismiss()
+						if (next === 'image') {
+							setTool('select')
+							imageInputRef.current?.click()
+							return
+						}
+						setTool(next)
+					},
+					zoom: (factor) => zoomAt(viewport.zoom * factor),
+					resetView: () => setViewport({ x: 0, y: 0, zoom: 1 }),
+					fitBoard,
+					deleteSelection: deleteSelected,
+					frameSelection,
+					undo: () => {
+						cancelInteraction()
+						void undo()
+					},
+					redo: () => {
+						cancelInteraction()
+						void redo()
+					},
+					setBrushStyle,
+					setBrushWidth,
+					setNoteColor,
+					setTextFont,
+					setTextSize,
+					setTextWeight,
+				}}
+			/>
 			{canUseAi && (
 				<AssistantFrame
 					state={{
-						sharedWhiteboard: Boolean(whiteboard),
 						connection: {
 							apiConnected,
 							wsConnected,
@@ -1642,7 +1600,7 @@ export default function App({
 						},
 						open: aiPanelOpen,
 						mossEnabled,
-						aiSettingsVisible: aiSettingsVisible && !whiteboard,
+						aiSettingsVisible,
 						canvasId: activeCanvasId,
 						selectedIds,
 						initialPrompt: aiPrompt,
@@ -1662,7 +1620,7 @@ export default function App({
 				<EmptyState onOpenAssistant={emptyState.openAssistant} onDismiss={emptyState.dismiss} />
 			)}
 
-			{!readOnly && tool === 'select' && (
+			{tool === 'select' && (
 				<SelectionPanel
 					shape={selected}
 					count={selectedIds.length}
@@ -1694,9 +1652,7 @@ export default function App({
 			<CanvasView
 				svgRef={svgRef}
 				viewport={viewport}
-				cursor={
-					isPanning ? 'grabbing' : readOnly || tool === 'hand' || spacePressed ? 'grab' : 'default'
-				}
+				cursor={isPanning ? 'grabbing' : tool === 'hand' || spacePressed ? 'grab' : 'default'}
 				onPointerDown={onCanvasPointerDown}
 				onPointerMove={onCanvasPointerMove}
 				onPointerLeave={() => {

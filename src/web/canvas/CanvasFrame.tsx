@@ -1,6 +1,5 @@
 import type { CanvasShape } from '../../shared/types'
 import { imagePreserveAspectRatio } from '../image'
-import { whiteboardAssetUrl } from '../whiteboards/client'
 import { jellyStyle } from './jelly'
 import './canvas-frame.css'
 
@@ -36,7 +35,7 @@ export function CanvasFrame({
 					y={shape.y}
 					width={shape.w}
 					height={shape.h}
-					href={whiteboardAssetUrl(`/api/images/${encodeURIComponent(backgroundImageId)}`)}
+					href={`/api/images/${encodeURIComponent(backgroundImageId)}`}
 					preserveAspectRatio={imagePreserveAspectRatio(shape.backgroundFit)}
 					clipPath={`url(#${clipId})`}
 					pointerEvents="none"

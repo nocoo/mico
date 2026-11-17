@@ -350,16 +350,14 @@ export function AssistantView({
 					)}
 
 					<div className="ai-chat-actions">
-						{!state.sharedWhiteboard && (
-							<button
-								type="button"
-								className="ai-summary-button"
-								onClick={() => actions.createCanvas('New canvas')}
-							>
-								<Plus size={15} aria-hidden="true" />
-								New canvas
-							</button>
-						)}
+						<button
+							type="button"
+							className="ai-summary-button"
+							onClick={() => actions.createCanvas('New canvas')}
+						>
+							<Plus size={15} aria-hidden="true" />
+							New canvas
+						</button>
 						{model.sessionEnded && model.messages.length > 0 && (
 							<button
 								type="button"

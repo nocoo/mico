@@ -1,17 +1,6 @@
 import type { WhiteboardJoin, WhiteboardSession } from '../../shared/whiteboards'
 
-let active: { input: WhiteboardJoin; session: WhiteboardSession; scoped: boolean } | null = null
-
-export function whiteboardDestination(search: string): string | undefined {
-	const input = new URLSearchParams(search)
-	if (!input.has('whiteboardid') && !input.has('whiteboards')) return
-	const output = new URLSearchParams()
-	for (const key of ['whiteboards', 'whiteboardid', 'username', 'sharer']) {
-		const value = input.get(key)
-		if (value !== null) output.set(key, value)
-	}
-	return `/?${output}`
-}
+let active: { input: WhiteboardJoin; session: WhiteboardSession } | null = null
 
 export async function joinWhiteboard(
 	input: WhiteboardJoin,
@@ -32,12 +21,8 @@ export async function joinWhiteboard(
 	return response.json() as Promise<WhiteboardSession>
 }
 
-export function configureWhiteboard(input: WhiteboardJoin, session: WhiteboardSession) {
-	active = { input, session, scoped: true }
-}
-
 export function configurePresence(input: WhiteboardJoin, session: WhiteboardSession) {
-	active = { input, session, scoped: false }
+	active = { input, session }
 }
 
 export function updatePresenceSharer(sharer: boolean) {
@@ -69,13 +54,6 @@ export function whiteboardUrl(path: string | URL): string {
 	return url.toString()
 }
 
-export function whiteboardAssetUrl(path: string | URL): string {
-	if (!active?.scoped) return path.toString()
-	const url = new URL(path, window.location.href)
-	url.searchParams.set('whiteboardSession', active.session.token)
-	return url.toString()
-}
-
 export const canvasFetch: typeof fetch = (input, init) => {
 	if (!active) return fetch(input, init)
 	const url = new URL(input instanceof Request ? input.url : input.toString(), window.location.href)
@@ -83,12 +61,7 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		url.pathname.startsWith('/api/ai/') ||
 		url.pathname.startsWith('/api/moss/') ||
 		url.pathname === '/mai/config'
-	if (!active.scoped && !isAiPath) return fetch(input, init)
-	if (
-		url.origin !== window.location.origin ||
-		(!url.pathname.startsWith('/api/') && url.pathname !== '/mai/config')
-	)
-		return fetch(input, init)
+	if (!isAiPath || url.origin !== window.location.origin) return fetch(input, init)
 	const headers = new Headers(input instanceof Request ? input.headers : undefined)
 	new Headers(init?.headers).forEach((value, key) => {
 		headers.set(key, value)

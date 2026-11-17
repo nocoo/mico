@@ -10,8 +10,6 @@ import {
 	sessionExpired,
 } from './runtime'
 import { useUserAvatar } from './useUserAvatar'
-import { whiteboardDestination } from './whiteboards/client'
-import { WhiteboardGate } from './whiteboards/WhiteboardGate'
 
 let initialRuntimeRequest: Promise<RuntimeConfig> | null =
 	typeof window === 'undefined' ? null : fetchRuntime().catch((error) => Promise.reject(error))
@@ -52,15 +50,13 @@ function LoginView({ runtime }: { runtime: RuntimeConfig }) {
 	const [signingIn, setSigningIn] = useState(false)
 
 	useEffect(() => {
-		const destination = whiteboardDestination(window.location.search)
-		if (destination) sessionStorage.setItem('mico.whiteboardReturn', destination)
 		if (runtime.auth.mode !== 'entra') {
-			window.location.replace(destination ?? '/')
+			window.location.replace('/')
 			return
 		}
 		void fetchSession()
 			.then((session) => {
-				if (session.user && !sessionExpired(session)) window.location.replace(destination ?? '/')
+				if (session.user && !sessionExpired(session)) window.location.replace('/')
 			})
 			.catch(() => undefined)
 	}, [runtime])
@@ -97,11 +93,7 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 		}
 		void completeCallback(runtime.auth)
 			.then(() => {
-				const saved = sessionStorage.getItem('mico.whiteboardReturn')
-				sessionStorage.removeItem('mico.whiteboardReturn')
-				window.location.replace(
-					saved?.startsWith('/?') ? (whiteboardDestination(saved.slice(1)) ?? '/') : '/',
-				)
+				window.location.replace('/')
 			})
 			.catch((cause: unknown) => {
 				setError(
@@ -280,13 +272,8 @@ export default function BootGate() {
 	if (runtime.auth.mode === 'entra' && (!session?.user || sessionExpired(session))) {
 		return <LoginView runtime={runtime} />
 	}
-	const query = new URLSearchParams(window.location.search)
-	const Workspace =
-		runtime.auth.mode !== 'demo' && (query.has('whiteboardid') || query.has('whiteboards'))
-			? WhiteboardGate
-			: App
 	return (
-		<Workspace
+		<App
 			authMode={runtime.auth.mode}
 			aiEnabled={runtime.aiEnabled}
 			aiSettingsVisible={runtime.aiSettingsVisible}

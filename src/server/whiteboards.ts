@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
 import type { IncomingMessage } from 'node:http'
 import WebSocket from 'ws'
-import type { CanvasSnapshot } from '../shared/types.ts'
 import {
 	joinWhiteboardSchema,
 	PRESENCE_COLORS,
@@ -9,14 +8,11 @@ import {
 	presenceMessageSchema,
 	type WhiteboardSession,
 } from '../shared/whiteboards.ts'
-import { type BoardStore, OperationError } from './store.ts'
-
-export const SHARED_WHITEBOARDS = { tenantId: 'shared-whiteboards' }
+import { OperationError } from './store.ts'
 
 interface Membership extends WhiteboardSession {
 	owner: string
 	clientId: string
-	board: boolean
 	socket?: WebSocket
 	voiceSockets: Set<WebSocket>
 	expiresAt: number
@@ -27,14 +23,12 @@ interface Membership extends WhiteboardSession {
 }
 
 export class Whiteboards {
-	private readonly boards: BoardStore
 	private readonly sessions = new Map<string, Membership>()
 	private readonly views = new Map<string, PresenterView>()
 	private readonly requests = new Map<string, Set<string>>()
 	private readonly timer: ReturnType<typeof setInterval>
 
-	constructor(boards: BoardStore) {
-		this.boards = boards
+	constructor() {
 		this.timer = setInterval(() => {
 			this.prune()
 			for (const member of this.sessions.values()) {
@@ -67,29 +61,16 @@ export class Whiteboards {
 		)
 	}
 
-	async join(
-		body: unknown,
-		owner: string,
-		options: { board: boolean; allowPresenceOnly?: boolean },
-	): Promise<WhiteboardSession> {
+	async join(body: unknown, owner: string): Promise<WhiteboardSession> {
 		const parsed = joinWhiteboardSchema.safeParse(body)
 		if (!parsed.success) throw new OperationError(400, 'INVALID_REQUEST', parsed.error.message)
 		const input = parsed.data
-		const board = options.board && !(options.allowPresenceOnly && input.presence === true)
-		if (board) {
-			await this.boards.forTenant(SHARED_WHITEBOARDS).getCanvas(input.whiteboardid)
-		}
 		this.prune()
 		const existing = [...this.sessions.values()].find(
 			(member) => member.owner === owner && member.clientId === input.clientId,
 		)
 		if (existing) {
-			// Shared whiteboard identity is immutable; only presence rooms may update a profile in place.
-			if (
-				existing.whiteboardid !== input.whiteboardid ||
-				(existing.board &&
-					(existing.member.sharer !== input.sharer || existing.member.username !== input.username))
-			)
+			if (existing.whiteboardid !== input.whiteboardid)
 				throw new OperationError(
 					409,
 					'SESSION_CONFLICT',
@@ -144,7 +125,6 @@ export class Whiteboards {
 				cursor: null,
 			},
 			owner,
-			board,
 			voiceSockets: new Set(),
 			clientId: input.clientId,
 			expiresAt: Date.now() + 10000,
@@ -189,62 +169,6 @@ export class Whiteboards {
 		)
 	}
 
-	authorize(member: Membership, method: string | undefined, pathname: string) {
-		const readable =
-			[
-				'/api/state',
-				'/api/board',
-				'/api/canvases',
-				'/api/ai/settings',
-				'/api/ai/models',
-				'/mai/config',
-				'/api/events',
-			].includes(pathname) ||
-			pathname === `/api/canvases/${member.whiteboardid}` ||
-			/^\/api\/images\/[^/]+$/.test(pathname)
-		if (method === 'GET' && readable) return
-		const writable = [
-			'/api/operations',
-			'/api/images',
-			'/api/ai/chat',
-			'/api/moss/session',
-			'/api/moss/tool',
-			'/mai/realtime',
-			'/moss',
-		].includes(pathname)
-		if (
-			writable &&
-			member.member.sharer &&
-			member.socket?.readyState === WebSocket.OPEN &&
-			(method === 'POST' || (method === 'GET' && ['/mai/realtime', '/moss'].includes(pathname)))
-		)
-			return
-		throw new OperationError(
-			403,
-			'WHITEBOARD_READ_ONLY',
-			'This action is not allowed in your whiteboard session.',
-		)
-	}
-
-	scopeBody(member: Membership, body: unknown): Record<string, unknown> {
-		if (typeof body !== 'object' || body === null || Array.isArray(body))
-			throw new OperationError(400, 'INVALID_REQUEST', 'Request must be an object')
-		const record = body as Record<string, unknown>
-		if (record.canvasId !== undefined && record.canvasId !== member.whiteboardid)
-			throw new OperationError(403, 'WHITEBOARD_SCOPE', 'The request targets another whiteboard.')
-		return { ...record, canvasId: member.whiteboardid }
-	}
-
-	async snapshot(whiteboardid: string): Promise<CanvasSnapshot> {
-		const detail = await this.boards.forTenant(SHARED_WHITEBOARDS).getCanvas(whiteboardid)
-		return {
-			activeCanvasId: whiteboardid,
-			stateVersion: detail.board.revision,
-			canvases: [detail.canvas],
-			board: detail.board,
-		}
-	}
-
 	attach(member: Membership, socket: WebSocket) {
 		if (member.member.sharer && this.presenter(member.whiteboardid, member)) {
 			socket.close(1008, 'This whiteboard already has a presenter')
@@ -277,56 +201,50 @@ export class Whiteboards {
 					member.lastViewAt = Date.now()
 					this.views.set(member.whiteboardid, message.viewport)
 					this.emit(member.whiteboardid, message)
-				} else {
-					if (member.board) {
-						socket.close(1008, 'Presenter role is fixed in shared whiteboards')
+				} else if (message.type === 'request-presenter') {
+					if (member.member.sharer) return
+					if (!message.requested) {
+						this.requests.get(member.whiteboardid)?.delete(member.member.id)
+						this.emitPresence(member.whiteboardid)
 						return
 					}
-					if (message.type === 'request-presenter') {
-						if (member.member.sharer) return
-						if (!message.requested) {
-							this.requests.get(member.whiteboardid)?.delete(member.member.id)
-							this.emitPresence(member.whiteboardid)
-							return
-						}
-						if (!this.presenter(member.whiteboardid, member)) {
-							member.member.sharer = true
-							this.requests.get(member.whiteboardid)?.delete(member.member.id)
-							this.emitPresence(member.whiteboardid)
-							return
-						}
-						this.requestsFor(member.whiteboardid).add(member.member.id)
+					if (!this.presenter(member.whiteboardid, member)) {
+						member.member.sharer = true
+						this.requests.get(member.whiteboardid)?.delete(member.member.id)
 						this.emitPresence(member.whiteboardid)
-					} else if (message.type === 'transfer-presenter') {
-						if (!member.member.sharer) {
-							socket.close(1008, 'Only the presenter can transfer presenter role')
-							return
-						}
-						const target = [...this.sessions.values()].find(
-							(candidate) =>
-								candidate !== member &&
-								candidate.whiteboardid === member.whiteboardid &&
-								candidate.socket?.readyState === WebSocket.OPEN &&
-								candidate.member.id === message.targetMemberId,
-						)
-						if (!target) return
-						member.member.sharer = false
-						for (const voice of member.voiceSockets) voice.close(1008, 'Presenter role transferred')
-						member.voiceSockets.clear()
-						target.member.sharer = true
-						this.views.delete(member.whiteboardid)
-						const requests = this.requests.get(member.whiteboardid)
-						requests?.delete(target.member.id)
-						requests?.delete(member.member.id)
-						this.emitPresence(member.whiteboardid)
-					} else if (message.type === 'decline-presenter') {
-						if (!member.member.sharer) {
-							socket.close(1008, 'Only the presenter can decline presenter requests')
-							return
-						}
-						this.requests.get(member.whiteboardid)?.delete(message.targetMemberId)
-						this.emitPresence(member.whiteboardid)
+						return
 					}
+					this.requestsFor(member.whiteboardid).add(member.member.id)
+					this.emitPresence(member.whiteboardid)
+				} else if (message.type === 'transfer-presenter') {
+					if (!member.member.sharer) {
+						socket.close(1008, 'Only the presenter can transfer presenter role')
+						return
+					}
+					const target = [...this.sessions.values()].find(
+						(candidate) =>
+							candidate !== member &&
+							candidate.whiteboardid === member.whiteboardid &&
+							candidate.socket?.readyState === WebSocket.OPEN &&
+							candidate.member.id === message.targetMemberId,
+					)
+					if (!target) return
+					member.member.sharer = false
+					for (const voice of member.voiceSockets) voice.close(1008, 'Presenter role transferred')
+					member.voiceSockets.clear()
+					target.member.sharer = true
+					this.views.delete(member.whiteboardid)
+					const requests = this.requests.get(member.whiteboardid)
+					requests?.delete(target.member.id)
+					requests?.delete(member.member.id)
+					this.emitPresence(member.whiteboardid)
+				} else if (message.type === 'decline-presenter') {
+					if (!member.member.sharer) {
+						socket.close(1008, 'Only the presenter can decline presenter requests')
+						return
+					}
+					this.requests.get(member.whiteboardid)?.delete(message.targetMemberId)
+					this.emitPresence(member.whiteboardid)
 				}
 			} catch {
 				socket.close(1008, 'Invalid presence message')

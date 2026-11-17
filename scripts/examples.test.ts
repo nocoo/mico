@@ -6,48 +6,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { createSharedWhiteboard } from '../examples/shared-whiteboard.ts'
-import { createDaemon } from '../src/server/index.ts'
 import { BoardStore, LOCAL_TENANT, OperationError } from '../src/server/store.ts'
-import { DEV_ORIGIN } from '../src/shared/config.ts'
 import type { Board, Shape } from '../src/shared/types.ts'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
-
-test('shared whiteboard example lists and creates a joinable board without reserving the presenter', async () => {
-	const directory = mkdtempSync(join(tmpdir(), 'mico-shared-example-'))
-	const daemon = createDaemon({
-		port: 0,
-		dbPath: join(directory, 'board.sqlite'),
-		settingsPath: join(directory, 'settings.json'),
-		env: {},
-	})
-	try {
-		daemon.server.listen(0, '127.0.0.1')
-		await once(daemon.server, 'listening')
-		const address = daemon.server.address()
-		assert.ok(address && typeof address !== 'string')
-		const base = `http://127.0.0.1:${address.port}`
-		const result = await createSharedWhiteboard(base, 'Example workshop', 'Jason Huang', DEV_ORIGIN)
-		const query = new URL(result.presenterUrl).searchParams
-		assert.equal(query.get('whiteboardid'), result.whiteboardid)
-		assert.equal(query.get('username'), 'Jason Huang')
-		const response = await fetch(`${base}/api/whiteboards/join`, {
-			method: 'POST',
-			headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				whiteboardid: result.whiteboardid,
-				username: query.get('username'),
-				sharer: true,
-				clientId: crypto.randomUUID(),
-			}),
-		})
-		assert.equal(response.status, 200)
-	} finally {
-		await daemon.close()
-		rmSync(directory, { recursive: true, force: true })
-	}
-})
 
 async function runExample(file: string): Promise<unknown[]> {
 	const child = spawn(process.execPath, [file], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] })
