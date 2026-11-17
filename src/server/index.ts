@@ -888,16 +888,6 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'canvases')) {
-				if (runtimeConfig.auth.mode === 'demo') {
-					sendError(
-						res,
-						403,
-						'DEMO_SINGLE_CANVAS',
-						'Multi-canvas endpoints are disabled in demo mode',
-						origin,
-					)
-					return
-				}
 				if (req.method === 'GET') {
 					sendJson(
 						res,
@@ -928,16 +918,6 @@ export function createDaemon(
 			}
 
 			if (canvasId !== null) {
-				if (runtimeConfig.auth.mode === 'demo') {
-					sendError(
-						res,
-						403,
-						'DEMO_SINGLE_CANVAS',
-						'Multi-canvas endpoints are disabled in demo mode',
-						origin,
-					)
-					return
-				}
 				if (req.method === 'GET') {
 					sendJson(res, 200, await store.getCanvas(canvasId), origin)
 					return
@@ -962,16 +942,6 @@ export function createDaemon(
 			}
 
 			if (isPath('api', 'active-canvas')) {
-				if (runtimeConfig.auth.mode === 'demo') {
-					sendError(
-						res,
-						403,
-						'DEMO_SINGLE_CANVAS',
-						'Multi-canvas endpoints are disabled in demo mode',
-						origin,
-					)
-					return
-				}
 				if (req.method !== 'PUT') {
 					res.setHeader('Allow', 'PUT, OPTIONS')
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)

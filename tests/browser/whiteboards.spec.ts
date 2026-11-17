@@ -243,7 +243,7 @@ test('presenter AI generation, voice input and images stay on the shared board',
 	await viewer.close()
 })
 
-test('demo presence participants keep drawing on the shared demo board', async ({
+test('demo participants can draw, create and switch canvases while retaining their profile', async ({
 	page,
 	request,
 }) => {
@@ -284,4 +284,25 @@ test('demo presence participants keep drawing on the shared demo board', async (
 	await expect
 		.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'note'))
 		.toBe(true)
+	const initial = await (await request.get('/api/state')).json()
+	const original = initial.canvases.find(
+		(canvas: { id: string }) => canvas.id === initial.activeCanvasId,
+	)
+	const noteId = initial.board.shapes.find((shape: { type: string }) => shape.type === 'note').id
+	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
+	await page.getByRole('button', { name: 'New canvas', exact: true }).click()
+	await expect
+		.poll(async () => (await (await request.get('/api/state')).json()).activeCanvasId)
+		.not.toBe(initial.activeCanvasId)
+	const created = await (await request.get('/api/state')).json()
+	expect(created.canvases).toHaveLength(initial.canvases.length + 1)
+	expect(created.board.shapes).toHaveLength(0)
+	await expect(page.getByRole('button', { name: 'Workspace profile' })).toBeVisible()
+
+	await page.getByRole('button', { name: `Open canvas ${original.name}`, exact: true }).click()
+	await expect(page.locator(`[data-shape-id="${noteId}"]`)).toHaveCount(1)
+	await page.reload()
+	await expect(page.locator(`[data-shape-id="${noteId}"]`)).toHaveCount(1)
+	await expect(page.getByRole('button', { name: 'Workspace profile' })).toBeVisible()
+	expect((await request.delete(`/api/canvases/${created.activeCanvasId}`)).ok()).toBe(true)
 })

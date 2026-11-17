@@ -34,23 +34,21 @@ export function IdentityFrame({ state, actions, debug, demo }: IdentityFrameProp
 						</span>
 						<strong>mico</strong>
 					</div>
-					{!demo && (
-						<IconButton
-							icon={Layers}
-							label="Canvases"
-							active={identity.canvasesOpen}
-							aria-pressed={identity.canvasesOpen}
-							aria-expanded={identity.canvasesOpen}
-							aria-controls="canvas-panel"
-							onClick={identity.toggleCanvases}
-							data-canvas-toggle="true"
-						/>
-					)}
+					<IconButton
+						icon={Layers}
+						label="Canvases"
+						active={identity.canvasesOpen}
+						aria-pressed={identity.canvasesOpen}
+						aria-expanded={identity.canvasesOpen}
+						aria-controls="canvas-panel"
+						onClick={identity.toggleCanvases}
+						data-canvas-toggle="true"
+					/>
 					{demo ? <DemoPanel {...demo} /> : showDebug ? <DebugPanel {...debug} /> : null}
 				</div>
 				<MeetingFrame />
 			</header>
-			{!demo && identity.mounted && (
+			{identity.mounted && (
 				<section
 					id="canvas-panel"
 					ref={identity.panelRef}

@@ -444,6 +444,92 @@ async function joinDemo(
 	})
 }
 
+test('demo members share canvas management and active-canvas snapshots', async () => {
+	await withDemoServer(async ({ baseUrl }) => {
+		const joined = await joinDemo(baseUrl, {
+			username: 'Guest',
+			sharer: false,
+			clientId: randomUUID(),
+		})
+		assert.equal(joined.status, 200)
+		const member = (await joined.json()) as WhiteboardSession
+		const request = (path: string, method = 'GET', body?: unknown) =>
+			fetch(`${baseUrl}${path}`, {
+				method,
+				headers: {
+					origin: DEV_ORIGIN,
+					'Content-Type': 'application/json',
+					'X-Mico-Whiteboard': member.token,
+				},
+				body: body === undefined ? undefined : JSON.stringify(body),
+			})
+		const viewer = subscribe(baseUrl, member)
+		try {
+			const initial = await viewer.next((event) => event.type === 'snapshot')
+			assert.equal(initial.type, 'snapshot')
+			const listed = await request('/api/canvases')
+			assert.equal(listed.status, 200)
+			assert.equal((await listed.json()).canvases.length, 1)
+
+			const response = await request('/api/canvases', 'POST', {
+				name: 'Second demo canvas',
+				activate: true,
+			})
+			assert.equal(response.status, 200)
+			const created = (await response.json()) as CanvasSnapshot & { createdCanvasId: string }
+			const id = created.createdCanvasId
+			assert.notEqual(id, initial.activeCanvasId)
+			await viewer.next((event) => event.type === 'snapshot' && event.activeCanvasId === id)
+			const anonymousState = (await (await fetch(`${baseUrl}/api/state`)).json()) as CanvasSnapshot
+			assert.equal(anonymousState.activeCanvasId, id)
+			assert.equal(anonymousState.canvases.length, 2)
+
+			assert.equal(
+				(await request(`/api/canvases/${id}`, 'PATCH', { name: 'Renamed demo canvas' })).status,
+				200,
+			)
+			const edited = await request('/api/operations', 'POST', {
+				canvasId: id,
+				operations: [
+					{
+						type: 'create',
+						shape: {
+							id: 'second-canvas-note',
+							type: 'note',
+							x: 10,
+							y: 10,
+							w: 80,
+							h: 80,
+							color: '#fff8d4',
+							text: 'Kept on the second canvas',
+						},
+					},
+				],
+			})
+			assert.equal(edited.status, 200)
+			assert.equal(
+				(await request('/api/active-canvas', 'PUT', { id: initial.activeCanvasId })).status,
+				200,
+			)
+			const switched = await viewer.next(
+				(event) => event.type === 'snapshot' && event.activeCanvasId === initial.activeCanvasId,
+			)
+			assert.equal(switched.type, 'snapshot')
+			assert.equal(switched.board.shapes.length, 0)
+			const detail = await request(`/api/canvases/${id}`)
+			assert.equal(detail.status, 200)
+			const saved = await detail.json()
+			assert.equal(saved.canvas.name, 'Renamed demo canvas')
+			assert.equal(saved.board.shapes[0].id, 'second-canvas-note')
+			assert.equal((await request(`/api/canvases/${id}`, 'DELETE')).status, 200)
+			const remaining = await request('/api/canvases')
+			assert.equal((await remaining.json()).canvases.length, 1)
+		} finally {
+			viewer.socket.terminate()
+		}
+	})
+})
+
 function nextPresence(
 	socket: WebSocket,
 	predicate: (event: PresenceEvent) => boolean,

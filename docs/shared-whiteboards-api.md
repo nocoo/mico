@@ -184,6 +184,8 @@ Content-Type: application/json
 
 演示模式（`MICO_AUTH_MODE=demo`）的 presence 房间不绑定共享白板集合：`whiteboardid` 不必是共享集合中已有的 ID，房间只共享光标与演示者视角；demo 模式下所有用户仍然读写同一个 demo tenant 的画布。
 
+演示模式也支持多画布：点击 Mico Logo 旁的 **Canvases**（叠层图标），再点击 **+ New canvas** 创建并切换到新画布；点击列表中的画布可切换，列表也支持重命名和删除。所有 demo 用户（包括非演示者）共享画布列表和活动画布，任何人的创建、切换、重命名和删除都会同步给其他连接者；这不是私人画布隔离。`/api/canvases`、`/api/canvases/:id` 和 `/api/active-canvas` 使用同一个 demo tenant，仍保留至少一张画布。Demo profile、在线成员、光标和跟随演示者功能保持可用。
+
 返回 `200 OK`，格式如下；`token`、`member.id` 和 `color` 的具体值由服务端生成：
 
 ```json
