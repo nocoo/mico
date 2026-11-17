@@ -4,6 +4,8 @@ import { DatabaseSync } from 'node:sqlite'
 
 export type SqlValue = string | number | Uint8Array | null
 
+export type SqlDialect = 'sqlite' | 'postgres' | 'd1'
+
 export interface SqlTransaction {
 	exec(sql: string): Promise<void>
 	get<T>(sql: string, params?: readonly SqlValue[]): Promise<T | undefined>
@@ -13,6 +15,8 @@ export interface SqlTransaction {
 }
 
 export interface Sql extends SqlTransaction {
+	readonly dialect: SqlDialect
+	readonly concurrent?: boolean
 	transaction<T>(operation: (tx: SqlTransaction) => Promise<T>): Promise<T>
 	close(): Promise<void>
 }
@@ -106,6 +110,8 @@ export function createSqliteSql(dbPath: string): Sql {
 	}
 
 	return {
+		dialect: 'sqlite',
+		concurrent: false,
 		async exec(sql) {
 			await serialize(() => directExec(sql))
 		},
@@ -149,4 +155,109 @@ export function createMutex(): <T>(operation: () => Promise<T>) => Promise<T> {
 		)
 		return result
 	}
+}
+
+/** Rewrite unquoted `?` placeholders into `$1, $2, ...` for PostgreSQL. */
+export function rewritePgPlaceholders(sql: string): string {
+	let out = ''
+	let index = 0
+	let param = 0
+	while (index < sql.length) {
+		const ch = sql[index]
+		if (ch === "'" || ch === '"') {
+			const quote = ch
+			out += ch
+			index += 1
+			while (index < sql.length) {
+				const inner = sql[index]
+				out += inner
+				index += 1
+				if (inner === quote) {
+					if (sql[index] === quote) {
+						out += sql[index]
+						index += 1
+						continue
+					}
+					break
+				}
+			}
+			continue
+		}
+		if (ch === '-' && sql[index + 1] === '-') {
+			const end = sql.indexOf('\n', index)
+			if (end === -1) {
+				out += sql.slice(index)
+				break
+			}
+			out += sql.slice(index, end + 1)
+			index = end + 1
+			continue
+		}
+		if (ch === '/' && sql[index + 1] === '*') {
+			const end = sql.indexOf('*/', index + 2)
+			if (end === -1) {
+				out += sql.slice(index)
+				break
+			}
+			out += sql.slice(index, end + 2)
+			index = end + 2
+			continue
+		}
+		if (ch === '?') {
+			param += 1
+			out += `$${param}`
+			index += 1
+			continue
+		}
+		out += ch
+		index += 1
+	}
+	return out
+}
+
+/** Split semicolon-separated SQL statements while respecting quotes and comments. */
+export function splitSqlStatements(sql: string): string[] {
+	const statements: string[] = []
+	let start = 0
+	let index = 0
+	while (index < sql.length) {
+		const ch = sql[index]
+		if (ch === "'" || ch === '"') {
+			const quote = ch
+			index += 1
+			while (index < sql.length) {
+				const inner = sql[index]
+				index += 1
+				if (inner === quote) {
+					if (sql[index] === quote) {
+						index += 1
+						continue
+					}
+					break
+				}
+			}
+			continue
+		}
+		if (ch === '-' && sql[index + 1] === '-') {
+			const end = sql.indexOf('\n', index)
+			if (end === -1) break
+			index = end + 1
+			continue
+		}
+		if (ch === '/' && sql[index + 1] === '*') {
+			const end = sql.indexOf('*/', index + 2)
+			if (end === -1) break
+			index = end + 2
+			continue
+		}
+		if (ch === ';') {
+			const part = sql.slice(start, index).trim()
+			if (part.length > 0) statements.push(part)
+			start = index + 1
+		}
+		index += 1
+	}
+	const tail = sql.slice(start).trim()
+	if (tail.length > 0) statements.push(tail)
+	return statements
 }

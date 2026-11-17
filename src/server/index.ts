@@ -26,7 +26,8 @@ import { createManagedIdentityAuth } from './managedIdentity.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
 import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
 import { parseRequestTarget } from './requestTarget.ts'
-import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
+import { createBoardStoreFromEnv } from './storage.ts'
+import { type BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 import { tenantScopeFor } from './tenant.ts'
 import { Whiteboards } from './whiteboards.ts'
 
@@ -302,8 +303,10 @@ export function createDaemon(
 					onConnection: (req, client) => attachVoiceSession(req, client),
 				})
 			: undefined
-	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
-	const boards = new BoardStore(dbPath)
+	const boards = createBoardStoreFromEnv(env, {
+		dbPath: options.dbPath,
+		managedIdentityCredential: options.managedIdentityCredential,
+	})
 	const store = boards.forTenant(LOCAL_TENANT)
 	const settingsPath = options.settingsPath
 	const aiSettings = new AiSettingsStore({

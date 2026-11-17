@@ -18,11 +18,13 @@ import type {
 	ShapeType,
 } from '../shared/types.ts'
 import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
+import { type BlobStore, imageBlobKey } from './blob.ts'
 import { canvasPreview } from './preview.ts'
 import {
 	createMutex,
 	createSqliteSql,
 	type Sql,
+	type SqlDialect,
 	type SqlTransaction,
 	type SqlValue,
 } from './sql.ts'
@@ -758,17 +760,24 @@ const TABLE_CANVASES = `CREATE TABLE IF NOT EXISTS canvases (
 		PRIMARY KEY (tenant_id, id)
 	)`
 
-const TABLE_IMAGE_ASSETS = `CREATE TABLE IF NOT EXISTS image_assets (
+function imageAssetsTable(dialect: SqlDialect): string {
+	const binaryType = dialect === 'postgres' ? 'BYTEA' : 'BLOB'
+	return `CREATE TABLE IF NOT EXISTS image_assets (
 		tenant_id TEXT NOT NULL,
 		id TEXT NOT NULL,
 		content_type TEXT NOT NULL,
-		bytes BLOB NOT NULL,
+		bytes ${binaryType},
 		size INTEGER NOT NULL,
 		created_at TEXT NOT NULL,
 		PRIMARY KEY (tenant_id, id)
 	)`
+}
 
-const SCHEMA = `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${TABLE_IMAGE_ASSETS};`
+const TABLE_IMAGE_ASSETS = imageAssetsTable('sqlite')
+
+function schemaFor(dialect: SqlDialect): string {
+	return `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${imageAssetsTable(dialect)};`
+}
 
 const STATEMENTS = {
 	findCanvas: 'SELECT * FROM canvases WHERE id = ? AND tenant_id = ?',
@@ -814,8 +823,16 @@ function validTenantId(value: unknown): string {
 	return value
 }
 
+export interface BoardStoreOptions {
+	readonly sql: Sql
+	readonly blobs?: BlobStore
+	readonly ownsSql?: boolean
+}
+
 export class BoardStore {
 	private readonly driver: Sql
+	private readonly blobs: BlobStore | undefined
+	private readonly ownsSql: boolean
 	private readonly ready: Promise<void>
 	private readonly serialize: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
@@ -823,14 +840,28 @@ export class BoardStore {
 	private closing = false
 	private closePromise: Promise<void> | undefined
 
-	constructor(dbPath: string) {
-		this.driver = createSqliteSql(dbPath)
+	constructor(source: string | BoardStoreOptions) {
+		if (typeof source === 'string') {
+			this.driver = createSqliteSql(source)
+			this.blobs = undefined
+			this.ownsSql = true
+		} else {
+			this.driver = source.sql
+			this.blobs = source.blobs
+			this.ownsSql = source.ownsSql ?? true
+		}
 		this.serialize = createMutex()
 		this.ready = this.initialize()
 		void this.ready.catch(() => undefined)
 		this.exclusive = <T>(operation: () => Promise<T>) => {
 			if (this.closing) {
 				return Promise.reject(new Error('BoardStore is closing'))
+			}
+			if (this.driver.concurrent) {
+				return (async () => {
+					await this.ready
+					return operation()
+				})()
 			}
 			return this.serialize(async () => {
 				await this.ready
@@ -843,13 +874,15 @@ export class BoardStore {
 		const tenantId = validTenantId(scope.tenantId)
 		const existing = this.tenants.get(tenantId)
 		if (existing) return existing
-		const created = new TenantStore(this.exclusive, this.driver, tenantId)
+		const created = new TenantStore(this.exclusive, this.driver, tenantId, this.blobs)
 		this.tenants.set(tenantId, created)
 		return created
 	}
 
 	get sql(): Sql {
 		return {
+			dialect: this.driver.dialect,
+			concurrent: this.driver.concurrent,
 			exec: (sql) => this.exclusive(() => this.driver.exec(sql)),
 			get: <T>(sql: string, params?: readonly SqlValue[]) =>
 				this.exclusive(() => this.driver.get<T>(sql, params)),
@@ -872,16 +905,22 @@ export class BoardStore {
 		this.closing = true
 		this.closePromise = this.serialize(async () => {
 			await this.ready.catch(() => undefined)
-			await this.driver.close()
+			await this.blobs?.close?.()
+			if (this.ownsSql) {
+				await this.driver.close()
+			}
 		})
 		return this.closePromise
 	}
 
 	private async initialize(): Promise<void> {
+		const ddl = schemaFor(this.driver.dialect)
 		await this.driver.transaction(async (tx) => {
-			await tx.exec(SCHEMA)
-			await this.migrateLocalTenant(tx)
-			await this.migrateLegacyBoard(tx)
+			await tx.exec(ddl)
+			if (this.driver.dialect === 'sqlite') {
+				await this.migrateLocalTenant(tx)
+				await this.migrateLegacyBoard(tx)
+			}
 		})
 	}
 
@@ -931,16 +970,19 @@ export class TenantStore {
 	readonly tenantId: string
 	private readonly sql: Sql
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
+	private readonly blobs: BlobStore | undefined
 	private bootstrap: Promise<void> | undefined
 
 	constructor(
 		exclusive: <T>(operation: () => Promise<T>) => Promise<T>,
 		sql: Sql,
 		tenantId: string,
+		blobs?: BlobStore,
 	) {
 		this.exclusive = exclusive
 		this.sql = sql
 		this.tenantId = tenantId
+		this.blobs = blobs
 	}
 
 	private ensure(): Promise<void> {
@@ -974,8 +1016,10 @@ export class TenantStore {
 		const now = new Date().toISOString()
 		await this.sql.transaction(async (tx) => {
 			await tx.run(STATEMENTS.createTenant, [this.tenantId, now])
-			const existing = await tx.get<{ count: number }>(STATEMENTS.countCanvases, [this.tenantId])
-			if ((existing?.count ?? 0) === 0) {
+			const existing = await tx.get<{ count: number | string }>(STATEMENTS.countCanvases, [
+				this.tenantId,
+			])
+			if (Number(existing?.count ?? 0) === 0) {
 				await tx.run(STATEMENTS.insertCanvas, [
 					this.tenantId === LOCAL_TENANT.tenantId ? DEFAULT_CANVAS_ID : randomUUID(),
 					DEFAULT_CANVAS_NAME,
@@ -1288,32 +1332,55 @@ export class TenantStore {
 		return value
 	}
 
-	saveImage(
+	async saveImage(
 		bytes: Uint8Array,
 		contentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
 	): Promise<string> {
-		return this.run(async (tx) => {
-			const id = randomUUID()
-			await tx.run(STATEMENTS.insertImage, [
-				id,
-				contentType,
-				bytes,
-				bytes.byteLength,
-				new Date().toISOString(),
-			])
-			return id
-		})
+		const id = randomUUID()
+		if (!this.blobs) {
+			return this.run(async (tx) => {
+				await tx.run(STATEMENTS.insertImage, [
+					id,
+					contentType,
+					bytes,
+					bytes.byteLength,
+					new Date().toISOString(),
+				])
+				return id
+			})
+		}
+		const key = imageBlobKey(this.tenantId, id)
+		await this.blobs.put(key, bytes, contentType)
+		try {
+			return await this.run(async (tx) => {
+				await tx.run(STATEMENTS.insertImage, [
+					id,
+					contentType,
+					null,
+					bytes.byteLength,
+					new Date().toISOString(),
+				])
+				return id
+			})
+		} catch (error) {
+			await this.blobs.delete(key).catch(() => undefined)
+			throw error
+		}
 	}
 
-	getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
-		return this.run(async (tx) => {
-			const assetId = this.validImageId(id)
-			const row = await tx.get<{ content_type: string; bytes: Uint8Array }>(STATEMENTS.findImage, [
-				assetId,
-			])
-			if (!row) return undefined
+	async getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
+		const assetId = this.validImageId(id)
+		const row = await this.run((tx) =>
+			tx.get<{ content_type: string; bytes: Uint8Array | null }>(STATEMENTS.findImage, [assetId]),
+		)
+		if (!row) return undefined
+		if (!this.blobs) {
+			if (!row.bytes) return undefined
 			return { bytes: Buffer.from(row.bytes), contentType: row.content_type }
-		})
+		}
+		const object = await this.blobs.get(imageBlobKey(this.tenantId, assetId))
+		if (!object) return undefined
+		return { bytes: object.bytes, contentType: row.content_type || object.contentType }
 	}
 
 	apply(request: unknown): Promise<Board> {
@@ -1625,8 +1692,8 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const id = validCanvasId(canvasId)
 			await this.requireRow(tx, id)
-			const count = await tx.get<{ count: number }>(STATEMENTS.countCanvases)
-			if ((count?.count ?? 0) <= 1) {
+			const count = await tx.get<{ count: number | string }>(STATEMENTS.countCanvases)
+			if (Number(count?.count ?? 0) <= 1) {
 				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
 			}
 			await tx.run(STATEMENTS.deleteCanvas, [id])
