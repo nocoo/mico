@@ -58,6 +58,8 @@ function parseSchema<T>(schema: z.ZodType<T>, body: unknown, label: string): T {
 	)
 }
 
+let cachedToolSchemas: MossToolDefinition[] | null = null
+
 export async function serializeCanvasTools(
 	store: MossStore,
 	broadcast: (event: unknown) => void,
@@ -66,6 +68,7 @@ export async function serializeCanvasTools(
 	revision: number,
 	imageGeneration?: ImageGenerationService,
 ): Promise<MossToolDefinition[]> {
+	if (cachedToolSchemas) return cachedToolSchemas.map((tool) => ({ ...tool }))
 	const tools = await createCanvasTools({
 		store: store as unknown as TenantStore,
 		broadcast,
@@ -74,7 +77,7 @@ export async function serializeCanvasTools(
 		revision,
 		imageGeneration,
 	})
-	return Object.entries(tools).map(([name, tool]) => {
+	cachedToolSchemas = Object.entries(tools).map(([name, tool]) => {
 		const record = tool as unknown as { description?: string; inputSchema: z.ZodType }
 		const parameters = z.toJSONSchema(record.inputSchema, {
 			target: 'draft-7',
@@ -89,6 +92,7 @@ export async function serializeCanvasTools(
 			parameters: parametersWithoutMeta,
 		}
 	})
+	return cachedToolSchemas.map((tool) => ({ ...tool }))
 }
 
 export function MOSS_LIVE_INSTRUCTIONS(): string {

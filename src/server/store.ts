@@ -286,17 +286,19 @@ function validateBoardState(board: Board, assetIds?: Set<string>): void {
 	if (!Array.isArray(board.shapes)) invalid('invalid board shapes')
 
 	const ids = new Set<string>()
+	const byId = new Map<string, Shape>()
 	const frameIds = new Set<string>()
 	for (const shape of board.shapes) {
 		validateShapeShape(shape)
 		if (ids.has(shape.id)) invalid(`duplicate shape id: ${shape.id}`)
 		ids.add(shape.id)
+		byId.set(shape.id, shape)
 		if (shape.type === 'frame') frameIds.add(shape.id)
 	}
 
 	for (const shape of board.shapes) {
 		if (shape.type === 'connector') {
-			validateConnectorReferences(shape, board.shapes)
+			validateConnectorReferences(shape, board.shapes, byId)
 		} else {
 			if (shape.frameId && !frameIds.has(shape.frameId)) {
 				invalid(`shape ${shape.id} references a missing frame ${shape.frameId}`)
@@ -308,7 +310,7 @@ function validateBoardState(board: Board, assetIds?: Set<string>): void {
 				}
 			}
 			if (shape.type === 'frame' && shape.backgroundImageId) {
-				const image = board.shapes.find((candidate) => candidate.id === shape.backgroundImageId)
+				const image = byId.get(shape.backgroundImageId)
 				if (image?.type !== 'image') {
 					invalid(
 						`frame ${shape.id} references an invalid background image ${shape.backgroundImageId}`,
@@ -320,9 +322,13 @@ function validateBoardState(board: Board, assetIds?: Set<string>): void {
 	}
 }
 
-function validateConnectorReferences(connector: Connector, shapes: Shape[]): void {
-	const from = shapes.find((shape) => shape.id === connector.from)
-	const to = shapes.find((shape) => shape.id === connector.to)
+function validateConnectorReferences(
+	connector: Connector,
+	shapes: Shape[],
+	byId?: ReadonlyMap<string, Shape>,
+): void {
+	const from = byId ? byId.get(connector.from) : shapes.find((shape) => shape.id === connector.from)
+	const to = byId ? byId.get(connector.to) : shapes.find((shape) => shape.id === connector.to)
 	if (!from || from.type === 'connector' || !to || to.type === 'connector') {
 		invalid(`connector ${connector.id} has an invalid endpoint reference`)
 	}
@@ -375,8 +381,8 @@ function cloneBoard(board: Board): Board {
 	}
 }
 
-function findShape(board: Board, id: string): Shape | undefined {
-	return board.shapes.find((shape) => shape.id === id)
+function findShape(board: Board, id: string, byId?: ReadonlyMap<string, Shape>): Shape | undefined {
+	return byId ? byId.get(id) : board.shapes.find((shape) => shape.id === id)
 }
 
 const PATCH_KEYS: Record<ShapeType | 'connector', readonly string[]> = {
@@ -399,9 +405,6 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		if (!allowed.has(key)) invalid(`patch key ${key} is not valid for this shape type`)
 	}
 
-	if (Object.hasOwn(patch, 'color') && !validColor(patch.color)) {
-		invalid('shape color must be a non-empty string')
-	}
 	if (target.type === 'connector') {
 		for (const key of ['from', 'to']) {
 			if (Object.hasOwn(patch, key) && !validId(patch[key])) {
@@ -427,16 +430,12 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 		invalid('shape width must be non-negative')
 	if (target.type !== 'line' && Object.hasOwn(patch, 'h') && (patch.h as number) < 0)
 		invalid('shape height must be non-negative')
-	if (Object.hasOwn(patch, 'text') && typeof patch.text !== 'string')
-		invalid('shape text must be a string')
-	if (Object.hasOwn(patch, 'label')) validLabel(patch.label)
 	if (Object.hasOwn(patch, 'frameId')) {
 		if (patch.frameId !== null && !validId(patch.frameId)) {
 			invalid('frameId must be a non-empty shape id or null')
 		}
 	}
 	if (Object.hasOwn(patch, 'title')) validTitle(patch.title, 'title')
-	if (Object.hasOwn(patch, 'items')) validateActionItems(patch.items)
 	if (Object.hasOwn(patch, 'backgroundImageId')) {
 		if (patch.backgroundImageId !== null && !validId(patch.backgroundImageId)) {
 			invalid('backgroundImageId must be a non-empty shape id or null')
@@ -450,50 +449,25 @@ function validatePatch(target: Shape, patch: Record<string, unknown>): void {
 	) {
 		invalid('backgroundFit must be cover, contain or stretch')
 	}
-	if (Object.hasOwn(patch, 'imageId') && !validId(patch.imageId)) {
-		invalid('imageId must be a non-empty asset id')
-	}
-	if (Object.hasOwn(patch, 'html')) validHtml(patch.html)
-	if (Object.hasOwn(patch, 'font')) {
-		const font = patch.font
-		if (font !== 'sans' && font !== 'serif' && font !== 'hand' && font !== 'mono') {
-			invalid('text font must be sans, serif, hand or mono')
-		}
-	}
-	if (Object.hasOwn(patch, 'fontSize')) {
-		if (!validFiniteNumber(patch.fontSize) || patch.fontSize < 8 || patch.fontSize > 256) {
-			invalid('text fontSize must be between 8 and 256')
-		}
-	}
-	if (Object.hasOwn(patch, 'fontWeight')) {
-		if (!validFiniteNumber(patch.fontWeight) || patch.fontWeight < 100 || patch.fontWeight > 900) {
-			invalid('text fontWeight must be between 100 and 900')
-		}
-	}
-	if (target.type === 'path') {
-		if (Object.hasOwn(patch, 'brush') && !validBrush(patch.brush)) {
-			invalid('path brush must be pencil, marker or brush')
-		}
-		if (Object.hasOwn(patch, 'strokeWidth') && !validStrokeWidth(patch.strokeWidth)) {
-			invalid('path strokeWidth must be between 1 and 64')
-		}
-		if (Object.hasOwn(patch, 'points')) {
-			validatePoints(
-				patch.points,
-				(patch.w as number | undefined) ?? (target.w as number),
-				(patch.h as number | undefined) ?? (target.h as number),
-			)
-		}
+	if (target.type === 'path' && ['points', 'w', 'h'].some((key) => Object.hasOwn(patch, key))) {
+		validatePoints(
+			Object.hasOwn(patch, 'points') ? patch.points : target.points,
+			(patch.w as number | undefined) ?? target.w,
+			(patch.h as number | undefined) ?? target.h,
+		)
 	}
 }
 
-interface CanvasRow {
+interface CanvasMeta {
 	id: string
 	name: string
 	revision: number
-	shapes: string
 	created_at: string
 	updated_at: string
+}
+
+interface CanvasRow extends CanvasMeta {
+	shapes: string
 }
 
 const DEFAULT_CANVAS_ID = 'main'
@@ -556,9 +530,10 @@ function shapePlacementBounds(shape: Shape): PlacementBounds | undefined {
 export function connectorPlacementBounds(
 	shapes: Shape[],
 	connector: Connector,
+	byId?: ReadonlyMap<string, Shape>,
 ): PlacementBounds | undefined {
-	const from = shapes.find((shape) => shape.id === connector.from)
-	const to = shapes.find((shape) => shape.id === connector.to)
+	const from = byId ? byId.get(connector.from) : shapes.find((shape) => shape.id === connector.from)
+	const to = byId ? byId.get(connector.to) : shapes.find((shape) => shape.id === connector.to)
 	if (!from || !to || from.type === 'connector' || to.type === 'connector') return undefined
 	try {
 		const anchors = getConnectorAnchors(from, to, {
@@ -615,16 +590,21 @@ export function addedPlacement(before: PlacementBounds, after: PlacementBounds):
 	return additions
 }
 
-function placementOf(shapes: Shape[], shape: Shape): PlacementBounds | undefined {
+function placementOf(
+	shapes: Shape[],
+	shape: Shape,
+	byId?: ReadonlyMap<string, Shape>,
+): PlacementBounds | undefined {
 	return shape.type === 'connector'
-		? connectorPlacementBounds(shapes, shape)
+		? connectorPlacementBounds(shapes, shape, byId)
 		: shapePlacementBounds(shape)
 }
 
 function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, number>): void {
+	const byId = new Map(next.shapes.map((shape) => [shape.id, shape]))
 	for (const [noteId, adjustment] of adjustments) {
 		if (adjustment <= 0) continue
-		const note = findShape(next, noteId)
+		const note = findShape(next, noteId, byId)
 		if (note?.type !== 'note') continue
 		const after = shapePlacementBounds(note)
 		if (!after) continue
@@ -636,7 +616,7 @@ function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, num
 				(shape.type === 'connector' && (shape.from === noteId || shape.to === noteId))
 			)
 				continue
-			const bounds = placementOf(next.shapes, shape)
+			const bounds = placementOf(next.shapes, shape, byId)
 			if (bounds && addedPlacement(before, after).some((region) => overlaps(region, bounds))) {
 				throw new OperationError(
 					409,
@@ -650,9 +630,9 @@ function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, num
 	const frameUpdates = new Map<string, { x: number; y: number; w: number; h: number }>()
 	for (const [noteId, adjustment] of adjustments) {
 		if (adjustment <= 0) continue
-		const note = findShape(next, noteId)
+		const note = findShape(next, noteId, byId)
 		if (note?.type !== 'note' || !note.frameId) continue
-		const frame = findShape(next, note.frameId)
+		const frame = findShape(next, note.frameId, byId)
 		if (frame?.type !== 'frame') continue
 		const body = shapePlacementBounds(note)
 		if (!body) continue
@@ -684,7 +664,7 @@ function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, num
 	}
 
 	for (const [frameId, patch] of frameUpdates) {
-		const frame = findShape(next, frameId)
+		const frame = findShape(next, frameId, byId)
 		if (frame?.type !== 'frame') continue
 		const before = shapePlacementBounds(frame)
 		const after = shapePlacementBounds({ ...frame, ...patch } as Shape)
@@ -693,8 +673,8 @@ function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, num
 			if (shape.id === frameId) continue
 			if (shape.type !== 'connector' && shape.frameId === frameId) continue
 			if (shape.type === 'connector') {
-				const from = findShape(next, shape.from)
-				const to = findShape(next, shape.to)
+				const from = findShape(next, shape.from, byId)
+				const to = findShape(next, shape.to, byId)
 				if (
 					from &&
 					from.type !== 'connector' &&
@@ -705,7 +685,7 @@ function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, num
 				)
 					continue
 			}
-			const bounds = placementOf(next.shapes, shape)
+			const bounds = placementOf(next.shapes, shape, byId)
 			if (bounds && addedPlacement(before, after).some((region) => overlaps(region, bounds))) {
 				throw new OperationError(
 					409,
@@ -719,6 +699,7 @@ function validateAutomaticNoteGeometry(next: Board, adjustments: Map<string, num
 }
 
 function occupiedPlacement(shapes: Shape[], x: number, y: number, w: number, h: number): boolean {
+	const byId = new Map(shapes.map((shape) => [shape.id, shape]))
 	const left = x
 	const top = y
 	const right = x + w
@@ -726,7 +707,7 @@ function occupiedPlacement(shapes: Shape[], x: number, y: number, w: number, h: 
 	for (const shape of shapes) {
 		const bounds =
 			shape.type === 'connector'
-				? connectorPlacementBounds(shapes, shape)
+				? connectorPlacementBounds(shapes, shape, byId)
 				: shapePlacementBounds(shape)
 		if (
 			bounds &&
@@ -745,12 +726,13 @@ function rightmostClearPosition(
 	shapes: Shape[],
 	preferred: { x: number; y: number; w: number; h: number },
 ): { x: number; y: number; w: number; h: number } {
+	const byId = new Map(shapes.map((shape) => [shape.id, shape]))
 	let rightmost = preferred.x + preferred.w
 	let top = preferred.y
 	for (const shape of shapes) {
 		const bounds =
 			shape.type === 'connector'
-				? connectorPlacementBounds(shapes, shape)
+				? connectorPlacementBounds(shapes, shape, byId)
 				: shapePlacementBounds(shape)
 		if (!bounds) continue
 		if (bounds.right > rightmost) rightmost = bounds.right
@@ -792,6 +774,8 @@ const STATEMENTS = {
 	findCanvas: 'SELECT * FROM canvases WHERE id = ? AND tenant_id = ?',
 	listCanvases:
 		'SELECT * FROM canvases WHERE tenant_id = ? ORDER BY updated_at DESC, created_at DESC, id ASC',
+	listCanvasMeta:
+		'SELECT id, name, revision, created_at, updated_at FROM canvases WHERE tenant_id = ? ORDER BY updated_at DESC, created_at DESC, id ASC',
 	firstCanvas:
 		'SELECT id FROM canvases WHERE tenant_id = ? ORDER BY updated_at DESC, created_at DESC, id ASC LIMIT 1',
 	countCanvases: 'SELECT COUNT(*) AS count FROM canvases WHERE tenant_id = ?',
@@ -1061,11 +1045,14 @@ export class TenantStore {
 		}
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
-		const beforeValidation = JSON.stringify(migrated.shapes)
-		validateBoardState(board, await this.listImageAssetIds(tx))
+		const beforeValidation = persistMigration ? JSON.stringify(migrated.shapes) : undefined
+		const hasImages =
+			Array.isArray(migrated.shapes) &&
+			migrated.shapes.some((shape) => isObject(shape) && shape.type === 'image')
+		validateBoardState(board, hasImages ? await this.listImageAssetIds(tx) : undefined)
 		if (
-			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes)) &&
-			persistMigration
+			persistMigration &&
+			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes))
 		) {
 			await tx.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
 		}
@@ -1091,14 +1078,27 @@ export class TenantStore {
 	private async readState(tx: SqlTransaction, includePreviews: boolean): Promise<CanvasSnapshot> {
 		const tenant = await tx.get<{ state_version: number }>(STATEMENTS.findTenant)
 		const stateVersion = tenant?.state_version ?? 0
-		const rows = await tx.all<CanvasRow>(STATEMENTS.listCanvases)
 		const active = await this.activeCanvasId(tx)
-		const current = rows.find((row) => row.id === active) ?? rows[0]
-		if (!current) throw new Error('No canvas exists')
-		const canvases: CanvasSummary[] = []
-		for (const row of rows) canvases.push(await this.summaryOf(tx, row, includePreviews))
-		const board = await this.parseRow(tx, current)
-		return { stateVersion, activeCanvasId: current.id, canvases, board }
+		if (includePreviews) {
+			const rows = await tx.all<CanvasRow>(STATEMENTS.listCanvases)
+			const current = rows.find((row) => row.id === active) ?? rows[0]
+			if (!current) throw new Error('No canvas exists')
+			const canvases: CanvasSummary[] = []
+			for (const row of rows) canvases.push(await this.summaryOf(tx, row))
+			const board = await this.parseRow(tx, current)
+			return { stateVersion, activeCanvasId: current.id, canvases, board }
+		}
+		const rows = await tx.all<CanvasMeta>(STATEMENTS.listCanvasMeta)
+		if (!rows.some((row) => row.id === active)) throw new Error('No canvas exists')
+		const canvases = rows.map((row) => ({
+			id: row.id,
+			name: row.name,
+			revision: row.revision,
+			createdAt: row.created_at,
+			updatedAt: row.updated_at,
+		}))
+		const board = await this.parseRow(tx, await this.requireRow(tx, active))
+		return { stateVersion, activeCanvasId: active, canvases, board }
 	}
 
 	private async boardOf(tx: SqlTransaction, id: string): Promise<Board> {

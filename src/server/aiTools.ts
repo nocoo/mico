@@ -272,6 +272,8 @@ async function apply(
 	const current = await store.getBoard(canvasId)
 	const normalized = normalizeOperations(current.shapes, operations)
 	const projected = projectOperations(current.shapes, normalized)
+	const projectedById = new Map(projected.map((shape) => [shape.id, shape]))
+	const currentById = new Map(current.shapes.map((shape) => [shape.id, shape]))
 	const explicitFrameIdCreates = normalized.some(
 		(operation) =>
 			operation.type === 'create' &&
@@ -295,7 +297,7 @@ async function apply(
 			continue
 		}
 		if (operation.type !== 'update') continue
-		const target = current.shapes.find((shape) => shape.id === operation.id)
+		const target = currentById.get(operation.id)
 		if (!target || target.type === 'connector' || !isMemberType(target.type)) continue
 		if (operation.patch.frameId !== undefined && operation.patch.frameId !== null) {
 			frameIds.add(operation.patch.frameId)
@@ -314,7 +316,7 @@ async function apply(
 	}
 
 	for (const frameId of frameIds) {
-		const frame = projected.find((shape) => shape.id === frameId)
+		const frame = projectedById.get(frameId)
 		if (!frame) {
 			return { ok: false, error: 'NOT_FOUND', message: `frame not found: ${frameId}` }
 		}
@@ -330,7 +332,7 @@ async function apply(
 	const growthCandidates = new Map<string, Bounds>()
 	const growthOperations: Operation[] = []
 	for (const frameId of frameIds) {
-		const frame = projected.find((shape) => shape.id === frameId)
+		const frame = projectedById.get(frameId)
 		if (frame?.type !== 'frame') continue
 		const memberUnion = paddedMemberBounds(projected, frameId)
 		if (!memberUnion) continue
@@ -358,8 +360,8 @@ async function apply(
 			if (shape.id === frameId) continue
 			if (shape.type !== 'connector' && shape.frameId === frameId) continue
 			if (shape.type === 'connector') {
-				const from = projected.find((item) => item.id === shape.from)
-				const to = projected.find((item) => item.id === shape.to)
+				const from = projectedById.get(shape.from)
+				const to = projectedById.get(shape.to)
 				if (
 					from &&
 					from.type !== 'connector' &&
@@ -369,7 +371,7 @@ async function apply(
 					to.frameId === frameId
 				)
 					continue
-				const bounds = connectorPlacementBounds(projected, shape)
+				const bounds = connectorPlacementBounds(projected, shape, projectedById)
 				const added = addedPlacement(
 					{ ...frameBounds, top: frameBounds.top - 40 },
 					{ ...candidate, top: candidate.top - 40 },

@@ -1,8 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { overviewProjection } from '../shared/overview.ts'
-import { FRAME_FILL_PERCENT } from '../shared/palette.ts'
+import { CANDY_LAYOUT, FRAME_FILL_PERCENT } from '../shared/palette.ts'
 import type { Shape } from '../shared/types.ts'
-import { CANDY_LAYOUT } from '../web/design.ts'
 
 export const PREVIEW_WIDTH = 160
 export const PREVIEW_HEIGHT = 100

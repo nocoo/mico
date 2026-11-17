@@ -44,6 +44,16 @@ export function createSqliteSql(dbPath: string): Sql {
 	const serialize = lock.serialize
 	let closed = false
 	let closePromise: Promise<void> | undefined
+	const statements = new Map<string, ReturnType<DatabaseSync['prepare']>>()
+
+	const prepare = (sql: string) => {
+		let statement = statements.get(sql)
+		if (!statement) {
+			statement = db.prepare(sql)
+			statements.set(sql, statement)
+		}
+		return statement
+	}
 
 	const directExec = (sql: string): Promise<void> => {
 		if (closed) return Promise.reject(new Error('SQL driver is closed'))
@@ -52,21 +62,21 @@ export function createSqliteSql(dbPath: string): Sql {
 	}
 	const directGet = <T>(sql: string, params: readonly SqlValue[] = []): Promise<T | undefined> => {
 		if (closed) return Promise.reject(new Error('SQL driver is closed'))
-		return Promise.resolve(db.prepare(sql).get(...params) as T | undefined)
+		return Promise.resolve(prepare(sql).get(...params) as T | undefined)
 	}
 	const directAll = <T>(sql: string, params: readonly SqlValue[] = []): Promise<T[]> => {
 		if (closed) return Promise.reject(new Error('SQL driver is closed'))
-		return Promise.resolve(db.prepare(sql).all(...params) as T[])
+		return Promise.resolve(prepare(sql).all(...params) as T[])
 	}
 	const directRun = (sql: string, params: readonly SqlValue[] = []): Promise<number> => {
 		if (closed) return Promise.reject(new Error('SQL driver is closed'))
-		return Promise.resolve(Number(db.prepare(sql).run(...params).changes))
+		return Promise.resolve(Number(prepare(sql).run(...params).changes))
 	}
 	const directHasTable = (name: string): Promise<boolean> => {
 		if (closed) return Promise.reject(new Error('SQL driver is closed'))
-		const row = db
-			.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
-			.get(name)
+		const row = prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(
+			name,
+		)
 		return Promise.resolve(row !== undefined)
 	}
 
@@ -84,6 +94,7 @@ export function createSqliteSql(dbPath: string): Sql {
 				if (closed) return
 				closed = true
 				try {
+					statements.clear()
 					db.close()
 				} finally {
 					lock.refs -= 1

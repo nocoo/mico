@@ -43,95 +43,14 @@ function parsePort(env: NodeJS.ProcessEnv): number {
 const MAX_JSON_BYTES = 1024 * 1024
 const MAX_RESTORE_BYTES = 64 * MAX_JSON_BYTES
 
-function readJson(req: IncomingMessage, allowRestore = false): Promise<unknown> {
-	return new Promise((resolveBody, reject) => {
-		const chunks: Buffer[] = []
-		let size = 0
-		let tooLarge = false
-		req.on('data', (chunk: Buffer) => {
-			if (tooLarge) return
-			size += chunk.length
-			if (size > (allowRestore ? MAX_RESTORE_BYTES : MAX_JSON_BYTES)) {
-				tooLarge = true
-				reject(
-					new OperationError(
-						413,
-						'PAYLOAD_TOO_LARGE',
-						`Request body exceeds ${allowRestore ? 64 : 1} MB`,
-					),
-				)
-				return
-			}
-			chunks.push(chunk)
-		})
-		req.on('end', () => {
-			if (tooLarge) return
-			try {
-				const text = Buffer.concat(chunks).toString('utf8')
-				const body: unknown = text.length === 0 ? undefined : JSON.parse(text)
-				const restore =
-					allowRestore &&
-					isRecord(body) &&
-					Number.isInteger(body.expectedRevision) &&
-					Array.isArray(body.operations) &&
-					body.operations.some(
-						(operation: unknown) => isRecord(operation) && operation.type === 'restore',
-					) &&
-					body.operations.every(
-						(operation: unknown) =>
-							isRecord(operation) && (operation.type === 'restore' || operation.type === 'delete'),
-					)
-				if (size > MAX_JSON_BYTES && !restore) {
-					throw new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 1 MB')
-				}
-				resolveBody(body)
-			} catch (error) {
-				reject(
-					error instanceof OperationError
-						? error
-						: new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'),
-				)
-			}
-		})
-		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
-		req.on('error', (error) => reject(error))
-	})
-}
-
 const MAX_AUTH_JSON_BYTES = 64 * 1024
-
-function readAuthJson(req: IncomingMessage): Promise<unknown> {
-	return new Promise((resolveBody, reject) => {
-		const chunks: Buffer[] = []
-		let size = 0
-		let tooLarge = false
-		req.on('data', (chunk: Buffer) => {
-			if (tooLarge) return
-			size += chunk.length
-			if (size > MAX_AUTH_JSON_BYTES) {
-				tooLarge = true
-				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 64 KB'))
-				return
-			}
-			chunks.push(chunk)
-		})
-		req.on('end', () => {
-			if (tooLarge) return
-			try {
-				const text = Buffer.concat(chunks).toString('utf8')
-				resolveBody(text.length === 0 ? undefined : JSON.parse(text))
-			} catch {
-				reject(new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON'))
-			}
-		})
-		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
-		req.on('error', (error) => reject(error))
-	})
-}
-
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
-function readRaw(req: IncomingMessage): Promise<Buffer> {
+function readRaw(
+	req: IncomingMessage,
+	maxBytes = MAX_IMAGE_BYTES,
+	maxLabel = '10 MB',
+): Promise<Buffer> {
 	return new Promise((resolveBody, reject) => {
 		const chunks: Buffer[] = []
 		let size = 0
@@ -139,9 +58,9 @@ function readRaw(req: IncomingMessage): Promise<Buffer> {
 		req.on('data', (chunk: Buffer) => {
 			if (tooLarge) return
 			size += chunk.length
-			if (size > MAX_IMAGE_BYTES) {
+			if (size > maxBytes) {
 				tooLarge = true
-				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 10 MB'))
+				reject(new OperationError(413, 'PAYLOAD_TOO_LARGE', `Request body exceeds ${maxLabel}`))
 				return
 			}
 			chunks.push(chunk)
@@ -152,6 +71,44 @@ function readRaw(req: IncomingMessage): Promise<Buffer> {
 		req.on('aborted', () => reject(new OperationError(400, 'REQUEST_ABORTED', 'Request aborted')))
 		req.on('error', (error) => reject(error))
 	})
+}
+
+async function readJsonBody(bytes: Buffer): Promise<unknown> {
+	try {
+		const text = bytes.toString('utf8')
+		return text.length === 0 ? undefined : JSON.parse(text)
+	} catch {
+		throw new OperationError(400, 'INVALID_JSON', 'Request body is not valid JSON')
+	}
+}
+
+async function readJson(req: IncomingMessage, allowRestore = false): Promise<unknown> {
+	const bytes = await readRaw(
+		req,
+		allowRestore ? MAX_RESTORE_BYTES : MAX_JSON_BYTES,
+		allowRestore ? '64 MB' : '1 MB',
+	)
+	const body = await readJsonBody(bytes)
+	const restore =
+		allowRestore &&
+		isRecord(body) &&
+		Number.isInteger(body.expectedRevision) &&
+		Array.isArray(body.operations) &&
+		body.operations.some(
+			(operation: unknown) => isRecord(operation) && operation.type === 'restore',
+		) &&
+		body.operations.every(
+			(operation: unknown) =>
+				isRecord(operation) && (operation.type === 'restore' || operation.type === 'delete'),
+		)
+	if (bytes.length > MAX_JSON_BYTES && !restore) {
+		throw new OperationError(413, 'PAYLOAD_TOO_LARGE', 'Request body exceeds 1 MB')
+	}
+	return body
+}
+
+async function readAuthJson(req: IncomingMessage): Promise<unknown> {
+	return readJsonBody(await readRaw(req, MAX_AUTH_JSON_BYTES, '64 KB'))
 }
 
 function detectImageType(
