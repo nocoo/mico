@@ -1,9 +1,11 @@
-import type { TokenCredential } from '@azure/identity'
+import { DefaultAzureCredential, type TokenCredential } from '@azure/identity'
 import { createAzureBlobStore } from './blob-azure.ts'
 import { createR2BlobStore } from './blob-r2.ts'
 import { createD1Sql } from './sql-d1.ts'
 import { createPostgresSql } from './sql-postgres.ts'
 import { BoardStore } from './store.ts'
+
+const AZURE_PG_SCOPE = 'https://ossrdbms-aad.database.windows.net/.default'
 
 export type StorageBackend = 'sqlite' | 'azure' | 'cloudflare'
 
@@ -57,13 +59,25 @@ export function createBoardStoreFromEnv(
 			throw new Error('MICO_PG_URL (or MICO_PG_HOST) is required when MICO_STORAGE_BACKEND=azure')
 		}
 		const sslMode = readEnv(env, 'MICO_PG_SSL')?.toLowerCase()
+		const pgAuthMode = readEnv(env, 'MICO_PG_AUTH_MODE')?.toLowerCase()
+		let pgPassword: string | (() => Promise<string>) | undefined = readEnv(env, 'MICO_PG_PASSWORD')
+		if (pgAuthMode === 'managed-identity') {
+			const credential = options.managedIdentityCredential ?? new DefaultAzureCredential()
+			pgPassword = async () => {
+				const token = await credential.getToken(AZURE_PG_SCOPE)
+				if (!token?.token) {
+					throw new Error('Failed to acquire Azure PostgreSQL access token')
+				}
+				return token.token
+			}
+		}
 		const sql = createPostgresSql({
 			connectionString,
 			host,
 			port: readEnv(env, 'MICO_PG_PORT') ? Number(readEnv(env, 'MICO_PG_PORT')) : undefined,
 			database: readEnv(env, 'MICO_PG_DATABASE'),
 			user: readEnv(env, 'MICO_PG_USER'),
-			password: readEnv(env, 'MICO_PG_PASSWORD'),
+			password: pgPassword,
 			ssl: !(sslMode === 'false' || sslMode === 'disable'),
 		})
 		const blobs = createAzureBlobStore({
