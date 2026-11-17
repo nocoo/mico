@@ -93,13 +93,14 @@ function clamp(value: number, minimum: number, maximum: number): number {
 }
 
 export function extractOverviewBlocks(shapes: readonly Shape[]): OverviewBlock[] {
-	const blocks: OverviewBlock[] = []
+	const frames: OverviewBlock[] = []
+	const others: OverviewBlock[] = []
 	for (const shape of shapes) {
 		if (shape.type === 'connector' || !isOverviewType(shape.type)) continue
 		const right = shape.x + shape.w
 		const bottom = shape.y + shape.h
 		if (![shape.x, shape.y, shape.w, shape.h, right, bottom].every(Number.isFinite)) continue
-		blocks.push({
+		const block = {
 			id: shape.id,
 			type: shape.type,
 			x: Math.min(shape.x, right),
@@ -107,12 +108,11 @@ export function extractOverviewBlocks(shapes: readonly Shape[]): OverviewBlock[]
 			w: Math.abs(shape.w),
 			h: Math.abs(shape.h),
 			color: shape.color.slice(0, 128),
-		})
+		}
+		if (shape.type === 'frame') frames.push(block)
+		else others.push(block)
 	}
-	return [
-		...blocks.filter((block) => block.type === 'frame'),
-		...blocks.filter((block) => block.type !== 'frame'),
-	]
+	return [...frames, ...others]
 }
 
 function overviewBounds(blocks: readonly OverviewBlock[], viewport?: OverviewRect): OverviewRect {

@@ -1,5 +1,5 @@
 import type React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuthMode } from '../shared/runtime'
 import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '../shared/types'
 import type { WhiteboardSession } from '../shared/whiteboards'
@@ -561,7 +561,6 @@ export default function App({
 		const interaction = interactionRef.current
 		interactionRef.current = null
 		creationRef.current = null
-		creationRef.current = null
 		setCreation(null)
 		setIsPanning(false)
 		setGuides([])
@@ -1022,28 +1021,34 @@ export default function App({
 			: false
 	}
 
-	const beginInlineEdit = (shape: CanvasShape) => {
-		if (readOnly) return
-		if (
-			shape.type !== 'frame' &&
-			shape.type !== 'html' &&
-			shape.type !== 'text' &&
-			shape.type !== 'note' &&
-			shape.type !== 'rectangle' &&
-			shape.type !== 'ellipse'
-		)
-			return
-		const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
-		const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
-		setEditing({ id: shape.id, field, value })
-	}
+	const beginInlineEdit = useCallback(
+		(shape: CanvasShape) => {
+			if (readOnly) return
+			if (
+				shape.type !== 'frame' &&
+				shape.type !== 'html' &&
+				shape.type !== 'text' &&
+				shape.type !== 'note' &&
+				shape.type !== 'rectangle' &&
+				shape.type !== 'ellipse'
+			)
+				return
+			const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
+			const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
+			setEditing({ id: shape.id, field, value })
+		},
+		[readOnly],
+	)
 
-	const onShapeDoubleClick = (event: React.MouseEvent<SVGGElement>, shape: CanvasShape) => {
-		event.stopPropagation()
-		beginInlineEdit(shape)
-	}
+	const onShapeDoubleClick = useCallback(
+		(event: React.MouseEvent<SVGGElement>, shape: CanvasShape) => {
+			event.stopPropagation()
+			beginInlineEdit(shape)
+		},
+		[beginInlineEdit],
+	)
 
-	const onShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
+	const handleShapePointerDown = (event: React.PointerEvent<SVGGElement>, shape: Shape) => {
 		if (readOnly) return
 		if (interactionRef.current) {
 			event.stopPropagation()
@@ -1094,6 +1099,13 @@ export default function App({
 			}
 		}
 	}
+	const shapePointerDownRef = useRef(handleShapePointerDown)
+	shapePointerDownRef.current = handleShapePointerDown
+	const onShapePointerDown = useCallback(
+		(event: React.PointerEvent<SVGGElement>, shape: Shape) =>
+			shapePointerDownRef.current(event, shape),
+		[],
+	)
 
 	const updateSelectedColor = (color: string) => {
 		if (!selectedId) return
@@ -1176,26 +1188,60 @@ export default function App({
 		)
 	}
 
-	const visibleShapes = board.shapes.map((shape) => {
-		const preview = dragPreviews.get(shape.id)
-		return preview && isCanvasShape(shape) ? { ...shape, x: preview.x, y: preview.y } : shape
-	})
-
+	const visibleShapes = useMemo(() => {
+		if (dragPreviews.size === 0) return board.shapes
+		return board.shapes.map((shape) => {
+			const preview = dragPreviews.get(shape.id)
+			return preview && isCanvasShape(shape) ? { ...shape, x: preview.x, y: preview.y } : shape
+		})
+	}, [board.shapes, dragPreviews])
+	const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
+	const { shapeById, frameShapes, connectorShapes, otherShapes } = useMemo(() => {
+		const shapeById = new Map<string, Shape>()
+		const frameShapes: CanvasShape[] = []
+		const connectorShapes: Connector[] = []
+		const otherShapes: CanvasShape[] = []
+		for (const shape of visibleShapes) {
+			shapeById.set(shape.id, shape)
+			if (shape.type === 'connector') connectorShapes.push(shape)
+			else if (shape.type === 'frame') frameShapes.push(shape)
+			else otherShapes.push(shape)
+		}
+		return { shapeById, frameShapes, connectorShapes, otherShapes }
+	}, [visibleShapes])
 	const shapeViewProps = {
-		visibleShapes,
-		selectedIds,
-		zoom: viewport.zoom,
-		connection,
 		tool,
 		spacePressed,
 		isPanning,
 		animatedObjectIds: animatedObjectsRef.current,
 		onEntryAnimationConsumed: consumeEntryAnimation,
-		editingId: editing?.id ?? null,
 		onActionToggle: toggleActionDone,
 		actionsDisabled: readOnly || !apiConnected,
 		onPointerDown: onShapePointerDown,
 		onDoubleClick: onShapeDoubleClick,
+	}
+	const resolvedShapeViewProps = (shape: Shape) => {
+		const selected = selectedSet.has(shape.id)
+		const from = shape.type === 'connector' ? shapeById.get(shape.from) : undefined
+		const to = shape.type === 'connector' ? shapeById.get(shape.to) : undefined
+		const background =
+			shape.type === 'frame' && shape.backgroundImageId
+				? shapeById.get(shape.backgroundImageId)
+				: undefined
+		return {
+			...shapeViewProps,
+			selected,
+			fromShape: from && isCanvasShape(from) ? from : undefined,
+			toShape: to && isCanvasShape(to) ? to : undefined,
+			backgroundImageAssetId: background?.type === 'image' ? background.imageId : undefined,
+			hiddenForConnectionDraft: Boolean(
+				shape.type === 'connector' &&
+					connection.draft?.original?.id === shape.id &&
+					connection.preview,
+			),
+			zoom: selected ? viewport.zoom : 1,
+			editing: editing?.id === shape.id,
+		}
 	}
 
 	return (
@@ -1458,30 +1504,29 @@ export default function App({
 					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
 				}}
 			>
-				{visibleShapes
-					.filter((shape) => shape.type === 'frame')
-					.map((shape) => (
-						<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
-					))}
-				{visibleShapes.filter(isConnector).map((shape) => (
-					<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
+				{frameShapes.map((shape) => (
+					<ShapeView key={shape.id} shape={shape} {...resolvedShapeViewProps(shape)} />
 				))}
-				{visibleShapes
-					.filter((shape) => !isConnector(shape) && shape.type !== 'frame')
-					.map((shape) => (
-						<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
-					))}
-				{visibleShapes
-					.filter((shape): shape is CanvasShape => shape.type === 'frame')
-					.map((shape) => (
-						<FrameLabel key={`label:${shape.id}`} shape={shape} {...shapeViewProps} />
-					))}
+				{connectorShapes.map((shape) => (
+					<ShapeView key={shape.id} shape={shape} {...resolvedShapeViewProps(shape)} />
+				))}
+				{otherShapes.map((shape) => (
+					<ShapeView key={shape.id} shape={shape} {...resolvedShapeViewProps(shape)} />
+				))}
+				{frameShapes.map((shape) => (
+					<FrameLabel
+						key={`label:${shape.id}`}
+						shape={shape}
+						onPointerDown={onShapePointerDown}
+						onDoubleClick={onShapeDoubleClick}
+					/>
+				))}
 				{[...pendingCreations.values()]
-					.filter((shape) => !visibleShapes.some((existing) => existing.id === shape.id))
+					.filter((shape) => !shapeById.has(shape.id))
 					.map((shape) => (
-						<ShapeView key={shape.id} shape={shape} {...shapeViewProps} />
+						<ShapeView key={shape.id} shape={shape} {...resolvedShapeViewProps(shape)} />
 					))}
-				{creation && <ShapeView shape={creation} {...shapeViewProps} />}
+				{creation && <ShapeView shape={creation} {...resolvedShapeViewProps(creation)} />}
 				{brushPoints && (
 					<BrushStroke
 						points={brushPoints}

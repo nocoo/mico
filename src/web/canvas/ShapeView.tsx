@@ -1,6 +1,6 @@
 import type React from 'react'
-import { useLayoutEffect, useRef, useState } from 'react'
-import type { CanvasShape, Connector, Point, Shape } from '../../shared/types'
+import { memo, useLayoutEffect, useRef, useState } from 'react'
+import type { CanvasShape, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
 import type { Tool } from '../design'
 import { StickyNote } from '../StickyNote'
@@ -22,35 +22,36 @@ interface ShapeCallbacks {
 
 export interface ShapeViewProps extends ShapeCallbacks {
 	shape: Shape
-	visibleShapes: readonly Shape[]
-	selectedIds: readonly string[]
+	selected: boolean
+	fromShape?: CanvasShape
+	toShape?: CanvasShape
+	backgroundImageAssetId?: string
+	hiddenForConnectionDraft?: boolean
 	zoom: number
-	connection: {
-		draft: { original: Connector | null } | null
-		preview: { start: Point; end: Point } | null
-	}
 	tool: Tool
 	spacePressed: boolean
 	isPanning: boolean
 	animatedObjectIds: ReadonlySet<string>
 	onEntryAnimationConsumed: (id: string) => void
-	editingId: string | null
+	editing: boolean
 	onActionToggle: (shapeId: string, itemId: string, done: boolean) => void
 	actionsDisabled: boolean
 }
 
-export function ShapeView({
+export const ShapeView = memo(function ShapeView({
 	shape,
-	visibleShapes,
-	selectedIds,
+	selected,
+	fromShape,
+	toShape,
+	backgroundImageAssetId,
+	hiddenForConnectionDraft,
 	zoom,
-	connection,
 	tool,
 	spacePressed,
 	isPanning,
 	animatedObjectIds,
 	onEntryAnimationConsumed,
-	editingId,
+	editing,
 	onActionToggle,
 	actionsDisabled,
 	onPointerDown,
@@ -59,16 +60,13 @@ export function ShapeView({
 	const animated = animatedObjectIds.has(shape.id)
 
 	if (shape.type === 'connector') {
-		if (connection.draft?.original?.id === shape.id && connection.preview) return null
-		const from = visibleShapes.find((item) => item.id === shape.from)
-		const to = visibleShapes.find((item) => item.id === shape.to)
-		if (!from || !to || from.type === 'connector' || to.type === 'connector') return null
+		if (hiddenForConnectionDraft || !fromShape || !toShape) return null
 		return (
 			<ConnectorView
 				shape={shape}
-				from={from}
-				to={to}
-				selected={selectedIds.includes(shape.id)}
+				from={fromShape}
+				to={toShape}
+				selected={selected}
 				animate={animated}
 				onAnimationComplete={() => onEntryAnimationConsumed(shape.id)}
 				cursor={
@@ -83,7 +81,7 @@ export function ShapeView({
 		)
 	}
 
-	const active = selectedIds.includes(shape.id)
+	const active = selected
 	const pop =
 		(shape.type === 'rectangle' ||
 			shape.type === 'ellipse' ||
@@ -141,7 +139,7 @@ export function ShapeView({
 	if (shape.type === 'rectangle' || shape.type === 'ellipse') {
 		return (
 			<g {...common}>
-				<JellyShape shape={shape} editing={editingId === shape.id} />
+				<JellyShape shape={shape} editing={editing} />
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
@@ -169,16 +167,9 @@ export function ShapeView({
 		)
 	}
 	if (shape.type === 'frame') {
-		const backgroundShape = shape.backgroundImageId
-			? visibleShapes.find(
-					(candidate) => candidate.type === 'image' && candidate.id === shape.backgroundImageId,
-				)
-			: undefined
-		const backgroundImageId =
-			backgroundShape?.type === 'image' ? backgroundShape.imageId : undefined
 		return (
 			<g className="canvas-shape frame" data-shape-id={shape.id}>
-				<CanvasFrame shape={shape} backgroundImageId={backgroundImageId} />
+				<CanvasFrame shape={shape} backgroundImageId={backgroundImageAssetId} />
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
@@ -186,11 +177,7 @@ export function ShapeView({
 	if (shape.type === 'note') {
 		return (
 			<g {...common}>
-				<StickyNote
-					shape={shape}
-					animate={animatedObjectIds.has(shape.id)}
-					editing={editingId === shape.id}
-				/>
+				<StickyNote shape={shape} animate={animatedObjectIds.has(shape.id)} editing={editing} />
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
@@ -198,7 +185,7 @@ export function ShapeView({
 	if (shape.type === 'text') {
 		return (
 			<g {...common}>
-				<CanvasText shape={shape} editing={editingId === shape.id} />
+				<CanvasText shape={shape} editing={editing} />
 				{active && <SelectionOutline shape={shape} zoom={zoom} />}
 			</g>
 		)
@@ -212,14 +199,16 @@ export function ShapeView({
 					filter: active ? 'drop-shadow(0 0 5px var(--ui-accent))' : undefined,
 				}}
 			>
-				<BrushStroke
-					points={shape.points.map((point) => ({ x: shape.x + point.x, y: shape.y + point.y }))}
-					brush={shape.brush}
-					strokeWidth={
-						active && shape.brush === 'pencil' && shape.strokeWidth === 4 ? 5 : shape.strokeWidth
-					}
-					color={shape.color}
-				/>
+				<g transform={`translate(${shape.x} ${shape.y})`}>
+					<BrushStroke
+						points={shape.points}
+						brush={shape.brush}
+						strokeWidth={
+							active && shape.brush === 'pencil' && shape.strokeWidth === 4 ? 5 : shape.strokeWidth
+						}
+						color={shape.color}
+					/>
+				</g>
 			</g>
 		)
 	}
@@ -244,7 +233,7 @@ export function ShapeView({
 			{active && <SelectionOutline shape={shape} zoom={zoom} />}
 		</g>
 	)
-}
+})
 
 export interface FrameLabelProps extends ShapeCallbacks {
 	shape: CanvasShape

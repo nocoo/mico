@@ -121,7 +121,7 @@ export function useMossViewModel({
 		const canvas = waveRef.current
 		const parent = canvas?.parentElement
 		if (!active || !canvas || !parent) return
-		const redraw = () => drawWave(canvas, Float32Array.from(peaks.current), 1, [], 1)
+		const redraw = () => drawWave(canvas, peaks.current, 1, [], 1)
 		const observer = new ResizeObserver(redraw)
 		observer.observe(parent)
 		redraw()
@@ -162,7 +162,7 @@ export function useMossViewModel({
 			} else if (event.type === 'audio') {
 				peaks.current.push(event.min, event.max)
 				if (peaks.current.length > 1200) peaks.current.splice(0, peaks.current.length - 1200)
-				if (waveRef.current) drawWave(waveRef.current, Float32Array.from(peaks.current), 1, [], 1)
+				if (waveRef.current) drawWave(waveRef.current, peaks.current, 1, [], 1)
 			}
 		}
 		session = new MossLiveSession({ canvasId, selection: [...selectedIds], onEvent })

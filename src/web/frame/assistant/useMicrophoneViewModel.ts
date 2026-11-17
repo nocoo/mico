@@ -160,7 +160,7 @@ export function useMicrophoneViewModel({
 		}
 		rt.peaks.push(min, max)
 		if (rt.peaks.length > 1200) rt.peaks.splice(0, rt.peaks.length - 1200)
-		if (waveRef.current) drawWave(waveRef.current, Float32Array.from(rt.peaks), 1, [], 1)
+		if (waveRef.current) drawWave(waveRef.current, rt.peaks, 1, [], 1)
 		rt.sent += pcm.length
 		if (rt.segmenter.push(pcm)) commit(rt, rt.segmenter.lastTrailingMsValue)
 		setElapsed(rt.sent / TARGET_RATE)
@@ -215,7 +215,7 @@ export function useMicrophoneViewModel({
 		}
 		const canvas = waveRef.current
 		if (!canvas?.parentElement) return
-		const redraw = () => drawWave(canvas, Float32Array.from(runtime.current.peaks), 1, [], 1)
+		const redraw = () => drawWave(canvas, runtime.current.peaks, 1, [], 1)
 		const observer = new ResizeObserver(redraw)
 		observer.observe(canvas.parentElement)
 		redraw()

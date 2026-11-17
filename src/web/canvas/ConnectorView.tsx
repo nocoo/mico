@@ -1,4 +1,5 @@
 import type React from 'react'
+import { memo } from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
 import { ConnectorHead } from './ConnectorHead'
 import { connectorHitPath, connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
@@ -16,7 +17,7 @@ export interface ConnectorViewProps {
 	onPointerDown: React.PointerEventHandler<SVGGElement>
 }
 
-export function ConnectorView({
+export const ConnectorView = memo(function ConnectorView({
 	shape,
 	from,
 	to,
@@ -66,4 +67,4 @@ export function ConnectorView({
 			<ConnectorHead geometry={geometry} interactive />
 		</g>
 	)
-}
+})

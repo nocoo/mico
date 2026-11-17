@@ -1,12 +1,13 @@
 import type { KeyboardEvent, PointerEvent, RefObject } from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { OverviewCanvasSize, OverviewProjection } from '../../shared/overview.ts'
 import {
 	canvasViewportRect,
+	extractOverviewBlocks,
 	OVERVIEW_HEIGHT,
 	OVERVIEW_WIDTH,
 	overviewPointToWorld,
-	overviewProjection,
+	projectOverviewBlocks,
 	projectOverviewRect,
 	viewportCenteredOn,
 } from '../../shared/overview.ts'
@@ -113,8 +114,9 @@ export function CanvasMinimap({
 		setDragging(false)
 	}, [canvasId])
 
+	const blocks = useMemo(() => extractOverviewBlocks(shapes), [shapes])
 	const visibleViewport = canvasViewportRect(viewport, canvas)
-	const projection = overviewProjection(shapes, {
+	const projection = projectOverviewBlocks(blocks, {
 		width: OVERVIEW_WIDTH,
 		height: OVERVIEW_HEIGHT,
 		padding: 12,

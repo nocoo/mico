@@ -6,7 +6,7 @@ export interface WaveformBucket {
 }
 
 export function buildWaveformBuckets(
-	peaks: Float32Array | null,
+	peaks: ArrayLike<number> | null,
 	bucketCount: number,
 ): WaveformBucket[] {
 	if (!peaks || peaks.length < 2 || bucketCount < 1) return []
@@ -48,7 +48,7 @@ export function buildWaveformBuckets(
 
 export function drawWave(
 	canvas: HTMLCanvasElement,
-	peaks: Float32Array | null,
+	peaks: ArrayLike<number> | null,
 	progress: number,
 	segments: readonly { end: number }[],
 	duration: number,

@@ -324,7 +324,7 @@ export function useLessonViewModel({
 		rt.lecture = lecture
 		rt.loadedId = clip.id
 		rt.player = new Player(rt.ctx, lecture)
-		setPeaks(new Float32Array(lecture.peaks))
+		setPeaks(lecture.peaks)
 		setPhase('idle')
 		return true
 	}

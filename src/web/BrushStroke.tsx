@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import type { BrushStyle, Point } from '../shared/types'
 import { buildStroke } from './brush'
 import { jellyStyle } from './canvas/jelly'
@@ -10,9 +11,18 @@ interface BrushStrokeProps {
 	preview?: boolean
 }
 
-export function BrushStroke({ points, brush, strokeWidth, color, preview }: BrushStrokeProps) {
-	if (points.length < 2) return null
-	const stroke = buildStroke(points, strokeWidth, brush)
+export const BrushStroke = memo(function BrushStroke({
+	points,
+	brush,
+	strokeWidth,
+	color,
+	preview,
+}: BrushStrokeProps) {
+	const stroke = useMemo(
+		() => (points.length < 2 ? null : buildStroke(points, strokeWidth, brush)),
+		[points, strokeWidth, brush],
+	)
+	if (!stroke) return null
 	if (stroke.mode === 'fill') {
 		return (
 			<path
@@ -36,4 +46,4 @@ export function BrushStroke({ points, brush, strokeWidth, color, preview }: Brus
 			opacity={marker ? 0.35 : preview ? 0.7 : 1}
 		/>
 	)
-}
+})
