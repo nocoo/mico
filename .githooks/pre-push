@@ -31,7 +31,7 @@ check() {
 		echo "pre-push: build or integration failed for $local_oid" >&2
 		failed=1
 	fi
-	if ! osv-scanner scan --lockfile="$directory/pnpm-lock.yaml" >/dev/null; then
+	if ! osv-scanner scan --lockfile="$directory/tree/pnpm-lock.yaml" >/dev/null; then
 		echo "pre-push: dependency scan failed for $local_oid" >&2
 		failed=1
 	fi
