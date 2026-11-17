@@ -114,6 +114,28 @@ svg {
 	display: block;
 }
 
+.rt-truncate {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.rt-r-weight-light {
+	font-weight: var(--font-weight-light);
+}
+
+.rt-r-weight-regular {
+	font-weight: var(--font-weight-regular);
+}
+
+.rt-r-weight-medium {
+	font-weight: var(--font-weight-medium);
+}
+
+.rt-r-weight-bold {
+	font-weight: var(--font-weight-bold);
+}
+
 .app {
 	--space-05: 4px;
 	--space-1: 8px;

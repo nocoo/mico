@@ -3,8 +3,17 @@ const CARD_CSP =
 
 export const HTML_CARD_SANDBOX = 'allow-scripts'
 
+let cachedCss: string | undefined
+let cachedJs: string | undefined
+let cachedHead = ''
+
 function frameworkHead(bootstrapCss: string, bootstrapJs: string): string {
-	return `${CARD_CSP}<style>${bootstrapCss}</style><script>${bootstrapJs}</script>`
+	if (cachedCss !== bootstrapCss || cachedJs !== bootstrapJs) {
+		cachedCss = bootstrapCss
+		cachedJs = bootstrapJs
+		cachedHead = `${CARD_CSP}<style>${bootstrapCss}</style><script>${bootstrapJs}</script>`
+	}
+	return cachedHead
 }
 
 export function htmlCardDocument(html: string, bootstrapCss: string, bootstrapJs: string): string {

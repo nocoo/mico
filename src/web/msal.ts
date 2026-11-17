@@ -1,4 +1,4 @@
-import { type Configuration, PublicClientApplication } from '@azure/msal-browser'
+import type { Configuration } from '@azure/msal-browser'
 import type { PublicRuntimeContract } from '../shared/runtime'
 import { fetchSession, sessionExpired } from './runtime.ts'
 
@@ -107,11 +107,14 @@ export function msalConfiguration(
 }
 
 export function getMsal(auth: PublicRuntimeContract['auth']): Promise<MsalLike> {
-	const key = JSON.stringify(msalConfiguration(auth))
+	const config = msalConfiguration(auth)
+	const key = JSON.stringify(config)
 	if (instance?.key === key) return instance.ready
-	const application = new PublicClientApplication(msalConfiguration(auth)) as unknown as MsalLike
-	const ready = Promise.resolve(application.initialize?.())
-		.then(() => application)
+	const ready = import('@azure/msal-browser')
+		.then(({ PublicClientApplication }) => {
+			const application = new PublicClientApplication(config) as unknown as MsalLike
+			return Promise.resolve(application.initialize?.()).then(() => application)
+		})
 		.catch((error: unknown) => {
 			if (instance?.ready === ready) instance = null
 			throw error
