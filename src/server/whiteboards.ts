@@ -70,12 +70,13 @@ export class Whiteboards {
 	async join(
 		body: unknown,
 		owner: string,
-		options: { board: boolean },
+		options: { board: boolean; allowPresenceOnly?: boolean },
 	): Promise<WhiteboardSession> {
 		const parsed = joinWhiteboardSchema.safeParse(body)
 		if (!parsed.success) throw new OperationError(400, 'INVALID_REQUEST', parsed.error.message)
 		const input = parsed.data
-		if (options.board) {
+		const board = options.board && !(options.allowPresenceOnly && input.presence === true)
+		if (board) {
 			await this.boards.forTenant(SHARED_WHITEBOARDS).getCanvas(input.whiteboardid)
 		}
 		this.prune()
@@ -143,7 +144,7 @@ export class Whiteboards {
 				cursor: null,
 			},
 			owner,
-			board: options.board,
+			board,
 			voiceSockets: new Set(),
 			clientId: input.clientId,
 			expiresAt: Date.now() + 10000,

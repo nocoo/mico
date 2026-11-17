@@ -43,6 +43,7 @@ import { EmptyState } from './frame/empty/EmptyState'
 import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
 import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
+import type { LocalModeOption } from './frame/local/LocalModeMenu'
 import { Toolbar } from './frame/toolbar'
 import { isSupportedImageFile, readImageDimensions, scaleImageDimensions } from './image'
 import { canRebaseMoveGroup } from './move'
@@ -66,14 +67,9 @@ const randomId = () => crypto.randomUUID()
 
 const DEMO_USERNAME_STORAGE_KEY = 'mico.demo.username'
 
-function initialDemoUsername(): string {
+function initialDemoUsername(fallbackName = 'Guest'): string {
 	const fromUrl = new URLSearchParams(window.location.search).get('username')?.trim()
 	if (fromUrl) {
-		try {
-			localStorage.setItem(DEMO_USERNAME_STORAGE_KEY, fromUrl)
-		} catch {
-			// Ignore storage restrictions.
-		}
 		return fromUrl.slice(0, 80)
 	}
 	try {
@@ -82,11 +78,22 @@ function initialDemoUsername(): string {
 	} catch {
 		// Ignore storage restrictions.
 	}
-	return 'Guest'
+	return fallbackName
 }
 
 function initialDemoSharer(): boolean {
 	return new URLSearchParams(window.location.search).get('sharer') === 'true'
+}
+
+function initialLocalMode(
+	authMode?: AuthMode,
+	aiSettingsVisible?: boolean,
+	hasWhiteboard?: boolean,
+): LocalModeOption {
+	if (authMode !== 'none' || !aiSettingsVisible || hasWhiteboard) return 'local'
+	const raw = new URLSearchParams(window.location.search).get('localMode')
+	if (raw === 'presenter' || raw === 'guest') return raw
+	return 'local'
 }
 
 export interface AppProps {
@@ -113,14 +120,31 @@ export default function App({
 	onSignOut,
 }: AppProps) {
 	const readOnly = Boolean(whiteboard && !whiteboard.member.sharer)
+	const localModeAvailable = authMode === 'none' && aiSettingsVisible && !whiteboard
+	const [localPresenceMode, setLocalPresenceMode] = useState<LocalModeOption>(() =>
+		initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)),
+	)
+	const [localModePanelOpen, setLocalModePanelOpen] = useState(false)
+	const presenceActive =
+		authMode === 'demo' || (localModeAvailable && localPresenceMode !== 'local')
 	const [demoClientId] = useState(() => crypto.randomUUID())
-	const [demoUsername, setDemoUsername] = useState(initialDemoUsername)
-	const [demoSharer, setDemoSharer] = useState(initialDemoSharer)
+	const [demoUsername, setDemoUsername] = useState(() =>
+		initialDemoUsername(
+			initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) === 'presenter'
+				? 'Host'
+				: 'Guest',
+		),
+	)
+	const [demoSharer, setDemoSharer] = useState(() =>
+		authMode === 'demo'
+			? initialDemoSharer()
+			: initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) === 'presenter',
+	)
 	const [demoSession, setDemoSession] = useState<WhiteboardSession | undefined>(undefined)
 	const [demoBusy, setDemoBusy] = useState(false)
 	const [demoError, setDemoError] = useState('')
 	const activeDemoSession = useMemo(() => {
-		if (authMode !== 'demo' || !demoSession) return undefined
+		if (!presenceActive || !demoSession) return undefined
 		return demoSession.member.sharer === demoSharer && demoSession.member.username === demoUsername
 			? demoSession
 			: {
@@ -131,9 +155,9 @@ export default function App({
 						username: demoUsername,
 					},
 				}
-	}, [authMode, demoSession, demoSharer, demoUsername])
+	}, [presenceActive, demoSession, demoSharer, demoUsername])
 	const isDemoPresenter = Boolean(activeDemoSession?.member.sharer)
-	const canUseAi = aiEnabled && !readOnly && (authMode !== 'demo' || isDemoPresenter)
+	const canUseAi = aiEnabled && !readOnly && (!presenceActive || isDemoPresenter)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -162,7 +186,10 @@ export default function App({
 	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
-		aiEnabled && !readOnly && (authMode !== 'demo' || initialDemoSharer())
+		aiEnabled &&
+		!readOnly &&
+		(authMode !== 'demo' || initialDemoSharer()) &&
+		initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) !== 'guest'
 			? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '')
 			: '',
 	)
@@ -171,6 +198,7 @@ export default function App({
 			aiEnabled &&
 			!readOnly &&
 			(authMode !== 'demo' || initialDemoSharer()) &&
+			initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard)) !== 'guest' &&
 			(aiPrompt.length > 0 || window.innerWidth >= 900),
 	)
 	const aiPanelOpenRef = useRef(aiPanelOpen)
@@ -189,14 +217,17 @@ export default function App({
 	const presence = usePresence(whiteboard ?? activeDemoSession, svgRef, viewport, setViewport)
 
 	useEffect(() => {
-		if (authMode !== 'demo') return
+		const initialMode = initialLocalMode(authMode, aiSettingsVisible, Boolean(whiteboard))
+		const shouldAutoJoin = authMode === 'demo' || initialMode !== 'local'
+		if (!shouldAutoJoin) return
 		const controller = new AbortController()
-		const initialSharer = initialDemoSharer()
+		const initialSharer = authMode === 'demo' ? initialDemoSharer() : initialMode === 'presenter'
 		const joinInput = {
 			whiteboardid: 'demo',
-			username: initialDemoUsername(),
+			username: initialDemoUsername(initialSharer ? 'Host' : 'Guest'),
 			sharer: initialSharer,
 			clientId: demoClientId,
+			...(authMode !== 'demo' ? { presence: true } : {}),
 		}
 		void joinWhiteboard(joinInput, controller.signal)
 			.then((session) => {
@@ -211,6 +242,7 @@ export default function App({
 				if (controller.signal.aborted) return
 				if (initialSharer) {
 					setDemoSharer(false)
+					if (authMode !== 'demo') setLocalPresenceMode('guest')
 					const fallbackInput = { ...joinInput, sharer: false }
 					void joinWhiteboard(fallbackInput, controller.signal)
 						.then((session) => {
@@ -229,19 +261,24 @@ export default function App({
 			controller.abort()
 			clearWhiteboard()
 		}
-	}, [authMode, demoClientId])
+	}, [authMode, aiSettingsVisible, whiteboard, demoClientId])
 
 	useEffect(() => {
-		if (authMode !== 'demo' || !demoSession) return
+		if (!presenceActive || !demoSession) return
 		if (!presence.members.some((member) => member.id === demoSession.member.id)) return
 		const activeSharer = presence.presenterId === demoSession.member.id
 		updatePresenceSharer(activeSharer)
 		setDemoSharer((current) => (current === activeSharer ? current : activeSharer))
-	}, [authMode, demoSession, presence.members, presence.presenterId])
+		if (localModeAvailable) {
+			setLocalPresenceMode((current) =>
+				current === 'local' ? current : activeSharer ? 'presenter' : 'guest',
+			)
+		}
+	}, [presenceActive, localModeAvailable, demoSession, presence.members, presence.presenterId])
 
 	const updateDemoProfile = useCallback(
 		async (nextUsername: string, nextSharer: boolean) => {
-			if (authMode !== 'demo') return
+			if (!presenceActive) return
 			setDemoBusy(true)
 			setDemoError('')
 			const joinInput = {
@@ -249,6 +286,7 @@ export default function App({
 				username: nextUsername,
 				sharer: nextSharer,
 				clientId: demoClientId,
+				...(authMode !== 'demo' ? { presence: true } : {}),
 			}
 			try {
 				const session = await joinWhiteboard(joinInput)
@@ -256,6 +294,9 @@ export default function App({
 				setDemoSession((prev) => (prev?.token === session.token ? prev : session))
 				setDemoUsername(session.member.username)
 				setDemoSharer(session.member.sharer)
+				if (localModeAvailable) {
+					setLocalPresenceMode(session.member.sharer ? 'presenter' : 'guest')
+				}
 				try {
 					localStorage.setItem(DEMO_USERNAME_STORAGE_KEY, session.member.username)
 				} catch {
@@ -267,7 +308,65 @@ export default function App({
 				setDemoBusy(false)
 			}
 		},
-		[authMode, demoClientId],
+		[presenceActive, localModeAvailable, authMode, demoClientId],
+	)
+
+	const selectLocalMode = useCallback(
+		async (nextMode: LocalModeOption) => {
+			if (!localModeAvailable) return
+			setDemoError('')
+			if (nextMode === 'local') {
+				clearWhiteboard()
+				setDemoSession(undefined)
+				setDemoSharer(false)
+				setLocalPresenceMode('local')
+				return
+			}
+			const nextSharer = nextMode === 'presenter'
+			const nextUsername =
+				nextSharer && demoUsername === 'Guest'
+					? 'Host'
+					: !nextSharer && demoUsername === 'Host'
+						? 'Guest'
+						: demoUsername
+			setDemoBusy(true)
+			const joinInput = {
+				whiteboardid: 'demo',
+				username: nextUsername,
+				sharer: nextSharer,
+				clientId: demoClientId,
+				presence: true,
+			}
+			try {
+				const session = await joinWhiteboard(joinInput)
+				configurePresence(joinInput, session)
+				setDemoSession((prev) => (prev?.token === session.token ? prev : session))
+				setDemoUsername(session.member.username)
+				setDemoSharer(session.member.sharer)
+				setLocalPresenceMode(session.member.sharer ? 'presenter' : 'guest')
+			} catch (error) {
+				setDemoError(error instanceof Error ? error.message : 'Could not switch local mode')
+			} finally {
+				setDemoBusy(false)
+			}
+		},
+		[localModeAvailable, demoUsername, demoClientId],
+	)
+
+	const openLocalWindow = useCallback(
+		(role: 'presenter' | 'guest') => {
+			const url = new URL(window.location.href)
+			url.search = ''
+			url.searchParams.set('localMode', role)
+			if (role === 'guest') {
+				const guestCount = presence.members.filter((member) => !member.sharer).length
+				url.searchParams.set('username', `Guest ${guestCount + 1}`)
+			} else {
+				url.searchParams.set('username', 'Host')
+			}
+			window.open(url.toString(), '_blank')
+		},
+		[presence.members],
 	)
 	const [dockLayout, setDockLayout] = useState<DockLayout | null>(null)
 	const [tool, setTool] = useState<Tool>('select')
@@ -680,7 +779,7 @@ export default function App({
 		const onKeyDown = (event: KeyboardEvent) => {
 			const target = event.target as HTMLElement
 			if (event.key === 'Escape') {
-				if (debugPanelOpen || demoPanelOpen) return
+				if (debugPanelOpen || demoPanelOpen || localModePanelOpen) return
 				cancelInteraction()
 				setTool('select')
 				return
@@ -711,7 +810,7 @@ export default function App({
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
 		}
-	}, [cancelInteraction, debugPanelOpen, demoPanelOpen])
+	}, [cancelInteraction, debugPanelOpen, demoPanelOpen, localModePanelOpen])
 
 	const onCanvasPointerDown = (event: React.PointerEvent<SVGSVGElement>) => {
 		if (interactionRef.current || (event.button !== 0 && event.button !== 1)) return
@@ -1440,7 +1539,7 @@ export default function App({
 						onSignOut,
 					}}
 					demo={
-						authMode === 'demo'
+						presenceActive
 							? {
 									open: demoPanelOpen,
 									onOpenChange: setDemoPanelOpen,
@@ -1460,6 +1559,29 @@ export default function App({
 									onRequestPresenter: presence.requestPresenter,
 									onTransferPresenter: presence.transferPresenter,
 									onDeclinePresenter: presence.declinePresenter,
+								}
+							: undefined
+					}
+					localMode={
+						localModeAvailable
+							? {
+									open: localModePanelOpen,
+									onOpenChange: setLocalModePanelOpen,
+									mode: localPresenceMode,
+									busy: demoBusy,
+									error: demoError,
+									otherPresenter: Boolean(
+										presence.presenterId && presence.presenterId !== demoSession?.member.id,
+									),
+									selfRequested: Boolean(
+										demoSession?.member.id && presence.requesterIds.includes(demoSession.member.id),
+									),
+									memberCount: presence.members.length,
+									onSelectMode: (mode) => {
+										void selectLocalMode(mode)
+									},
+									onRequestPresenter: presence.requestPresenter,
+									onOpenWindow: openLocalWindow,
 								}
 							: undefined
 					}

@@ -672,8 +672,9 @@ export function createDaemon(
 					res,
 					200,
 					await whiteboards.join(await readJson(req), owner, {
-						// Demo rooms share presence only; every other mode backs the room with a shared canvas.
+						// Demo rooms share presence only; local mode may also opt into a presence-only room.
 						board: runtimeConfig.auth.mode !== 'demo',
+						allowPresenceOnly: runtimeConfig.mode !== 'deploy',
 					}),
 					origin,
 				)

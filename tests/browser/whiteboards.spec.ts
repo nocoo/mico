@@ -559,3 +559,62 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 		await context.close()
 	}
 })
+
+test('local mode switcher toggles Local/Presenter/Guest in-place and opens Guest windows without URL params', async ({
+	page,
+	context,
+}) => {
+	await page.goto('/')
+	const localModeButton = page.getByRole('button', { name: 'Local mode', exact: true })
+	await expect(localModeButton).toBeVisible()
+	await expect(localModeButton).toContainText('Local')
+	await expect(page.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+
+	await localModeButton.click()
+	const modePanel = page.getByRole('dialog', { name: 'Local mode' })
+	await expect(modePanel).toBeVisible()
+
+	// Switch to Presenter in-place
+	await modePanel.getByRole('button', { name: 'Presenter', exact: true }).click()
+	await expect(localModeButton).toContainText('Presenter')
+	await expect(page.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+
+	// Open a Guest window in one click
+	const popupPromise = context.waitForEvent('page')
+	await modePanel.getByRole('button', { name: 'Open Guest window', exact: true }).click()
+	const guest = await popupPromise
+	await guest.waitForLoadState('domcontentloaded')
+
+	await expect(guest.getByRole('button', { name: 'Local mode', exact: true })).toContainText(
+		'Guest',
+	)
+	await expect(guest.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+
+	// Guest requests presenter via Local mode menu -> Presenter approves via DemoPanel
+	await guest.getByRole('button', { name: 'Local mode', exact: true }).click()
+	const guestModePanel = guest.getByRole('dialog', { name: 'Local mode' })
+	await guestModePanel.getByRole('button', { name: 'Request presenter', exact: true }).click()
+	await expect(
+		guestModePanel.getByRole('button', { name: 'Cancel presenter request', exact: true }),
+	).toBeVisible()
+
+	await page.getByRole('button', { name: 'Workspace profile', exact: true }).click()
+	const hostProfile = page.getByRole('dialog', { name: 'Workspace profile' })
+	await expect(hostProfile.getByRole('switch', { name: 'Presenter', exact: true })).toBeVisible()
+	await expect(hostProfile.getByText('Requested', { exact: true })).toBeVisible()
+	await hostProfile.getByRole('button', { name: 'Approve', exact: true }).click()
+
+	await expect(guest.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+	await expect(guest.getByRole('button', { name: 'Local mode', exact: true })).toContainText(
+		'Presenter',
+	)
+	await expect(page.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+	await expect(localModeButton).toContainText('Guest')
+
+	// Return main window to Local mode
+	await guest.close()
+	await localModeButton.click()
+	await modePanel.getByRole('button', { name: 'Local', exact: true }).click()
+	await expect(localModeButton).toContainText('Local')
+	await expect(page.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+})

@@ -18,10 +18,10 @@
 .demo-name-input {
 	flex: 1 1 auto;
 	min-width: 0;
-	height: 30px;
-	padding: 0 9px;
+	height: 32px;
+	padding: 0 10px;
 	border: 1px solid color-mix(in srgb, var(--ink, #171a20) 14%, transparent);
-	border-radius: 8px;
+	border-radius: 10px;
 	background: var(--surface, #ffffff);
 	color: var(--ink, #171a20);
 	font: inherit;
@@ -30,10 +30,10 @@
 
 .demo-name-save {
 	flex: 0 0 auto;
-	height: 30px;
-	padding: 0 10px;
+	height: 32px;
+	padding: 0 12px;
 	border: 0;
-	border-radius: 8px;
+	border-radius: 999px;
 	background: color-mix(in srgb, var(--ink, #171a20) 88%, transparent);
 	color: #ffffff;
 	font: inherit;
@@ -52,17 +52,70 @@
 	align-items: center;
 	justify-content: space-between;
 	gap: 8px;
-	padding: 6px 2px;
+	padding: 4px 2px;
 	font-size: 13px;
 	color: var(--ink, #171a20);
+}
+
+.demo-switch {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	flex: 0 0 auto;
+	width: 38px;
+	height: 22px;
+	padding: 2px;
+	border: 1px solid color-mix(in srgb, var(--ink, #171a20) 14%, transparent);
+	border-radius: 999px;
+	background: color-mix(in srgb, var(--ink, #171a20) 12%, transparent);
 	cursor: pointer;
+	transition:
+		background var(--identity-motion-fast, 160ms) ease,
+		border-color var(--identity-motion-fast, 160ms) ease;
+}
+
+.demo-switch:hover:not(:disabled) {
+	background: color-mix(in srgb, var(--ink, #171a20) 18%, transparent);
+}
+
+.demo-switch[aria-checked="true"] {
+	border-color: transparent;
+	background: var(--ui-accent, #6844bd);
+}
+
+.demo-switch[aria-checked="true"]:hover:not(:disabled) {
+	background: color-mix(in oklch, var(--ui-accent, #6844bd) 88%, #000000);
+}
+
+.demo-switch:focus-visible {
+	outline: var(--stroke-strong, 2px) solid var(--ui-accent, #6844bd);
+	outline-offset: 2px;
+}
+
+.demo-switch:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+.demo-switch-thumb {
+	display: block;
+	width: 16px;
+	height: 16px;
+	border-radius: 999px;
+	background: #ffffff;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+	transition: transform var(--identity-motion-fast, 160ms) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.demo-switch[aria-checked="true"] .demo-switch-thumb {
+	transform: translateX(16px);
 }
 
 .demo-secondary-btn {
-	height: 26px;
-	padding: 0 9px;
+	height: 28px;
+	padding: 0 11px;
 	border: 1px solid color-mix(in srgb, var(--ink, #171a20) 16%, transparent);
-	border-radius: 7px;
+	border-radius: 999px;
 	background: var(--surface, #ffffff);
 	color: var(--ink, #171a20);
 	font: inherit;

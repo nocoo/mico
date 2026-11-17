@@ -1,6 +1,6 @@
 import { Popover } from '@radix-ui/themes'
 import { Sparkles, UserRound, X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import packageJson from '../../../../package.json' with { type: 'json' }
 import type { WhiteboardMember } from '../../../shared/whiteboards'
 import '../debug/debug.css'
@@ -48,6 +48,7 @@ export function DemoPanel({
 	onDeclinePresenter,
 }: DemoPanelProps) {
 	const [draftName, setDraftName] = useState(username)
+	const presenterLabelId = useId()
 
 	useEffect(() => {
 		setDraftName(username)
@@ -143,15 +144,20 @@ export function DemoPanel({
 								)}
 							</div>
 						) : (
-							<label className="demo-presenter-toggle">
-								<span>Presenter</span>
-								<input
-									type="checkbox"
-									checked={sharer}
+							<div className="demo-presenter-toggle">
+								<span id={presenterLabelId}>Presenter</span>
+								<button
+									type="button"
+									role="switch"
+									aria-labelledby={presenterLabelId}
+									aria-checked={sharer}
+									className="demo-switch"
 									disabled={busy}
-									onChange={(event) => toggleSharer(event.target.checked)}
-								/>
-							</label>
+									onClick={() => toggleSharer(!sharer)}
+								>
+									<span className="demo-switch-thumb" aria-hidden="true" />
+								</button>
+							</div>
 						)}
 						{error && (
 							<p className="demo-error" role="alert">

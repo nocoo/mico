@@ -4,6 +4,7 @@ import type { IdentityActions, IdentityState } from '../contracts'
 import { DebugPanel, type DebugPanelProps } from '../debug/DebugPanel'
 import { shouldShowDebug } from '../debug/debugViewModel'
 import { DemoPanel, type DemoPanelProps } from '../demo/DemoPanel'
+import { LocalModeMenu, type LocalModeMenuProps } from '../local/LocalModeMenu'
 import { MeetingFrame } from '../meeting/MeetingFrame'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
@@ -14,12 +15,13 @@ export interface IdentityFrameProps {
 	actions: IdentityActions
 	debug: DebugPanelProps
 	demo?: DemoPanelProps
+	localMode?: LocalModeMenuProps
 }
 
-export function IdentityFrame({ state, actions, debug, demo }: IdentityFrameProps) {
+export function IdentityFrame({ state, actions, debug, demo, localMode }: IdentityFrameProps) {
 	const identity = useIdentityViewModel({ state, actions })
 	const showDebug = !demo && shouldShowDebug(debug)
-	const showEntry = Boolean(demo) || showDebug
+	const showEntry = Boolean(demo) || Boolean(localMode) || showDebug
 
 	return (
 		<>
@@ -45,6 +47,7 @@ export function IdentityFrame({ state, actions, debug, demo }: IdentityFrameProp
 						data-canvas-toggle="true"
 					/>
 					{demo ? <DemoPanel {...demo} /> : showDebug ? <DebugPanel {...debug} /> : null}
+					{localMode && <LocalModeMenu {...localMode} />}
 				</div>
 				<MeetingFrame />
 			</header>
