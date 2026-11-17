@@ -1475,20 +1475,13 @@ export default function App({
 					<WhiteboardCursors session={whiteboard} members={presence.members} viewport={viewport} />
 				</>
 			) : (
-				<>
-					{activeDemoSession && (
-						<WhiteboardCursors
-							session={activeDemoSession}
-							members={presence.members}
-							viewport={viewport}
-						/>
-					)}
-					{authMode !== 'demo' && (
-						<a className="shared-whiteboards-link" href="/?whiteboards=1">
-							Shared whiteboards
-						</a>
-					)}
-				</>
+				activeDemoSession && (
+					<WhiteboardCursors
+						session={activeDemoSession}
+						members={presence.members}
+						viewport={viewport}
+					/>
+				)
 			)}
 			<CanvasMinimap
 				shapes={visibleShapes}
