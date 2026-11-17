@@ -30,6 +30,7 @@ export class Whiteboards {
 	private readonly boards: BoardStore
 	private readonly sessions = new Map<string, Membership>()
 	private readonly views = new Map<string, PresenterView>()
+	private readonly requests = new Map<string, Set<string>>()
 	private readonly timer: ReturnType<typeof setInterval>
 
 	constructor(boards: BoardStore) {
@@ -103,8 +104,13 @@ export class Whiteboards {
 			const wasSharer = existing.member.sharer
 			existing.member.username = input.username
 			existing.member.sharer = input.sharer
+			if (input.sharer) {
+				this.requests.get(input.whiteboardid)?.delete(existing.member.id)
+			}
 			if (wasSharer && !input.sharer) {
 				this.views.delete(input.whiteboardid)
+				for (const voice of existing.voiceSockets) voice.close(1008, 'Presenter stepped down')
+				existing.voiceSockets.clear()
 			}
 			existing.expiresAt = Date.now() + 10000
 			existing.reservedUntil = Date.now() + 10000
@@ -167,6 +173,19 @@ export class Whiteboards {
 			)
 		}
 		return member
+	}
+
+	requirePresenter(member: Membership | undefined) {
+		if (
+			member?.member.sharer &&
+			(member.socket?.readyState === WebSocket.OPEN || member.reservedUntil > Date.now())
+		)
+			return
+		throw new OperationError(
+			403,
+			'WHITEBOARD_READ_ONLY',
+			'This action is not allowed in your whiteboard session.',
+		)
 	}
 
 	authorize(member: Membership, method: string | undefined, pathname: string) {
@@ -252,11 +271,61 @@ export class Whiteboards {
 					member.lastCursorAt = Date.now()
 					member.member.cursor = message.point
 					this.emit(member.whiteboardid, { ...message, memberId: member.member.id })
-				} else {
+				} else if (message.type === 'presenter-view') {
 					if (Date.now() - member.lastViewAt < 15) return
 					member.lastViewAt = Date.now()
 					this.views.set(member.whiteboardid, message.viewport)
 					this.emit(member.whiteboardid, message)
+				} else {
+					if (member.board) {
+						socket.close(1008, 'Presenter role is fixed in shared whiteboards')
+						return
+					}
+					if (message.type === 'request-presenter') {
+						if (member.member.sharer) return
+						if (!message.requested) {
+							this.requests.get(member.whiteboardid)?.delete(member.member.id)
+							this.emitPresence(member.whiteboardid)
+							return
+						}
+						if (!this.presenter(member.whiteboardid, member)) {
+							member.member.sharer = true
+							this.requests.get(member.whiteboardid)?.delete(member.member.id)
+							this.emitPresence(member.whiteboardid)
+							return
+						}
+						this.requestsFor(member.whiteboardid).add(member.member.id)
+						this.emitPresence(member.whiteboardid)
+					} else if (message.type === 'transfer-presenter') {
+						if (!member.member.sharer) {
+							socket.close(1008, 'Only the presenter can transfer presenter role')
+							return
+						}
+						const target = [...this.sessions.values()].find(
+							(candidate) =>
+								candidate !== member &&
+								candidate.whiteboardid === member.whiteboardid &&
+								candidate.socket?.readyState === WebSocket.OPEN &&
+								candidate.member.id === message.targetMemberId,
+						)
+						if (!target) return
+						member.member.sharer = false
+						for (const voice of member.voiceSockets) voice.close(1008, 'Presenter role transferred')
+						member.voiceSockets.clear()
+						target.member.sharer = true
+						this.views.delete(member.whiteboardid)
+						const requests = this.requests.get(member.whiteboardid)
+						requests?.delete(target.member.id)
+						requests?.delete(member.member.id)
+						this.emitPresence(member.whiteboardid)
+					} else if (message.type === 'decline-presenter') {
+						if (!member.member.sharer) {
+							socket.close(1008, 'Only the presenter can decline presenter requests')
+							return
+						}
+						this.requests.get(member.whiteboardid)?.delete(message.targetMemberId)
+						this.emitPresence(member.whiteboardid)
+					}
 				}
 			} catch {
 				socket.close(1008, 'Invalid presence message')
@@ -265,11 +334,21 @@ export class Whiteboards {
 		this.emitPresence(member.whiteboardid)
 	}
 
+	private requestsFor(whiteboardid: string): Set<string> {
+		let set = this.requests.get(whiteboardid)
+		if (!set) {
+			set = new Set()
+			this.requests.set(whiteboardid, set)
+		}
+		return set
+	}
+
 	private disconnect(member: Membership) {
 		member.socket = undefined
 		for (const voice of member.voiceSockets) voice.close(1008, 'Presenter disconnected')
 		member.voiceSockets.clear()
 		member.member.cursor = null
+		this.requests.get(member.whiteboardid)?.delete(member.member.id)
 		if (member.member.sharer) {
 			this.views.delete(member.whiteboardid)
 		}
@@ -283,11 +362,22 @@ export class Whiteboards {
 			.filter((member) => member.whiteboardid === whiteboardid && member.socket)
 			.map((member) => ({ ...member.member }))
 		const presenter = members.find((member) => member.sharer)
+		const eligible = new Set(members.filter((member) => !member.sharer).map((member) => member.id))
+		const requests = this.requests.get(whiteboardid)
+		const requesterIds: string[] = []
+		if (requests) {
+			for (const id of requests) {
+				if (eligible.has(id)) requesterIds.push(id)
+				else requests.delete(id)
+			}
+			if (requests.size === 0) this.requests.delete(whiteboardid)
+		}
 		this.emit(whiteboardid, {
 			type: 'presence',
 			members,
 			presenterId: presenter?.id ?? null,
 			viewport: presenter ? (this.views.get(whiteboardid) ?? null) : null,
+			requesterIds,
 		})
 	}
 
@@ -313,5 +403,6 @@ export class Whiteboards {
 		}
 		this.sessions.clear()
 		this.views.clear()
+		this.requests.clear()
 	}
 }

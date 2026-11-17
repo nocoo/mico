@@ -40,6 +40,15 @@ export function configurePresence(input: WhiteboardJoin, session: WhiteboardSess
 	active = { input, session, scoped: false }
 }
 
+export function updatePresenceSharer(sharer: boolean) {
+	if (!active) return
+	active.input = { ...active.input, sharer }
+	active.session = {
+		...active.session,
+		member: { ...active.session.member, sharer },
+	}
+}
+
 export function clearWhiteboard() {
 	active = null
 }
@@ -68,8 +77,13 @@ export function whiteboardAssetUrl(path: string | URL): string {
 }
 
 export const canvasFetch: typeof fetch = (input, init) => {
-	if (!active?.scoped) return fetch(input, init)
+	if (!active) return fetch(input, init)
 	const url = new URL(input instanceof Request ? input.url : input.toString(), window.location.href)
+	const isAiPath =
+		url.pathname.startsWith('/api/ai/') ||
+		url.pathname.startsWith('/api/moss/') ||
+		url.pathname === '/mai/config'
+	if (!active.scoped && !isAiPath) return fetch(input, init)
 	if (
 		url.origin !== window.location.origin ||
 		(!url.pathname.startsWith('/api/') && url.pathname !== '/mai/config')

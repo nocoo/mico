@@ -8,6 +8,7 @@ import {
 	configurePresence,
 	canvasFetch as fetch,
 	joinWhiteboard,
+	updatePresenceSharer,
 } from './whiteboards/client'
 import { usePresence } from './whiteboards/usePresence'
 import { WhiteboardCursors, WhiteboardPresence } from './whiteboards/WhiteboardPresence'
@@ -112,13 +113,27 @@ export default function App({
 	onSignOut,
 }: AppProps) {
 	const readOnly = Boolean(whiteboard && !whiteboard.member.sharer)
-	const canUseAi = aiEnabled && !readOnly
 	const [demoClientId] = useState(() => crypto.randomUUID())
 	const [demoUsername, setDemoUsername] = useState(initialDemoUsername)
 	const [demoSharer, setDemoSharer] = useState(initialDemoSharer)
 	const [demoSession, setDemoSession] = useState<WhiteboardSession | undefined>(undefined)
 	const [demoBusy, setDemoBusy] = useState(false)
 	const [demoError, setDemoError] = useState('')
+	const activeDemoSession = useMemo(() => {
+		if (authMode !== 'demo' || !demoSession) return undefined
+		return demoSession.member.sharer === demoSharer && demoSession.member.username === demoUsername
+			? demoSession
+			: {
+					...demoSession,
+					member: {
+						...demoSession.member,
+						sharer: demoSharer,
+						username: demoUsername,
+					},
+				}
+	}, [authMode, demoSession, demoSharer, demoUsername])
+	const isDemoPresenter = Boolean(activeDemoSession?.member.sharer)
+	const canUseAi = aiEnabled && !readOnly && (authMode !== 'demo' || isDemoPresenter)
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())
@@ -147,15 +162,31 @@ export default function App({
 	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
-		canUseAi ? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '') : '',
+		aiEnabled && !readOnly && (authMode !== 'demo' || initialDemoSharer())
+			? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '')
+			: '',
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(
-		() => canUseAi && (aiPrompt.length > 0 || window.innerWidth >= 900),
+		() =>
+			aiEnabled &&
+			!readOnly &&
+			(authMode !== 'demo' || initialDemoSharer()) &&
+			(aiPrompt.length > 0 || window.innerWidth >= 900),
 	)
 	const aiPanelOpenRef = useRef(aiPanelOpen)
 	aiPanelOpenRef.current = aiPanelOpen
+	const prevCanUseAiRef = useRef(canUseAi)
+	useEffect(() => {
+		if (prevCanUseAiRef.current === canUseAi) return
+		prevCanUseAiRef.current = canUseAi
+		if (!canUseAi) {
+			setAiPanelOpen(false)
+		} else if (window.innerWidth >= 900 || aiPrompt.length > 0) {
+			setAiPanelOpen(true)
+		}
+	}, [canUseAi, aiPrompt])
 	const [viewport, setViewport] = useState({ x: 0, y: 0, zoom: 1 })
-	const presence = usePresence(whiteboard ?? demoSession, svgRef, viewport, setViewport)
+	const presence = usePresence(whiteboard ?? activeDemoSession, svgRef, viewport, setViewport)
 
 	useEffect(() => {
 		if (authMode !== 'demo') return
@@ -172,6 +203,8 @@ export default function App({
 				if (controller.signal.aborted) return
 				configurePresence(joinInput, session)
 				setDemoSession(session)
+				setDemoSharer(session.member.sharer)
+				setDemoUsername(session.member.username)
 				setDemoError('')
 			})
 			.catch((error: unknown) => {
@@ -184,6 +217,9 @@ export default function App({
 							if (controller.signal.aborted) return
 							configurePresence(fallbackInput, session)
 							setDemoSession(session)
+							setDemoSharer(session.member.sharer)
+							setDemoUsername(session.member.username)
+							setDemoError('')
 						})
 						.catch(() => undefined)
 				}
@@ -194,6 +230,14 @@ export default function App({
 			clearWhiteboard()
 		}
 	}, [authMode, demoClientId])
+
+	useEffect(() => {
+		if (authMode !== 'demo' || !demoSession) return
+		if (!presence.members.some((member) => member.id === demoSession.member.id)) return
+		const activeSharer = presence.presenterId === demoSession.member.id
+		updatePresenceSharer(activeSharer)
+		setDemoSharer((current) => (current === activeSharer ? current : activeSharer))
+	}, [authMode, demoSession, presence.members, presence.presenterId])
 
 	const updateDemoProfile = useCallback(
 		async (nextUsername: string, nextSharer: boolean) => {
@@ -209,7 +253,7 @@ export default function App({
 			try {
 				const session = await joinWhiteboard(joinInput)
 				configurePresence(joinInput, session)
-				setDemoSession(session)
+				setDemoSession((prev) => (prev?.token === session.token ? prev : session))
 				setDemoUsername(session.member.username)
 				setDemoSharer(session.member.sharer)
 				try {
@@ -1333,9 +1377,9 @@ export default function App({
 				</>
 			) : (
 				<>
-					{demoSession && (
+					{activeDemoSession && (
 						<WhiteboardCursors
-							session={demoSession}
+							session={activeDemoSession}
 							members={presence.members}
 							viewport={viewport}
 						/>
@@ -1407,11 +1451,15 @@ export default function App({
 									members: presence.members,
 									presenterId: presence.presenterId,
 									selfId: demoSession?.member.id ?? null,
+									requesterIds: presence.requesterIds,
 									following: presence.following,
 									ephemeral,
 									aiEnabled,
 									onUpdateProfile: updateDemoProfile,
 									onFollowPresenter: presence.follow,
+									onRequestPresenter: presence.requestPresenter,
+									onTransferPresenter: presence.transferPresenter,
+									onDeclinePresenter: presence.declinePresenter,
 								}
 							: undefined
 					}

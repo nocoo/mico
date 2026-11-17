@@ -389,3 +389,173 @@ test('demo draw survives delayed initial state without duplicate whiteboard join
 	expect(joins).toBeLessThanOrEqual(2)
 	expect(tokenedSockets.at(-1)).toBe(`demo-presence-token-${joins}`)
 })
+
+test('demo mode gates AI to presenter and supports presenter request and transfer', async ({
+	browser,
+	request,
+}) => {
+	await resetBoard(request, [])
+	const snapshot = await (await request.get('/api/state')).json()
+	const context = await browser.newContext()
+	try {
+		const members = new Map<
+			string,
+			{
+				token: string
+				id: string
+				username: string
+				sharer: boolean
+				color: string
+				cursor: null
+			}
+		>()
+		const sockets = new Map<string, import('@playwright/test').WebSocketRoute>()
+		const requesterIds = new Set<string>()
+		const broadcastPresence = () => {
+			const list = [...members.values()].map(({ token: _t, ...member }) => member)
+			const presenter = list.find((member) => member.sharer)
+			const payload = JSON.stringify({
+				type: 'presence',
+				members: list,
+				presenterId: presenter?.id ?? null,
+				viewport: null,
+				requesterIds: [...requesterIds],
+			})
+			for (const ws of sockets.values()) ws.send(payload)
+		}
+
+		await context.route('**/api/runtime', (route) =>
+			route.fulfill({
+				contentType: 'application/json',
+				body: JSON.stringify({
+					auth: { mode: 'demo' },
+					aiEnabled: true,
+					aiSettingsVisible: false,
+					mossEnabled: false,
+					ephemeral: false,
+				}),
+			}),
+		)
+		const aiTokensSeen: string[] = []
+		await context.route('**/api/ai/chat', async (route) => {
+			const headers = { ...route.request().headers() }
+			const token = headers['x-mico-whiteboard']
+			if (token) aiTokensSeen.push(token)
+			delete headers['x-mico-whiteboard']
+			await route.continue({ headers })
+		})
+		await context.route('**/api/whiteboards/join', async (route) => {
+			const body = route.request().postDataJSON() as {
+				clientId: string
+				username: string
+				sharer: boolean
+			}
+			const token = `token-${body.clientId}`
+			const id = `member-${body.clientId}`
+			const color = body.sharer ? '#6844bd' : '#006f91'
+			members.set(token, {
+				token,
+				id,
+				username: body.username,
+				sharer: body.sharer,
+				color,
+				cursor: null,
+			})
+			broadcastPresence()
+			return route.fulfill({
+				contentType: 'application/json',
+				body: JSON.stringify({
+					token,
+					whiteboardid: 'demo',
+					member: { id, username: body.username, sharer: body.sharer, color, cursor: null },
+				}),
+			})
+		})
+		await context.routeWebSocket(/\/api\/events/, async (socket) => {
+			const token = new URL(socket.url()).searchParams.get('whiteboardSession')
+			if (!token) return
+			sockets.set(token, socket)
+			socket.send(JSON.stringify({ type: 'snapshot', ...snapshot }))
+			broadcastPresence()
+			socket.onMessage((raw) => {
+				if (typeof raw !== 'string') return
+				const message = JSON.parse(raw) as
+					| { type: 'request-presenter'; requested: boolean }
+					| { type: 'transfer-presenter'; targetMemberId: string }
+					| { type: 'decline-presenter'; targetMemberId: string }
+				const sender = members.get(token)
+				if (!sender) return
+				if (message.type === 'request-presenter') {
+					if (message.requested) requesterIds.add(sender.id)
+					else requesterIds.delete(sender.id)
+					broadcastPresence()
+				} else if (message.type === 'decline-presenter' && sender.sharer) {
+					requesterIds.delete(message.targetMemberId)
+					broadcastPresence()
+				} else if (message.type === 'transfer-presenter' && sender.sharer) {
+					const target = [...members.values()].find((m) => m.id === message.targetMemberId)
+					if (!target) return
+					sender.sharer = false
+					target.sharer = true
+					requesterIds.delete(sender.id)
+					requesterIds.delete(target.id)
+					broadcastPresence()
+				}
+			})
+			socket.onClose(() => {
+				if (sockets.get(token) === socket) sockets.delete(token)
+			})
+		})
+
+		const presenter = await context.newPage()
+		await presenter.goto('/?username=Host&sharer=true')
+		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+
+		const viewer = await context.newPage()
+		await viewer.goto('/?username=Ada&sharer=false')
+		await expect(viewer.getByRole('button', { name: 'Rectangle', exact: true })).toBeVisible()
+		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+
+		// Non-presenter in demo mode can still draw manually on canvas
+		await viewer.getByRole('button', { name: 'Sticky note', exact: true }).click()
+		await viewer.mouse.click(420, 320)
+		await expect
+			.poll(async () => (await board(request)).shapes.some((shape) => shape.type === 'note'))
+			.toBe(true)
+
+		// Request presenter from viewer's Workspace profile -> Approve from presenter's Workspace profile
+		await viewer.getByRole('button', { name: 'Workspace profile' }).click()
+		const viewerPanel = viewer.getByRole('dialog', { name: 'Workspace profile' })
+		await expect(viewerPanel.getByText('AI (Presenter only)', { exact: true })).toBeVisible()
+		await viewerPanel.getByRole('button', { name: 'Request presenter', exact: true }).click()
+		await expect(
+			viewerPanel.getByRole('button', { name: 'Cancel request', exact: true }),
+		).toBeVisible()
+
+		await presenter.getByRole('button', { name: 'Workspace profile' }).click()
+		const presenterPanel = presenter.getByRole('dialog', { name: 'Workspace profile' })
+		await expect(presenterPanel.getByText('Requested', { exact: true })).toBeVisible()
+		await presenterPanel.getByRole('button', { name: 'Approve', exact: true }).click()
+
+		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+
+		// Newly promoted presenter can immediately open and use AI, with Demo session token attached
+		const chat = await openAssistant(viewer, 'Chat')
+		const composer = chat.getByRole('textbox', { name: 'Message the assistant' })
+		await composer.fill('Draw projectile motion')
+		await composer.press('Enter')
+		await expect(chat.getByText('The diagram is ready', { exact: false })).toBeVisible({
+			timeout: 15000,
+		})
+		expect(aiTokensSeen.length).toBeGreaterThan(0)
+
+		// Direct transfer back without a request
+		await viewer.getByRole('button', { name: 'Workspace profile' }).click()
+		await viewerPanel.getByRole('button', { name: 'Transfer', exact: true }).click()
+		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+	} finally {
+		await context.close()
+	}
+})

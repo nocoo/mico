@@ -967,6 +967,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				if (runtimeConfig.auth.mode === 'demo' || (membership && !membership.board))
+					whiteboards.requirePresenter(membership)
 				const response = await createMossSession(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
@@ -983,6 +985,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				if (runtimeConfig.auth.mode === 'demo' || (membership && !membership.board))
+					whiteboards.requirePresenter(membership)
 				const response = await executeMossTool(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
@@ -1002,6 +1006,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				if (runtimeConfig.auth.mode === 'demo' || (membership && !membership.board))
+					whiteboards.requirePresenter(membership)
 				const settings = await aiSettings.update(await readJson(req))
 				sendJson(res, 200, settings, origin)
 				return
@@ -1030,6 +1036,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				if (runtimeConfig.auth.mode === 'demo' || (membership && !membership.board))
+					whiteboards.requirePresenter(membership)
 				const request = await parseAiChatRequest(await readCanvasRequest())
 				const model = aiModel ? aiModel : modelFactory(aiSettings.getEffective())
 				await streamAiChat({
@@ -1165,6 +1173,14 @@ export function createDaemon(
 			if (sharedVoice && !member)
 				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
 			if (member?.board) whiteboards.authorize(member, 'GET', pathname)
+			if (
+				runtimeConfig.aiEnabled &&
+				isAiIpAllowed(req) &&
+				(pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH) &&
+				(runtimeConfig.auth.mode === 'demo' || member)
+			) {
+				whiteboards.requirePresenter(member)
+			}
 			if (member) req.headers['x-mico-whiteboard'] = member.token
 		} catch {
 			socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n')

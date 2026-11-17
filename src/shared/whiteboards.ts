@@ -18,6 +18,19 @@ export const presenceMessageSchema = z.discriminatedUnion('type', [
 		})
 		.strict(),
 	z.object({ type: z.literal('presenter-view'), viewport: presenterViewSchema }).strict(),
+	z.object({ type: z.literal('request-presenter'), requested: z.boolean() }).strict(),
+	z
+		.object({
+			type: z.literal('transfer-presenter'),
+			targetMemberId: z.string().min(1).max(128),
+		})
+		.strict(),
+	z
+		.object({
+			type: z.literal('decline-presenter'),
+			targetMemberId: z.string().min(1).max(128),
+		})
+		.strict(),
 ])
 
 export const joinWhiteboardSchema = z
@@ -64,6 +77,7 @@ export type PresenceEvent =
 			members: WhiteboardMember[]
 			presenterId: string | null
 			viewport: PresenterView | null
+			requesterIds?: string[]
 	  }
 	| { type: 'cursor'; memberId: string; point: Point | null }
 	| { type: 'presenter-view'; viewport: PresenterView }

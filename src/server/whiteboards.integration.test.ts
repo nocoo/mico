@@ -407,15 +407,28 @@ test('invalid joins fail and simultaneous presenter claims admit only one', asyn
 	})
 })
 
-async function withDemoServer(run: (context: { baseUrl: string; wsUrl: string }) => Promise<void>) {
+async function withDemoServer(
+	run: (context: { baseUrl: string; wsUrl: string }) => Promise<void>,
+	options: {
+		env?: Record<string, string>
+		createUpstream?: () => WebSocket
+	} = {},
+) {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-demo-presence-'))
 	const daemon = createDaemon({
 		port: 0,
 		dbPath: join(directory, 'board.sqlite'),
 		settingsPath: join(directory, 'settings.json'),
+		...(options.createUpstream
+			? {
+					createMaiUpstream: options.createUpstream,
+					createMossUpstream: options.createUpstream,
+				}
+			: {}),
 		env: {
 			MICO_AUTH_MODE: 'demo',
 			MICO_AI_ENABLED: 'false',
+			...options.env,
 		},
 	})
 	try {
@@ -673,4 +686,237 @@ test('demo presence tracks cursors, presenter view, profile updates, and allows 
 			vSocket.terminate()
 		}
 	})
+})
+
+test('demo mode gates AI to presenter and handles presenter request, decline, and transfer', async () => {
+	const upstream = new WebSocketServer({ host: '127.0.0.1', port: 0 })
+	upstream.on('connection', (socket) => socket.on('message', (data) => socket.send(data)))
+	await once(upstream, 'listening')
+	const upstreamAddress = upstream.address()
+	assert.ok(upstreamAddress && typeof upstreamAddress !== 'string')
+	try {
+		await withDemoServer(
+			async ({ baseUrl, wsUrl }) => {
+				const jasonClientId = randomUUID()
+				const adaClientId = randomUUID()
+				const jasonRes = await joinDemo(baseUrl, {
+					username: 'Jason',
+					sharer: true,
+					clientId: jasonClientId,
+				})
+				assert.equal(jasonRes.status, 200)
+				const jason = (await jasonRes.json()) as WhiteboardSession
+
+				const adaRes = await joinDemo(baseUrl, {
+					username: 'Ada',
+					sharer: false,
+					clientId: adaClientId,
+				})
+				assert.equal(adaRes.status, 200)
+				const ada = (await adaRes.json()) as WhiteboardSession
+
+				const jasonSocket = new WebSocket(`${wsUrl}/api/events?whiteboardSession=${jason.token}`, {
+					headers: { origin: DEV_ORIGIN },
+				})
+				const adaSocket = new WebSocket(`${wsUrl}/api/events?whiteboardSession=${ada.token}`, {
+					headers: { origin: DEV_ORIGIN },
+				})
+				const sockets: WebSocket[] = [jasonSocket, adaSocket]
+				try {
+					const ready = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.members.length === 2 &&
+							event.presenterId === jason.member.id,
+					)
+					await Promise.all([
+						once(jasonSocket, 'open', { signal: AbortSignal.timeout(4000) }),
+						once(adaSocket, 'open', { signal: AbortSignal.timeout(4000) }),
+					])
+					await ready
+
+					// Anonymous and non-presenter clients are blocked from AI endpoints
+					for (const token of [undefined, ada.token]) {
+						const chatRes = await fetch(`${baseUrl}/api/ai/chat`, {
+							method: 'POST',
+							headers: {
+								origin: DEV_ORIGIN,
+								'Content-Type': 'application/json',
+								...(token ? { 'X-Mico-Whiteboard': token } : {}),
+							},
+							body: JSON.stringify({ messages: [] }),
+						})
+						assert.equal(chatRes.status, 403)
+						assert.equal(
+							((await chatRes.json()) as { error: string }).error,
+							'WHITEBOARD_READ_ONLY',
+						)
+
+						const settingsPut = await fetch(`${baseUrl}/api/ai/settings`, {
+							method: 'PUT',
+							headers: {
+								origin: DEV_ORIGIN,
+								'Content-Type': 'application/json',
+								...(token ? { 'X-Mico-Whiteboard': token } : {}),
+							},
+							body: JSON.stringify({
+								baseURL: 'https://ai.example.invalid/v1',
+								model: 'fixture-model-2',
+							}),
+						})
+						assert.equal(settingsPut.status, 403)
+					}
+
+					const adaBlockedVoice = new WebSocket(
+						`${wsUrl}/api/whiteboard-voice/mai/realtime?whiteboardSession=${ada.token}`,
+						{ headers: { origin: DEV_ORIGIN } },
+					)
+					sockets.push(adaBlockedVoice)
+					adaBlockedVoice.on('error', () => {})
+					const [, blockedRes] = await once(adaBlockedVoice, 'unexpected-response', {
+						signal: AbortSignal.timeout(4000),
+					})
+					assert.equal(blockedRes.statusCode, 403)
+					blockedRes.resume()
+
+					// Active presenter can update AI settings and open voice WS
+					const jasonSettingsPut = await fetch(`${baseUrl}/api/ai/settings`, {
+						method: 'PUT',
+						headers: {
+							origin: DEV_ORIGIN,
+							'Content-Type': 'application/json',
+							'X-Mico-Whiteboard': jason.token,
+						},
+						body: JSON.stringify({
+							baseURL: 'https://ai.example.invalid/v1',
+							model: 'fixture-model-2',
+						}),
+					})
+					assert.equal(jasonSettingsPut.status, 200)
+
+					const jasonVoice = new WebSocket(
+						`${wsUrl}/api/whiteboard-voice/mai/realtime?whiteboardSession=${jason.token}`,
+						{ headers: { origin: DEV_ORIGIN } },
+					)
+					sockets.push(jasonVoice)
+					await once(jasonVoice, 'open', { signal: AbortSignal.timeout(4000) })
+
+					// Request presenter -> cancel -> re-request -> decline
+					const requested1 = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' && Boolean(event.requesterIds?.includes(ada.member.id)),
+					)
+					adaSocket.send(JSON.stringify({ type: 'request-presenter', requested: true }))
+					await requested1
+
+					const cancelled = nextPresence(
+						jasonSocket,
+						(event) => event.type === 'presence' && (event.requesterIds?.length ?? 0) === 0,
+					)
+					adaSocket.send(JSON.stringify({ type: 'request-presenter', requested: false }))
+					await cancelled
+
+					const requested2 = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' && Boolean(event.requesterIds?.includes(ada.member.id)),
+					)
+					adaSocket.send(JSON.stringify({ type: 'request-presenter', requested: true }))
+					await requested2
+
+					const declined = nextPresence(
+						adaSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterId === jason.member.id &&
+							(event.requesterIds?.length ?? 0) === 0,
+					)
+					jasonSocket.send(
+						JSON.stringify({ type: 'decline-presenter', targetMemberId: ada.member.id }),
+					)
+					await declined
+
+					// Approve / transfer presenter to Ada: closes Jason's voice WS and swaps AI access
+					const requested3 = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' && Boolean(event.requesterIds?.includes(ada.member.id)),
+					)
+					adaSocket.send(JSON.stringify({ type: 'request-presenter', requested: true }))
+					await requested3
+
+					const voiceClosed = once(jasonVoice, 'close', { signal: AbortSignal.timeout(4000) })
+					const transferred = nextPresence(
+						adaSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterId === ada.member.id &&
+							(event.requesterIds?.length ?? 0) === 0,
+					)
+					jasonSocket.send(
+						JSON.stringify({ type: 'transfer-presenter', targetMemberId: ada.member.id }),
+					)
+					const [, closed] = await Promise.all([transferred, voiceClosed])
+					assert.equal(closed[0], 1008)
+
+					const jasonNowBlocked = await fetch(`${baseUrl}/api/ai/settings`, {
+						method: 'PUT',
+						headers: {
+							origin: DEV_ORIGIN,
+							'Content-Type': 'application/json',
+							'X-Mico-Whiteboard': jason.token,
+						},
+						body: JSON.stringify({
+							baseURL: 'https://ai.example.invalid/v1',
+							model: 'fixture-model-3',
+						}),
+					})
+					assert.equal(jasonNowBlocked.status, 403)
+
+					const adaNowAllowed = await fetch(`${baseUrl}/api/ai/settings`, {
+						method: 'PUT',
+						headers: {
+							origin: DEV_ORIGIN,
+							'Content-Type': 'application/json',
+							'X-Mico-Whiteboard': ada.token,
+						},
+						body: JSON.stringify({
+							baseURL: 'https://ai.example.invalid/v1',
+							model: 'fixture-model-3',
+						}),
+					})
+					assert.equal(adaNowAllowed.status, 200)
+
+					// Direct transfer back without prior request
+					const returned = nextPresence(
+						jasonSocket,
+						(event) => event.type === 'presence' && event.presenterId === jason.member.id,
+					)
+					adaSocket.send(
+						JSON.stringify({ type: 'transfer-presenter', targetMemberId: jason.member.id }),
+					)
+					await returned
+				} finally {
+					for (const socket of sockets) socket.terminate()
+				}
+			},
+			{
+				createUpstream: () => new WebSocket(`ws://127.0.0.1:${upstreamAddress.port}`),
+				env: {
+					MICO_AI_ENABLED: 'true',
+					MAGPIE_BASE_URL: 'https://ai.example.invalid/v1',
+					MAGPIE_MODEL: 'fixture-model',
+					MAGPIE_API_KEY: 'fixture-key',
+					AZURE_MAI_HOST: 'voice.example',
+					AZURE_OPENAI_API_KEY: 'test',
+					AZURE_OPENAI_DEPLOYMENT: 'transcription',
+				},
+			},
+		)
+	} finally {
+		for (const client of upstream.clients) client.terminate()
+		await new Promise<void>((resolve) => upstream.close(() => resolve()))
+	}
 })

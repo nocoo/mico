@@ -18,8 +18,13 @@ export function usePresence(
 ) {
 	const [members, setMembers] = useState<WhiteboardMember[]>([])
 	const [presenterId, setPresenterId] = useState<string | null>(null)
+	const [requesterIds, setRequesterIds] = useState<string[]>([])
 	const [following, setFollowing] = useState(true)
 	const followingRef = useRef(true)
+	const sharerRef = useRef(Boolean(session?.member.sharer))
+	sharerRef.current = Boolean(session?.member.sharer)
+	const sessionIdRef = useRef(session?.member.id ?? null)
+	sessionIdRef.current = session?.member.id ?? null
 	const presenterView = useRef<PresenterView | null>(null)
 	const send = useRef<(message: PresenceMessage) => void>(() => {})
 	const pending = useRef<{ cursor?: Point | null; view?: PresenterView }>({})
@@ -45,9 +50,13 @@ export function usePresence(
 			if (event.type === 'presence') {
 				setMembers(event.members)
 				setPresenterId(event.presenterId)
+				setRequesterIds(event.requesterIds ?? [])
 				presenterView.current = event.viewport
-				if (!session?.member.sharer && followingRef.current && event.viewport)
-					applyPresenter(event.viewport)
+				const isSharer = event.presenterId
+					? event.presenterId === sessionIdRef.current
+					: Boolean(session?.member.sharer)
+				sharerRef.current = isSharer
+				if (!isSharer && followingRef.current && event.viewport) applyPresenter(event.viewport)
 			} else if (event.type === 'cursor') {
 				setMembers((current) =>
 					current.map((member) =>
@@ -56,14 +65,14 @@ export function usePresence(
 				)
 			} else {
 				presenterView.current = event.viewport
-				if (!session?.member.sharer && followingRef.current) applyPresenter(event.viewport)
+				if (!sharerRef.current && followingRef.current) applyPresenter(event.viewport)
 			}
 		},
 		[applyPresenter, session?.member.sharer],
 	)
 	const queueView = useCallback(
 		(current: Viewport = viewportRef.current) => {
-			if (!session?.member.sharer) return
+			if (!session?.member.sharer || !sharerRef.current) return
 			const rect = canvas.current?.getBoundingClientRect()
 			if (rect)
 				pending.current.view = {
@@ -89,17 +98,20 @@ export function usePresence(
 		if (cursorScreen.current) queueCursor()
 	}, [queueView, queueCursor, viewport])
 	useEffect(() => {
-		if (!session) return
+		if (!session) {
+			setRequesterIds([])
+			return
+		}
 		const interval = window.setInterval(() => {
 			if (pending.current.cursor !== undefined)
 				send.current({ type: 'cursor', point: pending.current.cursor })
-			if (pending.current.view)
+			if (pending.current.view && sharerRef.current)
 				send.current({ type: 'presenter-view', viewport: pending.current.view })
 			pending.current = {}
 		}, 50)
 		const resize = () => {
 			queueView()
-			if (!session.member.sharer && followingRef.current && presenterView.current)
+			if (!sharerRef.current && followingRef.current && presenterView.current)
 				applyPresenter(presenterView.current)
 		}
 		const observer = new ResizeObserver(resize)
@@ -123,5 +135,30 @@ export function usePresence(
 		cursorScreen.current = point
 		queueCursor()
 	}
-	return { members, presenterId, following, detach, follow, pointer, send, queueView, onEvent }
+	const requestPresenter = useCallback((requested: boolean) => {
+		send.current({ type: 'request-presenter', requested })
+	}, [])
+	const transferPresenter = useCallback((targetMemberId: string) => {
+		sharerRef.current = false
+		delete pending.current.view
+		send.current({ type: 'transfer-presenter', targetMemberId })
+	}, [])
+	const declinePresenter = useCallback((targetMemberId: string) => {
+		send.current({ type: 'decline-presenter', targetMemberId })
+	}, [])
+	return {
+		members,
+		presenterId,
+		requesterIds,
+		following,
+		detach,
+		follow,
+		pointer,
+		send,
+		queueView,
+		onEvent,
+		requestPresenter,
+		transferPresenter,
+		declinePresenter,
+	}
 }
