@@ -1,4 +1,4 @@
 [[IgnoredVulns]]
 id = "GHSA-fc5q-39xc-vjpf"
-effectiveUntil = 2026-12-18
+ignoreUntil = 2026-12-18
 reason = "Dev-only transitive dependency via vite -> tinyglobby -> fdir (not included in production runtime); 4.0.7 is the latest upstream release with no fix available yet."
