@@ -321,3 +321,66 @@ test('concurrent canvas management on one tenant still succeeds', async (t) => {
 		await Promise.all([first.close(), second.close()])
 	}
 })
+
+const DRAINED_RECT: Shape = {
+	id: 'drained-rect',
+	type: 'rectangle',
+	x: 900,
+	y: 0,
+	w: 100,
+	h: 100,
+	color: '#00a2e1',
+}
+
+test('close drains an admitted concurrent transaction instead of failing it', async (t) => {
+	const cluster = await startPostgres(t)
+	if (!cluster) return
+	const pool = new Pool({ connectionString: cluster.connectionString, max: 4 })
+	let pausing = false
+	let enteredPause: (() => void) | undefined
+	let releasePause: (() => void) | undefined
+	const entered = new Promise<void>((resolve) => {
+		enteredPause = resolve
+	})
+	const boards = new BoardStore({
+		sql: createPostgresSql({
+			pool: wrapPool(pool, async (text) => {
+				if (!pausing || !text.startsWith('UPDATE canvases SET revision')) return
+				pausing = false
+				enteredPause?.()
+				await new Promise<void>((resolve) => {
+					releasePause = resolve
+				})
+			}),
+		}),
+	})
+	const store = boards.forTenant({ tenantId: 'ten-drain' })
+	const state = await store.getState()
+	try {
+		pausing = true
+		const applied = store.apply({
+			operations: [{ type: 'create', shape: DRAINED_RECT }],
+			canvasId: state.activeCanvasId,
+		})
+		await entered
+		const closing = boards.close()
+		releasePause?.()
+		await applied
+		await closing
+
+		await assert.rejects(() => store.getState(), /BoardStore is closing/)
+		await boards.close()
+
+		const verify = new BoardStore({
+			sql: createPostgresSql({ connectionString: cluster.connectionString }),
+		})
+		try {
+			const verified = await verify.forTenant({ tenantId: 'ten-drain' }).getBoard()
+			assert.ok(verified.shapes.some((shape) => shape.id === DRAINED_RECT.id))
+		} finally {
+			await verify.close()
+		}
+	} finally {
+		await boards.close().catch(() => undefined)
+	}
+})

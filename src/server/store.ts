@@ -835,6 +835,7 @@ export class BoardStore {
 	private readonly serialize: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly tenants = new Map<string, TenantStore>()
+	private readonly inFlight = new Set<Promise<unknown>>()
 	private closing = false
 	private closePromise: Promise<void> | undefined
 
@@ -856,16 +857,30 @@ export class BoardStore {
 				return Promise.reject(new Error('BoardStore is closing'))
 			}
 			if (this.driver.concurrent) {
-				return (async () => {
+				// Concurrent drivers bypass the mutex, so admitted operations must
+				// be tracked for close() to drain them before the pool ends.
+				const admitted = (async () => {
 					await this.ready
 					return operation()
 				})()
+				this.track(admitted)
+				return admitted
 			}
 			return this.serialize(async () => {
 				await this.ready
-				return operation()
+				const admitted = operation()
+				this.track(admitted)
+				return admitted
 			})
 		}
+	}
+
+	private track(admitted: Promise<unknown>): void {
+		this.inFlight.add(admitted)
+		void admitted.then(
+			() => this.inFlight.delete(admitted),
+			() => this.inFlight.delete(admitted),
+		)
 	}
 
 	forTenant(scope: TenantScope): TenantStore {
@@ -901,8 +916,10 @@ export class BoardStore {
 	close(): Promise<void> {
 		if (this.closePromise) return this.closePromise
 		this.closing = true
+		const admitted = [...this.inFlight]
 		this.closePromise = this.serialize(async () => {
 			await this.ready.catch(() => undefined)
+			if (admitted.length > 0) await Promise.allSettled(admitted)
 			await this.blobs?.close?.()
 			if (this.ownsSql) {
 				await this.driver.close()
