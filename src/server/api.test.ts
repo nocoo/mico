@@ -964,7 +964,7 @@ test('HTTP hardening covers origins, hosts, preflight and unknown endpoints', as
 		)
 		assert.equal(
 			preflight.headers.get('access-control-allow-headers'),
-			'Content-Type, X-Mico-Whiteboard',
+			'Content-Type, X-Mico-Whiteboard, X-Mico-Meeting',
 		)
 
 		const unknownPreflight = await api(url, '/api/unknown', { method: 'OPTIONS' })

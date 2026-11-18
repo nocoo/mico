@@ -6,6 +6,9 @@ test('request targets share one decoded path for routing and authorization', () 
 	assert.equal(parseRequestTarget('/api/%73tate?previews=0').pathname, '/api/state')
 	assert.equal(parseRequestTarget('/assets/a%20b.js').pathname, '/assets/a b.js')
 	assert.equal(parseRequestTarget('/api/state?value=%2f').url.searchParams.get('value'), '/')
+	const mixed = parseRequestTarget('/api/events?MeetingId=Room-1&WhiteboardSession=tok')
+	assert.equal(mixed.url.searchParams.get('meetingid'), 'Room-1')
+	assert.equal(mixed.url.searchParams.get('whiteboardsession'), 'tok')
 })
 
 test('request targets reject alternate authorities, separators and traversal before routing', () => {

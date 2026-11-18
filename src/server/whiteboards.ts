@@ -14,6 +14,7 @@ import { OperationError } from './store.ts'
 
 interface Membership extends WhiteboardSession {
 	owner: string
+	publicWhiteboardid: string
 	clientId: string
 	socket?: WebSocket
 	voiceSockets: Set<WebSocket>
@@ -70,18 +71,19 @@ export class Whiteboards {
 		const parsed = joinWhiteboardSchema.safeParse(body)
 		if (!parsed.success) throw new OperationError(400, 'INVALID_REQUEST', parsed.error.message)
 		const input = parsed.data
+		const roomId = `${owner}:${input.whiteboardid}`
 		this.prune()
 		const existing = [...this.sessions.values()].find(
 			(member) => member.owner === owner && member.clientId === input.clientId,
 		)
 		if (existing) {
-			if (existing.whiteboardid !== input.whiteboardid)
+			if (existing.whiteboardid !== roomId)
 				throw new OperationError(
 					409,
 					'SESSION_CONFLICT',
 					'Join details changed; open a new session.',
 				)
-			if (input.sharer && this.presenter(input.whiteboardid, existing)) {
+			if (input.sharer && this.presenter(roomId, existing)) {
 				throw new OperationError(
 					409,
 					'PRESENTER_EXISTS',
@@ -92,10 +94,10 @@ export class Whiteboards {
 			existing.member.username = input.username
 			existing.member.sharer = input.sharer
 			if (input.sharer) {
-				this.requests.get(input.whiteboardid)?.delete(existing.member.id)
+				this.requests.get(roomId)?.delete(existing.member.id)
 			}
 			if (wasSharer && !input.sharer) {
-				this.views.delete(input.whiteboardid)
+				this.views.delete(roomId)
 				for (const voice of existing.voiceSockets) voice.close(1008, 'Presenter stepped down')
 				existing.voiceSockets.clear()
 			}
@@ -106,14 +108,14 @@ export class Whiteboards {
 			}
 			return this.publicSession(existing)
 		}
-		if (input.sharer && this.presenter(input.whiteboardid)) {
+		if (input.sharer && this.presenter(roomId)) {
 			throw new OperationError(409, 'PRESENTER_EXISTS', 'This whiteboard already has a presenter.')
 		}
 		if (this.sessions.size >= 512) {
 			throw new OperationError(503, 'ROOMS_FULL', 'Too many whiteboard sessions. Try again later.')
 		}
 		const count = [...this.sessions.values()].filter(
-			(member) => member.whiteboardid === input.whiteboardid,
+			(member) => member.whiteboardid === roomId,
 		).length
 		if (count >= 64) {
 			throw new OperationError(409, 'ROOM_FULL', 'This whiteboard has reached its 64-person limit.')
@@ -121,7 +123,8 @@ export class Whiteboards {
 		const memberId = createHash('sha256').update(input.clientId).digest('hex')
 		const member: Membership = {
 			token: randomUUID(),
-			whiteboardid: input.whiteboardid,
+			whiteboardid: roomId,
+			publicWhiteboardid: input.whiteboardid,
 			member: {
 				id: memberId,
 				username: input.username,
@@ -143,11 +146,15 @@ export class Whiteboards {
 	}
 
 	private publicSession(member: Membership): WhiteboardSession {
-		return { token: member.token, whiteboardid: member.whiteboardid, member: { ...member.member } }
+		return {
+			token: member.token,
+			whiteboardid: member.publicWhiteboardid,
+			member: { ...member.member },
+		}
 	}
 
 	resolve(req: IncomingMessage, url: URL, owner: string): Membership | undefined {
-		const token = req.headers['x-mico-whiteboard'] ?? url.searchParams.get('whiteboardSession')
+		const token = req.headers['x-mico-whiteboard'] ?? url.searchParams.get('whiteboardsession')
 		if (token === null || token === undefined) return
 		this.prune()
 		const member = typeof token === 'string' ? this.sessions.get(token) : undefined

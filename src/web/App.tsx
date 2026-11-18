@@ -13,6 +13,7 @@ import {
 import { usePresence } from './whiteboards/usePresence'
 import { WhiteboardCursors } from './whiteboards/WhiteboardPresence'
 import './whiteboards/whiteboards.css'
+import { getQueryParam } from '../shared/query'
 import { getAnchors, getConnectorAnchors } from './anchors'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
@@ -71,7 +72,7 @@ const randomId = () => crypto.randomUUID()
 const DEMO_USERNAME_STORAGE_KEY = 'mico.demo.username'
 
 function initialDemoUsername(fallbackName = 'Guest'): string {
-	const fromUrl = new URLSearchParams(window.location.search).get('username')?.trim()
+	const fromUrl = getQueryParam(window.location.search, 'username')?.trim()
 	if (fromUrl) {
 		return fromUrl.slice(0, 80)
 	}
@@ -85,12 +86,12 @@ function initialDemoUsername(fallbackName = 'Guest'): string {
 }
 
 function initialDemoSharer(): boolean {
-	return new URLSearchParams(window.location.search).get('sharer') === 'true'
+	return getQueryParam(window.location.search, 'sharer') === 'true'
 }
 
 function initialLocalMode(authMode?: AuthMode, aiSettingsVisible?: boolean): LocalModeOption {
 	if (authMode !== 'none' || !aiSettingsVisible) return 'local'
-	const raw = new URLSearchParams(window.location.search).get('localMode')
+	const raw = getQueryParam(window.location.search, 'localmode')
 	if (raw === 'presenter' || raw === 'guest') return raw
 	return 'local'
 }
@@ -186,7 +187,7 @@ export default function App({
 		aiEnabled &&
 		(authMode !== 'demo' || initialDemoSharer()) &&
 		initialLocalMode(authMode, aiSettingsVisible) !== 'guest'
-			? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '')
+			? (getQueryParam(window.location.search, 'ai')?.trim() ?? '')
 			: '',
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(

@@ -8,6 +8,7 @@ import {
 	useMemo,
 	useState,
 } from 'react'
+import { getQueryParam } from '../../shared/query.ts'
 import { en, type I18nMessages } from './en.ts'
 import { zh } from './zh.ts'
 
@@ -40,7 +41,7 @@ export function detectBrowserLocale(): Locale {
 
 export function readLocalePreference(): LocalePreference {
 	if (typeof window !== 'undefined') {
-		const fromUrl = normalizeLocale(new URLSearchParams(window.location.search).get('lang'))
+		const fromUrl = normalizeLocale(getQueryParam(window.location.search, 'lang'))
 		if (fromUrl) return fromUrl
 		try {
 			const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY)

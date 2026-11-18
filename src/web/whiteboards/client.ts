@@ -1,14 +1,25 @@
+import { getQueryParam } from '../../shared/query.ts'
 import type { WhiteboardJoin, WhiteboardSession } from '../../shared/whiteboards'
 
 let active: { input: WhiteboardJoin; session: WhiteboardSession } | null = null
+
+export function currentMeetingId(): string | null {
+	if (typeof window === 'undefined') return null
+	const raw = getQueryParam(window.location.search, 'meetingid')?.trim()
+	return raw ? raw.slice(0, 256) : null
+}
 
 export async function joinWhiteboard(
 	input: WhiteboardJoin,
 	signal?: AbortSignal,
 ): Promise<WhiteboardSession> {
+	const meetingId = currentMeetingId()
 	const response = await fetch('/api/whiteboards/join', {
 		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
+		headers: {
+			'Content-Type': 'application/json',
+			...(meetingId ? { 'X-Mico-Meeting': meetingId } : {}),
+		},
 		body: JSON.stringify(input),
 		signal: signal
 			? AbortSignal.any([signal, AbortSignal.timeout(10000)])
@@ -46,26 +57,36 @@ export async function reconnectWhiteboard() {
 }
 
 export function whiteboardUrl(path: string | URL): string {
-	if (!active) return path.toString()
+	const meetingId = currentMeetingId()
+	if (!active && !meetingId) return path.toString()
 	const url = new URL(path, window.location.href)
-	if (url.pathname === '/mai/realtime' || url.pathname === '/moss')
-		url.pathname = `/api/whiteboard-voice${url.pathname}`
-	url.searchParams.set('whiteboardSession', active.session.token)
+	if (active) {
+		if (url.pathname === '/mai/realtime' || url.pathname === '/moss')
+			url.pathname = `/api/whiteboard-voice${url.pathname}`
+		url.searchParams.set('whiteboardsession', active.session.token)
+	}
+	if (meetingId) {
+		url.searchParams.set('meetingid', meetingId)
+	}
 	return url.toString()
 }
 
 export const canvasFetch: typeof fetch = (input, init) => {
-	if (!active) return fetch(input, init)
+	const meetingId = currentMeetingId()
+	if (!active && !meetingId) return fetch(input, init)
 	const url = new URL(input instanceof Request ? input.url : input.toString(), window.location.href)
+	if (url.origin !== window.location.origin) return fetch(input, init)
 	const isAiPath =
 		url.pathname.startsWith('/api/ai/') ||
 		url.pathname.startsWith('/api/moss/') ||
 		url.pathname === '/mai/config'
-	if (!isAiPath || url.origin !== window.location.origin) return fetch(input, init)
+	const includeWhiteboard = Boolean(active && isAiPath)
+	if (!includeWhiteboard && !meetingId) return fetch(input, init)
 	const headers = new Headers(input instanceof Request ? input.headers : undefined)
 	new Headers(init?.headers).forEach((value, key) => {
 		headers.set(key, value)
 	})
-	headers.set('X-Mico-Whiteboard', active.session.token)
+	if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
+	if (meetingId) headers.set('X-Mico-Meeting', meetingId)
 	return fetch(input, { ...init, headers })
 }

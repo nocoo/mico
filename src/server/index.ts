@@ -322,15 +322,28 @@ export function createDaemon(
 	const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
 	const whiteboards = new Whiteboards()
+	const meetingIdFromRequest = (req: IncomingMessage, requestUrl: URL): string | undefined => {
+		const fromQuery = requestUrl.searchParams.get('meetingid')?.trim()
+		if (fromQuery) return fromQuery.slice(0, 256)
+		const header = req.headers['x-mico-meeting']
+		if (typeof header === 'string') {
+			const trimmed = header.trim()
+			if (trimmed) return trimmed.slice(0, 256)
+		}
+		return undefined
+	}
+
 	function attachVoiceSession(req: IncomingMessage, client: WebSocket) {
 		auth.attachSocket(req, client)
 		try {
+			const targetUrl = parseRequestTarget(req.url).url
 			const member = whiteboards.resolve(
 				req,
-				parseRequestTarget(req.url).url,
+				targetUrl,
 				tenantScopeFor(
 					runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined,
 					runtimeConfig.auth.mode,
+					meetingIdFromRequest(req, targetUrl),
 				).tenantId,
 			)
 			if (member) whiteboards.attachVoice(member, client)
@@ -471,7 +484,10 @@ export function createDaemon(
 			}
 			if (origin && isAllowedOrigin(origin)) {
 				res.setHeader('Access-Control-Allow-Origin', origin)
-				res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Mico-Whiteboard')
+				res.setHeader(
+					'Access-Control-Allow-Headers',
+					'Content-Type, X-Mico-Whiteboard, X-Mico-Meeting',
+				)
 				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 				res.setHeader('Vary', 'Origin')
 			}
@@ -635,7 +651,11 @@ export function createDaemon(
 				return
 			}
 
-			const owner = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
+			const owner = tenantScopeFor(
+				session,
+				runtimeConfig.auth.mode,
+				meetingIdFromRequest(req, requestUrl),
+			).tenantId
 			const membership = whiteboards.resolve(req, requestUrl, owner)
 			if (isPath('api', 'whiteboards', 'join')) {
 				if (req.method !== 'POST') {
@@ -1034,12 +1054,14 @@ export function createDaemon(
 
 	wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
 		socket.on('error', () => socket.terminate())
+		const targetUrl = parseRequestTarget(req.url).url
 		const member = whiteboards.resolve(
 			req,
-			parseRequestTarget(req.url).url,
+			targetUrl,
 			tenantScopeFor(
 				runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined,
 				runtimeConfig.auth.mode,
+				meetingIdFromRequest(req, targetUrl),
 			).tenantId,
 		)
 		if (member) {
@@ -1097,9 +1119,14 @@ export function createDaemon(
 			socket.destroy()
 			return
 		}
-		const tenantId = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
+		const targetUrl = parseRequestTarget(req.url).url
+		const tenantId = tenantScopeFor(
+			session,
+			runtimeConfig.auth.mode,
+			meetingIdFromRequest(req, targetUrl),
+		).tenantId
 		try {
-			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
+			const member = whiteboards.resolve(req, targetUrl, tenantId)
 			if (sharedVoice && !member)
 				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
 			if (
