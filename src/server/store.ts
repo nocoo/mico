@@ -792,7 +792,7 @@ const STATEMENTS = {
 		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
 	updateBoard:
 		'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ? AND tenant_id = ?',
-	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ? AND tenant_id = ?',
+	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ? AND revision = ? AND tenant_id = ?',
 	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ? AND tenant_id = ?',
 	deleteCanvas: 'DELETE FROM canvases WHERE id = ? AND tenant_id = ?',
 	findTenant: 'SELECT active_canvas_id, state_version FROM tenants WHERE id = ?',
@@ -1096,7 +1096,14 @@ export class TenantStore {
 			persistMigration &&
 			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes))
 		) {
-			await tx.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
+			// Guard the rewrite with the revision this read observed: a concurrent
+			// accepted write must never be replaced at an unchanged revision. A
+			// zero-row result just leaves cleanup to a later read or write.
+			await tx.run(STATEMENTS.rewriteShapes, [
+				JSON.stringify(migrated.shapes),
+				row.id,
+				row.revision,
+			])
 		}
 		return board
 	}
