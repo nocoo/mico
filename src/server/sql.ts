@@ -17,9 +17,9 @@ export interface SqlTransaction {
 /**
  * Transaction isolation request. Drivers without per-transaction isolation
  * (SQLite, D1) ignore it; PostgreSQL starts `REPEATABLE READ` only when asked
- * and keeps its default `READ COMMITTED` otherwise. Repeatable-read
- * transactions must stay replay-safe side-effect wise because a racing
- * idempotent repair can surface a serialization failure to the caller.
+ * and keeps its default `READ COMMITTED` otherwise. Only pure-read callers ask
+ * for a snapshot: they issue no writes, so a stable snapshot cannot fail to
+ * serialize, and transactions are never replayed.
  */
 export interface SqlTransactionOptions {
 	readonly repeatableRead?: boolean

@@ -793,7 +793,6 @@ const STATEMENTS = {
 		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
 	updateBoard:
 		'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ? AND tenant_id = ?',
-	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ? AND revision = ? AND tenant_id = ?',
 	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ? AND tenant_id = ?',
 	deleteCanvas: 'DELETE FROM canvases WHERE id = ? AND tenant_id = ?',
 	findTenant: 'SELECT active_canvas_id, state_version FROM tenants WHERE id = ?',
@@ -1013,10 +1012,10 @@ export class TenantStore {
 		return this.bootstrap
 	}
 
-	// Reads that assemble several statements into one projection ask the
-	// driver for a single stable snapshot (repeatable read where supported).
-	// Mutations keep the default isolation and rely on their revision/CAS
-	// guards; the driver never replays them.
+	// Read projections are pure - no UPDATE/INSERT/DELETE - so asking the
+	// driver for one stable snapshot (repeatable read where supported) cannot
+	// hit a write serialization failure. Mutations keep the default isolation
+	// and rely on their revision/CAS guards; the driver never replays them.
 	private static readonly SNAPSHOT: SqlTransactionOptions = { repeatableRead: true }
 
 	private run<T>(
@@ -1090,13 +1089,15 @@ export class TenantStore {
 		return row
 	}
 
+	// Read-only resolution: the persisted active id wins when its row exists,
+	// otherwise fall back to the first canvas without repairing it here. The
+	// create/activate/delete paths and the tenant bootstrap own that repair.
 	private async activeCanvasId(tx: SqlTransaction): Promise<string> {
 		const tenant = await tx.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
 		const active = tenant?.active_canvas_id ?? undefined
 		if (active && (await this.findRow(tx, active))) return active
 		const first = await tx.get<{ id: string }>(STATEMENTS.firstCanvas)
 		if (!first) throw new Error('Tenant has no canvas')
-		await tx.run(STATEMENTS.saveActiveCanvas, [first.id])
 		return first.id
 	}
 
@@ -1105,11 +1106,10 @@ export class TenantStore {
 		return new Set(rows.map((row) => row.id))
 	}
 
-	private async parseRow(
-		tx: SqlTransaction,
-		row: CanvasRow,
-		persistMigration = false,
-	): Promise<Board> {
+	// Reads never persist their normalization; the next board write stores the
+	// normalized board, which is also what keeps repeatable-read snapshots free
+	// of write serialization failures.
+	private async parseRow(tx: SqlTransaction, row: CanvasRow): Promise<Board> {
 		let parsed: unknown
 		try {
 			parsed = JSON.parse(row.shapes)
@@ -1118,24 +1118,10 @@ export class TenantStore {
 		}
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
-		const beforeValidation = persistMigration ? JSON.stringify(migrated.shapes) : undefined
 		const hasImages =
 			Array.isArray(migrated.shapes) &&
 			migrated.shapes.some((shape) => isObject(shape) && shape.type === 'image')
 		validateBoardState(board, hasImages ? await this.listImageAssetIds(tx) : undefined)
-		if (
-			persistMigration &&
-			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes))
-		) {
-			// Guard the rewrite with the revision this read observed: a concurrent
-			// accepted write must never be replaced at an unchanged revision. A
-			// zero-row result just leaves cleanup to a later read or write.
-			await tx.run(STATEMENTS.rewriteShapes, [
-				JSON.stringify(migrated.shapes),
-				row.id,
-				row.revision,
-			])
-		}
 		return board
 	}
 
@@ -1182,7 +1168,7 @@ export class TenantStore {
 	}
 
 	private async boardOf(tx: SqlTransaction, id: string): Promise<Board> {
-		return cloneBoard(await this.parseRow(tx, await this.requireRow(tx, id), true))
+		return cloneBoard(await this.parseRow(tx, await this.requireRow(tx, id)))
 	}
 
 	listCanvases(includePreviews = true): Promise<CanvasSummary[]> {

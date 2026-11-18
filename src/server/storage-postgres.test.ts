@@ -114,6 +114,7 @@ after(async () => {
 
 interface HookState {
 	findTenantReads: number
+	statements: string[]
 }
 
 type PoolHook = (text: string, state: HookState) => Promise<void> | void
@@ -126,6 +127,7 @@ function wrapPool(pool: Pool, hook: PoolHook): PgPoolLike {
 		values: readonly unknown[] | undefined,
 		state: HookState,
 	) => {
+		state.statements.push(text)
 		await hook(text, state)
 		const result = await target.query(text, values as unknown[])
 		return {
@@ -135,11 +137,11 @@ function wrapPool(pool: Pool, hook: PoolHook): PgPoolLike {
 	}
 	return {
 		async query(text, values) {
-			return runQuery(pool, text, values, { findTenantReads: 0 })
+			return runQuery(pool, text, values, { findTenantReads: 0, statements: [] })
 		},
 		async connect(): Promise<PgClientLike> {
 			const client = await pool.connect()
-			const state: HookState = { findTenantReads: 0 }
+			const state: HookState = { findTenantReads: 0, statements: [] }
 			return {
 				async query(text, values) {
 					return runQuery(client, text, values, state)
@@ -191,15 +193,18 @@ test('a legacy normalizing read cannot erase a concurrently committed shape', as
 	const cluster = await startPostgres(t)
 	if (!cluster) return
 	const pool = new Pool({ connectionString: cluster.connectionString, max: 4 })
-	let rewriteInterleaved = false
+	let interleave = false
+	let capture = false
+	const transactions: string[][] = []
 	const boards = new BoardStore({
 		ownsSql: false,
 		sql: createPostgresSql({
-			pool: wrapPool(pool, async (text) => {
-				if (!rewriteInterleaved || !/^UPDATE canvases SET shapes = /.test(text)) return
-				rewriteInterleaved = false
-				// While the normalizing read transaction sits between its read and
-				// its rewrite, a second store commits a brand-new board revision.
+			pool: wrapPool(pool, async (text, state) => {
+				if (text === 'COMMIT' && capture) transactions.push([...state.statements, text])
+				if (!interleave || !text.startsWith('SELECT * FROM canvases')) return
+				interleave = false
+				// While the read transaction is open between its snapshot and its
+				// board read, a second store commits a brand-new board revision.
 				const writer = new BoardStore({
 					sql: createPostgresSql({ connectionString: cluster.connectionString }),
 				})
@@ -221,13 +226,21 @@ test('a legacy normalizing read cannot erase a concurrently committed shape', as
 			[JSON.stringify(LEGACY_SHAPES), before.activeCanvasId, 'ten-legacy'],
 		)
 
-		// The racy read either settles or surfaces the repeatable-read
-		// serialization failure; it is never replayed and never erases data.
-		rewriteInterleaved = true
-		await store.getBoard().then(
-			() => undefined,
-			(error: unknown) => assert.match(String(error), /could not serialize access/),
+		interleave = true
+		capture = true
+		const raced = await store.getBoard()
+		capture = false
+		// The read returns its own stable snapshot, normalized in memory, and
+		// issues nothing but BEGIN/SELECT/COMMIT - no rewrite, no repair.
+		assert.deepEqual(
+			raced.shapes.map((shape) => shape.id),
+			['kept-rect'],
 		)
+		assert.equal(raced.revision, 3)
+		assert.ok(transactions.length >= 1)
+		for (const statement of transactions[0]) {
+			assert.match(statement, /^(BEGIN|SELECT|COMMIT)/)
+		}
 
 		const after = await store.getBoard()
 		assert.deepEqual(

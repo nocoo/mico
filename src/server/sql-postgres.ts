@@ -127,9 +127,8 @@ export function createPostgresSql(config: PostgresSqlConfig): Sql {
 			let completed = false
 			try {
 				// One stable snapshot per read when asked: under READ COMMITTED,
-				// separate statements can mix rows from different commits. The
-				// callback is never replayed, so a repeatable-read transaction that
-				// loses a race surfaces its serialization failure to the caller.
+				// separate statements can mix rows from different commits. Snapshot
+				// callers are pure reads, so the callback is never replayed.
 				await client.query(
 					options?.repeatableRead === true ? 'BEGIN ISOLATION LEVEL REPEATABLE READ' : 'BEGIN',
 				)
