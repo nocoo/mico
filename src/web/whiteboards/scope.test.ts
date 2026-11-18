@@ -12,6 +12,15 @@ test('meeting id parsing trims, bounds and accepts unicode search strings', () =
 	assert.equal(meetingIdFromSearch(`?meetingid=${'a'.repeat(300)}`), 'a'.repeat(256))
 })
 
+test('meeting id lookup stays case-insensitive like the server', () => {
+	assert.equal(meetingIdFromSearch('?meetingID=Room-1'), 'Room-1')
+	assert.equal(meetingIdFromSearch('?MeetingId=Room-1&username=Host'), 'Room-1')
+	assert.equal(meetingIdFromSearch('?MEETINGID=%E7%89%A9%E7%90%86%E8%AF%BE'), '物理课')
+	assert.equal(meetingIdFromSearch('?meetingid=first&meetingid=second'), 'first')
+	assert.equal(meetingIdFromSearch('?meetingid=&meetingid=second'), null)
+	assert.equal(withMeetingScope('/api/board?meetingID=old', 'next'), '/api/board?meetingid=next')
+})
+
 test('withMeetingScope adds or replaces the meetingid query parameter', () => {
 	assert.equal(
 		withMeetingScope('/api/board', '物理课'),

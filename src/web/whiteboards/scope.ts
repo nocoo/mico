@@ -3,9 +3,13 @@ export const MAX_MEETING_ID_LENGTH = 256
 
 export function meetingIdFromSearch(search: string): string | null {
 	const queryStart = search.indexOf('?')
-	const params = new URLSearchParams(queryStart >= 0 ? search.slice(queryStart + 1) : search)
-	const raw = params.get(MEETING_QUERY_KEY)?.trim()
-	return raw ? raw.slice(0, MAX_MEETING_ID_LENGTH) : null
+	const raw = queryStart >= 0 ? search.slice(queryStart + 1) : search
+	for (const [key, value] of new URLSearchParams(raw).entries()) {
+		if (key.toLowerCase() !== MEETING_QUERY_KEY) continue
+		const trimmed = value.trim()
+		return trimmed ? trimmed.slice(0, MAX_MEETING_ID_LENGTH) : null
+	}
+	return null
 }
 
 export function setMeetingScope(url: URL, meetingId: string | null | undefined): URL {
@@ -18,6 +22,9 @@ export function withMeetingScope(path: string, meetingId: string | null | undefi
 	const queryStart = path.indexOf('?')
 	const pathname = queryStart >= 0 ? path.slice(0, queryStart) : path
 	const params = new URLSearchParams(queryStart >= 0 ? path.slice(queryStart + 1) : '')
+	for (const key of [...params.keys()]) {
+		if (key.toLowerCase() === MEETING_QUERY_KEY) params.delete(key)
+	}
 	params.set(MEETING_QUERY_KEY, meetingId)
 	return `${pathname}?${params.toString()}`
 }
