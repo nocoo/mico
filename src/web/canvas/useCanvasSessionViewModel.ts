@@ -634,13 +634,16 @@ export function useCanvasSessionViewModel({
 		document.title = activeCanvasName ? `mico · ${activeCanvasName}` : 'mico'
 	}, [activeCanvasName])
 
+	useEffect(() => {
+		if (roomError) announceRef.current(roomError)
+	}, [roomError])
+
 	return {
 		board,
 		canvases,
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
-		roomError,
 		sendPresence,
 		postOperations,
 		postOperationsDetailed,
