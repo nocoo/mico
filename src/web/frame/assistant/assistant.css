@@ -1648,6 +1648,49 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	font-size: 11.5px;
 }
 
+.ai-assistant .call-meeting-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: 32px;
+	margin-top: 4px;
+	padding: 0 12px;
+	border: 1px solid var(--ui-hair);
+	border-radius: 11px;
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-well));
+	box-shadow:
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 6px 14px -12px var(--ui-shadow);
+	color: var(--ui-ink-2);
+	font-size: 12px;
+	font-weight: 600;
+	transition:
+		background 160ms,
+		color 160ms,
+		box-shadow 160ms,
+		translate 140ms,
+		opacity 140ms;
+}
+
+.ai-assistant .call-meeting-toggle:hover:not(:disabled) {
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-accent-soft));
+	color: var(--ui-ink);
+	translate: 0 -1px;
+}
+
+.ai-assistant .call-meeting-toggle[aria-checked="true"] {
+	border-color: transparent;
+	background: linear-gradient(180deg, var(--ui-accent-hi), var(--ui-accent-lo));
+	box-shadow:
+		inset 0 1.5px 0 oklch(1 0 0 / 0.52),
+		0 8px 16px -8px var(--ui-accent);
+	color: oklch(1 0 0);
+}
+
+.ai-assistant .call-meeting-toggle:disabled {
+	opacity: 0.45;
+}
+
 .ai-assistant .call-output {
 	position: absolute;
 	top: calc(50% + 116px);

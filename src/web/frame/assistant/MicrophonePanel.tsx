@@ -1,4 +1,4 @@
-import { Mic, Square } from 'lucide-react'
+import { Mic, MonitorSpeaker, Square } from 'lucide-react'
 import type { LessonSegment } from './LessonPanel'
 import { useMicrophoneViewModel } from './useMicrophoneViewModel'
 
@@ -46,9 +46,26 @@ export function MicrophonePanel(props: MicrophonePanelProps) {
 						<span className="call-timer">{model.elapsed}</span>
 					</div>
 					<span className="call-action-label">
-						{model.running ? 'Tap to end the conversation' : 'Tap the microphone to start'}
+						{model.running
+							? 'Tap to end the conversation'
+							: model.includeMeetingAudio
+								? 'Tap to share meeting audio & start'
+								: 'Tap the microphone to start'}
 					</span>
 					<span className="call-ai-status">{model.aiLabel}</span>
+					{model.meetingAudioSupported && (
+						<button
+							type="button"
+							role="switch"
+							aria-checked={model.includeMeetingAudio}
+							className="call-meeting-toggle"
+							disabled={model.running || model.disabled}
+							onClick={model.toggleMeetingAudio}
+						>
+							<MonitorSpeaker size={14} aria-hidden="true" />
+							<span>Include meeting audio</span>
+						</button>
+					)}
 				</div>
 				<div className="call-output" aria-hidden={!model.hasOutput}>
 					<div className="call-wave-group">
