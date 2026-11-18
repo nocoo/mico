@@ -86,12 +86,6 @@ async function main(args: string[]) {
 			;[rest, preview] = takeFlag(rest, '--preview')
 			if (rest.length > 0) throw new Error(usage)
 			result = await request(Number(port), `/api/canvases${preview ? '' : '?previews=0'}`)
-			if (!preview && typeof result === 'object' && result !== null) {
-				const record = result as { canvases?: Array<Record<string, unknown>> }
-				if (record.canvases) {
-					record.canvases = record.canvases.map(({ preview: _preview, ...canvas }) => canvas)
-				}
-			}
 			console.log(JSON.stringify(result, null, 2))
 			return
 		}
