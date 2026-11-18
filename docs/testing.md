@@ -93,6 +93,10 @@ The browser keeps a private random `mico.demo.participantKey` in local storage a
 
 `PUT /api/canvases/:id/permissions` accepts `{participantId, allowed}` and requires the demo presenter. Demo snapshots include `canvasEditorIds` for the active canvas; updates are broadcast and polled like canvas snapshots. Object creation is server-attributed. Batch edits, action checkboxes, undo/redo restores, and delete cascades check ownership transactionally; a batch affecting any unauthorized object fails atomically with `403 OBJECT_EDIT_FORBIDDEN` and a request-to-presenter hint. Deleting your own frame or connected object may also affect someone else's objects and therefore require a grant. Ownership tombstones preserve the original owner through deletion/restore and prevent ID reuse from claiming another person's object. Non-demo object APIs are unchanged.
 
+The meeting bar uses live demo participants (including local Presenter/Guest mode), with a ring and presentation badge on the active presenter. Tooltips and accessible avatar labels identify the presenter and yourself. The highlight follows presenter transfers; outside presence mode, the bar retains its disconnected sample preview. `tests/browser/whiteboards.spec.ts` verifies the highlight on both clients before and after a handoff; meeting controls remain disabled.
+
+Visual examples: [before](images/presenter-avatar-before.png), [after](images/presenter-avatar-after.png), and [compact dark mode](images/presenter-avatar-dark.png).
+
 `POST /api/operations` accepts `{ operations, expectedRevision?, canvasId? }`. It defaults to the active canvas and can target any canvas without switching. A batch is validated and persisted atomically per canvas; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.
 
 - `create` carries a complete shape. `update` carries `{ id, patch }`; patch keys are scoped per shape type. `delete` removes the shape, its connectors and releases frame members.

@@ -1,10 +1,10 @@
-import { Mic, Phone, Video } from 'lucide-react'
-import { type MeetingViewModel, meetingPreview } from './viewmodel'
+import { Mic, Phone, Presentation, Video } from 'lucide-react'
+import { type MeetingPresence, type MeetingViewModel, meetingPreview } from './viewmodel'
 import './meeting.css'
 
 export function MeetingView({ model }: { model: MeetingViewModel }) {
 	return (
-		<section className="meeting-frame" aria-label="Meeting preview, not connected">
+		<section className="meeting-frame" aria-label={`${model.title}, not connected`}>
 			<div className="meeting-clock">
 				<span className="sr-only">Preview time</span>
 				<span className="meeting-clock-dot" aria-hidden="true" />
@@ -15,17 +15,23 @@ export function MeetingView({ model }: { model: MeetingViewModel }) {
 				<span>{model.detail}</span>
 			</div>
 			<div className="meeting-avatars">
-				<span className="sr-only">Example participants</span>
+				<span className="sr-only">{model.title}</span>
 				{model.participants.map((participant) => (
 					<span
-						key={participant.name}
+						key={participant.id ?? participant.name}
 						className="meeting-avatar"
 						role="img"
 						data-color={participant.color}
-						title={`${participant.name} · example`}
-						aria-label={`${participant.name}, example`}
+						data-presenter={participant.presenter || undefined}
+						title={`${participant.name}${participant.self ? ' (you)' : ''} · ${participant.id ? (participant.presenter ? 'presenter' : 'participant') : 'example'}`}
+						aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${participant.id ? (participant.presenter ? 'presenter' : 'participant') : 'example'}`}
 					>
 						{participant.initial}
+						{participant.presenter && (
+							<span className="meeting-presenter-badge" aria-hidden="true">
+								<Presentation />
+							</span>
+						)}
 					</span>
 				))}
 			</div>
@@ -58,6 +64,6 @@ export function MeetingView({ model }: { model: MeetingViewModel }) {
 	)
 }
 
-export function MeetingFrame() {
-	return <MeetingView model={meetingPreview()} />
+export function MeetingFrame({ presence }: { presence?: MeetingPresence }) {
+	return <MeetingView model={meetingPreview(presence)} />
 }
