@@ -112,6 +112,7 @@ export interface CanvasSnapshot {
 	activeCanvasId: string
 	canvases: CanvasSummary[]
 	board: Board
+	canvasEditorIds?: string[]
 }
 
 export interface CanvasDetail {

@@ -773,8 +773,21 @@ test('a signed-in identity edits a workspace the local tenant cannot see', async
 test('demo mode shares one tenant without login and gates AI by IP allowlist', async () => {
 	await withHostedDaemon(
 		async ({ port, daemon }) => {
-			// Anonymous users share the demo tenant without logging in
-			const created = await httpRequest(port, '/api/operations', {
+			// Demo members share one tenant without signing in to an account.
+			const joined = await httpRequest(port, '/api/whiteboards/join', {
+				method: 'POST',
+				host: HOST,
+				origin: ORIGIN,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					username: 'Guest',
+					sharer: false,
+					clientId: crypto.randomUUID(),
+				}),
+			})
+			assert.equal(joined.status, 200)
+			const token = (JSON.parse(joined.body) as { token: string }).token
+			const created = await httpRequest(port, `/api/operations?whiteboardSession=${token}`, {
 				method: 'POST',
 				host: HOST,
 				origin: ORIGIN,

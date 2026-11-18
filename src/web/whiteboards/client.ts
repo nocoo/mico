@@ -1,15 +1,38 @@
 import type { WhiteboardJoin, WhiteboardSession } from '../../shared/whiteboards'
 
-let active: { input: WhiteboardJoin; session: WhiteboardSession } | null = null
+type PresenceJoin = WhiteboardJoin & { persistIdentity?: boolean }
+
+let active: { input: PresenceJoin; session: WhiteboardSession } | null = null
+
+function participantKey(): string {
+	try {
+		const stored = localStorage.getItem('mico.demo.participantKey')
+		if (stored) {
+			if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(stored))
+				throw new Error('Saved demo participant key is invalid')
+			return stored
+		}
+		const key = crypto.randomUUID()
+		localStorage.setItem('mico.demo.participantKey', key)
+		return key
+	} catch (error) {
+		throw new Error('Demo ownership needs browser storage. Enable storage and reload to join.', {
+			cause: error,
+		})
+	}
+}
 
 export async function joinWhiteboard(
-	input: WhiteboardJoin,
+	{ persistIdentity, ...input }: PresenceJoin,
 	signal?: AbortSignal,
 ): Promise<WhiteboardSession> {
 	const response = await fetch('/api/whiteboards/join', {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(input),
+		body: JSON.stringify({
+			...input,
+			participantKey: input.participantKey ?? (persistIdentity ? participantKey() : undefined),
+		}),
 		signal: signal
 			? AbortSignal.any([signal, AbortSignal.timeout(10000)])
 			: AbortSignal.timeout(10000),
@@ -21,7 +44,7 @@ export async function joinWhiteboard(
 	return response.json() as Promise<WhiteboardSession>
 }
 
-export function configurePresence(input: WhiteboardJoin, session: WhiteboardSession) {
+export function configurePresence(input: PresenceJoin, session: WhiteboardSession) {
 	active = { input, session }
 }
 
@@ -63,6 +86,8 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		url.pathname === '/mai/config'
 	const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
 	const isCanvasMutation =
+		(url.pathname === '/api/operations' && method === 'POST') ||
+		(/^\/api\/canvases\/[^/]+\/permissions$/.test(url.pathname) && method === 'PUT') ||
 		(url.pathname === '/api/canvases' && method === 'POST') ||
 		(url.pathname === '/api/active-canvas' && method === 'PUT') ||
 		(/^\/api\/canvases\/[^/]+$/.test(url.pathname) && (method === 'PATCH' || method === 'DELETE'))

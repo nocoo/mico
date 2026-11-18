@@ -768,7 +768,15 @@ const TABLE_IMAGE_ASSETS = `CREATE TABLE IF NOT EXISTS image_assets (
 		PRIMARY KEY (tenant_id, id)
 	)`
 
-const SCHEMA = `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${TABLE_IMAGE_ASSETS};`
+const SCHEMA = `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${TABLE_IMAGE_ASSETS};
+	CREATE TABLE IF NOT EXISTS demo_object_owners (
+		tenant_id TEXT NOT NULL, canvas_id TEXT NOT NULL, object_id TEXT NOT NULL,
+		participant_id TEXT NOT NULL, PRIMARY KEY (tenant_id, canvas_id, object_id)
+	);
+	CREATE TABLE IF NOT EXISTS demo_canvas_editors (
+		tenant_id TEXT NOT NULL, canvas_id TEXT NOT NULL, participant_id TEXT NOT NULL,
+		PRIMARY KEY (tenant_id, canvas_id, participant_id)
+	);`
 
 const STATEMENTS = {
 	findCanvas: 'SELECT * FROM canvases WHERE id = ? AND tenant_id = ?',
@@ -799,6 +807,18 @@ const STATEMENTS = {
 	findImage: 'SELECT content_type, bytes FROM image_assets WHERE id = ? AND tenant_id = ?',
 	legacyBoard: 'SELECT revision, shapes FROM board WHERE id = 1',
 	dropLegacyBoard: 'DROP TABLE board',
+	objectOwners:
+		'SELECT object_id, participant_id FROM demo_object_owners WHERE canvas_id = ? AND tenant_id = ?',
+	insertObjectOwner:
+		'INSERT INTO demo_object_owners (canvas_id, object_id, participant_id, tenant_id) VALUES (?, ?, ?, ?)',
+	canvasEditors:
+		'SELECT participant_id FROM demo_canvas_editors WHERE canvas_id = ? AND tenant_id = ? ORDER BY participant_id',
+	grantCanvasEditor:
+		'INSERT INTO demo_canvas_editors (canvas_id, participant_id, tenant_id) VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+	revokeCanvasEditor:
+		'DELETE FROM demo_canvas_editors WHERE canvas_id = ? AND participant_id = ? AND tenant_id = ?',
+	deleteObjectOwners: 'DELETE FROM demo_object_owners WHERE canvas_id = ? AND tenant_id = ?',
+	deleteCanvasEditors: 'DELETE FROM demo_canvas_editors WHERE canvas_id = ? AND tenant_id = ?',
 } as const
 
 export interface TenantScope {
@@ -806,6 +826,12 @@ export interface TenantScope {
 }
 
 export const LOCAL_TENANT: TenantScope = { tenantId: 'local' }
+export const DEMO_TENANT: TenantScope = { tenantId: 'demo' }
+
+export interface DemoActor {
+	participantId: string
+	presenter: boolean
+}
 
 function validTenantId(value: unknown): string {
 	if (typeof value !== 'string' || value.trim().length === 0 || value.length > 120) {
@@ -932,15 +958,24 @@ export class TenantStore {
 	private readonly sql: Sql
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
 	private bootstrap: Promise<void> | undefined
+	private readonly demoActor?: () => DemoActor
 
 	constructor(
 		exclusive: <T>(operation: () => Promise<T>) => Promise<T>,
 		sql: Sql,
 		tenantId: string,
+		demoActor?: () => DemoActor,
 	) {
 		this.exclusive = exclusive
 		this.sql = sql
 		this.tenantId = tenantId
+		this.demoActor = demoActor
+	}
+
+	forDemoParticipant(actor: () => DemoActor): TenantStore {
+		const scoped = new TenantStore(this.exclusive, this.sql, this.tenantId, actor)
+		scoped.bootstrap = this.bootstrap
+		return scoped
 	}
 
 	private ensure(): Promise<void> {
@@ -1079,6 +1114,10 @@ export class TenantStore {
 		const tenant = await tx.get<{ state_version: number }>(STATEMENTS.findTenant)
 		const stateVersion = tenant?.state_version ?? 0
 		const active = await this.activeCanvasId(tx)
+		const permissions =
+			this.tenantId === DEMO_TENANT.tenantId
+				? { canvasEditorIds: await this.canvasEditors(tx, active) }
+				: {}
 		if (includePreviews) {
 			const rows = await tx.all<CanvasRow>(STATEMENTS.listCanvases)
 			const current = rows.find((row) => row.id === active) ?? rows[0]
@@ -1086,7 +1125,7 @@ export class TenantStore {
 			const canvases: CanvasSummary[] = []
 			for (const row of rows) canvases.push(await this.summaryOf(tx, row))
 			const board = await this.parseRow(tx, current)
-			return { stateVersion, activeCanvasId: current.id, canvases, board }
+			return { stateVersion, activeCanvasId: current.id, canvases, board, ...permissions }
 		}
 		const rows = await tx.all<CanvasMeta>(STATEMENTS.listCanvasMeta)
 		if (!rows.some((row) => row.id === active)) throw new Error('No canvas exists')
@@ -1098,7 +1137,80 @@ export class TenantStore {
 			updatedAt: row.updated_at,
 		}))
 		const board = await this.parseRow(tx, await this.requireRow(tx, active))
-		return { stateVersion, activeCanvasId: active, canvases, board }
+		return { stateVersion, activeCanvasId: active, canvases, board, ...permissions }
+	}
+
+	private async canvasEditors(tx: SqlTransaction, canvasId: string): Promise<string[]> {
+		const rows = await tx.all<{ participant_id: string }>(STATEMENTS.canvasEditors, [canvasId])
+		return rows.map((row) => row.participant_id)
+	}
+
+	setCanvasEditor(
+		canvasId: string,
+		participantId: string,
+		allowed: boolean,
+	): Promise<CanvasSnapshot> {
+		return this.run(async (tx) => {
+			if (!this.demoActor?.().presenter)
+				throw new OperationError(
+					403,
+					'WHITEBOARD_READ_ONLY',
+					'Only the presenter can grant canvas access.',
+				)
+			const id = validCanvasId(canvasId)
+			await this.requireRow(tx, id)
+			if (!/^[0-9a-f]{64}$/.test(participantId) || typeof allowed !== 'boolean')
+				invalid('Expected a participant id and boolean allowed')
+			await tx.run(allowed ? STATEMENTS.grantCanvasEditor : STATEMENTS.revokeCanvasEditor, [
+				id,
+				participantId,
+			])
+			await tx.run(STATEMENTS.bumpStateVersion)
+			return this.readState(tx, true)
+		})
+	}
+
+	private async authorizeObjectChanges(
+		tx: SqlTransaction,
+		canvasId: string,
+		before: Board,
+		next: Board,
+		targets: Set<string>,
+		created: Set<string>,
+	): Promise<void> {
+		if (!this.demoActor) return
+		const actor = this.demoActor()
+		const rows = await tx.all<{ object_id: string; participant_id: string }>(
+			STATEMENTS.objectOwners,
+			[canvasId],
+		)
+		const owners = new Map(rows.map((row) => [row.object_id, row.participant_id]))
+		const canEditAll =
+			actor.presenter || (await this.canvasEditors(tx, canvasId)).includes(actor.participantId)
+		const previous = new Map(before.shapes.map((shape) => [shape.id, shape]))
+		const following = new Map(next.shapes.map((shape) => [shape.id, shape]))
+		for (const shape of before.shapes) {
+			if (JSON.stringify(shape) !== JSON.stringify(following.get(shape.id))) targets.add(shape.id)
+		}
+		for (const id of new Set([...targets, ...created])) {
+			const newObject = created.has(id) && !owners.has(id) && !previous.has(id)
+			if (!canEditAll && !newObject && owners.get(id) !== actor.participantId) {
+				throw new OperationError(
+					403,
+					'OBJECT_EDIT_FORBIDDEN',
+					'You can only edit or delete your own objects. Ask the presenter for edit access to this canvas.',
+				)
+			}
+		}
+		// Keep tombstones (empty owner for legacy objects) across deletion, restore, and ID reuse.
+		for (const id of targets) {
+			if (previous.has(id) && !owners.has(id))
+				await tx.run(STATEMENTS.insertObjectOwner, [canvasId, id, ''])
+		}
+		for (const id of created) {
+			if (!owners.has(id) && !previous.has(id))
+				await tx.run(STATEMENTS.insertObjectOwner, [canvasId, id, actor.participantId])
+		}
 	}
 
 	private async boardOf(tx: SqlTransaction, id: string): Promise<Board> {
@@ -1237,6 +1349,7 @@ export class TenantStore {
 					`A canvas cannot contain more than ${MAX_CANVAS_IMAGES} image shapes`,
 				)
 			}
+			await this.authorizeObjectChanges(tx, canvasId, board, next, new Set(), new Set([shape.id]))
 			next.revision += 1
 			await tx.run(STATEMENTS.insertImage, [
 				imageId,
@@ -1364,6 +1477,8 @@ export class TenantStore {
 		}
 
 		const next = cloneBoard(board)
+		const ownershipTargets = new Set<string>()
+		const createdObjects = new Set<string>()
 		const labelHeightAdjustments = new Map<string, number>()
 		const cascaded = new Set<string>()
 		const assetIds = await this.listImageAssetIds(tx)
@@ -1407,6 +1522,7 @@ export class TenantStore {
 					validateConnectorReferences(operation.shape, next.shapes)
 				}
 				next.shapes.push(operation.shape)
+				createdObjects.add(operation.shape.id)
 				continue
 			}
 
@@ -1418,6 +1534,7 @@ export class TenantStore {
 				if (!Number.isInteger(operation.index) || operation.index < 0)
 					invalid('invalid restore index')
 				validateShapeShape(operation.shape)
+				ownershipTargets.add(operation.shape.id)
 				if (operation.shape.type === 'image') createsImage = true
 				labelHeightAdjustments.delete(operation.shape.id)
 				next.shapes = next.shapes.filter((shape) => shape.id !== operation.shape.id)
@@ -1428,6 +1545,7 @@ export class TenantStore {
 			if (operation.type === 'update') {
 				if (!hasExactKeys(operation, ['type', 'id', 'patch'])) invalid('invalid update operation')
 				if (!validId(operation.id)) invalid('update id must be a non-empty string')
+				ownershipTargets.add(operation.id)
 				if (!isObject(operation.patch)) invalid('update patch must be an object')
 				const target = findShape(next, operation.id)
 				if (!target) {
@@ -1492,6 +1610,7 @@ export class TenantStore {
 					)
 				}
 				if (typeof operation.done !== 'boolean') invalid('set_action_done done must be a boolean')
+				ownershipTargets.add(operation.id)
 				const target = findShape(next, operation.id)
 				if (!target) {
 					throw new OperationError(404, 'NOT_FOUND', `shape not found: ${operation.id}`)
@@ -1519,6 +1638,7 @@ export class TenantStore {
 			if (operation.type === 'delete') {
 				if (!hasExactKeys(operation, ['type', 'id'])) invalid('invalid delete operation')
 				if (!validId(operation.id)) invalid('delete id must be a non-empty string')
+				ownershipTargets.add(operation.id)
 				if (!findShape(next, operation.id)) {
 					if (cascaded.has(operation.id)) continue
 					throw new OperationError(404, 'NOT_FOUND', `shape not found: ${operation.id}`)
@@ -1568,6 +1688,7 @@ export class TenantStore {
 				`A canvas cannot contain more than ${MAX_CANVAS_IMAGES} image shapes`,
 			)
 		}
+		await this.authorizeObjectChanges(tx, canvasId, board, next, ownershipTargets, createdObjects)
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
 		const changes = await tx.run(STATEMENTS.updateBoard, [
@@ -1630,6 +1751,8 @@ export class TenantStore {
 				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
 			}
 			await tx.run(STATEMENTS.deleteCanvas, [id])
+			await tx.run(STATEMENTS.deleteObjectOwners, [id])
+			await tx.run(STATEMENTS.deleteCanvasEditors, [id])
 			const tenant = await tx.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
 			if (tenant?.active_canvas_id === id) {
 				const next = await tx.get<{ id: string }>(STATEMENTS.firstCanvas)

@@ -37,6 +37,17 @@ interface PendingReplay {
 	completed?: boolean
 }
 
+async function responseErrorMessage(response: Response, fallback: string): Promise<string> {
+	try {
+		const body: unknown = await response.json()
+		if (body && typeof body === 'object' && 'message' in body && typeof body.message === 'string')
+			return body.message || fallback
+	} catch {
+		// Non-JSON failures still surface the HTTP status.
+	}
+	return fallback
+}
+
 export function useCanvasSessionViewModel({
 	whiteboard,
 	readOnly = false,
@@ -49,6 +60,7 @@ export function useCanvasSessionViewModel({
 	const [board, setBoard] = useState<Board>({ revision: 0, shapes: [] })
 	const [canvases, setCanvases] = useState<CanvasSummary[]>([])
 	const [activeCanvasId, setActiveCanvasId] = useState('')
+	const [canvasEditorIds, setCanvasEditorIds] = useState<string[]>([])
 	const [apiConnected, setApiConnected] = useState(false)
 	const [wsConnected, setWsConnected] = useState(false)
 	const [roomError, setRoomError] = useState('')
@@ -136,6 +148,7 @@ export function useCanvasSessionViewModel({
 			activeCanvasIdRef.current = snapshot.activeCanvasId
 			requestedCanvasIdRef.current = snapshot.activeCanvasId
 			setActiveCanvasId(snapshot.activeCanvasId)
+			setCanvasEditorIds(snapshot.canvasEditorIds ?? [])
 			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
 			const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
 			for (const id of boardCacheRef.current.keys()) {
@@ -251,7 +264,9 @@ export function useCanvasSessionViewModel({
 							) {
 								continue
 							}
-							announceRef.current(`Operation failed: HTTP ${response.status}`)
+							announceRef.current(
+								await responseErrorMessage(response, `Operation failed: HTTP ${response.status}`),
+							)
 							return false
 						}
 						const next = (await response.json()) as Board
@@ -463,14 +478,9 @@ export function useCanvasSessionViewModel({
 					signal: AbortSignal.timeout(10000),
 				})
 				if (!response.ok) {
-					let message = `Canvas request failed: HTTP ${response.status}`
-					try {
-						const body = (await response.json()) as { message?: string }
-						if (body.message) message = body.message
-					} catch {
-						// Keep the status fallback.
-					}
-					announceRef.current(message)
+					announceRef.current(
+						await responseErrorMessage(response, `Canvas request failed: HTTP ${response.status}`),
+					)
 					return
 				}
 				applySnapshot((await response.json()) as CanvasSnapshot)
@@ -538,6 +548,19 @@ export function useCanvasSessionViewModel({
 		[requestCanvas],
 	)
 
+	const setCanvasEditor = useCallback(
+		(participantId: string, allowed: boolean) => {
+			void requestCanvas(
+				`/api/canvases/${encodeURIComponent(activeCanvasIdRef.current)}/permissions`,
+				{
+					method: 'PUT',
+					body: JSON.stringify({ participantId, allowed }),
+				},
+			)
+		},
+		[requestCanvas],
+	)
+
 	const getCurrentBoard = useCallback(() => boardRef.current, [])
 	const getActiveCanvasId = useCallback(() => activeCanvasIdRef.current, [])
 	const isCanvasTargetCurrent = useCallback(
@@ -576,6 +599,8 @@ export function useCanvasSessionViewModel({
 		switchCanvas,
 		renameCanvas,
 		deleteCanvas,
+		canvasEditorIds,
+		setCanvasEditor,
 		getCurrentBoard,
 		getActiveCanvasId,
 		isCanvasTargetCurrent,

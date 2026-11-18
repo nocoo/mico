@@ -216,6 +216,7 @@ export default function App({
 			username: initialDemoUsername(initialSharer ? 'Host' : 'Guest'),
 			sharer: initialSharer,
 			clientId: demoClientId,
+			persistIdentity: authMode === 'demo',
 		}
 		void joinWhiteboard(joinInput, controller.signal)
 			.then((session) => {
@@ -274,6 +275,7 @@ export default function App({
 				username: nextUsername,
 				sharer: nextSharer,
 				clientId: demoClientId,
+				persistIdentity: authMode === 'demo',
 			}
 			try {
 				const session = await joinWhiteboard(joinInput)
@@ -295,7 +297,7 @@ export default function App({
 				setDemoBusy(false)
 			}
 		},
-		[presenceActive, localModeAvailable, demoClientId],
+		[presenceActive, localModeAvailable, demoClientId, authMode],
 	)
 
 	const selectLocalMode = useCallback(
@@ -521,6 +523,8 @@ export default function App({
 		switchCanvas,
 		renameCanvas,
 		deleteCanvas,
+		canvasEditorIds,
+		setCanvasEditor,
 		getCurrentBoard,
 		getActiveCanvasId,
 		isCanvasTargetCurrent,
@@ -1514,6 +1518,14 @@ export default function App({
 								onRequestPresenter: presence.requestPresenter,
 								onTransferPresenter: presence.transferPresenter,
 								onDeclinePresenter: presence.declinePresenter,
+								canvasAccess:
+									authMode === 'demo'
+										? {
+												name: canvases.find((canvas) => canvas.id === activeCanvasId)?.name ?? '',
+												editorIds: canvasEditorIds,
+												onChange: setCanvasEditor,
+											}
+										: undefined,
 							}
 						: undefined
 				}

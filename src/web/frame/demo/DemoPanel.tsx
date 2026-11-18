@@ -25,6 +25,11 @@ export interface DemoPanelProps {
 	onRequestPresenter?: (requested: boolean) => void
 	onTransferPresenter?: (targetMemberId: string) => void
 	onDeclinePresenter?: (targetMemberId: string) => void
+	canvasAccess?: {
+		name: string
+		editorIds: string[]
+		onChange: (participantId: string, allowed: boolean) => void
+	}
 }
 
 export function DemoPanel({
@@ -46,6 +51,7 @@ export function DemoPanel({
 	onRequestPresenter,
 	onTransferPresenter,
 	onDeclinePresenter,
+	canvasAccess,
 }: DemoPanelProps) {
 	const [draftName, setDraftName] = useState(username)
 	const presenterLabelId = useId()
@@ -58,6 +64,9 @@ export function DemoPanel({
 	const fallback = firstCharacter ? String.fromCodePoint(firstCharacter).toLocaleUpperCase() : null
 	const otherPresenter = Boolean(presenterId && presenterId !== selfId)
 	const selfRequested = Boolean(selfId && requesterIds.includes(selfId))
+	const selfParticipantId = members.find((member) => member.id === selfId)?.participantId
+	const canEditCanvas =
+		sharer || Boolean(selfParticipantId && canvasAccess?.editorIds.includes(selfParticipantId))
 
 	const submitName = (event: React.FormEvent) => {
 		event.preventDefault()
@@ -178,6 +187,10 @@ export function DemoPanel({
 							<ul className="demo-members-list">
 								{members.map((member) => {
 									const isRequester = requesterIds.includes(member.id)
+									const participantId = member.participantId
+									const hasCanvasAccess = Boolean(
+										participantId && canvasAccess?.editorIds.includes(participantId),
+									)
 									return (
 										<li key={member.id} className="demo-member-item">
 											<span
@@ -190,6 +203,20 @@ export function DemoPanel({
 												{member.id === selfId ? ' (you)' : ''}
 											</span>
 											<span className="demo-member-actions">
+												{canvasAccess &&
+													sharer &&
+													participantId &&
+													member.id !== selfId &&
+													!member.sharer && (
+														<button
+															type="button"
+															className="demo-member-btn"
+															aria-label={`${hasCanvasAccess ? 'Revoke edit access from' : 'Grant edit access to'} ${member.username}`}
+															onClick={() => canvasAccess.onChange(participantId, !hasCanvasAccess)}
+														>
+															{hasCanvasAccess ? 'Revoke edit' : 'Grant edit'}
+														</button>
+													)}
 												{member.sharer && <span className="demo-member-badge">Presenter</span>}
 												{!member.sharer && isRequester && (
 													<span className="demo-member-badge demo-member-badge--request">
@@ -229,6 +256,29 @@ export function DemoPanel({
 									)
 								})}
 							</ul>
+						</section>
+					)}
+					{canvasAccess && (
+						<section className="debug-row" aria-label="Canvas edit access">
+							<span className="debug-row-copy">
+								<strong>
+									{canvasAccess.name}: {canEditCanvas ? 'Edit all objects' : 'Own objects only'}
+								</strong>
+								<span>Presenter grants apply only to this canvas, until revoked.</span>
+								{sharer &&
+									canvasAccess.editorIds
+										.filter((id) => !members.some((member) => member.participantId === id))
+										.map((id) => (
+											<button
+												key={id}
+												type="button"
+												className="demo-member-btn"
+												onClick={() => canvasAccess.onChange(id, false)}
+											>
+												Revoke edit: offline participant {id.slice(0, 8)}
+											</button>
+										))}
+							</span>
 						</section>
 					)}
 					{ephemeral && (

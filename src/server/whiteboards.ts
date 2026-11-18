@@ -8,7 +8,7 @@ import {
 	presenceMessageSchema,
 	type WhiteboardSession,
 } from '../shared/whiteboards.ts'
-import { OperationError } from './store.ts'
+import { type DemoActor, OperationError } from './store.ts'
 
 interface Membership extends WhiteboardSession {
 	owner: string
@@ -65,12 +65,18 @@ export class Whiteboards {
 		const parsed = joinWhiteboardSchema.safeParse(body)
 		if (!parsed.success) throw new OperationError(400, 'INVALID_REQUEST', parsed.error.message)
 		const input = parsed.data
+		const participantId = createHash('sha256')
+			.update(input.participantKey ?? input.clientId)
+			.digest('hex')
 		this.prune()
 		const existing = [...this.sessions.values()].find(
 			(member) => member.owner === owner && member.clientId === input.clientId,
 		)
 		if (existing) {
-			if (existing.whiteboardid !== input.whiteboardid)
+			if (
+				existing.whiteboardid !== input.whiteboardid ||
+				existing.member.participantId !== participantId
+			)
 				throw new OperationError(
 					409,
 					'SESSION_CONFLICT',
@@ -119,6 +125,7 @@ export class Whiteboards {
 			whiteboardid: input.whiteboardid,
 			member: {
 				id: memberId,
+				participantId,
 				username: input.username,
 				sharer: input.sharer,
 				color: PRESENCE_COLORS[Number.parseInt(memberId.slice(0, 8), 16) % PRESENCE_COLORS.length],
@@ -166,6 +173,23 @@ export class Whiteboards {
 		)
 			return
 		throw new OperationError(403, 'WHITEBOARD_READ_ONLY', message)
+	}
+
+	demoActor(member: Membership | undefined): DemoActor {
+		if (
+			member?.whiteboardid !== 'demo' ||
+			(member.socket?.readyState !== WebSocket.OPEN && member.reservedUntil <= Date.now())
+		) {
+			throw new OperationError(
+				403,
+				'DEMO_SESSION_REQUIRED',
+				'Join the demo through Workspace profile before editing objects.',
+			)
+		}
+		return {
+			participantId: member.member.participantId ?? member.member.id,
+			presenter: member.member.sharer,
+		}
 	}
 
 	attach(member: Membership, socket: WebSocket) {

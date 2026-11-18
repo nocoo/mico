@@ -113,6 +113,91 @@ test('demo guests see the server hint when canvas creation or switching is rejec
 	}
 })
 
+test('demo object edit rejection shows the ownership hint and restores the object', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [
+		{
+			id: 'foreign',
+			type: 'note',
+			x: 400,
+			y: 300,
+			w: 200,
+			h: 160,
+			color: '#fff8d4',
+			text: 'Someone else owns this',
+		},
+	])
+	await page.route('**/api/runtime', async (route) => {
+		const response = await route.fetch()
+		await route.fulfill({
+			json: { ...(await response.json()), auth: { mode: 'demo' }, aiEnabled: false },
+		})
+	})
+	const hint =
+		'You can only edit or delete your own objects. Ask the presenter for edit access to this canvas.'
+	await page.route('**/api/operations', async (route) => {
+		expect(route.request().headers()['x-mico-whiteboard']).toBeTruthy()
+		await route.fulfill({ status: 403, json: { error: 'OBJECT_EDIT_FORBIDDEN', message: hint } })
+	})
+	await page.goto('/')
+	await expect(page.locator('.whiteboard-cursors')).toHaveCount(1)
+	await page.locator('[data-shape-id="foreign"]').click({ position: { x: 10, y: 10 } })
+	await page.keyboard.press('Delete')
+	await expect(page.getByRole('status')).toHaveText(hint)
+	await expect(page.locator('[data-shape-id="foreign"]')).toHaveCount(1)
+	expect((await board(request)).shapes.map((shape) => shape.id)).toEqual(['foreign'])
+})
+
+test('demo presenter profile sends authenticated canvas grants and revocations', async ({
+	page,
+	browser,
+	request,
+}) => {
+	await resetBoard(request, [])
+	const guest = await browser.newPage()
+	try {
+		for (const target of [page, guest]) {
+			await target.route('**/api/runtime', async (route) => {
+				const response = await route.fetch()
+				await route.fulfill({
+					json: { ...(await response.json()), auth: { mode: 'demo' }, aiEnabled: false },
+				})
+			})
+		}
+		const state = await (await request.get('/api/state')).json()
+		let version = state.stateVersion
+		const changes: { participantId: string; allowed: boolean }[] = []
+		await page.route('**/api/canvases/*/permissions', async (route) => {
+			expect(route.request().method()).toBe('PUT')
+			expect(route.request().headers()['x-mico-whiteboard']).toBeTruthy()
+			const body = route.request().postDataJSON()
+			expect(body.participantId).toMatch(/^[a-f0-9]{64}$/)
+			changes.push(body)
+			await route.fulfill({
+				json: {
+					...state,
+					stateVersion: ++version,
+					canvasEditorIds: body.allowed ? [body.participantId] : [],
+				},
+			})
+		})
+		await page.goto('/?sharer=true')
+		await guest.goto(`${ISOLATED_ORIGIN}/?username=Bob`)
+		await page.getByRole('button', { name: 'Workspace profile' }).click()
+		await page.getByRole('button', { name: 'Grant edit access to Bob', exact: true }).click()
+		await page.getByRole('button', { name: 'Revoke edit access from Bob', exact: true }).click()
+		await expect(
+			page.getByRole('button', { name: 'Grant edit access to Bob', exact: true }),
+		).toBeVisible()
+		expect(changes.map((change) => change.allowed)).toEqual([true, false])
+		expect(changes[0].participantId).toBe(changes[1].participantId)
+	} finally {
+		await guest.close()
+	}
+})
+
 test('demo draw survives delayed initial state without duplicate whiteboard joins', async ({
 	page,
 	request,
@@ -126,6 +211,7 @@ test('demo draw survives delayed initial state without duplicate whiteboard join
 	})
 	let stateHeld = false
 	let joins = 0
+	const joinedTokens: string[] = []
 	await page.route('**/api/runtime', (route) =>
 		route.fulfill({
 			contentType: 'application/json',
@@ -138,22 +224,12 @@ test('demo draw survives delayed initial state without duplicate whiteboard join
 			}),
 		}),
 	)
-	await page.route('**/api/whiteboards/join', (route) => {
+	await page.route('**/api/whiteboards/join', async (route) => {
 		joins += 1
-		return route.fulfill({
-			contentType: 'application/json',
-			body: JSON.stringify({
-				token: `demo-presence-token-${joins}`,
-				whiteboardid: 'demo',
-				member: {
-					id: 'demo-member',
-					username: 'Guest',
-					sharer: false,
-					color: '#6844bd',
-					cursor: null,
-				},
-			}),
-		})
+		const response = await route.fetch()
+		const session = await response.json()
+		joinedTokens.push(session.token)
+		return route.fulfill({ response, json: session })
 	})
 	await page.route('**/api/state', async (route) => {
 		if (!stateHeld) {
@@ -193,7 +269,7 @@ test('demo draw survives delayed initial state without duplicate whiteboard join
 		.toBe(2)
 	await expect.poll(() => tokenedSockets.length).toBeGreaterThan(0)
 	expect(joins).toBeLessThanOrEqual(2)
-	expect(tokenedSockets.at(-1)).toBe(`demo-presence-token-${joins}`)
+	expect(tokenedSockets.at(-1)).toBe(joinedTokens.at(-1))
 })
 
 test('demo mode gates AI to presenter and supports presenter request and transfer', async ({
@@ -244,6 +320,11 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 			}),
 		)
 		const aiTokensSeen: string[] = []
+		await context.route('**/api/operations', async (route) => {
+			const headers = { ...route.request().headers() }
+			delete headers['x-mico-whiteboard']
+			await route.continue({ headers })
+		})
 		await context.route('**/api/ai/chat', async (route) => {
 			const headers = { ...route.request().headers() }
 			const token = headers['x-mico-whiteboard']
