@@ -28,6 +28,7 @@ import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { Marquee } from './canvas/Marquee'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { useCanvasSessionViewModel } from './canvas/useCanvasSessionViewModel'
+import { usePendingCreations } from './canvas/usePendingCreations'
 import { canRebaseConnector, findSnapTarget, getNearestAnchor } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
 import {
@@ -387,10 +388,16 @@ export default function App({
 	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
 	const creationRef = useRef<CanvasShape | null>(null)
-	const [pendingCreations, setPendingCreations] = useState<Map<string, CanvasShape>>(
-		() => new Map(),
-	)
-	const pendingCreationsRef = useRef<Map<string, CanvasShape>>(new Map())
+	const pendingCreations = usePendingCreations()
+	const {
+		entries: pendingCreationEntries,
+		begin: beginPendingCreation,
+		confirm: confirmPendingCreation,
+		has: hasPendingCreation,
+		reconcile: reconcilePendingCreations,
+		reset: resetPendingCreations,
+		size: pendingCreationCount,
+	} = pendingCreations
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
 	>(() => new Map())
@@ -476,19 +483,17 @@ export default function App({
 					initialLoad &&
 					(interactionRef.current?.mode === 'create' ||
 						interactionRef.current?.mode === 'brush' ||
-						pendingCreationsRef.current.size > 0)
+						pendingCreationCount() > 0)
 				if (preserveInitialDraw) {
 					setSelectedIds((current) =>
 						current.filter(
-							(id) =>
-								pendingCreationsRef.current.has(id) || next.shapes.some((shape) => shape.id === id),
+							(id) => hasPendingCreation(id) || next.shapes.some((shape) => shape.id === id),
 						),
 					)
 					return
 				}
-				if (!initialLoad && pendingCreationsRef.current.size > 0) {
-					pendingCreationsRef.current.clear()
-					setPendingCreations(new Map())
+				if (!initialLoad && pendingCreationCount() > 0) {
+					resetPendingCreations()
 				}
 				cancelInteractionRef.current()
 				connectionResetRef.current()
@@ -504,14 +509,20 @@ export default function App({
 				fitShapesInCanvas(next.shapes)
 				return
 			}
+			reconcilePendingCreations(next)
 			setSelectedIds((current) =>
 				current.filter(
-					(id) =>
-						pendingCreationsRef.current.has(id) || next.shapes.some((shape) => shape.id === id),
+					(id) => hasPendingCreation(id) || next.shapes.some((shape) => shape.id === id),
 				),
 			)
 		},
-		[fitShapesInCanvas],
+		[
+			fitShapesInCanvas,
+			hasPendingCreation,
+			reconcilePendingCreations,
+			resetPendingCreations,
+			pendingCreationCount,
+		],
 	)
 
 	const {
@@ -631,23 +642,12 @@ export default function App({
 			return frameId ? { ...shape, frameId } : shape
 		}
 		const created = buildCreated(getCurrentBoard().shapes)
-		pendingCreationsRef.current.set(created.id, created)
-		setPendingCreations((current) => {
-			const next = new Map(current)
-			next.set(created.id, created)
-			return next
-		})
+		beginPendingCreation(created)
 		selectOnly(shape.id)
 		void postOperations([{ type: 'create', shape: created }], undefined, (latest) => [
 			{ type: 'create', shape: buildCreated(latest.shapes) },
 		]).finally(() => {
-			pendingCreationsRef.current.delete(created.id)
-			setPendingCreations((current) => {
-				if (!current.has(created.id)) return current
-				const next = new Map(current)
-				next.delete(created.id)
-				return next
-			})
+			confirmPendingCreation(created.id)
 			if (!suppressEntry) return
 			const ids = suppressedEntryIdsRef.current.get(canvasId)
 			ids?.delete(shape.id)
@@ -1762,7 +1762,8 @@ export default function App({
 						onDoubleClick={onShapeDoubleClick}
 					/>
 				))}
-				{[...pendingCreations.values()]
+				{[...pendingCreationEntries.values()]
+					.map((entry) => entry.shape)
 					.filter((shape) => !shapeById.has(shape.id))
 					.map((shape) => (
 						<ShapeView key={shape.id} shape={shape} {...resolvedShapeViewProps(shape)} />
