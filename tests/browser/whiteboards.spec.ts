@@ -362,7 +362,7 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 			content: '.radix-themes { color-scheme: dark; }',
 		})
 		await presenter.setViewportSize({ width: 1100, height: 800 })
-		await expect(presenter.locator('.meeting-frame')).toHaveCSS('color-scheme', 'dark')
+		await expect(presenter.locator('.live-topbar-frame')).toHaveCSS('color-scheme', 'dark')
 		await expect(presenter.locator('.meeting-presenter-badge')).toBeVisible()
 		await presenter.screenshot({
 			path: testInfo.outputPath('meeting-bar-dark.png'),
