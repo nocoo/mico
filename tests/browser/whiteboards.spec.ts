@@ -103,6 +103,54 @@ test('presence tokens ride only canvas-management requests', async ({ page, requ
 	expect(stateTokens.every((token) => token === '')).toBe(true)
 })
 
+test('meeting-scoped demo presenters keep their whiteboard token on canvas management', async ({
+	page,
+	request,
+}) => {
+	const meetingId = '物理课-token'
+	const scopedQuery = `?meetingid=${encodeURIComponent(meetingId)}`
+	await page.route('/api/runtime', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				auth: { mode: 'demo' },
+				aiEnabled: false,
+				aiSettingsVisible: false,
+				mossEnabled: false,
+				ephemeral: false,
+			}),
+		}),
+	)
+	await page.goto(`/?meetingid=${encodeURIComponent(meetingId)}&sharer=true`)
+	await expect(page.locator('.whiteboard-cursors')).toHaveCount(1)
+
+	let renameToken = ''
+	let renameMeetingId = ''
+	await page.route(/\/api\/canvases\/[^/]+/, async (route) => {
+		if (route.request().method() !== 'PATCH') {
+			await route.continue()
+			return
+		}
+		renameToken = route.request().headers()['x-mico-whiteboard'] ?? ''
+		renameMeetingId = new URL(route.request().url()).searchParams.get('meetingid') ?? ''
+		await route.continue()
+	})
+	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
+	const panel = page.getByRole('region', { name: 'Canvases' })
+	const current = (await (await request.get(`/api/state${scopedQuery}`)).json()) as CanvasSnapshot
+	const activeName = current.canvases.find((canvas) => canvas.id === current.activeCanvasId)?.name
+	if (!activeName) throw new Error('Missing the active canvas name')
+	const mainItem = panel.locator('.canvas-item').filter({ hasText: activeName })
+	await mainItem.hover()
+	await panel.getByRole('button', { name: `Rename ${activeName}`, exact: true }).click()
+	await panel.getByLabel('Canvas name').fill('Scoped token check')
+	await panel.getByLabel('Canvas name').press('Enter')
+
+	await expect.poll(() => renameMeetingId).toBe(meetingId)
+	expect(renameToken.length).toBeGreaterThan(0)
+	await expect(page).toHaveTitle('mico · Scoped token check')
+})
+
 test('demo guests see the server hint when canvas creation or switching is rejected', async ({
 	page,
 	request,

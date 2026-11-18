@@ -83,22 +83,19 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		(/^\/api\/canvases\/[^/]+$/.test(url.pathname) && (method === 'PATCH' || method === 'DELETE'))
 	const includeWhiteboard = Boolean(active && (isAiPath || isCanvasMutation))
 	if (!includeWhiteboard && !meetingId) return fetch(input, init)
-	if (meetingId) {
-		setMeetingScope(url, meetingId)
-		if (input instanceof Request) {
-			const scoped = new Request(url, input)
-			new Headers(init?.headers).forEach((value, key) => {
-				scoped.headers.set(key, value)
-			})
-			if (includeWhiteboard && active) scoped.headers.set('X-Mico-Whiteboard', active.session.token)
-			return fetch(scoped)
-		}
-		return fetch(url, init)
+	if (meetingId) setMeetingScope(url, meetingId)
+	if (input instanceof Request) {
+		const scoped = meetingId ? new Request(url, input) : input
+		if (!includeWhiteboard && !init?.headers) return fetch(scoped)
+		const headers = new Headers(scoped.headers)
+		new Headers(init?.headers).forEach((value, key) => {
+			headers.set(key, value)
+		})
+		if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
+		return fetch(scoped, { ...init, headers })
 	}
-	const headers = new Headers(input instanceof Request ? input.headers : undefined)
-	new Headers(init?.headers).forEach((value, key) => {
-		headers.set(key, value)
-	})
-	if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
-	return fetch(input, { ...init, headers })
+	if (!includeWhiteboard) return fetch(url, init)
+	const headers = new Headers(init?.headers)
+	if (active) headers.set('X-Mico-Whiteboard', active.session.token)
+	return fetch(url, { ...init, headers })
 }
