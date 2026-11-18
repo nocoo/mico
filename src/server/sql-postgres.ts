@@ -1,5 +1,11 @@
 import { Pool, type PoolClient, type QueryResult } from 'pg'
-import { rewritePgPlaceholders, type Sql, type SqlTransaction, type SqlValue } from './sql.ts'
+import {
+	rewritePgPlaceholders,
+	type Sql,
+	type SqlTransaction,
+	type SqlTransactionOptions,
+	type SqlValue,
+} from './sql.ts'
 
 export interface PgClientLike {
 	query(
@@ -45,11 +51,6 @@ function normalizeParam(value: SqlValue): unknown {
 
 function normalizeParams(params: readonly SqlValue[]): unknown[] {
 	return params.map(normalizeParam)
-}
-
-function isSerializationError(error: unknown): boolean {
-	const code = (error as { code?: unknown } | null)?.code
-	return code === '40001' || code === '40P01'
 }
 
 function buildTransactionSql(
@@ -116,33 +117,33 @@ export function createPostgresSql(config: PostgresSqlConfig): Sql {
 		dialect: 'postgres',
 		concurrent: true,
 		...base,
-		async transaction<T>(operation: (tx: SqlTransaction) => Promise<T>): Promise<T> {
+		async transaction<T>(
+			operation: (tx: SqlTransaction) => Promise<T>,
+			options?: SqlTransactionOptions,
+		): Promise<T> {
 			if (closed) throw new Error('SQL driver is closed')
-			const attempts = 3
-			for (let attempt = 1; ; attempt++) {
-				const client = await pool.connect()
-				const tx = buildTransactionSql(client, () => closed)
-				let completed = false
-				try {
-					// One stable snapshot per transaction: under the default READ
-					// COMMITTED, separate statements can mix rows from different commits.
-					await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ')
-					const result = await operation(tx)
-					await client.query('COMMIT')
-					completed = true
-					return result
-				} catch (error) {
-					if (!completed) {
-						await client.query('ROLLBACK').catch(() => undefined)
-					}
-					// A repeatable-read transaction that loses a write race reports a
-					// serialization failure; read-then-validate-then-write operations
-					// retry safely against a fresh snapshot instead of failing.
-					if (attempt < attempts && isSerializationError(error)) continue
-					throw error
-				} finally {
-					client.release()
+			const client = await pool.connect()
+			const tx = buildTransactionSql(client, () => closed)
+			let completed = false
+			try {
+				// One stable snapshot per read when asked: under READ COMMITTED,
+				// separate statements can mix rows from different commits. The
+				// callback is never replayed, so a repeatable-read transaction that
+				// loses a race surfaces its serialization failure to the caller.
+				await client.query(
+					options?.repeatableRead === true ? 'BEGIN ISOLATION LEVEL REPEATABLE READ' : 'BEGIN',
+				)
+				const result = await operation(tx)
+				await client.query('COMMIT')
+				completed = true
+				return result
+			} catch (error) {
+				if (!completed) {
+					await client.query('ROLLBACK').catch(() => undefined)
 				}
+				throw error
+			} finally {
+				client.release()
 			}
 		},
 		close(): Promise<void> {

@@ -14,10 +14,24 @@ export interface SqlTransaction {
 	hasTable(name: string): Promise<boolean>
 }
 
+/**
+ * Transaction isolation request. Drivers without per-transaction isolation
+ * (SQLite, D1) ignore it; PostgreSQL starts `REPEATABLE READ` only when asked
+ * and keeps its default `READ COMMITTED` otherwise. Repeatable-read
+ * transactions must stay replay-safe side-effect wise because a racing
+ * idempotent repair can surface a serialization failure to the caller.
+ */
+export interface SqlTransactionOptions {
+	readonly repeatableRead?: boolean
+}
+
 export interface Sql extends SqlTransaction {
 	readonly dialect: SqlDialect
 	readonly concurrent?: boolean
-	transaction<T>(operation: (tx: SqlTransaction) => Promise<T>): Promise<T>
+	transaction<T>(
+		operation: (tx: SqlTransaction) => Promise<T>,
+		options?: SqlTransactionOptions,
+	): Promise<T>
 	close(): Promise<void>
 }
 

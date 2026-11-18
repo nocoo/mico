@@ -221,8 +221,13 @@ test('a legacy normalizing read cannot erase a concurrently committed shape', as
 			[JSON.stringify(LEGACY_SHAPES), before.activeCanvasId, 'ten-legacy'],
 		)
 
+		// The racy read either settles or surfaces the repeatable-read
+		// serialization failure; it is never replayed and never erases data.
 		rewriteInterleaved = true
-		await store.getBoard()
+		await store.getBoard().then(
+			() => undefined,
+			(error: unknown) => assert.match(String(error), /could not serialize access/),
+		)
 
 		const after = await store.getBoard()
 		assert.deepEqual(

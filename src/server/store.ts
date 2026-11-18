@@ -26,6 +26,7 @@ import {
 	type Sql,
 	type SqlDialect,
 	type SqlTransaction,
+	type SqlTransactionOptions,
 	type SqlValue,
 } from './sql.ts'
 
@@ -902,8 +903,10 @@ export class BoardStore {
 			all: <T>(sql: string, params?: readonly SqlValue[]) =>
 				this.exclusive(() => this.driver.all<T>(sql, params)),
 			run: (sql, params) => this.exclusive(() => this.driver.run(sql, params)),
-			transaction: <T>(operation: (tx: SqlTransaction) => Promise<T>) =>
-				this.exclusive(() => this.driver.transaction(operation)),
+			transaction: <T>(
+				operation: (tx: SqlTransaction) => Promise<T>,
+				options?: SqlTransactionOptions,
+			) => this.exclusive(() => this.driver.transaction(operation, options)),
 			hasTable: (name) => this.exclusive(() => this.driver.hasTable(name)),
 			close: () => this.close(),
 		}
@@ -1010,19 +1013,30 @@ export class TenantStore {
 		return this.bootstrap
 	}
 
-	private run<T>(body: (tx: SqlTransaction) => Promise<T>): Promise<T> {
+	// Reads that assemble several statements into one projection ask the
+	// driver for a single stable snapshot (repeatable read where supported).
+	// Mutations keep the default isolation and rely on their revision/CAS
+	// guards; the driver never replays them.
+	private static readonly SNAPSHOT: SqlTransactionOptions = { repeatableRead: true }
+
+	private run<T>(
+		body: (tx: SqlTransaction) => Promise<T>,
+		options?: SqlTransactionOptions,
+	): Promise<T> {
 		return this.exclusive(async () => {
 			await this.ensure()
-			return this.sql.transaction((tx) =>
-				body({
-					exec: (sql) => tx.exec(sql),
-					get: <U>(sql: string, params: readonly SqlValue[] = []) =>
-						tx.get<U>(sql, [...params, this.tenantId]),
-					all: <U>(sql: string, params: readonly SqlValue[] = []) =>
-						tx.all<U>(sql, [...params, this.tenantId]),
-					run: (sql, params: readonly SqlValue[] = []) => tx.run(sql, [...params, this.tenantId]),
-					hasTable: (name) => tx.hasTable(name),
-				}),
+			return this.sql.transaction(
+				(tx) =>
+					body({
+						exec: (sql) => tx.exec(sql),
+						get: <U>(sql: string, params: readonly SqlValue[] = []) =>
+							tx.get<U>(sql, [...params, this.tenantId]),
+						all: <U>(sql: string, params: readonly SqlValue[] = []) =>
+							tx.all<U>(sql, [...params, this.tenantId]),
+						run: (sql, params: readonly SqlValue[] = []) => tx.run(sql, [...params, this.tenantId]),
+						hasTable: (name) => tx.hasTable(name),
+					}),
+				options,
 			)
 		})
 	}
@@ -1063,7 +1077,7 @@ export class TenantStore {
 	}
 
 	getActiveCanvasId(): Promise<string> {
-		return this.run(async (tx) => this.activeCanvasId(tx))
+		return this.run(async (tx) => this.activeCanvasId(tx), TenantStore.SNAPSHOT)
 	}
 
 	private findRow(tx: SqlTransaction, id: string): Promise<CanvasRow | undefined> {
@@ -1172,7 +1186,10 @@ export class TenantStore {
 	}
 
 	listCanvases(includePreviews = true): Promise<CanvasSummary[]> {
-		return this.run(async (tx) => (await this.readState(tx, includePreviews)).canvases)
+		return this.run(
+			async (tx) => (await this.readState(tx, includePreviews)).canvases,
+			TenantStore.SNAPSHOT,
+		)
 	}
 
 	getCanvasList(includePreviews = true): Promise<{
@@ -1183,23 +1200,28 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const { stateVersion, activeCanvasId, canvases } = await this.readState(tx, includePreviews)
 			return { stateVersion, activeCanvasId, canvases }
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	getCanvasSummary(id: string): Promise<CanvasSummary> {
-		return this.run(async (tx) => this.summaryOf(tx, await this.requireRow(tx, validCanvasId(id))))
+		return this.run(
+			async (tx) => this.summaryOf(tx, await this.requireRow(tx, validCanvasId(id))),
+			TenantStore.SNAPSHOT,
+		)
 	}
 
 	getState(includePreviews = true): Promise<CanvasSnapshot> {
-		return this.run((tx) => this.readState(tx, includePreviews))
+		return this.run((tx) => this.readState(tx, includePreviews), TenantStore.SNAPSHOT)
 	}
 
 	getBoard(canvasId?: string): Promise<Board> {
-		return this.run(async (tx) =>
-			this.boardOf(
-				tx,
-				canvasId === undefined ? await this.activeCanvasId(tx) : validCanvasId(canvasId),
-			),
+		return this.run(
+			async (tx) =>
+				this.boardOf(
+					tx,
+					canvasId === undefined ? await this.activeCanvasId(tx) : validCanvasId(canvasId),
+				),
+			TenantStore.SNAPSHOT,
 		)
 	}
 
@@ -1207,14 +1229,14 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const board = await this.boardOf(tx, validCanvasId(canvasId))
 			return board.shapes.filter((shape) => shape.type === 'image').length
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): Promise<boolean> {
 		return this.run(async (tx) => {
 			const board = await this.boardOf(tx, validCanvasId(canvasId))
 			return !occupiedPlacement(board.shapes, x, y, w, h)
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	placeGeneratedImage(request: GeneratedImagePlacement): Promise<{
@@ -1355,7 +1377,7 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const row = await this.requireRow(tx, validCanvasId(canvasId))
 			return { canvas: await this.summaryOf(tx, row), board: await this.parseRow(tx, row) }
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	private validImageId(value: unknown): string {

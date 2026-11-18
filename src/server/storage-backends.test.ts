@@ -240,14 +240,18 @@ test('PostgreSQL + Azure BlobStore supports full BoardStore lifecycle and tenant
 	await boards.waitUntilReady()
 
 	assert.ok(fakePg.queries.some((q) => q.includes('bytes BYTEA')))
-	assert.ok(fakePg.txCalls.includes('BEGIN ISOLATION LEVEL REPEATABLE READ'))
-	assert.ok(fakePg.txCalls.includes('COMMIT'))
 	assert.ok(!fakePg.queries.some((q) => q.includes('sqlite_master')))
 
 	const alpha = boards.forTenant({ tenantId: 'ten-alpha' })
 	const beta = boards.forTenant({ tenantId: 'ten-beta' })
 	const created = await alpha.createCanvas('Postgres board', true)
 	assert.equal(created.state.canvases.length, 2)
+	assert.equal(typeof (await alpha.getState()).stateVersion, 'number')
+	// Writes keep the default isolation; multi-statement reads ask for one
+	// stable snapshot.
+	assert.ok(fakePg.txCalls.includes('BEGIN'))
+	assert.ok(fakePg.txCalls.includes('BEGIN ISOLATION LEVEL REPEATABLE READ'))
+	assert.ok(fakePg.txCalls.includes('COMMIT'))
 
 	const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
 	const imageId = await alpha.saveImage(png, 'image/png')
@@ -637,5 +641,68 @@ test('generated image placements keep guards and compensation with a blob store'
 	} finally {
 		await boards.close()
 		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('a write transaction is never replayed on a serialization failure', async () => {
+	const fakePg = createFakePgPool()
+	const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+	const puts: string[] = []
+	const blobs = {
+		async put(key: string) {
+			puts.push(key)
+		},
+		async get() {
+			return undefined
+		},
+		async delete() {},
+	}
+	let failNextCommit = false
+	const pool: PgPoolLike = {
+		query: (text, values) => fakePg.pool.query(text, values),
+		async connect() {
+			const client = await fakePg.pool.connect()
+			return {
+				async query(text: string, values?: readonly unknown[]) {
+					if (text.trim() === 'COMMIT' && failNextCommit) {
+						failNextCommit = false
+						throw Object.assign(new Error('could not serialize access due to concurrent update'), {
+							code: '40001',
+						})
+					}
+					return client.query(text, values)
+				},
+				release(err) {
+					client.release(err)
+				},
+			}
+		},
+		end: () => fakePg.pool.end(),
+	}
+	const boards = new BoardStore({ sql: createPostgresSql({ pool }), blobs })
+	const store = boards.forTenant({ tenantId: 'ten-commit-race' })
+	try {
+		const state = await store.getState()
+		const before = await store.getBoard()
+		failNextCommit = true
+		await assert.rejects(
+			store.placeGeneratedImage({
+				canvasId: state.activeCanvasId,
+				shapeId: 'replayed-image',
+				x: 0,
+				y: 0,
+				w: 120,
+				h: 80,
+				bytes: png,
+			}),
+			/serialization|40001|serialize/i,
+		)
+		assert.equal(puts.length, 1)
+		assert.deepEqual(await store.getBoard(), before)
+		assert.deepEqual(await boards.sql.all('SELECT id FROM image_assets'), [])
+		await new Promise((resolve) => setImmediate(resolve))
+		assert.equal(puts.length, 1)
+	} finally {
+		await boards.close()
 	}
 })
