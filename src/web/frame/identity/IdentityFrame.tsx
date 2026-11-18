@@ -161,7 +161,11 @@ export function IdentityFrame({
 										/>
 										<IconButton
 											icon={Trash2}
-											label={messages.identity.deleteCanvas(canvas.name)}
+											label={
+												identity.confirmDeleteId === canvas.id
+													? messages.identity.confirmDeleteCanvas(canvas.name)
+													: messages.identity.deleteCanvas(canvas.name)
+											}
 											compact
 											tooltipSide="bottom"
 											className={identity.confirmDeleteId === canvas.id ? 'danger' : ''}

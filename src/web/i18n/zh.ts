@@ -31,6 +31,7 @@ export const zh: I18nMessages = {
 		openCanvas: (name: string) => `打开画布 ${name}`,
 		renameCanvas: (name: string) => `重命名 ${name}`,
 		deleteCanvas: (name: string) => `删除 ${name}`,
+		confirmDeleteCanvas: (name: string) => `确认删除 ${name}`,
 		closeCanvases: '关闭画布列表',
 		canvasCount: (count: number) => `${count} 个画布`,
 		debug: '调试信息',

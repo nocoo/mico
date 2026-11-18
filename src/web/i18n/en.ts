@@ -29,6 +29,7 @@ export const en = {
 		openCanvas: (name: string) => `Open canvas ${name}`,
 		renameCanvas: (name: string) => `Rename ${name}`,
 		deleteCanvas: (name: string) => `Delete ${name}`,
+		confirmDeleteCanvas: (name: string) => `Confirm delete ${name}`,
 		closeCanvases: 'Close canvases',
 		canvasCount: (count: number) => `${count} ${count === 1 ? 'canvas' : 'canvases'}`,
 		debug: 'Debug',
