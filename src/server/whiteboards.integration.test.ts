@@ -131,6 +131,9 @@ test('demo object ownership follows participant identity and presenter grants re
 			alice,
 		)
 		assert.equal(created.status, 200)
+		assert.deepEqual((await created.json()).objectOwners, {
+			'alice-note': alice.member.participantId,
+		})
 		const edit = { operations: [{ type: 'update', id: 'alice-note', patch: { text: 'Changed' } }] }
 		assert.equal((await request('/api/operations', 'POST', edit)).status, 403)
 		assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 403)
@@ -142,6 +145,7 @@ test('demo object ownership follows participant identity and presenter grants re
 		try {
 			const snapshot = await subscriber.next((event) => event.type === 'snapshot')
 			assert.equal(snapshot.type, 'snapshot')
+			assert.deepEqual(snapshot.board.objectOwners, { 'alice-note': alice.member.participantId })
 			const path = `/api/canvases/${snapshot.activeCanvasId}/permissions`
 			const grant = { participantId: bob.member.participantId, allowed: true }
 			assert.equal((await request(path, 'PUT', grant, bob)).status, 403)

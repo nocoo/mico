@@ -25,7 +25,7 @@ import {
 } from 'lucide-react'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import type { CanvasShape, Operation, Shape, ShapeType } from '../shared/types'
-import { connectionCompatible } from '../shared/types'
+import { connectionCompatible, OBJECT_EDIT_FORBIDDEN_MESSAGE } from '../shared/types'
 import {
 	BRUSH_STYLES,
 	BRUSH_WIDTHS,
@@ -41,6 +41,7 @@ import { SelectField } from './SelectField'
 type Patch = Extract<Operation, { type: 'update' }>['patch']
 
 interface SelectionPanelProps {
+	readOnly?: boolean
 	shape: Shape | null
 	count: number
 	shapes: Shape[]
@@ -160,6 +161,7 @@ function connectorClass(connector: Shape, shapes: Shape[]): ShapeType {
 }
 
 export function SelectionPanel({
+	readOnly = false,
 	shape,
 	count,
 	shapes,
@@ -216,8 +218,13 @@ export function SelectionPanel({
 				</Tooltip>
 			</header>
 
-			<div className="selection-panel-body">
-				{!shape && (
+			<fieldset className="selection-panel-body" disabled={readOnly}>
+				{readOnly && (
+					<Text size="1" color="gray">
+						{OBJECT_EDIT_FORBIDDEN_MESSAGE}
+					</Text>
+				)}
+				{!shape && !readOnly && (
 					<div className="panel-hint">
 						<MousePointer2 size={14} strokeWidth={1.75} aria-hidden="true" />
 						<Text size="1" color="gray">
@@ -505,7 +512,7 @@ export function SelectionPanel({
 						</div>
 					</fieldset>
 				)}
-			</div>
+			</fieldset>
 		</Card>
 	)
 }

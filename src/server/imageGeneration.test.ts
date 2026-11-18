@@ -139,6 +139,7 @@ test('generated images retain the initiating demo owner and recheck permissions 
 		)
 		resolveGenerator?.(PNG)
 		assert.equal((await waitForStatus(service, started.jobId)).status, 'completed')
+		assert.equal((await store.getBoard()).objectOwners?.[started.shapeId], 'a'.repeat(64))
 		presenter = false
 		await owner.apply({ operations: [{ type: 'update', id: started.shapeId, patch: { x: 600 } }] })
 		await assert.rejects(

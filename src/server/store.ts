@@ -17,7 +17,11 @@ import type {
 	Shape,
 	ShapeType,
 } from '../shared/types.ts'
-import { ANCHOR_COUNTS, connectionCompatible } from '../shared/types.ts'
+import {
+	ANCHOR_COUNTS,
+	connectionCompatible,
+	OBJECT_EDIT_FORBIDDEN_MESSAGE,
+} from '../shared/types.ts'
 import { canvasPreview } from './preview.ts'
 import {
 	createMutex,
@@ -374,6 +378,7 @@ function migrateLegacyShapes(shapes: unknown): { shapes: unknown; changed: boole
 function cloneBoard(board: Board): Board {
 	return {
 		revision: board.revision,
+		...(board.objectOwners ? { objectOwners: { ...board.objectOwners } } : {}),
 		shapes: board.shapes.map((shape) => ({
 			...shape,
 			...(shape.type === 'actions' ? { items: shape.items?.map((item) => ({ ...item })) } : {}),
@@ -1091,7 +1096,26 @@ export class TenantStore {
 		) {
 			await tx.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
 		}
+		await this.includeObjectOwners(tx, row.id, board)
 		return board
+	}
+
+	private async includeObjectOwners(
+		tx: SqlTransaction,
+		canvasId: string,
+		board: Board,
+	): Promise<void> {
+		if (this.tenantId !== DEMO_TENANT.tenantId) return
+		const ids = new Set(board.shapes.map((shape) => shape.id))
+		const owners = await tx.all<{ object_id: string; participant_id: string }>(
+			STATEMENTS.objectOwners,
+			[canvasId],
+		)
+		board.objectOwners = Object.fromEntries(
+			owners
+				.filter((owner) => ids.has(owner.object_id))
+				.map((owner) => [owner.object_id, owner.participant_id]),
+		)
 	}
 
 	private async summaryOf(
@@ -1195,11 +1219,7 @@ export class TenantStore {
 		for (const id of new Set([...targets, ...created])) {
 			const newObject = created.has(id) && !owners.has(id) && !previous.has(id)
 			if (!canEditAll && !newObject && owners.get(id) !== actor.participantId) {
-				throw new OperationError(
-					403,
-					'OBJECT_EDIT_FORBIDDEN',
-					'You can only edit or delete your own objects. Ask the presenter for edit access to this canvas.',
-				)
+				throw new OperationError(403, 'OBJECT_EDIT_FORBIDDEN', OBJECT_EDIT_FORBIDDEN_MESSAGE)
 			}
 		}
 		// Keep tombstones (empty owner for legacy objects) across deletion, restore, and ID reuse.
@@ -1350,6 +1370,7 @@ export class TenantStore {
 				)
 			}
 			await this.authorizeObjectChanges(tx, canvasId, board, next, new Set(), new Set([shape.id]))
+			await this.includeObjectOwners(tx, canvasId, next)
 			next.revision += 1
 			await tx.run(STATEMENTS.insertImage, [
 				imageId,
@@ -1689,6 +1710,7 @@ export class TenantStore {
 			)
 		}
 		await this.authorizeObjectChanges(tx, canvasId, board, next, ownershipTargets, createdObjects)
+		await this.includeObjectOwners(tx, canvasId, next)
 		if (request.operations.length > 0) next.revision += 1
 		const updatedAt = new Date().toISOString()
 		const changes = await tx.run(STATEMENTS.updateBoard, [

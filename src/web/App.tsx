@@ -2,6 +2,7 @@ import type React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AuthMode } from '../shared/runtime'
 import type { Board, BrushStyle, CanvasShape, Connector, Point, Shape } from '../shared/types'
+import { OBJECT_EDIT_FORBIDDEN_MESSAGE } from '../shared/types'
 import type { WhiteboardSession } from '../shared/whiteboards'
 import {
 	clearWhiteboard,
@@ -512,7 +513,7 @@ export default function App({
 		apiConnected,
 		wsConnected,
 		sendPresence,
-		postOperations,
+		postOperations: submitOperations,
 		undo,
 		redo,
 		canUndo,
@@ -538,6 +539,44 @@ export default function App({
 		onSocketReady: presence.queueView,
 	})
 	presence.send.current = sendPresence
+	const participantId = activeDemoSession?.member.participantId
+	const canEditObject = useCallback(
+		(id: string) =>
+			authMode !== 'demo' ||
+			Boolean(
+				participantId &&
+					(isDemoPresenter ||
+						canvasEditorIds.includes(participantId) ||
+						board.objectOwners?.[id] === participantId),
+			),
+		[authMode, participantId, isDemoPresenter, canvasEditorIds, board.objectOwners],
+	)
+	const ensureEditable = useCallback(
+		(ids: string[]) => {
+			if (ids.every(canEditObject)) return true
+			announce(OBJECT_EDIT_FORBIDDEN_MESSAGE)
+			return false
+		},
+		[canEditObject, announce],
+	)
+	const postOperations = useCallback<typeof submitOperations>(
+		(operations, ...args) => {
+			const created = new Set(
+				operations.flatMap((operation) =>
+					operation.type === 'create' ? [operation.shape.id] : [],
+				),
+			)
+			const targets = operations.flatMap((operation) =>
+				operation.type === 'create'
+					? []
+					: [operation.type === 'restore' ? operation.shape.id : operation.id],
+			)
+			if (!ensureEditable(targets.filter((id) => !created.has(id)))) return Promise.resolve(false)
+			return submitOperations(operations, ...args)
+		},
+		[ensureEditable, submitOperations],
+	)
+	const selectionEditable = selectedIds.length > 0 && selectedIds.every(canEditObject)
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null
 	const emptyState = useEmptyStateViewModel({
 		canvasId: activeCanvasId,
@@ -743,6 +782,22 @@ export default function App({
 			svgRef.current.releasePointerCapture(interaction.pointerId)
 		}
 	}, [clearDragPreview, clearConnectionHover, connection.cancel])
+
+	useEffect(() => {
+		const interaction = interactionRef.current
+		const moving = interaction?.group ?? (interaction?.shape ? [interaction.shape] : [])
+		if (
+			(interaction?.mode === 'shape' && moving.some((shape) => !canEditObject(shape.id))) ||
+			(connection.draft?.original && !canEditObject(connection.draft.original.id))
+		) {
+			cancelInteraction()
+			announce(OBJECT_EDIT_FORBIDDEN_MESSAGE)
+		}
+		if (editing && !canEditObject(editing.id)) {
+			setEditing(null)
+			announce(OBJECT_EDIT_FORBIDDEN_MESSAGE)
+		}
+	}, [canEditObject, cancelInteraction, connection.draft, editing, announce])
 
 	useEffect(() => {
 		cancelInteractionRef.current = cancelInteraction
@@ -1209,20 +1264,24 @@ export default function App({
 			: false
 	}
 
-	const beginInlineEdit = useCallback((shape: CanvasShape) => {
-		if (
-			shape.type !== 'frame' &&
-			shape.type !== 'html' &&
-			shape.type !== 'text' &&
-			shape.type !== 'note' &&
-			shape.type !== 'rectangle' &&
-			shape.type !== 'ellipse'
-		)
-			return
-		const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
-		const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
-		setEditing({ id: shape.id, field, value })
-	}, [])
+	const beginInlineEdit = useCallback(
+		(shape: CanvasShape) => {
+			if (!ensureEditable([shape.id])) return
+			if (
+				shape.type !== 'frame' &&
+				shape.type !== 'html' &&
+				shape.type !== 'text' &&
+				shape.type !== 'note' &&
+				shape.type !== 'rectangle' &&
+				shape.type !== 'ellipse'
+			)
+				return
+			const field = shape.type === 'frame' || shape.type === 'html' ? 'title' : 'text'
+			const value = field === 'title' ? (shape.title ?? '') : (shape.text ?? '')
+			setEditing({ id: shape.id, field, value })
+		},
+		[ensureEditable],
+	)
 
 	const onShapeDoubleClick = useCallback(
 		(event: React.MouseEvent<SVGGElement>, shape: CanvasShape) => {
@@ -1258,7 +1317,6 @@ export default function App({
 
 		const world = clientToWorld(event.clientX, event.clientY)
 		if (isCanvasShape(shape)) {
-			svgRef.current?.setPointerCapture(event.pointerId)
 			const group =
 				shape.type === 'frame'
 					? [
@@ -1269,6 +1327,8 @@ export default function App({
 							),
 						]
 					: [shape]
+			if (!ensureEditable(group.map((member) => member.id))) return
+			svgRef.current?.setPointerCapture(event.pointerId)
 			interactionRef.current = {
 				mode: 'shape',
 				pointerId: event.pointerId,
@@ -1413,6 +1473,7 @@ export default function App({
 				: undefined
 		return {
 			...shapeViewProps,
+			actionsDisabled: !apiConnected || !canEditObject(shape.id),
 			selected,
 			fromShape: from && isCanvasShape(from) ? from : undefined,
 			toShape: to && isCanvasShape(to) ? to : undefined,
@@ -1557,8 +1618,8 @@ export default function App({
 				state={{
 					tool,
 					zoom: viewport.zoom,
-					canDelete: selectedIds.length > 0,
-					canFrame: selectedIds.length > 0,
+					canDelete: selectionEditable,
+					canFrame: selectionEditable,
 					canUndo,
 					canRedo,
 					brushStyle,
@@ -1634,6 +1695,8 @@ export default function App({
 
 			{tool === 'select' && (
 				<SelectionPanel
+					key={selectionEditable ? 'editable' : 'read-only'}
+					readOnly={!selectionEditable}
 					shape={selected}
 					count={selectedIds.length}
 					shapes={board.shapes}
@@ -1854,13 +1917,16 @@ export default function App({
 					preview={connection.preview}
 					target={connection.draft ? connection.targetShape : hoverShape}
 					hoverAnchorIndex={hoverShape ? hoverSource?.anchorIndex : undefined}
-					selected={selected && isConnector(selected) ? selected : null}
+					selected={
+						selected && isConnector(selected) && canEditObject(selected.id) ? selected : null
+					}
 					shapes={visibleShapes}
 					zoom={viewport.zoom}
 					controlSize={CONTROL_SIZE}
 					onReconnect={(event, connector, endpoint) => {
 						if (interactionRef.current || spacePressed || tool === 'hand' || event.button !== 0)
 							return
+						if (!ensureEditable([connector.id])) return
 						captureConnection(event, () => {
 							const started = connection.reconnect(
 								connector,

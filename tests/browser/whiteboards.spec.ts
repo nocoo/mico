@@ -113,7 +113,7 @@ test('demo guests see the server hint when canvas creation or switching is rejec
 	}
 })
 
-test('demo object edit rejection shows the ownership hint and restores the object', async ({
+test('demo guests cannot drag, open editors, or change controls for protected objects', async ({
 	page,
 	request,
 }) => {
@@ -137,16 +137,31 @@ test('demo object edit rejection shows the ownership hint and restores the objec
 	})
 	const hint =
 		'You can only edit or delete your own objects. Ask the presenter for edit access to this canvas.'
-	await page.route('**/api/operations', async (route) => {
-		expect(route.request().headers()['x-mico-whiteboard']).toBeTruthy()
-		await route.fulfill({ status: 403, json: { error: 'OBJECT_EDIT_FORBIDDEN', message: hint } })
+	let writes = 0
+	page.on('request', (request) => {
+		if (request.url().endsWith('/api/operations') && request.method() === 'POST') writes += 1
 	})
 	await page.goto('/')
 	await expect(page.locator('.whiteboard-cursors')).toHaveCount(1)
-	await page.locator('[data-shape-id="foreign"]').click({ position: { x: 10, y: 10 } })
+	const note = page.locator('[data-shape-id="foreign"]')
+	await note.click({ position: { x: 10, y: 10 } })
+	const before = await note.boundingBox()
+	expect(before).not.toBeNull()
+	if (!before) throw new Error('Protected note is not visible')
+	await page.mouse.move(before.x + 10, before.y + 10)
+	await page.mouse.down()
+	await page.mouse.move(before.x + 110, before.y + 80, { steps: 5 })
+	expect(await note.boundingBox()).toEqual(before)
+	await page.mouse.up()
 	await page.keyboard.press('Delete')
 	await expect(page.getByRole('status')).toHaveText(hint)
-	await expect(page.locator('[data-shape-id="foreign"]')).toHaveCount(1)
+	await expect(page.getByRole('button', { name: 'Delete selected' })).toBeDisabled()
+	await expect(page.getByRole('textbox', { name: 'Text', exact: true })).toBeDisabled()
+	await expect(page.getByRole('button', { name: 'Set color Green' })).toBeDisabled()
+	await note.dblclick({ position: { x: 10, y: 10 } })
+	await expect(page.getByRole('textbox', { name: '', exact: true })).toHaveCount(0)
+	expect(writes).toBe(0)
+	await expect(note).toHaveCount(1)
 	expect((await board(request)).shapes.map((shape) => shape.id)).toEqual(['foreign'])
 })
 
