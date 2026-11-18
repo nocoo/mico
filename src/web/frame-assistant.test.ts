@@ -6,7 +6,6 @@ import {
 	buildAssistantRequestBody,
 	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
-	initialAssistantTab,
 	nextAssistantTab,
 	resolveAssistantTab,
 	shouldCloseAssistantEscape,
@@ -55,8 +54,6 @@ test('summary requires successful HTML and action card results', () => {
 
 test('assistant tab keyboard protocol opens chat by default and reaches endpoints', () => {
 	assert.equal(DEFAULT_ASSISTANT_TAB, 'chat')
-	assert.equal(initialAssistantTab(''), 'chat')
-	assert.equal(initialAssistantTab('Draw a diagram'), 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowLeft', true), 'settings')
 	assert.equal(nextAssistantTab('settings', 'ArrowRight', true), 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowRight', true), 'audio')

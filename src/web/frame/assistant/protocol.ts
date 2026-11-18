@@ -48,10 +48,6 @@ export function resolveAssistantTab(tab: AssistantTab, settingsVisible: boolean)
 	return tab === 'settings' && !settingsVisible ? 'chat' : tab
 }
 
-export function initialAssistantTab(initialPrompt: string): AssistantTab {
-	return initialPrompt.trim() ? 'chat' : DEFAULT_ASSISTANT_TAB
-}
-
 export function deriveAssistantActivity({
 	error,
 	busy,

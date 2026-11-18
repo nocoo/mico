@@ -12,8 +12,8 @@ import {
 	type AssistantTab,
 	assistantTabs,
 	buildAssistantRequestBody,
+	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
-	initialAssistantTab,
 	nextAssistantTab,
 	resolveAssistantTab,
 	shouldCloseAssistantEscape,
@@ -32,9 +32,7 @@ export type LiveProvider = 'moss' | 'mai'
 
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
-	const [selectedTab, setSelectedTab] = useState<AssistantTab>(() =>
-		initialAssistantTab(state.initialPrompt),
-	)
+	const [selectedTab, setSelectedTab] = useState<AssistantTab>(DEFAULT_ASSISTANT_TAB)
 	const tabs = assistantTabs(state.aiSettingsVisible)
 	const tab = resolveAssistantTab(selectedTab, state.aiSettingsVisible)
 	const setTab = useCallback(
