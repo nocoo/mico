@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
+	board,
 	closeAssistant,
 	ISOLATED_ORIGIN,
 	resetBoard,
@@ -281,7 +282,7 @@ test('custom black and white strokes remain distinct', async ({ page, request })
 	expect(black).not.toBe(white)
 })
 
-test('drawn shapes rebase through concurrent 409 conflicts and start over existing shapes', async ({
+test('drawn shapes commit alongside concurrent edits without conflicts', async ({
 	page,
 	request,
 }) => {
@@ -333,11 +334,10 @@ test('drawn shapes rebase through concurrent 409 conflicts and start over existi
 	await page.mouse.move(end.x, end.y, { steps: 6 })
 	await page.mouse.up()
 
-	await expect.poll(() => operationCalls).toBe(2)
+	expect(operationCalls).toBe(1)
 	await expect
 		.poll(async () => {
-			const res = await request.get('/api/board')
-			const data = (await res.json()) as { shapes: { id: string; type: string; x?: number }[] }
+			const data = await board(request)
 			return data.shapes.filter((shape) => shape.type === 'rectangle').length
 		})
 		.toBe(2)
@@ -365,4 +365,234 @@ test('fast brush stroke captures pointerup endpoint via ref', async ({ page, req
 			return data.shapes.filter((shape) => shape.type === 'path').length
 		})
 		.toBe(1)
+})
+
+test('a lost create acknowledgement keeps the drawing and enables undo', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [])
+	let releaseBoards: (() => void) | undefined
+	const boardsHeld = new Promise<void>((resolve) => {
+		releaseBoards = resolve
+	})
+	await page.routeWebSocket(/\/api\/events/, async (socket) => {
+		const server = socket.connectToServer()
+		const held: string[] = []
+		socket.onMessage((message) => server.send(message))
+		server.onMessage((raw) => {
+			const message = typeof raw === 'string' ? raw : raw.toString()
+			const event = JSON.parse(message) as { type?: string }
+			if (event.type === 'board') {
+				held.push(message)
+				return
+			}
+			socket.send(message)
+		})
+		await boardsHeld
+		for (const message of held) socket.send(message)
+	})
+
+	let createPosts = 0
+	await page.route('**/api/operations', async (route) => {
+		if (route.request().method() !== 'POST') {
+			await route.continue()
+			return
+		}
+		const payload = route.request().postDataJSON() as { operations?: { type?: string }[] }
+		if (payload.operations?.[0]?.type !== 'create') {
+			await route.continue()
+			return
+		}
+		createPosts += 1
+		await route.fetch()
+		await route.abort('failed')
+	})
+
+	await openCanvas(page)
+	await resetView(page)
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	const start = await worldPoint(page, 300, 260)
+	const end = await worldPoint(page, 480, 380)
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y, { steps: 6 })
+	await page.mouse.up()
+
+	await expect.poll(() => createPosts).toBe(1)
+	await expect(page.locator('[data-shape-id]')).toHaveCount(1)
+	await expect(page.locator('.notice')).toHaveCount(0)
+	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
+	await expect
+		.poll(
+			async () =>
+				(await board(request)).shapes.filter((shape) => shape.type === 'rectangle').length,
+		)
+		.toBe(1)
+
+	releaseBoards?.()
+	await expect(page.locator('[data-shape-id]')).toHaveCount(1)
+	await page.reload()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await expect(page.locator('[data-shape-id]')).toHaveCount(1)
+	await expect
+		.poll(
+			async () =>
+				(await board(request)).shapes.filter((shape) => shape.type === 'rectangle').length,
+		)
+		.toBe(1)
+})
+
+test('independent draws commit once beside concurrent peer edits', async ({
+	page,
+	context,
+	request,
+}) => {
+	await resetBoard(request, [])
+	await context.route('/api/runtime', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				auth: { mode: 'demo' },
+				aiEnabled: false,
+				aiSettingsVisible: false,
+				mossEnabled: false,
+				ephemeral: false,
+			}),
+		}),
+	)
+	const peer = await context.newPage()
+	await peer.goto('/?username=Editor')
+	await expect(peer.locator('.whiteboard-cursors')).toHaveCount(1)
+
+	let authorCreates = 0
+	let holdNext = false
+	let held = false
+	let releaseCreate: (() => void) | undefined
+	const createGate = new Promise<void>((resolve) => {
+		releaseCreate = resolve
+	})
+	await page.route('**/api/operations', async (route) => {
+		if (route.request().method() !== 'POST') {
+			await route.continue()
+			return
+		}
+		const payload = route.request().postDataJSON() as { operations?: { type?: string }[] }
+		if (payload.operations?.[0]?.type === 'create') {
+			authorCreates += 1
+			if (holdNext) {
+				held = true
+				await createGate
+			}
+		}
+		await route.continue()
+	})
+
+	await page.goto('/?sharer=true&username=Host')
+	await expect(page.locator('.whiteboard-cursors')).toHaveCount(1)
+	await resetView(page)
+
+	await peer.mouse.move(600, 400)
+	await peer.mouse.move(720, 460)
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	const controlStart = await worldPoint(page, 260, 300)
+	const controlEnd = await worldPoint(page, 380, 380)
+	await page.mouse.move(controlStart.x, controlStart.y)
+	await page.mouse.down()
+	await page.mouse.move(controlEnd.x, controlEnd.y, { steps: 4 })
+	await page.mouse.up()
+	await expect.poll(() => authorCreates).toBe(1)
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(1)
+	await expect(peer.locator('[data-shape-id]:not(.whiteboard-remote-selection)')).toHaveCount(1)
+
+	holdNext = true
+	const start = await worldPoint(page, 420, 300)
+	const end = await worldPoint(page, 560, 400)
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y, { steps: 4 })
+	await page.mouse.up()
+	await expect.poll(() => held).toBe(true)
+	for (let index = 0; index < 4; index++) {
+		const committed = await request.post('/api/operations', {
+			data: {
+				operations: [
+					{
+						type: 'create',
+						shape: {
+							id: `peer-note-${index}`,
+							type: 'note',
+							x: 700,
+							y: 120 + index * 180,
+							w: 140,
+							h: 140,
+							color: '#fff8d4',
+							text: `Peer ${index}`,
+						},
+					},
+				],
+			},
+		})
+		expect(committed.ok()).toBe(true)
+	}
+	releaseCreate?.()
+
+	await expect.poll(() => authorCreates).toBe(2)
+	await expect
+		.poll(
+			async () =>
+				(await board(request)).shapes.filter((shape) => shape.type === 'rectangle').length,
+		)
+		.toBe(2)
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(6)
+	await expect(page.locator('[data-shape-id]')).toHaveCount(6)
+	await expect(peer.locator('[data-shape-id]:not(.whiteboard-remote-selection)')).toHaveCount(6)
+	await expect(page.locator('.notice')).toHaveCount(0)
+	await page.reload()
+	await expect(page.locator('[data-shape-id]')).toHaveCount(6)
+	await peer.close()
+})
+
+test('a rejected create stays visible with a reason and never reaches the board', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [])
+	await openCanvas(page)
+	await resetView(page)
+	await page.route('**/api/operations', async (route) => {
+		if (route.request().method() !== 'POST') {
+			await route.continue()
+			return
+		}
+		const payload = route.request().postDataJSON() as { operations?: { type?: string }[] }
+		if (payload.operations?.[0]?.type === 'create') {
+			await route.fulfill({
+				status: 400,
+				contentType: 'application/json',
+				body: JSON.stringify({
+					error: 'DUPLICATE_ID',
+					message: 'shape id already exists: rejected-draw',
+				}),
+			})
+			return
+		}
+		await route.continue()
+	})
+
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	const start = await worldPoint(page, 280, 240)
+	const end = await worldPoint(page, 440, 360)
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y, { steps: 4 })
+	await page.mouse.up()
+
+	await expect(page.locator('.notice')).toContainText('Not saved: shape id already exists')
+	await expect(page.locator('[data-shape-id]')).toHaveCount(1)
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(0)
+
+	await page.reload()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await expect(page.locator('[data-shape-id]')).toHaveCount(0)
 })

@@ -63,3 +63,14 @@ test('clearPendingCreations empties every entry', () => {
 	assert.equal(clearPendingCreations().size, 0)
 	assert.notEqual(clearPendingCreations(), entries)
 })
+
+test('an uncertain creation stays with its author until confirmed or cleared', () => {
+	let entries = beginPendingCreation(new Map(), shape('draft'))
+	entries = markUncertain(entries, 'draft')
+	const ignored = reconcilePendingCreations(entries, board(shape('other')))
+	assert.deepEqual(ignored.get('draft'), { shape: shape('draft'), state: 'uncertain' })
+	const confirmed = reconcilePendingCreations(entries, board(shape('draft')))
+	assert.equal(confirmed.has('draft'), false)
+	const cleared = markConfirmed(clearPendingCreations(), 'draft')
+	assert.equal(cleared.size, 0)
+})
