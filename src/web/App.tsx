@@ -393,6 +393,7 @@ export default function App({
 		entries: pendingCreationEntries,
 		begin: beginPendingCreation,
 		confirm: confirmPendingCreation,
+		uncertain: markPendingCreationUncertain,
 		has: hasPendingCreation,
 		reconcile: reconcilePendingCreations,
 		reset: resetPendingCreations,
@@ -533,6 +534,7 @@ export default function App({
 		wsConnected,
 		sendPresence,
 		postOperations,
+		postOperationsDetailed,
 		undo,
 		redo,
 		canUndo,
@@ -638,15 +640,28 @@ export default function App({
 		const created = buildCreated(getCurrentBoard().shapes)
 		beginPendingCreation(created)
 		selectOnly(shape.id)
-		void postOperations([{ type: 'create', shape: created }], undefined, (latest) => [
-			{ type: 'create', shape: buildCreated(latest.shapes) },
-		]).finally(() => {
-			confirmPendingCreation(created.id)
-			if (!suppressEntry) return
-			const ids = suppressedEntryIdsRef.current.get(canvasId)
-			ids?.delete(shape.id)
-			if (ids?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
+		void postOperationsDetailed([{ type: 'create', shape: created }], {
+			verifyShapeId: created.id,
+			canRebase: (latest) => [{ type: 'create', shape: buildCreated(latest.shapes) }],
 		})
+			.then((outcome) => {
+				if (outcome.status === 'applied') {
+					confirmPendingCreation(created.id)
+					return
+				}
+				markPendingCreationUncertain(created.id)
+				announce(
+					outcome.status === 'rejected'
+						? `Not saved: ${outcome.message ?? 'the canvas rejected the shape'}`
+						: `Not saved: ${outcome.message ?? 'connection lost'}. Keeping your shape.`,
+				)
+			})
+			.finally(() => {
+				if (!suppressEntry) return
+				const ids = suppressedEntryIdsRef.current.get(canvasId)
+				ids?.delete(shape.id)
+				if (ids?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
+			})
 	}
 
 	const uploadImage = async (file: File) => {
