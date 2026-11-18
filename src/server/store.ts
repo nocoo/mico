@@ -795,8 +795,6 @@ const STATEMENTS = {
 	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ? AND tenant_id = ?',
 	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ? AND tenant_id = ?',
 	deleteCanvas: 'DELETE FROM canvases WHERE id = ? AND tenant_id = ?',
-	ensureDefaultCanvas:
-		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, 0, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
 	findTenant: 'SELECT active_canvas_id, state_version FROM tenants WHERE id = ?',
 	createTenant:
 		'INSERT INTO tenants (id, active_canvas_id, state_version, created_at) VALUES (?, NULL, 0, ?) ON CONFLICT(id) DO NOTHING',
