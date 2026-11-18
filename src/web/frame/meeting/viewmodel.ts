@@ -6,6 +6,7 @@ export interface MeetingParticipant {
 	initial: string
 	color: 'grape' | 'sky' | 'peach' | 'mint' | 'lemon'
 	presenter?: boolean
+	editor?: boolean
 	self?: boolean
 }
 
@@ -13,6 +14,7 @@ export interface MeetingPresence {
 	members: readonly WhiteboardMember[]
 	presenterId: string | null
 	selfId: string | null
+	canvasEditorIds?: readonly string[]
 }
 
 export interface MeetingViewModel {
@@ -38,6 +40,11 @@ export function meetingPreview(presence?: MeetingPresence): MeetingViewModel {
 					initial: [...member.username.trim()][0]?.toLocaleUpperCase() ?? '',
 					color: colors[index % colors.length],
 					presenter: member.id === presence.presenterId,
+					editor:
+						member.id !== presence.presenterId &&
+						Boolean(
+							member.participantId && presence.canvasEditorIds?.includes(member.participantId),
+						),
 					self: member.id === presence.selfId,
 				}))
 			: [

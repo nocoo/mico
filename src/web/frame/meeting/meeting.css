@@ -116,7 +116,8 @@
 	--avatar-c: 0.12;
 }
 
-.meeting-avatar[data-presenter="true"] {
+.meeting-avatar[data-presenter="true"],
+.meeting-avatar[data-editor="true"] {
 	position: relative;
 	z-index: 1;
 	margin-inline: 1px 7px;
@@ -124,7 +125,8 @@
 	outline-offset: 2px;
 }
 
-.meeting-presenter-badge {
+.meeting-presenter-badge,
+.meeting-editor-badge {
 	position: absolute;
 	right: -6px;
 	bottom: -6px;
@@ -138,7 +140,8 @@
 	background: var(--ui-accent);
 }
 
-.meeting-presenter-badge svg {
+.meeting-presenter-badge svg,
+.meeting-editor-badge svg {
 	width: 11px;
 	height: 11px;
 	stroke-width: 2;

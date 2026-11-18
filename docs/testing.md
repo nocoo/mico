@@ -95,6 +95,8 @@ The browser keeps a private random `mico.demo.participantKey` in local storage a
 
 The meeting bar uses live demo participants (including local Presenter/Guest mode), with a ring and presentation badge on the active presenter. Tooltips and accessible avatar labels identify the presenter and yourself. The highlight follows presenter transfers; outside presence mode, the bar retains its disconnected sample preview. `tests/browser/whiteboards.spec.ts` verifies the highlight on both clients before and after a handoff; meeting controls remain disabled.
 
+Participants granted edit access to the active demo canvas use the same accent ring with a pencil badge and a **canvas editor** tooltip/accessibility label. The presenter retains the presentation badge. Editor highlights follow stable participant identity (not display names), update on grant/revoke and canvas switches, and do not appear merely because someone can edit their own objects.
+
 Visual examples: [before](images/presenter-avatar-before.png), [after](images/presenter-avatar-after.png), and [compact dark mode](images/presenter-avatar-dark.png).
 
 `POST /api/operations` accepts `{ operations, expectedRevision?, canvasId? }`. It defaults to the active canvas and can target any canvas without switching. A batch is validated and persisted atomically per canvas; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.

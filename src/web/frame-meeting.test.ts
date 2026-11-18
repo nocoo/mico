@@ -36,3 +36,59 @@ test('live avatars follow presenter identity, not stale sharer flags or duplicat
 		[],
 	)
 })
+
+test('editor avatars follow current-canvas participant grants, with presenter priority', () => {
+	const members = [
+		{
+			id: 'host',
+			participantId: 'host-profile',
+			username: 'Host',
+			sharer: true,
+			color: '#6844bd',
+			cursor: null,
+		},
+		{
+			id: 'guest',
+			participantId: 'guest-profile',
+			username: 'Guest',
+			sharer: false,
+			color: '#006f91',
+			cursor: null,
+		},
+		{
+			id: 'other',
+			participantId: 'other-profile',
+			username: 'Guest',
+			sharer: false,
+			color: '#006f91',
+			cursor: null,
+		},
+		{
+			id: 'second-tab',
+			participantId: 'guest-profile',
+			username: 'Guest renamed',
+			sharer: false,
+			color: '#006f91',
+			cursor: null,
+		},
+	]
+	const presence = {
+		members,
+		presenterId: 'host',
+		selfId: 'guest',
+		canvasEditorIds: ['host-profile', 'guest-profile'],
+	}
+	const editors = (model: ReturnType<typeof meetingPreview>) =>
+		model.participants
+			.filter((participant) => participant.editor)
+			.map((participant) => participant.id)
+	assert.deepEqual(editors(meetingPreview(presence)), ['guest', 'second-tab'])
+	assert.deepEqual(editors(meetingPreview({ ...presence, canvasEditorIds: [] })), [])
+	const transferred = meetingPreview({ ...presence, presenterId: 'guest' })
+	assert.deepEqual(editors(transferred), ['host', 'second-tab'])
+	assert.equal(
+		transferred.participants.find((participant) => participant.id === 'guest')?.presenter,
+		true,
+	)
+	assert.deepEqual(editors(meetingPreview({ members, presenterId: null, selfId: null })), [])
+})

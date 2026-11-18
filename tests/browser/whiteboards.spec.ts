@@ -202,10 +202,17 @@ test('demo presenter profile sends authenticated canvas grants and revocations',
 		await guest.goto(`${ISOLATED_ORIGIN}/?username=Bob`)
 		await page.getByRole('button', { name: 'Workspace profile' }).click()
 		await page.getByRole('button', { name: 'Grant edit access to Bob', exact: true }).click()
+		await expect(page.getByRole('img', { name: 'Bob, canvas editor', exact: true })).toBeVisible()
+		await expect(
+			page.locator('.meeting-avatar[data-editor="true"] .meeting-editor-badge'),
+		).toBeVisible()
+		await expect(page.locator('.meeting-avatar[data-presenter="true"]')).toHaveCount(1)
 		await page.getByRole('button', { name: 'Revoke edit access from Bob', exact: true }).click()
 		await expect(
 			page.getByRole('button', { name: 'Grant edit access to Bob', exact: true }),
 		).toBeVisible()
+		await expect(page.getByRole('img', { name: 'Bob, participant', exact: true })).toBeVisible()
+		await expect(page.locator('.meeting-editor-badge')).toHaveCount(0)
 		expect(changes.map((change) => change.allowed)).toEqual([true, false])
 		expect(changes[0].participantId).toBe(changes[1].participantId)
 	} finally {

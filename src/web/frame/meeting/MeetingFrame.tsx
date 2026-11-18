@@ -1,4 +1,4 @@
-import { Mic, Phone, Presentation, Video } from 'lucide-react'
+import { Mic, Pencil, Phone, Presentation, Video } from 'lucide-react'
 import { type MeetingPresence, type MeetingViewModel, meetingPreview } from './viewmodel'
 import './meeting.css'
 
@@ -16,24 +16,39 @@ export function MeetingView({ model }: { model: MeetingViewModel }) {
 			</div>
 			<div className="meeting-avatars">
 				<span className="sr-only">{model.title}</span>
-				{model.participants.map((participant) => (
-					<span
-						key={participant.id ?? participant.name}
-						className="meeting-avatar"
-						role="img"
-						data-color={participant.color}
-						data-presenter={participant.presenter || undefined}
-						title={`${participant.name}${participant.self ? ' (you)' : ''} · ${participant.id ? (participant.presenter ? 'presenter' : 'participant') : 'example'}`}
-						aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${participant.id ? (participant.presenter ? 'presenter' : 'participant') : 'example'}`}
-					>
-						{participant.initial}
-						{participant.presenter && (
-							<span className="meeting-presenter-badge" aria-hidden="true">
-								<Presentation />
-							</span>
-						)}
-					</span>
-				))}
+				{model.participants.map((participant) => {
+					const role = participant.presenter
+						? 'presenter'
+						: participant.editor
+							? 'canvas editor'
+							: participant.id
+								? 'participant'
+								: 'example'
+					return (
+						<span
+							key={participant.id ?? participant.name}
+							className="meeting-avatar"
+							role="img"
+							data-color={participant.color}
+							data-presenter={participant.presenter || undefined}
+							data-editor={participant.editor || undefined}
+							title={`${participant.name}${participant.self ? ' (you)' : ''} · ${role}`}
+							aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${role}`}
+						>
+							{participant.initial}
+							{(participant.presenter || participant.editor) && (
+								<span
+									className={
+										participant.presenter ? 'meeting-presenter-badge' : 'meeting-editor-badge'
+									}
+									aria-hidden="true"
+								>
+									{participant.presenter ? <Presentation /> : <Pencil />}
+								</span>
+							)}
+						</span>
+					)
+				})}
 			</div>
 			<span className="meeting-divider" aria-hidden="true" />
 			<button
