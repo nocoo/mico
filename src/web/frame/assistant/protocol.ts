@@ -132,6 +132,10 @@ export function shouldConsumeInitialPrompt(open: boolean, initialPrompt: string)
 	return open && initialPrompt.trim().length > 0
 }
 
+export function shouldFocusComposer(wasOpen: boolean, open: boolean, tab: AssistantTab): boolean {
+	return !wasOpen && open && tab === 'chat'
+}
+
 export function appendCompletedTranscript(current: string, completed: string): string {
 	const transcript = completed.trim()
 	if (!transcript) return current

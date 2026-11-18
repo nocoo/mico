@@ -10,6 +10,7 @@ import {
 	resolveAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
+	shouldFocusComposer,
 	shouldRestoreAssistantTriggerFocus,
 	summaryToolsCompleted,
 	takeLectureBatch,
@@ -151,4 +152,12 @@ test('trigger focus and initial prompt consume only after real lifecycle transit
 	assert.equal(shouldConsumeInitialPrompt(true, '  Draw a titration  '), true)
 	assert.equal(shouldConsumeInitialPrompt(false, 'Draw a titration'), false)
 	assert.equal(shouldConsumeInitialPrompt(true, '   '), false)
+})
+
+test('composer focus follows explicit opens, not initial mount or tab changes', () => {
+	assert.equal(shouldFocusComposer(true, true, 'chat'), false)
+	assert.equal(shouldFocusComposer(false, false, 'chat'), false)
+	assert.equal(shouldFocusComposer(false, true, 'chat'), true)
+	assert.equal(shouldFocusComposer(true, true, 'chat'), false)
+	assert.equal(shouldFocusComposer(false, true, 'audio'), false)
 })
