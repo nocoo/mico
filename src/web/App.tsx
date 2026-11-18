@@ -22,6 +22,7 @@ import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasMinimap } from './canvas/CanvasMinimap'
 import { CanvasView } from './canvas/CanvasView'
+import { beginDraft, finalizeDraft, updateDraft } from './canvas/draft'
 import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { Marquee } from './canvas/Marquee'
@@ -953,20 +954,17 @@ export default function App({
 			startWorld: world,
 			startViewport: { x: 0, y: 0 },
 		}
-		const initialCreation: CanvasShape = {
+		const initialCreation = beginDraft({
 			id: randomId(),
-			type: tool as 'rectangle' | 'ellipse' | 'line',
-			x: world.x,
-			y: world.y,
-			w: 0,
-			h: 0,
+			kind: tool as 'rectangle' | 'ellipse' | 'line',
+			start: world,
 			color:
 				tool === 'line'
 					? CANDY_LAYOUT.linePreset
 					: tool === 'ellipse'
 						? JELLY_COLORS.peach
 						: CANDY_COLORS.blue,
-		}
+		})
 		creationRef.current = initialCreation
 		setCreation(initialCreation)
 	}
@@ -1029,20 +1027,7 @@ export default function App({
 
 		const activeCreation = creationRef.current
 		if (interaction.mode === 'create' && activeCreation) {
-			const nextCreation: CanvasShape =
-				activeCreation.type === 'line'
-					? {
-							...activeCreation,
-							w: world.x - interaction.startWorld.x,
-							h: world.y - interaction.startWorld.y,
-						}
-					: {
-							...activeCreation,
-							x: Math.min(interaction.startWorld.x, world.x),
-							y: Math.min(interaction.startWorld.y, world.y),
-							w: Math.abs(world.x - interaction.startWorld.x),
-							h: Math.abs(world.y - interaction.startWorld.y),
-						}
+			const nextCreation = updateDraft(activeCreation, interaction.startWorld, world)
 			creationRef.current = nextCreation
 			setCreation(nextCreation)
 			return
@@ -1126,27 +1111,8 @@ export default function App({
 		const activeCreation = creationRef.current
 		if (interaction.mode === 'create' && activeCreation) {
 			const world = clientToWorld(event.clientX, event.clientY)
-			const finalized: CanvasShape =
-				activeCreation.type === 'line'
-					? {
-							...activeCreation,
-							w: world.x - interaction.startWorld.x,
-							h: world.y - interaction.startWorld.y,
-						}
-					: {
-							...activeCreation,
-							x: Math.min(interaction.startWorld.x, world.x),
-							y: Math.min(interaction.startWorld.y, world.y),
-							w: Math.abs(world.x - interaction.startWorld.x),
-							h: Math.abs(world.y - interaction.startWorld.y),
-						}
-			if (Math.abs(finalized.w) >= 8 || Math.abs(finalized.h) >= 8) {
-				const shape =
-					finalized.type === 'line'
-						? finalized
-						: { ...finalized, w: Math.max(8, finalized.w), h: Math.max(8, finalized.h) }
-				createShape(shape, finalized.type !== 'line')
-			}
+			const finalized = finalizeDraft(activeCreation, interaction.startWorld, world)
+			if (finalized) createShape(finalized, finalized.type !== 'line')
 		}
 
 		if (interaction.mode === 'shape' && interaction.shape) {
