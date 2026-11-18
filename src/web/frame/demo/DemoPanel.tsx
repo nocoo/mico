@@ -112,7 +112,7 @@ export function DemoPanel({
 					</Popover.Close>
 				</header>
 				<div className="debug-panel-content">
-					<form className="demo-panel-form" onSubmit={submitName}>
+					<form className="demo-panel-form demo-card" onSubmit={submitName}>
 						<label className="demo-field">
 							<span>Your name</span>
 							<div className="demo-name-row">
@@ -170,7 +170,7 @@ export function DemoPanel({
 						)}
 					</form>
 					{members.length > 0 && (
-						<section className="demo-members" aria-label="Online members">
+						<section className="demo-members demo-card" aria-label="Online members">
 							<div className="demo-members-header">
 								<span>Online ({members.length})</span>
 								{otherPresenter && !following && (
