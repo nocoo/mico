@@ -130,7 +130,7 @@ export function useMicrophoneViewModel({
 	const [phase, setPhase] = useState<MicrophonePhase>('idle')
 	const [detail, setDetail] = useState('')
 	const [elapsed, setElapsed] = useState(0)
-	const [includeMeetingAudio, setIncludeMeetingAudio] = useState(false)
+	const [includeMeetingAudio, setIncludeMeetingAudio] = useState(true)
 	const [live, setLive] = useState({ confirmed: '', hypothesis: '' })
 	const [segments, setSegments] = useState<LessonSegment[]>([])
 
@@ -284,7 +284,7 @@ export function useMicrophoneViewModel({
 					setDetail('Microphone disconnected.')
 					stopRef.current()
 				},
-				{ includeMeetingAudio },
+				{ includeMeetingAudio: meetingAudioSupported && includeMeetingAudio },
 			)
 			if (!current()) {
 				void mic.stop().catch(() => {})

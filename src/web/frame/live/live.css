@@ -4,7 +4,7 @@
 	align-items: center;
 	gap: 10px;
 	height: 56px;
-	max-width: min(390px, calc(100vw - 32px));
+	max-width: min(740px, calc(100vw - 240px));
 	padding-inline: 10px;
 	overflow: hidden;
 	border-radius: 22px;
@@ -70,6 +70,38 @@
 	box-shadow:
 		inset 0 1.5px 0 oklch(1 0 0 / 0.5),
 		0 8px 14px -8px oklch(0.58 0.21 20 / 0.8);
+}
+
+.live-topbar-title {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	max-width: 170px;
+	line-height: 1.25;
+}
+
+.live-topbar-title b,
+.live-topbar-title span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.live-topbar-title b {
+	font-size: 13px;
+}
+
+.live-topbar-title span {
+	color: var(--ui-ink-3);
+	font-size: 11px;
+}
+
+.live-topbar-divider {
+	flex: none;
+	width: 1px;
+	height: 22px;
+	margin-inline: 2px;
+	background: var(--ui-hair);
 }
 
 .live-topbar-status {
@@ -251,6 +283,28 @@
 
 .live-topbar-popover-btn:hover {
 	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-accent-soft));
+}
+
+@media (max-width: 1120px) {
+	.live-topbar-title {
+		display: none;
+	}
+}
+
+@media (max-width: 920px) {
+	.live-topbar-frame .meeting-avatars,
+	.live-topbar-divider {
+		display: none;
+	}
+}
+
+@media (max-width: 640px) {
+	.live-topbar-frame {
+		max-width: calc(100vw - 210px);
+	}
+	.live-topbar-transcript {
+		display: none;
+	}
 }
 
 @keyframes live-dot-pulse {

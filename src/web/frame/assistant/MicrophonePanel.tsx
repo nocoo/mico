@@ -70,17 +70,23 @@ function MicrophonePanelView({ model }: { readonly model: MicrophoneViewModel })
 					</span>
 					<span className="call-ai-status">{model.aiLabel}</span>
 					{model.meetingAudioSupported && (
-						<button
-							type="button"
-							role="switch"
-							aria-checked={model.includeMeetingAudio}
-							className="call-meeting-toggle"
-							disabled={model.running || model.disabled}
-							onClick={model.toggleMeetingAudio}
-						>
-							<MonitorSpeaker size={14} aria-hidden="true" />
-							<span>{messages.assistant.live.includeMeetingAudio}</span>
-						</button>
+						<div className="call-meeting-row">
+							<span className="call-meeting-label">
+								<MonitorSpeaker size={14} aria-hidden="true" />
+								<span>{messages.assistant.live.includeMeetingAudio}</span>
+							</span>
+							<button
+								type="button"
+								role="switch"
+								aria-label={messages.assistant.live.includeMeetingAudio}
+								aria-checked={model.includeMeetingAudio}
+								className="demo-switch"
+								disabled={model.running || model.disabled}
+								onClick={model.toggleMeetingAudio}
+							>
+								<span className="demo-switch-thumb" aria-hidden="true" />
+							</button>
+						</div>
 					)}
 				</div>
 				<div className="call-output" aria-hidden={!model.hasOutput}>

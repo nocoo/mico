@@ -62,6 +62,10 @@ test.describe('microphone mode', () => {
 
 		const panel = await openLive(page)
 		const live = panel.getByRole('tabpanel', { name: 'Live' })
+		await expect(live.getByRole('switch', { name: 'Include meeting audio' })).toHaveAttribute(
+			'aria-checked',
+			'true',
+		)
 		await live.getByRole('button', { name: 'Start recording' }).click()
 		await expect(live.getByRole('button', { name: 'Stop recording' })).toHaveAttribute(
 			'aria-pressed',
@@ -101,6 +105,10 @@ test.describe('microphone mode', () => {
 		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 		const panel = await openLive(page)
 		const live = panel.getByRole('tabpanel', { name: 'Live' })
+		await expect(live.getByRole('switch', { name: 'Include meeting audio' })).toHaveAttribute(
+			'aria-checked',
+			'true',
+		)
 		await live.getByRole('button', { name: 'Start recording' }).click()
 		await expect.poll(() => mai.appends).toBeGreaterThanOrEqual(2)
 		expect(mai.commits).toBe(0)

@@ -7,7 +7,7 @@ import { shouldShowDebug } from '../debug/debugViewModel'
 import { DemoPanel, type DemoPanelProps } from '../demo/DemoPanel'
 import { LiveModeFrame, type LiveTopbarModel } from '../live/LiveModeFrame'
 import { LocalModeMenu, type LocalModeMenuProps } from '../local/LocalModeMenu'
-import { MeetingFrame, type MeetingFrameProps } from '../meeting/MeetingFrame'
+import type { MeetingFrameProps } from '../meeting/MeetingFrame'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
 import './identity.css'
@@ -62,8 +62,7 @@ export function IdentityFrame({
 					{demo ? <DemoPanel {...demo} /> : showDebug ? <DebugPanel {...debug} /> : null}
 					{localMode && <LocalModeMenu {...localMode} />}
 				</div>
-				<MeetingFrame {...meeting} />
-				{live && <LiveModeFrame model={live} />}
+				<LiveModeFrame model={live ?? null} meeting={meeting} />
 			</header>
 			{identity.mounted && (
 				<section
