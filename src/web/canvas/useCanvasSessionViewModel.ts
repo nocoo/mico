@@ -9,7 +9,12 @@ import type {
 	ServerEvent,
 } from '../../shared/types'
 import type { PresenceEvent, PresenceMessage, WhiteboardSession } from '../../shared/whiteboards'
-import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from '../canvasState'
+import {
+	mergeSnapshotCanvases,
+	rememberBoard,
+	shouldApplyBoard,
+	upsertCanvasSummary,
+} from '../canvasState'
 import { canvasFetch as fetch, reconnectWhiteboard, whiteboardUrl } from '../whiteboards/client'
 
 const WS_URL = new URL('/api/events', window.location.href)
@@ -109,7 +114,7 @@ export function useCanvasSessionViewModel({
 
 	const applyBoard = useCallback(
 		(next: Board) => {
-			if (next.revision < revisionRef.current) return
+			if (!shouldApplyBoard(boardRef.current, next)) return
 			const canvasId = activeCanvasIdRef.current
 			onBoardTransitionRef.current(boardRef.current, next, false, canvasId)
 			revisionRef.current = next.revision
