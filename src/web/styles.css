@@ -867,8 +867,10 @@ svg {
 	align-items: center;
 	justify-content: space-between;
 	flex: 0 0 auto;
-	gap: var(--space-1);
-	padding: var(--space-15) var(--space-15) var(--space-1);
+	gap: 8px;
+	min-height: 55px;
+	box-sizing: border-box;
+	padding: 10px 10px 8px 14px;
 	border-bottom: 1px solid var(--ui-hair);
 	border-radius: 26px 26px 0 0;
 }
@@ -876,7 +878,40 @@ svg {
 	display: flex;
 	align-items: center;
 	min-width: 0;
-	gap: var(--space-1);
+	gap: 8px;
+}
+.selection-panel-title {
+	font-size: 13.5px;
+	font-weight: 600;
+	line-height: 1.25;
+	color: var(--ui-ink);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.selection-close-button {
+	display: grid;
+	place-items: center;
+	flex: 0 0 34px;
+	width: 34px;
+	height: 34px;
+	padding: 0;
+	border: 0;
+	border-radius: 12px;
+	background: transparent;
+	color: var(--ui-accent-ink);
+	cursor: pointer;
+	transition:
+		background 200ms var(--ui-ease),
+		color 200ms var(--ui-ease),
+		scale 450ms var(--ui-spring);
+}
+.selection-close-button:hover {
+	background: var(--ui-well-2);
+	color: var(--ui-ink);
+}
+.selection-close-button:active {
+	scale: 0.88;
 }
 .selection-panel-body {
 	display: flex;
@@ -957,12 +992,12 @@ svg {
 .selection-icon {
 	display: grid;
 	place-items: center;
-	flex: 0 0 24px;
-	width: 24px;
-	height: 24px;
-	border-radius: 6px;
-	color: var(--accent);
-	background: var(--accent-tint);
+	flex: 0 0 28px;
+	width: 28px;
+	height: 28px;
+	border-radius: 10px;
+	color: var(--ui-accent-ink);
+	background: var(--ui-accent-soft);
 }
 .color-swatch {
 	width: var(--control-compact);
