@@ -3,6 +3,7 @@ import type { IncomingMessage } from 'node:http'
 import WebSocket from 'ws'
 import {
 	joinWhiteboardSchema,
+	type LiveTranscriptState,
 	PRESENCE_COLORS,
 	type PresenterInvite,
 	type PresenterView,
@@ -29,6 +30,7 @@ export class Whiteboards {
 	private readonly requests = new Map<string, Set<string>>()
 	private readonly requestTimers = new Map<string, ReturnType<typeof setTimeout>>()
 	private readonly invites = new Map<string, PresenterInvite>()
+	private readonly liveTranscripts = new Map<string, LiveTranscriptState>()
 	private readonly timer: ReturnType<typeof setInterval>
 
 	constructor() {
@@ -268,6 +270,22 @@ export class Whiteboards {
 						return
 					}
 					this.commitTransfer(currentPresenter, member)
+				} else if (message.type === 'live-transcript') {
+					if (!member.member.sharer) return
+					const nextState: LiveTranscriptState = {
+						memberId: member.member.id,
+						text: message.text,
+						active: message.active,
+					}
+					if (!message.active && !message.text) {
+						this.liveTranscripts.delete(member.whiteboardid)
+					} else {
+						this.liveTranscripts.set(member.whiteboardid, nextState)
+					}
+					this.emit(member.whiteboardid, {
+						type: 'live-transcript',
+						...nextState,
+					})
 				}
 			} catch {
 				socket.close(1008, 'Invalid presence message')
@@ -293,6 +311,7 @@ export class Whiteboards {
 		to.member.sharer = true
 		this.views.delete(from.whiteboardid)
 		this.invites.delete(from.whiteboardid)
+		this.liveTranscripts.delete(from.whiteboardid)
 		const requests = this.requests.get(from.whiteboardid)
 		requests?.delete(to.member.id)
 		requests?.delete(from.member.id)
@@ -378,6 +397,7 @@ export class Whiteboards {
 		if (member.member.sharer) {
 			this.views.delete(member.whiteboardid)
 			this.invites.delete(member.whiteboardid)
+			this.liveTranscripts.delete(member.whiteboardid)
 			const nextPresenter = this.findNextPresenter(member)
 			if (nextPresenter) {
 				member.member.sharer = false
@@ -422,6 +442,7 @@ export class Whiteboards {
 			viewport: presenter ? (this.views.get(whiteboardid) ?? null) : null,
 			requesterIds,
 			presenterInvite,
+			liveTranscript: presenter ? (this.liveTranscripts.get(whiteboardid) ?? null) : null,
 		})
 	}
 
@@ -451,5 +472,6 @@ export class Whiteboards {
 		for (const timer of this.requestTimers.values()) clearTimeout(timer)
 		this.requestTimers.clear()
 		this.invites.clear()
+		this.liveTranscripts.clear()
 	}
 }

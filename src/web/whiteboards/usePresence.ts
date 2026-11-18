@@ -21,6 +21,7 @@ export function usePresence(
 	const [presenterId, setPresenterId] = useState<string | null>(null)
 	const [requesterIds, setRequesterIds] = useState<string[]>([])
 	const [presenterInvite, setPresenterInvite] = useState<PresenterInvite | null>(null)
+	const [presenterLive, setPresenterLive] = useState<{ text: string; active: boolean } | null>(null)
 	const [following, setFollowing] = useState(true)
 	const followingRef = useRef(true)
 	const sharerRef = useRef(Boolean(session?.member.sharer))
@@ -54,6 +55,11 @@ export function usePresence(
 				setPresenterId(event.presenterId)
 				setRequesterIds(event.requesterIds ?? [])
 				setPresenterInvite(event.presenterInvite ?? null)
+				setPresenterLive(
+					event.liveTranscript && (event.liveTranscript.active || event.liveTranscript.text)
+						? { text: event.liveTranscript.text, active: event.liveTranscript.active }
+						: null,
+				)
 				presenterView.current = event.viewport
 				const isSharer = event.presenterId
 					? event.presenterId === sessionIdRef.current
@@ -65,6 +71,10 @@ export function usePresence(
 					current.map((member) =>
 						member.id === event.memberId ? { ...member, cursor: event.point } : member,
 					),
+				)
+			} else if (event.type === 'live-transcript') {
+				setPresenterLive(
+					event.active || event.text ? { text: event.text, active: event.active } : null,
 				)
 			} else {
 				presenterView.current = event.viewport
@@ -104,6 +114,7 @@ export function usePresence(
 		if (!session) {
 			setRequesterIds([])
 			setPresenterInvite(null)
+			setPresenterLive(null)
 			return
 		}
 		const interval = window.setInterval(() => {
@@ -125,16 +136,65 @@ export function usePresence(
 			observer.disconnect()
 		}
 	}, [session, canvas, queueView, applyPresenter])
+	const liveBroadcastRef = useRef<{
+		lastSentAt: number
+		lastText: string
+		lastActive: boolean
+		pending: { text: string; active: boolean } | null
+		timer: number | null
+	}>({ lastSentAt: 0, lastText: '', lastActive: false, pending: null, timer: null })
+
+	useEffect(
+		() => () => {
+			if (liveBroadcastRef.current.timer !== null) {
+				window.clearTimeout(liveBroadcastRef.current.timer)
+				liveBroadcastRef.current.timer = null
+			}
+		},
+		[],
+	)
+
+	const publishLiveTranscript = useCallback((text: string, active: boolean) => {
+		if (!sharerRef.current) return
+		const clipped = text.trim().slice(-160)
+		const state = liveBroadcastRef.current
+		if (clipped === state.lastText && active === state.lastActive) return
+		const flush = (payload: { text: string; active: boolean }) => {
+			state.lastSentAt = Date.now()
+			state.lastText = payload.text
+			state.lastActive = payload.active
+			state.pending = null
+			send.current({ type: 'live-transcript', text: payload.text, active: payload.active })
+		}
+		const now = Date.now()
+		const elapsed = now - state.lastSentAt
+		if (active !== state.lastActive || elapsed >= 160) {
+			if (state.timer !== null) {
+				window.clearTimeout(state.timer)
+				state.timer = null
+			}
+			flush({ text: clipped, active })
+			return
+		}
+		state.pending = { text: clipped, active }
+		if (state.timer === null) {
+			state.timer = window.setTimeout(() => {
+				state.timer = null
+				if (state.pending && sharerRef.current) flush(state.pending)
+			}, 160 - elapsed)
+		}
+	}, [])
+
 	const detach = useCallback(() => {
-		if (!session || session.member.sharer) return
+		if (!session || sharerRef.current) return
 		followingRef.current = false
 		setFollowing(false)
 	}, [session])
-	const follow = () => {
+	const follow = useCallback(() => {
 		followingRef.current = true
 		setFollowing(true)
 		if (presenterView.current) applyPresenter(presenterView.current)
-	}
+	}, [applyPresenter])
 	const pointer = (point: Point | null) => {
 		cursorScreen.current = point
 		queueCursor()
@@ -161,6 +221,7 @@ export function usePresence(
 		presenterId,
 		requesterIds,
 		presenterInvite,
+		presenterLive,
 		following,
 		detach,
 		follow,
@@ -168,6 +229,7 @@ export function usePresence(
 		send,
 		queueView,
 		onEvent,
+		publishLiveTranscript,
 		requestPresenter,
 		transferPresenter,
 		declinePresenter,

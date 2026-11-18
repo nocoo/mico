@@ -1,5 +1,13 @@
 import { Popover } from '@radix-ui/themes'
-import { ChevronDown, Mic, MonitorSpeaker, PanelRightOpen, Square } from 'lucide-react'
+import {
+	ChevronDown,
+	Lock,
+	Mic,
+	MonitorSpeaker,
+	Navigation,
+	PanelRightOpen,
+	Square,
+} from 'lucide-react'
 import { useState } from 'react'
 import { useI18n } from '../../i18n'
 import type { MeetingFrameProps } from '../meeting/MeetingFrame'
@@ -21,12 +29,27 @@ export interface LiveTopbarModel {
 	readonly onOpenLivePanel?: () => void
 }
 
+export interface LiveTopbarFollow {
+	readonly available: boolean
+	readonly following: boolean
+	readonly onToggle: () => void
+}
+
+export interface LiveTopbarRemote {
+	readonly active: boolean
+	readonly text: string
+}
+
 export function LiveModeFrame({
 	model,
 	meeting,
+	follow,
+	remoteLive,
 }: {
 	readonly model: LiveTopbarModel | null
 	readonly meeting: MeetingFrameProps
+	readonly follow?: LiveTopbarFollow | null
+	readonly remoteLive?: LiveTopbarRemote | null
 }) {
 	const { messages } = useI18n()
 	const [open, setOpen] = useState(false)
@@ -37,10 +60,14 @@ export function LiveModeFrame({
 		messages,
 	})
 
-	const running = model?.running ?? false
+	const localRunning = model?.running ?? false
 	const phase = model?.phase ?? 'idle'
 	const elapsed = model?.elapsed ?? '00:00'
-	const transcript = model?.transcript.trim() ?? ''
+	const localTranscript = model?.transcript.trim() ?? ''
+	const remoteActive = !model && Boolean(remoteLive?.active)
+	const remoteTranscript = !model ? (remoteLive?.text.trim() ?? '') : ''
+	const running = localRunning || remoteActive
+	const transcript = localTranscript || remoteTranscript
 	const hasTranscriptArea = running || Boolean(transcript)
 	const transcriptLine =
 		transcript ||
@@ -48,7 +75,7 @@ export function LiveModeFrame({
 			? messages.liveTopbar.connectingText
 			: phase === 'stopping'
 				? messages.liveTopbar.stoppingText
-				: running
+				: localRunning || remoteActive
 					? messages.liveTopbar.listeningEmpty
 					: '')
 
@@ -119,6 +146,31 @@ export function LiveModeFrame({
 						</span>
 					</div>
 				</div>
+
+				{follow?.available && (
+					<button
+						type="button"
+						className="live-topbar-follow"
+						aria-pressed={follow.following}
+						aria-label={
+							follow.following
+								? messages.liveTopbar.stopFollowingAria
+								: messages.liveTopbar.followPresenterAria
+						}
+						onClick={follow.onToggle}
+					>
+						{follow.following ? (
+							<Lock size={12} aria-hidden="true" />
+						) : (
+							<Navigation size={12} aria-hidden="true" />
+						)}
+						<span>
+							{follow.following
+								? messages.liveTopbar.followingPresenter
+								: messages.liveTopbar.followPresenter}
+						</span>
+					</button>
+				)}
 
 				{model && (
 					<Popover.Trigger>

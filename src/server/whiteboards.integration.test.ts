@@ -182,7 +182,8 @@ function nextPresence(
 			if (
 				(parsed.type === 'presence' ||
 					parsed.type === 'cursor' ||
-					parsed.type === 'presenter-view') &&
+					parsed.type === 'presenter-view' ||
+					parsed.type === 'live-transcript') &&
 				predicate(parsed as PresenceEvent)
 			) {
 				clearTimeout(timeout)
@@ -246,6 +247,19 @@ test('demo presence tracks cursors, presenter view, profile updates, and allows 
 			const viewEvent = await viewPromise
 			assert.equal(viewEvent.type, 'presenter-view')
 			assert.deepEqual(viewEvent.viewport, { centerX: 50, centerY: 60, zoom: 1.5 })
+
+			const livePromise = nextPresence(vSocket, (event) => event.type === 'live-transcript')
+			pSocket.send(
+				JSON.stringify({
+					type: 'live-transcript',
+					text: 'Hello everyone',
+					active: true,
+				}),
+			)
+			const liveEvent = await livePromise
+			assert.equal(liveEvent.type, 'live-transcript')
+			assert.equal(liveEvent.text, 'Hello everyone')
+			assert.equal(liveEvent.active, true)
 
 			// Non-presenter in demo mode can still draw
 			const opRes = await fetch(`${baseUrl}/api/operations?whiteboardSession=${viewer.token}`, {

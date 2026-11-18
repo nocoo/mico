@@ -117,6 +117,10 @@ export const zh: I18nMessages = {
 		includeMeetingAudio: '同时采集会议音频',
 		includeMeetingHint: '将浏览器标签页或系统音频与麦克风混音',
 		openAssistantHint: '打开 AI 实时面板',
+		followPresenter: '跟随',
+		followingPresenter: '跟随中',
+		followPresenterAria: '同步并锁定跟随 Presenter 视角与缩放',
+		stopFollowingAria: '解除锁定跟随 Presenter',
 	},
 	toolbar: {
 		tools: '绘图工具',

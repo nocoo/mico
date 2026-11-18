@@ -769,6 +769,17 @@ export default function App({
 		}
 	}, [liveTopbar?.phase])
 
+	useEffect(() => {
+		if (!presenceActive || !isDemoPresenter) return
+		presence.publishLiveTranscript(liveTopbar?.transcript ?? '', Boolean(liveTopbar?.running))
+	}, [
+		presenceActive,
+		isDemoPresenter,
+		liveTopbar?.transcript,
+		liveTopbar?.running,
+		presence.publishLiveTranscript,
+	])
+
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
@@ -1586,6 +1597,19 @@ export default function App({
 							}
 						: null
 				}
+				liveFollow={
+					presenceActive && presence.presenterId && presence.presenterId !== demoSession?.member.id
+						? {
+								available: true,
+								following: presence.following,
+								onToggle: () => {
+									if (presence.following) presence.detach()
+									else presence.follow()
+								},
+							}
+						: null
+				}
+				remoteLive={presenceActive && !isDemoPresenter ? presence.presenterLive : null}
 			/>
 			<PresenterRequestDialog
 				active={Boolean(presenceActive && demoSharer)}

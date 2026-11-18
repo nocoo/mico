@@ -115,6 +115,10 @@ export const en = {
 		includeMeetingAudio: 'Include meeting audio',
 		includeMeetingHint: 'Mix browser tab or system audio with your mic',
 		openAssistantHint: 'Open AI Live panel',
+		followPresenter: 'Follow',
+		followingPresenter: 'Following',
+		followPresenterAria: 'Follow presenter viewport and zoom',
+		stopFollowingAria: 'Unlock continuous presenter follow',
 	},
 	toolbar: {
 		tools: 'Drawing tools',

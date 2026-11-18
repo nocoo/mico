@@ -5,7 +5,12 @@ import type { IdentityActions, IdentityState } from '../contracts'
 import { DebugPanel, type DebugPanelProps } from '../debug/DebugPanel'
 import { shouldShowDebug } from '../debug/debugViewModel'
 import { DemoPanel, type DemoPanelProps } from '../demo/DemoPanel'
-import { LiveModeFrame, type LiveTopbarModel } from '../live/LiveModeFrame'
+import {
+	LiveModeFrame,
+	type LiveTopbarFollow,
+	type LiveTopbarModel,
+	type LiveTopbarRemote,
+} from '../live/LiveModeFrame'
 import { LocalModeMenu, type LocalModeMenuProps } from '../local/LocalModeMenu'
 import type { MeetingFrameProps } from '../meeting/MeetingFrame'
 import { formatCanvasTime } from './identityViewModel'
@@ -20,6 +25,8 @@ export interface IdentityFrameProps {
 	localMode?: LocalModeMenuProps
 	meeting: MeetingFrameProps
 	live?: LiveTopbarModel | null
+	liveFollow?: LiveTopbarFollow | null
+	remoteLive?: LiveTopbarRemote | null
 }
 
 export function IdentityFrame({
@@ -30,6 +37,8 @@ export function IdentityFrame({
 	localMode,
 	meeting,
 	live,
+	liveFollow,
+	remoteLive,
 }: IdentityFrameProps) {
 	const { messages } = useI18n()
 	const identity = useIdentityViewModel({ state, actions })
@@ -62,7 +71,12 @@ export function IdentityFrame({
 					{demo ? <DemoPanel {...demo} /> : showDebug ? <DebugPanel {...debug} /> : null}
 					{localMode && <LocalModeMenu {...localMode} />}
 				</div>
-				<LiveModeFrame model={live ?? null} meeting={meeting} />
+				<LiveModeFrame
+					model={live ?? null}
+					meeting={meeting}
+					follow={liveFollow ?? null}
+					remoteLive={remoteLive ?? null}
+				/>
 			</header>
 			{identity.mounted && (
 				<section

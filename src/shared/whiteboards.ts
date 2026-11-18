@@ -39,6 +39,13 @@ export const presenceMessageSchema = z.discriminatedUnion('type', [
 		})
 		.strict(),
 	z.object({ type: z.literal('respond-presenter-invite'), accept: z.boolean() }).strict(),
+	z
+		.object({
+			type: z.literal('live-transcript'),
+			text: z.string().max(240),
+			active: z.boolean(),
+		})
+		.strict(),
 ])
 
 export const joinWhiteboardSchema = z
@@ -84,6 +91,12 @@ export interface PresenterInvite {
 	fromMemberId: string
 }
 
+export interface LiveTranscriptState {
+	memberId: string
+	text: string
+	active: boolean
+}
+
 export type PresenceEvent =
 	| {
 			type: 'presence'
@@ -92,9 +105,11 @@ export type PresenceEvent =
 			viewport: PresenterView | null
 			requesterIds?: string[]
 			presenterInvite?: PresenterInvite | null
+			liveTranscript?: LiveTranscriptState | null
 	  }
 	| { type: 'cursor'; memberId: string; point: Point | null }
 	| { type: 'presenter-view'; viewport: PresenterView }
+	| { type: 'live-transcript'; memberId: string; text: string; active: boolean }
 
 export const PRESENCE_COLORS = [
 	CANDY_COLORS.blue,

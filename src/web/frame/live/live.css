@@ -4,7 +4,7 @@
 	align-items: center;
 	gap: 10px;
 	height: 56px;
-	max-width: min(740px, calc(100vw - 240px));
+	max-width: min(860px, calc(100vw - 240px));
 	padding-inline: 10px;
 	overflow: hidden;
 	border-radius: 22px;
@@ -204,6 +204,50 @@
 .live-topbar-more:hover {
 	background: var(--ui-well-2);
 	color: var(--ui-ink);
+}
+
+.live-topbar-follow {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	flex: 0 0 auto;
+	height: 32px;
+	padding: 0 10px;
+	border: 1px solid var(--ui-hair);
+	border-radius: 12px;
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-well));
+	box-shadow:
+		inset 0 1.5px 0 var(--ui-gloss),
+		0 6px 14px -12px var(--ui-shadow);
+	color: var(--ui-ink-2);
+	font: inherit;
+	font-size: 12px;
+	font-weight: 600;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		background 160ms ease,
+		color 160ms ease,
+		box-shadow 160ms ease,
+		transform 120ms ease;
+}
+
+.live-topbar-follow:hover {
+	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-accent-soft));
+	color: var(--ui-ink);
+}
+
+.live-topbar-follow:active {
+	transform: scale(0.97);
+}
+
+.live-topbar-follow[aria-pressed="true"] {
+	border-color: transparent;
+	background: linear-gradient(180deg, var(--ui-accent-hi), var(--ui-accent-lo));
+	box-shadow:
+		inset 0 1.5px 0 oklch(1 0 0 / 0.52),
+		0 8px 16px -8px var(--ui-accent);
+	color: oklch(1 0 0);
 }
 
 .live-topbar-popover {
