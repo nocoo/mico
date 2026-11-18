@@ -113,7 +113,7 @@ test('demo guests see the server hint when canvas creation or switching is rejec
 	}
 })
 
-test('demo guests cannot drag, open editors, or change controls for protected objects', async ({
+test('demo guests cannot drag or open editing panels for protected objects', async ({
 	page,
 	request,
 }) => {
@@ -156,8 +156,7 @@ test('demo guests cannot drag, open editors, or change controls for protected ob
 	await page.keyboard.press('Delete')
 	await expect(page.getByRole('status')).toHaveText(hint)
 	await expect(page.getByRole('button', { name: 'Delete selected' })).toBeDisabled()
-	await expect(page.getByRole('textbox', { name: 'Text', exact: true })).toBeDisabled()
-	await expect(page.getByRole('button', { name: 'Set color Green' })).toBeDisabled()
+	await expect(page.getByRole('region', { name: 'Selected object properties' })).toHaveCount(0)
 	await note.dblclick({ position: { x: 10, y: 10 } })
 	await expect(page.getByRole('textbox', { name: '', exact: true })).toHaveCount(0)
 	expect(writes).toBe(0)

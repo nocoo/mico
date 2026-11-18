@@ -1693,10 +1693,8 @@ export default function App({
 				<EmptyState onOpenAssistant={emptyState.openAssistant} onDismiss={emptyState.dismiss} />
 			)}
 
-			{tool === 'select' && (
+			{tool === 'select' && selectionEditable && (
 				<SelectionPanel
-					key={selectionEditable ? 'editable' : 'read-only'}
-					readOnly={!selectionEditable}
 					shape={selected}
 					count={selectedIds.length}
 					shapes={board.shapes}
