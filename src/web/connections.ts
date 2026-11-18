@@ -1,6 +1,6 @@
+import { getAnchors } from '../shared/anchors.ts'
 import type { Board, CanvasShape, Connector, Point, Shape } from '../shared/types.ts'
 import { connectionCompatible } from '../shared/types.ts'
-import { getAnchors } from './anchors.ts'
 
 export interface SnapTarget {
 	shapeId: string

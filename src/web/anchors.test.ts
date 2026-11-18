@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { getAnchors, getConnectorAnchors } from '../shared/anchors.ts'
 import type { CanvasShape } from '../shared/types.ts'
 import { ANCHOR_COUNTS } from '../shared/types.ts'
-import { getAnchors, getConnectorAnchors } from './anchors.ts'
 
 const rectangle: CanvasShape = {
 	id: 'a',

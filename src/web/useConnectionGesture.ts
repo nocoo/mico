@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
+import { getAnchors, getConnectorAnchors } from '../shared/anchors'
 import type { Board, CanvasShape, Connector, Operation, Point, Shape } from '../shared/types'
-import { getAnchors, getConnectorAnchors } from './anchors'
 import {
 	canRebaseConnector,
 	findSnapTarget,

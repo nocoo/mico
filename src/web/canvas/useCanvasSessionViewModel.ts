@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { CanvasHistory, HistoryConflict, type HistoryDirection } from '../../shared/history'
 import type {
 	Board,
 	CanvasDetail,
@@ -10,7 +11,6 @@ import type {
 import type { PresenceEvent, PresenceMessage, WhiteboardSession } from '../../shared/whiteboards'
 import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from '../canvasState'
 import { canvasFetch as fetch, reconnectWhiteboard, whiteboardUrl } from '../whiteboards/client'
-import { CanvasHistory, HistoryConflict, type HistoryDirection } from './history'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
