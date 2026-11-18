@@ -881,7 +881,7 @@ export function createDaemon(
 					(isPath('api', 'active-canvas') && req.method === 'PUT'))
 			) {
 				whiteboards.requirePresenter(
-					membership?.whiteboardid === 'demo' ? membership : undefined,
+					membership?.publicWhiteboardid === 'demo' ? membership : undefined,
 					'Only the presenter can create or change demo canvases. Use Workspace profile to become or request presenter.',
 				)
 			}
