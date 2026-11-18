@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useI18n } from '../../i18n/index.ts'
+import { type I18nMessages, useI18n } from '../../i18n/index.ts'
 import { TARGET_RATE } from '../../stt/audioSource.ts'
 import { MaiClient, type MaiConfig } from '../../stt/maiClient.ts'
 import { openMicrophone } from '../../stt/microphone.ts'
@@ -83,28 +83,36 @@ function cleanup(rt: Recording) {
 	rt.buffered = 0
 }
 
-export function microphoneAiLabel(aiError: boolean, aiBusy: boolean, aiQueued: number) {
+export function microphoneAiLabel(
+	aiError: boolean,
+	aiBusy: boolean,
+	aiQueued: number,
+	messages: I18nMessages['assistant']['live'],
+) {
 	return aiError
-		? 'Mico needs attention'
+		? messages.aiError
 		: aiBusy
-			? 'Mico is drawing…'
+			? messages.aiBusy
 			: aiQueued > 0
-				? `${aiQueued} segments queued`
-				: 'Mico is listening'
+				? messages.aiQueued(aiQueued)
+				: messages.aiListening
 }
 
-export function microphonePhaseLabel(phase: MicrophonePhase) {
+export function microphonePhaseLabel(
+	phase: MicrophonePhase,
+	messages: I18nMessages['assistant']['live'],
+) {
 	return phase === 'listening'
-		? 'Listening…'
+		? messages.phaseListening
 		: phase === 'connecting'
-			? 'Connecting…'
+			? messages.phaseConnecting
 			: phase === 'stopping'
-				? 'Finishing transcript…'
+				? messages.phaseStopping
 				: phase === 'done'
-					? 'Recording complete'
+					? messages.phaseDone
 					: phase === 'error'
-						? 'Microphone error'
-						: 'Ready'
+						? messages.phaseError
+						: messages.phaseReady
 }
 
 export type MicrophoneViewModel = ReturnType<typeof useMicrophoneViewModel>
@@ -365,25 +373,8 @@ export function useMicrophoneViewModel({
 	const meetingAudioSupported =
 		typeof navigator !== 'undefined' &&
 		typeof navigator.mediaDevices?.getDisplayMedia === 'function'
-	const phaseLabel =
-		phase === 'listening'
-			? messages.assistant.live.phaseListening
-			: phase === 'connecting'
-				? messages.assistant.live.phaseConnecting
-				: phase === 'stopping'
-					? messages.assistant.live.phaseStopping
-					: phase === 'done'
-						? messages.assistant.live.phaseDone
-						: phase === 'error'
-							? messages.assistant.live.phaseError
-							: messages.assistant.live.phaseReady
-	const aiLabel = aiError
-		? messages.assistant.live.aiError
-		: aiBusy
-			? messages.assistant.live.aiBusy
-			: aiQueued > 0
-				? messages.assistant.live.aiQueued(aiQueued)
-				: messages.assistant.live.aiListening
+	const phaseLabel = microphonePhaseLabel(phase, messages.assistant.live)
+	const aiLabel = microphoneAiLabel(aiError, aiBusy, aiQueued, messages.assistant.live)
 
 	return {
 		waveRef,
