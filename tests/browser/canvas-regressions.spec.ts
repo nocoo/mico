@@ -596,3 +596,67 @@ test('a rejected create stays visible with a reason and never reaches the board'
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	await expect(page.locator('[data-shape-id]')).toHaveCount(0)
 })
+
+test('undoing a concurrently committed create keeps peer shapes', async ({ page, request }) => {
+	await resetBoard(request, [])
+	await openCanvas(page)
+	await resetView(page)
+
+	let releaseCreate: (() => void) | undefined
+	const createGate = new Promise<void>((resolve) => {
+		releaseCreate = resolve
+	})
+	let held = false
+	await page.route('**/api/operations', async (route) => {
+		if (route.request().method() !== 'POST') {
+			await route.continue()
+			return
+		}
+		const payload = route.request().postDataJSON() as { operations?: { type?: string }[] }
+		if (payload.operations?.[0]?.type === 'create' && !held) {
+			held = true
+			await createGate
+		}
+		await route.continue()
+	})
+
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	const start = await worldPoint(page, 260, 240)
+	const end = await worldPoint(page, 420, 360)
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y, { steps: 4 })
+	await page.mouse.up()
+	await expect.poll(() => held).toBe(true)
+
+	const peerWrite = await request.post('/api/operations', {
+		data: {
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'peer-note-concurrent',
+						type: 'note',
+						x: 680,
+						y: 220,
+						w: 160,
+						h: 140,
+						color: '#fff8d4',
+						text: 'Peer note',
+					},
+				},
+			],
+		},
+	})
+	expect(peerWrite.ok()).toBe(true)
+	releaseCreate?.()
+
+	await expect.poll(async () => (await board(request)).shapes.length).toBe(2)
+	await expect(page.locator('[data-shape-id]')).toHaveCount(2)
+
+	await page.keyboard.press('ControlOrMeta+z')
+	await expect
+		.poll(async () => (await board(request)).shapes.map((s) => s.id))
+		.toEqual(['peer-note-concurrent'])
+	await expect(page.locator('[data-shape-id="peer-note-concurrent"]')).toHaveCount(1)
+})
