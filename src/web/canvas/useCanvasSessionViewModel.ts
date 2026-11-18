@@ -358,7 +358,14 @@ export function useCanvasSessionViewModel({
 		void initial.finally(() => {
 			if (initialFetchRef.current === initial) initialFetchRef.current = null
 		})
-		const poll = window.setInterval(() => void fetchState(false), 3000)
+		let pollInFlight = false
+		const poll = window.setInterval(() => {
+			if (pollInFlight) return
+			pollInFlight = true
+			void fetchState(false).finally(() => {
+				pollInFlight = false
+			})
+		}, 3000)
 
 		return () => {
 			stopped = true

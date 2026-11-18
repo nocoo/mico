@@ -292,3 +292,33 @@ test('a stale poll cannot resurrect the previous canvas for a late upload', asyn
 	await expect.poll(async () => (await snapshot(request)).activeCanvasId, POLL).toBe(secondId)
 	await expect.poll(() => imageShapeCount(request, [firstId, secondId]), POLL).toBe(0)
 })
+
+test('the state poll stays single-flight while a response is slow', async ({ page, request }) => {
+	const { firstId } = await createRaceCanvases(request)
+	await openCanvas(page)
+
+	const pollGate = gate()
+	let started = 0
+	let finished = 0
+	try {
+		await page.route(
+			(url) => url.pathname === '/api/state' && url.searchParams.get('previews') === '0',
+			async (route) => {
+				started += 1
+				await pollGate.promise
+				const response = await route.fetch()
+				finished += 1
+				await route.fulfill({ response })
+			},
+		)
+		await page.waitForTimeout(6500)
+		expect(started).toBe(1)
+	} finally {
+		pollGate.release()
+		await page.unrouteAll({ behavior: 'ignoreErrors' })
+	}
+	await expect.poll(() => finished, POLL).toBeGreaterThanOrEqual(1)
+	await expect
+		.poll(async () => (await request.get(`/api/canvases/${firstId}`)).ok(), POLL)
+		.toBe(true)
+})
