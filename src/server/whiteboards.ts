@@ -27,6 +27,7 @@ export class Whiteboards {
 	private readonly sessions = new Map<string, Membership>()
 	private readonly views = new Map<string, PresenterView>()
 	private readonly requests = new Map<string, Set<string>>()
+	private readonly requestTimers = new Map<string, ReturnType<typeof setTimeout>>()
 	private readonly invites = new Map<string, PresenterInvite>()
 	private readonly timer: ReturnType<typeof setInterval>
 
@@ -207,16 +208,21 @@ export class Whiteboards {
 					if (member.member.sharer) return
 					if (!message.requested) {
 						this.requests.get(member.whiteboardid)?.delete(member.member.id)
+						if (!this.requests.get(member.whiteboardid)?.size) {
+							this.clearRequestTimer(member.whiteboardid)
+						}
 						this.emitPresence(member.whiteboardid)
 						return
 					}
 					if (!this.presenter(member.whiteboardid, member)) {
 						member.member.sharer = true
 						this.requests.get(member.whiteboardid)?.delete(member.member.id)
+						this.clearRequestTimer(member.whiteboardid)
 						this.emitPresence(member.whiteboardid)
 						return
 					}
 					this.requestsFor(member.whiteboardid).add(member.member.id)
+					this.scheduleAutoApprove(member.whiteboardid)
 					this.emitPresence(member.whiteboardid)
 				} else if (message.type === 'transfer-presenter') {
 					if (!member.member.sharer) {
@@ -232,6 +238,9 @@ export class Whiteboards {
 						return
 					}
 					this.requests.get(member.whiteboardid)?.delete(message.targetMemberId)
+					if (!this.requests.get(member.whiteboardid)?.size) {
+						this.clearRequestTimer(member.whiteboardid)
+					}
 					this.emitPresence(member.whiteboardid)
 				} else if (message.type === 'invite-presenter') {
 					if (!member.member.sharer) {
@@ -287,7 +296,49 @@ export class Whiteboards {
 		const requests = this.requests.get(from.whiteboardid)
 		requests?.delete(to.member.id)
 		requests?.delete(from.member.id)
+		if (!requests?.size) this.clearRequestTimer(from.whiteboardid)
 		this.emitPresence(from.whiteboardid)
+	}
+
+	private clearRequestTimer(whiteboardid: string) {
+		const timer = this.requestTimers.get(whiteboardid)
+		if (timer) {
+			clearTimeout(timer)
+			this.requestTimers.delete(whiteboardid)
+		}
+	}
+
+	private scheduleAutoApprove(whiteboardid: string) {
+		this.clearRequestTimer(whiteboardid)
+		const timer = setTimeout(() => {
+			this.requestTimers.delete(whiteboardid)
+			const requests = this.requests.get(whiteboardid)
+			if (!requests || requests.size === 0) return
+			let target: Membership | undefined
+			for (const requesterId of requests) {
+				target = [...this.sessions.values()].find(
+					(candidate) =>
+						candidate.whiteboardid === whiteboardid &&
+						candidate.socket?.readyState === WebSocket.OPEN &&
+						candidate.member.id === requesterId,
+				)
+				if (target) break
+			}
+			if (!target) {
+				this.emitPresence(whiteboardid)
+				return
+			}
+			const currentPresenter = this.presenter(whiteboardid, target)
+			if (currentPresenter) {
+				this.commitTransfer(currentPresenter, target)
+			} else {
+				target.member.sharer = true
+				requests.delete(target.member.id)
+				this.emitPresence(whiteboardid)
+			}
+		}, 20_000)
+		timer.unref()
+		this.requestTimers.set(whiteboardid, timer)
 	}
 
 	private requestsFor(whiteboardid: string): Set<string> {
@@ -397,6 +448,8 @@ export class Whiteboards {
 		this.sessions.clear()
 		this.views.clear()
 		this.requests.clear()
+		for (const timer of this.requestTimers.values()) clearTimeout(timer)
+		this.requestTimers.clear()
 		this.invites.clear()
 	}
 }
