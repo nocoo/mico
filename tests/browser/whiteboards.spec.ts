@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { board, ISOLATED_ORIGIN, openAssistant, resetBoard } from './support'
+import { board, closeAssistant, ISOLATED_ORIGIN, openAssistant, resetBoard } from './support'
 
 test.beforeEach(({ baseURL }) => {
 	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to use a non-isolated whiteboard')
@@ -616,4 +616,78 @@ test('guest sticky note selection renders remote selection highlight in presente
 	expect(borderColor).not.toBe('')
 
 	await guest.close()
+})
+
+const MEETING_PNG = Buffer.from(
+	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+	'base64',
+)
+
+test('a unicode meeting id scopes drawing through the query parameter', async ({
+	page,
+	request,
+}) => {
+	const meeting = '物理课-第3节'
+	const scoped = (path: string) => `${path}?meetingid=${encodeURIComponent(meeting)}`
+	const operationUrls: string[] = []
+	page.on('request', (sent) => {
+		if (sent.method() === 'POST' && new URL(sent.url()).pathname === '/api/operations')
+			operationUrls.push(sent.url())
+	})
+
+	await page.goto(`/?meetingid=${encodeURIComponent(meeting)}&username=Editor`)
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
+	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
+	await page.mouse.move(420, 380)
+	await page.mouse.down()
+	await page.mouse.move(660, 500, { steps: 5 })
+	await page.mouse.up()
+
+	await expect.poll(() => page.locator('.canvas-shape').count()).toBeGreaterThanOrEqual(1)
+	const shapeId = await page.locator('.canvas-shape').first().getAttribute('data-shape-id')
+	expect(shapeId).toBeTruthy()
+	await expect(page.locator(`[data-shape-id="${shapeId}"]`)).toHaveCount(1)
+	expect(operationUrls.length).toBeGreaterThan(0)
+	for (const url of operationUrls) {
+		expect(new URL(url).searchParams.get('meetingid')).toBe(meeting)
+	}
+	await expect
+		.poll(async () => {
+			const meetingBoard = (await (await request.get(scoped('/api/board'))).json()) as {
+				shapes: { id?: string; type: string }[]
+			}
+			return meetingBoard.shapes.some((shape) => shape.id === shapeId && shape.type === 'rectangle')
+		})
+		.toBe(true)
+})
+
+test('meeting-scoped uploads render scoped image assets', async ({ page, request }) => {
+	const meeting = '美术课-第3节'
+	const scoped = (path: string) => `${path}?meetingid=${encodeURIComponent(meeting)}`
+	await page.goto(`/?meetingid=${encodeURIComponent(meeting)}&username=Editor`)
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await closeAssistant(page)
+
+	const assetResponse = page.waitForResponse(
+		(response) => {
+			const url = new URL(response.url())
+			return (
+				/^\/api\/images\/[^/]+$/.test(url.pathname) && url.searchParams.get('meetingid') === meeting
+			)
+		},
+		{ timeout: 10000 },
+	)
+	await page.getByLabel('Choose image').setInputFiles({
+		name: 'meeting.png',
+		mimeType: 'image/png',
+		buffer: MEETING_PNG,
+	})
+	expect((await assetResponse).status()).toBe(200)
+	await expect(page.locator('.canvas-image')).toHaveCount(1)
+
+	const boardResponse = await request.get(scoped('/api/board'))
+	expect(boardResponse.ok()).toBe(true)
+	const meetingBoard = (await boardResponse.json()) as { shapes: { type: string }[] }
+	expect(meetingBoard.shapes.some((shape) => shape.type === 'image')).toBe(true)
 })
