@@ -53,6 +53,52 @@ test('demo presenters can draw, create and switch canvases while retaining their
 	expect((await request.delete(`/api/canvases/${created.activeCanvasId}`)).ok()).toBe(true)
 })
 
+test('presence tokens ride only canvas-management requests', async ({ page, request }) => {
+	await resetBoard(request, [])
+	await page.route('/api/runtime', (route) =>
+		route.fulfill({
+			contentType: 'application/json',
+			body: JSON.stringify({
+				auth: { mode: 'demo' },
+				aiEnabled: false,
+				aiSettingsVisible: false,
+				mossEnabled: false,
+				ephemeral: false,
+			}),
+		}),
+	)
+	await page.goto('/?sharer=true')
+	await expect(page.locator('.whiteboard-cursors')).toHaveCount(1)
+
+	const stateTokens: string[] = []
+	page.on('request', (sent) => {
+		const url = new URL(sent.url())
+		if (sent.method() === 'GET' && url.pathname === '/api/state')
+			stateTokens.push(sent.headers()['x-mico-whiteboard'] ?? '')
+	})
+	await expect.poll(() => stateTokens.length, { timeout: 8000 }).toBeGreaterThan(0)
+
+	let renameToken = ''
+	await page.route(/\/api\/canvases\/[^/]+$/, async (route) => {
+		if (route.request().method() !== 'PATCH') {
+			await route.continue()
+			return
+		}
+		renameToken = route.request().headers()['x-mico-whiteboard'] ?? ''
+		await route.continue()
+	})
+	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
+	const panel = page.getByRole('region', { name: 'Canvases' })
+	const mainItem = panel.locator('.canvas-item').filter({ hasText: 'My canvas' })
+	await mainItem.hover()
+	await panel.getByRole('button', { name: 'Rename My canvas', exact: true }).click()
+	await panel.getByLabel('Canvas name').fill('Token check')
+	await panel.getByLabel('Canvas name').press('Enter')
+	await expect.poll(() => renameToken).not.toBe('')
+	expect(renameToken.length).toBeGreaterThan(0)
+	expect(stateTokens.every((token) => token === '')).toBe(true)
+})
+
 test('demo guests see the server hint when canvas creation or switching is rejected', async ({
 	page,
 	request,

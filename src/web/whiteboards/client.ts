@@ -99,6 +99,6 @@ export const canvasFetch: typeof fetch = (input, init) => {
 	new Headers(init?.headers).forEach((value, key) => {
 		headers.set(key, value)
 	})
-	if (active) headers.set('X-Mico-Whiteboard', active.session.token)
+	if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
 	return fetch(input, { ...init, headers })
 }
