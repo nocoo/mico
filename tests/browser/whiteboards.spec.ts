@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test'
+import type { CanvasSnapshot } from '../../src/shared/types'
 import { board, closeAssistant, ISOLATED_ORIGIN, openAssistant, resetBoard } from './support'
 
 test.beforeEach(({ baseURL }) => {
@@ -89,9 +90,12 @@ test('presence tokens ride only canvas-management requests', async ({ page, requ
 	})
 	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
 	const panel = page.getByRole('region', { name: 'Canvases' })
-	const mainItem = panel.locator('.canvas-item').filter({ hasText: 'My canvas' })
+	const current = (await (await request.get('/api/state')).json()) as CanvasSnapshot
+	const activeName = current.canvases.find((canvas) => canvas.id === current.activeCanvasId)?.name
+	if (!activeName) throw new Error('Missing the active canvas name')
+	const mainItem = panel.locator('.canvas-item').filter({ hasText: activeName })
 	await mainItem.hover()
-	await panel.getByRole('button', { name: 'Rename My canvas', exact: true }).click()
+	await panel.getByRole('button', { name: `Rename ${activeName}`, exact: true }).click()
 	await panel.getByLabel('Canvas name').fill('Token check')
 	await panel.getByLabel('Canvas name').press('Enter')
 	await expect.poll(() => renameToken).not.toBe('')
