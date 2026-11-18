@@ -911,6 +911,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				if (runtimeConfig.auth.mode === 'demo' || membership)
+					whiteboards.requirePresenter(membership)
 				const response = await createMossSession(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
@@ -927,6 +929,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
+				if (runtimeConfig.auth.mode === 'demo' || membership)
+					whiteboards.requirePresenter(membership)
 				const response = await executeMossTool(store, send, await readCanvasRequest(), images())
 				sendJson(res, 200, response, origin)
 				return
@@ -976,8 +980,8 @@ export function createDaemon(
 					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Method not allowed', origin)
 					return
 				}
-				if (runtimeConfig.auth.mode === 'demo' && !membership)
-					throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
+				if (runtimeConfig.auth.mode === 'demo' || membership)
+					whiteboards.requirePresenter(membership)
 				const request = await parseAiChatRequest(await readCanvasRequest())
 				const model = aiModel ? aiModel : modelFactory(aiSettings.getEffective())
 				await streamAiChat({
@@ -1099,11 +1103,12 @@ export function createDaemon(
 			if (sharedVoice && !member)
 				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
 			if (
-				runtimeConfig.auth.mode === 'demo' &&
+				runtimeConfig.aiEnabled &&
+				isAiIpAllowed(req) &&
 				(pathname === MAI_LOCAL_PATH || pathname === MOSS_LOCAL_PATH) &&
-				!member
+				(runtimeConfig.auth.mode === 'demo' || member)
 			) {
-				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
+				whiteboards.requirePresenter(member)
 			}
 			if (member) req.headers['x-mico-whiteboard'] = member.token
 		} catch {
