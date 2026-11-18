@@ -14,6 +14,7 @@ import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } fr
 import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { AuthManager } from './auth.ts'
+import { boardEvent } from './boardEvent.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
 import { extractClientIp, isIpAllowed, parseCidrList } from './ipAllowlist.ts'
 import {
@@ -1052,12 +1053,7 @@ export function createDaemon(
 					return
 				}
 				const result = await store.applyRequest(await readCanvasRequest(true))
-				send({
-					type: 'board',
-					canvasId: result.canvasId,
-					canvas: result.canvas,
-					board: result.board,
-				})
+				send(boardEvent(result))
 				sendJson(res, 200, result.board, origin)
 				return
 			}

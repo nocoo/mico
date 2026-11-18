@@ -2,6 +2,7 @@ import { type ChildProcess, spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import { type ImageProviderConfig, loadImageConfig } from './aiConfig.ts'
+import { boardEvent } from './boardEvent.ts'
 import type { GeneratedImagePlacement, TenantStore } from './store.ts'
 import { MAX_CANVAS_IMAGES, OperationError } from './store.ts'
 
@@ -435,12 +436,7 @@ export class ImageGenerationService {
 			job.width = result.position.w
 			job.height = result.position.h
 			job.backgroundApplied = result.backgroundApplied
-			this.broadcast({
-				type: 'board',
-				canvasId: result.canvasId,
-				canvas: result.canvas,
-				board: result.board,
-			})
+			this.broadcast(boardEvent(result))
 		} catch (error) {
 			if (error instanceof OperationError) this.fail(job, error.code, error.message)
 			else this.fail(job, 'IMAGE_GENERATION_FAILED', 'Image generation failed')
