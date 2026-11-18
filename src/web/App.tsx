@@ -1741,7 +1741,11 @@ export default function App({
 				</div>
 			)}
 
-			{notice && <div className="notice">{notice}</div>}
+			{notice && (
+				<div className="notice" role="status">
+					{notice}
+				</div>
+			)}
 
 			<CanvasView
 				svgRef={svgRef}

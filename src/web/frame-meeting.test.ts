@@ -34,3 +34,29 @@ test('meeting view reflects live presence members, presenter name, and keeps har
 	assert.equal(model.participants[0].id, 'm1')
 	assert.equal(model.participants[1].id, 'm2')
 })
+
+test('live avatars follow presenter identity, not stale sharer flags or duplicate names', () => {
+	const members = [
+		{ id: 'a', username: 'Ada', sharer: true, color: '#6844bd', cursor: null },
+		{ id: 'b', username: 'Ada', sharer: false, color: '#006f91', cursor: null },
+	]
+	const model = meetingPreview({ members, presenterId: 'b', selfId: 'a' })
+	assert.deepEqual(
+		model.participants.map(({ id, presenter, self }) => ({ id, presenter, self })),
+		[
+			{ id: 'a', presenter: false, self: true },
+			{ id: 'b', presenter: true, self: false },
+		],
+	)
+	assert.equal(model.controlsEnabled, false)
+	assert.equal(
+		meetingPreview({ members, presenterId: null, selfId: null }).participants.some(
+			(participant) => participant.presenter,
+		),
+		false,
+	)
+	assert.deepEqual(
+		meetingPreview({ members: [], presenterId: null, selfId: null }).participants,
+		[],
+	)
+})

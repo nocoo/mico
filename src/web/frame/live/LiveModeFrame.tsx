@@ -6,6 +6,7 @@ import {
 	MonitorSpeaker,
 	Navigation,
 	PanelRightOpen,
+	Presentation,
 	Square,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -127,14 +128,20 @@ export function LiveModeFrame({
 							className="meeting-avatar"
 							role="img"
 							style={{ background: participant.hexColor }}
+							data-presenter={participant.presenter || undefined}
 							title={
 								participant.isSelf
 									? `${participant.name} (${messages.common.you})`
 									: participant.name
 							}
-							aria-label={participant.name}
+							aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${participant.presenter ? 'presenter' : 'participant'}`}
 						>
 							{participant.initial}
+							{participant.presenter && (
+								<span className="meeting-presenter-badge" aria-hidden="true">
+									<Presentation />
+								</span>
+							)}
 						</span>
 					))}
 					{meetingModel.overflowCount > 0 && (

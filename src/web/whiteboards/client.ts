@@ -80,7 +80,12 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		url.pathname.startsWith('/api/ai/') ||
 		url.pathname.startsWith('/api/moss/') ||
 		url.pathname === '/mai/config'
-	const includeWhiteboard = Boolean(active && isAiPath)
+	const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
+	const isCanvasMutation =
+		(url.pathname === '/api/canvases' && method === 'POST') ||
+		(url.pathname === '/api/active-canvas' && method === 'PUT') ||
+		(/^\/api\/canvases\/[^/]+$/.test(url.pathname) && (method === 'PATCH' || method === 'DELETE'))
+	const includeWhiteboard = Boolean(active && (isAiPath || isCanvasMutation))
 	if (!includeWhiteboard && !meetingId) return fetch(input, init)
 	const headers = new Headers(input instanceof Request ? input.headers : undefined)
 	new Headers(init?.headers).forEach((value, key) => {

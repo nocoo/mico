@@ -8,6 +8,14 @@ export interface MeetingParticipant {
 	readonly initial: string
 	readonly hexColor: string
 	readonly isSelf: boolean
+	readonly self: boolean
+	readonly presenter: boolean
+}
+
+export interface MeetingPresence {
+	readonly members: readonly WhiteboardMember[]
+	readonly presenterId: string | null
+	readonly selfId: string | null
 }
 
 export interface MeetingViewModel {
@@ -66,6 +74,8 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 					initial: initialFor(selfName),
 					hexColor: '#00a2e1',
 					isSelf: true,
+					self: true,
+					presenter: false,
 				},
 			],
 			overflowCount: 0,
@@ -91,13 +101,18 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 	const visible = ordered.slice(0, MAX_VISIBLE_AVATARS)
 	const participants: MeetingParticipant[] =
 		visible.length > 0
-			? visible.map((member) => ({
-					id: member.id,
-					name: member.username,
-					initial: initialFor(member.username),
-					hexColor: member.color,
-					isSelf: member.id === input.selfId,
-				}))
+			? visible.map((member) => {
+					const isSelf = member.id === input.selfId
+					return {
+						id: member.id,
+						name: member.username,
+						initial: initialFor(member.username),
+						hexColor: member.color,
+						isSelf,
+						self: isSelf,
+						presenter: member.id === input.presenterId,
+					}
+				})
 			: [
 					{
 						id: 'self',
@@ -105,6 +120,8 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 						initial: initialFor(input.selfName?.trim() || messages.common.you),
 						hexColor: '#00a2e1',
 						isSelf: true,
+						self: true,
+						presenter: false,
 					},
 				]
 
@@ -119,7 +136,18 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 	}
 }
 
-export function meetingPreview(): MeetingViewModel {
+export function meetingPreview(presence?: MeetingPresence): MeetingViewModel {
+	if (presence) {
+		const model = buildMeetingViewModel({
+			presenceActive: true,
+			authMode: 'demo',
+			canvasName: '',
+			members: presence.members,
+			presenterId: presence.presenterId,
+			selfId: presence.selfId,
+		})
+		return presence.members.length === 0 ? { ...model, participants: [] } : model
+	}
 	return buildMeetingViewModel({
 		presenceActive: false,
 		authMode: 'none',

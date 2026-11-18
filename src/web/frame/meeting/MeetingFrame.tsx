@@ -1,4 +1,4 @@
-import { Mic, Phone, Video } from 'lucide-react'
+import { Mic, Phone, Presentation, Video } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import type { AuthMode } from '../../../shared/runtime'
 import type { WhiteboardMember } from '../../../shared/whiteboards'
@@ -37,12 +37,18 @@ export function MeetingView({ model }: { model: MeetingViewModel }) {
 						className="meeting-avatar"
 						role="img"
 						style={{ background: participant.hexColor }}
+						data-presenter={participant.presenter || undefined}
 						title={
 							participant.isSelf ? `${participant.name} (${messages.common.you})` : participant.name
 						}
-						aria-label={participant.name}
+						aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${participant.presenter ? 'presenter' : 'participant'}`}
 					>
 						{participant.initial}
+						{participant.presenter && (
+							<span className="meeting-presenter-badge" aria-hidden="true">
+								<Presentation />
+							</span>
+						)}
 					</span>
 				))}
 				{model.overflowCount > 0 && (

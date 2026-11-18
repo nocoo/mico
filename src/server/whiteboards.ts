@@ -197,17 +197,16 @@ export class Whiteboards {
 		return member
 	}
 
-	requirePresenter(member: Membership | undefined) {
+	requirePresenter(
+		member: Membership | undefined,
+		message = 'This action is not allowed in your whiteboard session.',
+	) {
 		if (
 			member?.member.sharer &&
 			(member.socket?.readyState === WebSocket.OPEN || member.reservedUntil > Date.now())
 		)
 			return
-		throw new OperationError(
-			403,
-			'WHITEBOARD_READ_ONLY',
-			'This action is not allowed in your whiteboard session.',
-		)
+		throw new OperationError(403, 'WHITEBOARD_READ_ONLY', message)
 	}
 
 	attach(member: Membership, socket: WebSocket) {
