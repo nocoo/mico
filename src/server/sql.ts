@@ -4,7 +4,7 @@ import { DatabaseSync } from 'node:sqlite'
 
 export type SqlValue = string | number | Uint8Array | null
 
-export type SqlDialect = 'sqlite' | 'postgres' | 'd1'
+export type SqlDialect = 'sqlite' | 'postgres'
 
 export interface SqlTransaction {
 	exec(sql: string): Promise<void>
@@ -15,8 +15,8 @@ export interface SqlTransaction {
 }
 
 /**
- * Transaction isolation request. Drivers without per-transaction isolation
- * (SQLite, D1) ignore it; PostgreSQL starts `REPEATABLE READ` only when asked
+ * Transaction isolation request. The SQLite driver ignores it; PostgreSQL
+ * starts `REPEATABLE READ` only when asked
  * and keeps its default `READ COMMITTED` otherwise. Only pure-read callers ask
  * for a snapshot: they issue no writes, so a stable snapshot cannot fail to
  * serialize, and transactions are never replayed.

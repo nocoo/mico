@@ -6,9 +6,7 @@ import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
 import { createMemoryBlobStore, imageBlobKey } from './blob.ts'
 import { createAzureBlobStore } from './blob-azure.ts'
-import { createR2BlobStore, type R2BucketLike, signR2S3Request } from './blob-r2.ts'
 import { createSqliteSql, rewritePgPlaceholders, splitSqlStatements } from './sql.ts'
-import { createD1Sql, type D1DatabaseLike, type D1PreparedStatementLike } from './sql-d1.ts'
 import { createPostgresSql, type PgClientLike, type PgPoolLike } from './sql-postgres.ts'
 import { createBoardStoreFromEnv, resolveStorageBackend } from './storage.ts'
 import { BoardStore, MAX_CANVAS_IMAGES, OperationError } from './store.ts'
@@ -89,77 +87,6 @@ function createFakePgPool(): {
 	}
 
 	return { pool, queries, txCalls, closed: () => isClosed }
-}
-
-function createFakeD1Database(): {
-	db: D1DatabaseLike
-	close: () => void
-} {
-	const sqlite = new DatabaseSync(':memory:')
-	const makeStatement = (
-		query: string,
-		values: readonly unknown[] = [],
-	): D1PreparedStatementLike => ({
-		bind(...nextValues: readonly unknown[]) {
-			return makeStatement(query, nextValues)
-		},
-		async first<T>() {
-			const row = sqlite.prepare(query).get(...(values as never[]))
-			return (row ?? null) as T | null
-		},
-		async all<T>() {
-			const results = sqlite.prepare(query).all(...(values as never[])) as T[]
-			return { results, meta: { changes: 0 } }
-		},
-		async run() {
-			const res = sqlite.prepare(query).run(...(values as never[]))
-			return { results: [], meta: { changes: Number(res.changes) } }
-		},
-	})
-
-	return {
-		db: {
-			prepare(query) {
-				return makeStatement(query)
-			},
-			async batch<T>(statements: readonly D1PreparedStatementLike[]) {
-				const results = []
-				for (const stmt of statements) {
-					results.push(await stmt.all<T>())
-				}
-				return results
-			},
-		},
-		close: () => sqlite.close(),
-	}
-}
-
-function createFakeR2Bucket(): R2BucketLike {
-	const store = new Map<string, { bytes: Uint8Array; contentType?: string }>()
-	return {
-		async put(key, value, options) {
-			const bytes =
-				typeof value === 'string'
-					? new TextEncoder().encode(value)
-					: value instanceof ArrayBuffer
-						? new Uint8Array(value)
-						: new Uint8Array(value.buffer, value.byteOffset, value.byteLength)
-			store.set(key, { bytes, contentType: options?.httpMetadata?.contentType })
-		},
-		async get(key) {
-			const entry = store.get(key)
-			if (!entry) return null
-			return {
-				httpMetadata: { contentType: entry.contentType },
-				async arrayBuffer() {
-					return entry.bytes.slice().buffer
-				},
-			}
-		},
-		async delete(key) {
-			store.delete(key)
-		},
-	}
 }
 
 test('rewritePgPlaceholders rewrites unquoted ? while ignoring literals and comments', () => {
@@ -309,129 +236,18 @@ test('BoardStore cleans up uploaded blob if SQL metadata insert fails', async ()
 	await boards.close()
 })
 
-test('Cloudflare D1 binding + R2 binding supports full BoardStore lifecycle', async () => {
-	const fakeD1 = createFakeD1Database()
-	const r2Bucket = createFakeR2Bucket()
-	const sql = createD1Sql(fakeD1.db)
-	const blobs = createR2BlobStore(r2Bucket)
-
-	assert.equal(sql.dialect, 'd1')
-	assert.equal(sql.concurrent, false)
-
-	const boards = new BoardStore({ sql, blobs })
-	const demo = boards.forTenant({ tenantId: 'demo' })
-	const created = await demo.createCanvas('CF D1 Canvas', true)
-	assert.equal(created.state.canvases.length, 2)
-
-	const img = new Uint8Array([0x52, 0x49, 0x46, 0x46])
-	const imageId = await demo.saveImage(img, 'image/webp')
-	const loaded = await demo.getImage(imageId)
-	assert.deepEqual(loaded?.bytes, img)
-	assert.equal(loaded?.contentType, 'image/webp')
-
-	await boards.close()
-	fakeD1.close()
-})
-
-test('Cloudflare D1 HTTP + R2 S3 REST clients format requests and signatures correctly', async () => {
-	const d1Calls: Array<{ url: string; sql: string; params: unknown[] }> = []
-	const fakeD1 = createFakeD1Database()
-
-	const d1Fetch: typeof fetch = async (input, init) => {
-		const body = JSON.parse(String(init?.body ?? '{}')) as { sql: string; params: unknown[] }
-		d1Calls.push({ url: String(input), sql: body.sql, params: body.params })
-		const headers = (init?.headers ?? {}) as Record<string, string>
-		assert.equal(headers.Authorization, 'Bearer cf-token')
-
-		const stmt = fakeD1.db.prepare(body.sql)
-		const bound = body.params.length > 0 ? stmt.bind(...body.params) : stmt
-		const res = /^(SELECT|WITH)\b/i.test(body.sql.trim()) ? await bound.all() : await bound.run()
-		return new Response(
-			JSON.stringify({
-				success: true,
-				result: [{ success: true, results: res.results ?? [], meta: res.meta ?? { changes: 0 } }],
-			}),
-			{ status: 200, headers: { 'content-type': 'application/json' } },
-		)
-	}
-
-	const r2Objects = new Map<string, { bytes: Uint8Array; contentType: string }>()
-	const r2AuthHeaders: string[] = []
-	const r2Fetch: typeof fetch = async (input, init) => {
-		const url = new URL(String(input))
-		const headers = (init?.headers ?? {}) as Record<string, string>
-		r2AuthHeaders.push(headers.Authorization ?? '')
-		assert.ok(headers['x-amz-content-sha256'])
-		assert.ok(headers['x-amz-date'])
-		const key = decodeURIComponent(url.pathname.replace(/^\/mico-r2\//, ''))
-
-		if (init?.method === 'PUT') {
-			r2Objects.set(key, {
-				bytes: new Uint8Array(init.body as Uint8Array),
-				contentType: headers['content-type'] ?? 'application/octet-stream',
-			})
-			return new Response(null, { status: 200 })
-		}
-		if (init?.method === 'GET') {
-			const entry = r2Objects.get(key)
-			if (!entry) return new Response(null, { status: 404 })
-			return new Response(Buffer.from(entry.bytes), {
-				status: 200,
-				headers: { 'content-type': entry.contentType },
-			})
-		}
-		if (init?.method === 'DELETE') {
-			r2Objects.delete(key)
-			return new Response(null, { status: 204 })
-		}
-		return new Response(null, { status: 405 })
-	}
-
-	const sql = createD1Sql({
-		accountId: 'acc-1',
-		databaseId: 'db-1',
-		apiToken: 'cf-token',
-		fetch: d1Fetch,
-	})
-	const blobs = createR2BlobStore({
-		accountId: 'acc-1',
-		bucket: 'mico-r2',
-		accessKeyId: 'AKID',
-		secretAccessKey: 'SECRET',
-		fetch: r2Fetch,
-	})
-
-	const boards = new BoardStore({ sql, blobs })
-	const store = boards.forTenant({ tenantId: 'local' })
-	const imageId = await store.saveImage(new Uint8Array([9, 8, 7]), 'image/png')
-	const fetched = await store.getImage(imageId)
-
-	assert.deepEqual(fetched?.bytes, new Uint8Array([9, 8, 7]))
-	assert.equal(fetched?.contentType, 'image/png')
-	assert.ok(d1Calls.every((c) => c.url.endsWith('/accounts/acc-1/d1/database/db-1/query')))
-	assert.ok(r2AuthHeaders.every((h) => h.startsWith('AWS4-HMAC-SHA256 Credential=AKID/')))
-
-	// Verify deterministic SigV4 output
-	const sigHeaders = signR2S3Request({
-		method: 'GET',
-		url: new URL('https://acc-1.r2.cloudflarestorage.com/mico-r2/local/test'),
-		accessKeyId: 'AKID',
-		secretAccessKey: 'SECRET',
-		region: 'auto',
-		payload: new Uint8Array(0),
-		now: new Date('2026-11-18T00:00:00.000Z'),
-	})
-	assert.match(sigHeaders.Authorization, /Credential=AKID\/20261118\/auto\/s3\/aws4_request/)
-
-	await boards.close()
-	fakeD1.close()
-})
-
-test('storage factory resolves sqlite/azure/cloudflare and fails fast on missing config', async () => {
+test('storage factory resolves sqlite/azure and rejects unsupported backends', async () => {
 	assert.equal(resolveStorageBackend({}), 'sqlite')
 	assert.equal(resolveStorageBackend({ MICO_STORAGE_BACKEND: 'azure' }), 'azure')
-	assert.equal(resolveStorageBackend({ MICO_STORAGE_BACKEND: 'CLOUDFLARE' }), 'cloudflare')
+	assert.throws(
+		() => resolveStorageBackend({ MICO_STORAGE_BACKEND: 'CLOUDFLARE' }),
+		/cloudflare is unsupported: D1 provides no interactive transactions/,
+	)
 	assert.throws(() => resolveStorageBackend({ MICO_STORAGE_BACKEND: 'mysql' }), /Unsupported/)
+	assert.throws(
+		() => createBoardStoreFromEnv({ MICO_STORAGE_BACKEND: 'cloudflare' }),
+		/cloudflare is unsupported/,
+	)
 
 	assert.throws(() => createBoardStoreFromEnv({ MICO_STORAGE_BACKEND: 'azure' }), /MICO_PG_URL/)
 	assert.throws(
@@ -441,10 +257,6 @@ test('storage factory resolves sqlite/azure/cloudflare and fails fast on missing
 				MICO_PG_URL: 'postgres://user:pass@localhost:5432/mico',
 			}),
 		/MICO_AZURE_STORAGE_ACCOUNT/,
-	)
-	assert.throws(
-		() => createBoardStoreFromEnv({ MICO_STORAGE_BACKEND: 'cloudflare' }),
-		/MICO_CF_ACCOUNT_ID/,
 	)
 
 	const dir = mkdtempSync(join(tmpdir(), 'mico-storage-factory-'))
