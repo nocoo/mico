@@ -1,6 +1,7 @@
 import { Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { WhiteboardMember } from '../../../shared/whiteboards'
+import { useI18n } from '../../i18n'
 
 const DEFAULT_DURATION_MS = 20_000
 const EXIT_ANIMATION_MS = 220
@@ -24,6 +25,7 @@ export function PresenterRequestDialog({
 	onDecline,
 	durationMs = DEFAULT_DURATION_MS,
 }: PresenterRequestDialogProps) {
+	const { messages } = useI18n()
 	const requesters = useMemo(() => {
 		const memberMap = new Map(members.map((member) => [member.id, member]))
 		const list: WhiteboardMember[] = []
@@ -99,7 +101,7 @@ export function PresenterRequestDialog({
 		<aside
 			className={`presenter-request-dialog${closing ? ' is-closing' : ''}`}
 			role="dialog"
-			aria-label="Presenter requests"
+			aria-label={messages.demo.requestTitlePlural(requesters.length)}
 			aria-live="polite"
 		>
 			<div className="presenter-request-header">
@@ -109,18 +111,21 @@ export function PresenterRequestDialog({
 					</span>
 					<span className="presenter-request-title">
 						{requesters.length === 1
-							? 'Presenter request'
-							: `${requesters.length} presenter requests`}
+							? messages.demo.requestTitleSingle
+							: messages.demo.requestTitlePlural(requesters.length)}
 					</span>
 				</span>
 				<span className="presenter-request-meta">
-					<span className="presenter-request-timer" title={`${remainingSeconds} seconds left`}>
+					<span
+						className="presenter-request-timer"
+						title={messages.demo.secondsLeft(remainingSeconds)}
+					>
 						{remainingSeconds}s
 					</span>
 					<button
 						type="button"
 						className="presenter-request-dismiss"
-						aria-label="Ignore presenter requests"
+						aria-label={messages.demo.ignoreRequests}
 						onClick={() => setClosing(true)}
 					>
 						<X size={14} aria-hidden="true" />
@@ -143,14 +148,14 @@ export function PresenterRequestDialog({
 								className="demo-member-btn demo-member-btn--primary"
 								onClick={() => onApprove(member.id)}
 							>
-								Approve
+								{messages.demo.approve}
 							</button>
 							<button
 								type="button"
 								className="demo-member-btn"
 								onClick={() => onDecline(member.id)}
 							>
-								Decline
+								{messages.demo.decline}
 							</button>
 						</span>
 					</li>

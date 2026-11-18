@@ -54,13 +54,18 @@ test('desktop frame follows reference geometry while preserving Mico identity', 
 	expect(meetingBox.x).toBeCloseTo(identity.x + identity.width + 10, 1)
 	expect(meetingBox.y).toBe(14)
 	expect(meetingBox.height).toBe(56)
-	await expect(meeting).toContainText('Demo · no meeting connected')
+	await expect(meeting).toContainText('Local session')
 	await expect(meeting.getByRole('button')).toHaveCount(3)
 	for (const button of await meeting.getByRole('button').all()) await expect(button).toBeDisabled()
 
+	const liveTopbar = page.locator('.live-topbar-frame')
+	await expect(liveTopbar).toBeVisible()
+	const liveBox = await getBox(liveTopbar)
+	expect(liveBox.x).toBeGreaterThan(meetingBox.x + meetingBox.width)
+
 	const panel = page.getByRole('region', { name: 'AI assistant' })
 	expectBox(await getBox(panel), { x: 1054, y: 14, width: 372, height: 932 })
-	await expect(panel.getByRole('tab', { name: 'Audio' })).toHaveAttribute('aria-selected', 'true')
+	await expect(panel.getByRole('tab', { name: 'Chat' })).toHaveAttribute('aria-selected', 'true')
 	const empty = await getBox(page.locator('.frame-empty'))
 	expectBox(empty, { x: 260, y: 283, width: 520, height: 316 })
 	const toolbar = await getBox(page.locator('.toolbar-module'))
@@ -159,4 +164,12 @@ test('mobile frame opens with a scrollable toolbar even when the assistant is op
 		.locator('.dock-main')
 		.evaluate((element) => element.scrollWidth > element.clientWidth)
 	expect(scrollable).toBe(true)
+})
+
+test('auto-switches UI copy to Chinese when ?lang=zh is set', async ({ page }) => {
+	await page.goto('/?lang=zh')
+	await expect(page.getByRole('button', { name: '画布列表', exact: true })).toBeVisible()
+	await expect(page.locator('.meeting-frame')).toContainText('本地会话')
+	const panel = page.getByRole('region', { name: 'AI assistant' })
+	await expect(panel.getByRole('tab', { name: '对话' })).toHaveAttribute('aria-selected', 'true')
 })

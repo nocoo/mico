@@ -45,6 +45,7 @@ import { EmptyState } from './frame/empty/EmptyState'
 import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
 import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
+import type { LiveTopbarModel } from './frame/live/LiveModeFrame'
 import type { LocalModeOption } from './frame/local/LocalModeMenu'
 import { Toolbar } from './frame/toolbar'
 import { isSupportedImageFile, readImageDimensions, scaleImageDimensions } from './image'
@@ -178,6 +179,8 @@ export default function App({
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
 	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
+	const [liveTopbar, setLiveTopbar] = useState<LiveTopbarModel | null>(null)
+	const [openLiveSignal, setOpenLiveSignal] = useState(0)
 	const [aiPrompt, setAiPrompt] = useState(() =>
 		aiEnabled &&
 		(authMode !== 'demo' || initialDemoSharer()) &&
@@ -1544,6 +1547,26 @@ export default function App({
 							}
 						: undefined
 				}
+				meeting={{
+					presenceActive,
+					authMode: authMode ?? 'none',
+					canvasName: canvases.find((canvas) => canvas.id === activeCanvasId)?.name ?? 'My canvas',
+					members: presence.members,
+					presenterId: presence.presenterId,
+					selfId: demoSession?.member.id ?? null,
+					selfName: demoSession?.member.username ?? user?.name,
+				}}
+				live={
+					canUseAi && liveTopbar
+						? {
+								...liveTopbar,
+								onOpenLivePanel: () => {
+									setAiPanelOpen(true)
+									setOpenLiveSignal((value) => value + 1)
+								},
+							}
+						: null
+				}
 			/>
 			<PresenterRequestDialog
 				active={Boolean(presenceActive && demoSharer)}
@@ -1610,6 +1633,8 @@ export default function App({
 			/>
 			{canUseAi && (
 				<AssistantFrame
+					openLiveSignal={openLiveSignal}
+					onLiveStateChange={setLiveTopbar}
 					state={{
 						connection: {
 							apiConnected,

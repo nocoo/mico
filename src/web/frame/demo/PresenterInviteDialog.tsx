@@ -1,6 +1,7 @@
 import { Sparkles, X } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { PresenterInvite, WhiteboardMember } from '../../../shared/whiteboards'
+import { useI18n } from '../../i18n'
 
 const DEFAULT_DURATION_MS = 20_000
 const EXIT_ANIMATION_MS = 220
@@ -22,6 +23,7 @@ export function PresenterInviteDialog({
 	onRespond,
 	durationMs = DEFAULT_DURATION_MS,
 }: PresenterInviteDialogProps) {
+	const { messages } = useI18n()
 	const isTarget = Boolean(active && invite && selfId && invite.targetMemberId === selfId)
 	const inviter = useMemo(
 		() => (invite ? members.find((member) => member.id === invite.fromMemberId) : undefined),
@@ -81,7 +83,7 @@ export function PresenterInviteDialog({
 		<aside
 			className={`presenter-request-dialog${closing ? ' is-closing' : ''}`}
 			role="dialog"
-			aria-label="Presenter invite"
+			aria-label={messages.demo.inviteTitle}
 			aria-live="polite"
 		>
 			<div className="presenter-request-header">
@@ -89,16 +91,19 @@ export function PresenterInviteDialog({
 					<span className="presenter-request-icon" aria-hidden="true">
 						<Sparkles size={14} />
 					</span>
-					<span className="presenter-request-title">Presenter invite</span>
+					<span className="presenter-request-title">{messages.demo.inviteTitle}</span>
 				</span>
 				<span className="presenter-request-meta">
-					<span className="presenter-request-timer" title={`${remainingSeconds} seconds left`}>
+					<span
+						className="presenter-request-timer"
+						title={messages.demo.secondsLeft(remainingSeconds)}
+					>
 						{remainingSeconds}s
 					</span>
 					<button
 						type="button"
 						className="presenter-request-dismiss"
-						aria-label="Decline presenter invite"
+						aria-label={messages.demo.declineInvite}
 						onClick={() => setClosing(true)}
 					>
 						<X size={14} aria-hidden="true" />
@@ -109,11 +114,11 @@ export function PresenterInviteDialog({
 			<div className="presenter-request-item">
 				<span
 					className="demo-member-dot"
-					style={{ background: inviter?.color ?? '#6844bd' }}
+					style={{ background: inviter?.color ?? '#00a2e1' }}
 					aria-hidden="true"
 				/>
 				<span className="presenter-request-name">
-					{inviter ? `${inviter.username} invited you to present` : 'You are invited to present'}
+					{inviter ? messages.demo.invitePrompt(inviter.username) : messages.demo.inviteFallback}
 				</span>
 				<span className="presenter-request-actions">
 					<button
@@ -121,10 +126,10 @@ export function PresenterInviteDialog({
 						className="demo-member-btn demo-member-btn--primary"
 						onClick={() => onRespond(true)}
 					>
-						Accept
+						{messages.demo.accept}
 					</button>
 					<button type="button" className="demo-member-btn" onClick={() => setClosing(true)}>
-						Decline
+						{messages.demo.decline}
 					</button>
 				</span>
 			</div>

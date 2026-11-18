@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../i18n/index.ts'
 import { TARGET_RATE } from '../../stt/audioSource.ts'
 import { MaiClient, type MaiConfig } from '../../stt/maiClient.ts'
 import { openMicrophone } from '../../stt/microphone.ts'
@@ -13,6 +14,7 @@ export type MicrophonePhase = 'idle' | 'connecting' | 'listening' | 'stopping' |
 
 export interface UseMicrophoneViewModelProps {
 	active: boolean
+	canvasId?: string
 	aiBusy: boolean
 	aiQueued: number
 	aiError: boolean
@@ -105,8 +107,11 @@ export function microphonePhaseLabel(phase: MicrophonePhase) {
 						: 'Ready'
 }
 
+export type MicrophoneViewModel = ReturnType<typeof useMicrophoneViewModel>
+
 export function useMicrophoneViewModel({
 	active,
+	canvasId,
 	aiBusy,
 	aiQueued,
 	aiError,
@@ -115,10 +120,12 @@ export function useMicrophoneViewModel({
 	onSessionEnd,
 	summaryRequesting,
 }: UseMicrophoneViewModelProps) {
+	const { messages } = useI18n()
 	const runtime = useRef(newRecording())
 	const callbacks = useRef({ onStart, onSegment, onSessionEnd })
 	callbacks.current = { onStart, onSegment, onSessionEnd }
 	const stopRef = useRef<() => void>(() => {})
+	const keepAliveRef = useRef(false)
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const [phase, setPhase] = useState<MicrophonePhase>('idle')
 	const [detail, setDetail] = useState('')
@@ -211,7 +218,7 @@ export function useMicrophoneViewModel({
 
 	useEffect(() => {
 		if (!active) {
-			stopRef.current()
+			if (!keepAliveRef.current) stopRef.current()
 			return
 		}
 		const canvas = waveRef.current
@@ -220,6 +227,15 @@ export function useMicrophoneViewModel({
 			() => canvas && drawWave(canvas, runtime.current.peaks, 1, [], 1),
 		)
 	}, [active])
+
+	const lastCanvasIdRef = useRef(canvasId)
+	useEffect(() => {
+		if (lastCanvasIdRef.current !== canvasId) {
+			lastCanvasIdRef.current = canvasId
+			keepAliveRef.current = false
+			stopRef.current()
+		}
+	}, [canvasId])
 
 	useEffect(
 		() => () => {
@@ -349,10 +365,30 @@ export function useMicrophoneViewModel({
 	const meetingAudioSupported =
 		typeof navigator !== 'undefined' &&
 		typeof navigator.mediaDevices?.getDisplayMedia === 'function'
+	const phaseLabel =
+		phase === 'listening'
+			? messages.assistant.live.phaseListening
+			: phase === 'connecting'
+				? messages.assistant.live.phaseConnecting
+				: phase === 'stopping'
+					? messages.assistant.live.phaseStopping
+					: phase === 'done'
+						? messages.assistant.live.phaseDone
+						: phase === 'error'
+							? messages.assistant.live.phaseError
+							: messages.assistant.live.phaseReady
+	const aiLabel = aiError
+		? messages.assistant.live.aiError
+		: aiBusy
+			? messages.assistant.live.aiBusy
+			: aiQueued > 0
+				? messages.assistant.live.aiQueued(aiQueued)
+				: messages.assistant.live.aiListening
+
 	return {
 		waveRef,
 		phase,
-		phaseLabel: microphonePhaseLabel(phase),
+		phaseLabel,
 		phaseKind: phase === 'listening' ? 'live' : phase === 'error' ? 'error' : 'ok',
 		detail,
 		elapsed: formatClock(elapsed),
@@ -363,7 +399,20 @@ export function useMicrophoneViewModel({
 		meetingAudioSupported,
 		toggleMeetingAudio: () => setIncludeMeetingAudio((value) => !value),
 		disabled: phase === 'stopping' || summaryRequesting,
-		aiLabel: microphoneAiLabel(aiError, aiBusy, aiQueued),
-		toggleRecording: running ? stop : () => void start(),
+		aiLabel,
+		toggleRecording: () => {
+			keepAliveRef.current = false
+			if (running) stop()
+			else void start()
+		},
+		toggleFromTopbar: () => {
+			if (running) {
+				keepAliveRef.current = false
+				stop()
+			} else {
+				keepAliveRef.current = true
+				void start()
+			}
+		},
 	}
 }

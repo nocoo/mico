@@ -5,9 +5,11 @@
 	left: calc((100% - var(--frame-panel-reserved)) / 2);
 	translate: -50% -50%;
 	display: grid;
+	align-content: center;
 	justify-items: center;
 	gap: 12px;
 	width: min(520px, 90vw);
+	min-height: 316px;
 	color: var(--ui-ink);
 	font:
 		13px / 1.5 "Segoe UI Variable Text",

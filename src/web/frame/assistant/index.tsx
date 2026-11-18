@@ -1,13 +1,18 @@
 import './assistant.css'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { AssistantActions, AssistantState } from '../contracts'
+import type { LiveTopbarModel } from '../live/LiveModeFrame'
 import { AssistantView } from './AssistantView'
+import type { LessonSegment } from './LessonPanel'
 import { useAssistantSession } from './useAssistantSession'
+import { useMicrophoneViewModel } from './useMicrophoneViewModel'
 import { type MossAssistantStatus, mossAssistantActivity } from './useMossViewModel'
 
 export interface AssistantFrameProps {
 	state: AssistantState
 	actions: AssistantActions
+	openLiveSignal?: number
+	onLiveStateChange?: (live: LiveTopbarModel | null) => void
 }
 
 function useAssistantMossStatus({
@@ -41,8 +46,66 @@ function useAssistantMossStatus({
 	return { activity: mossActivity ?? fallback, onStatusChange }
 }
 
-export function AssistantFrame({ state, actions }: AssistantFrameProps) {
+export function AssistantFrame({
+	state,
+	actions,
+	openLiveSignal,
+	onLiveStateChange,
+}: AssistantFrameProps) {
 	const model = useAssistantSession({ state, actions })
+	const micModel = useMicrophoneViewModel({
+		active: state.open && model.tab === 'live',
+		canvasId: state.canvasId,
+		aiBusy: model.busy,
+		aiQueued: model.lectureQueued,
+		aiError: Boolean(model.error),
+		onStart: model.startMicrophone,
+		onSegment: (segment: LessonSegment) =>
+			model.enqueueLecture(segment, { subject: 'Live speech', title: 'Microphone' }),
+		onSessionEnd: model.endSession,
+		summaryRequesting: model.summaryRequesting,
+	})
+
+	const lastLiveSignal = useRef(openLiveSignal ?? 0)
+	useEffect(() => {
+		if (openLiveSignal !== undefined && openLiveSignal !== lastLiveSignal.current) {
+			lastLiveSignal.current = openLiveSignal
+			model.setTab('live')
+		}
+	}, [openLiveSignal, model.setTab])
+
+	useEffect(() => {
+		if (!onLiveStateChange) return
+		const transcript = `${micModel.live.confirmed}${micModel.live.hypothesis}`
+		onLiveStateChange({
+			running: micModel.running,
+			phase: micModel.phase,
+			elapsed: micModel.elapsed,
+			transcript,
+			detail: micModel.detail,
+			disabled: micModel.disabled,
+			includeMeetingAudio: micModel.includeMeetingAudio,
+			meetingAudioSupported: micModel.meetingAudioSupported,
+			onToggleRecording: micModel.toggleFromTopbar,
+			onToggleMeetingAudio: micModel.toggleMeetingAudio,
+		})
+	}, [
+		onLiveStateChange,
+		micModel.running,
+		micModel.phase,
+		micModel.elapsed,
+		micModel.live.confirmed,
+		micModel.live.hypothesis,
+		micModel.detail,
+		micModel.disabled,
+		micModel.includeMeetingAudio,
+		micModel.meetingAudioSupported,
+		micModel.toggleFromTopbar,
+		micModel.toggleMeetingAudio,
+	])
+
+	useEffect(() => () => onLiveStateChange?.(null), [onLiveStateChange])
+
 	const moss = useAssistantMossStatus({
 		enabled:
 			state.mossEnabled && state.open && model.tab === 'live' && model.liveProvider === 'moss',
@@ -54,6 +117,7 @@ export function AssistantFrame({ state, actions }: AssistantFrameProps) {
 			state={state}
 			actions={actions}
 			model={model}
+			micModel={micModel}
 			mossActivity={moss.activity}
 			onMossStatusChange={moss.onStatusChange}
 		/>

@@ -292,6 +292,13 @@
 	gap: 6px;
 }
 
+.demo-lang-group {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	flex: 0 0 auto;
+}
+
 .demo-member-badge {
 	flex: 0 0 auto;
 	padding: 3px 8px;

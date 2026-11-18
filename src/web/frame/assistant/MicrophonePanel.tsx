@@ -1,6 +1,7 @@
 import { Mic, MonitorSpeaker, Square } from 'lucide-react'
+import { useI18n } from '../../i18n'
 import type { LessonSegment } from './LessonPanel'
-import { useMicrophoneViewModel } from './useMicrophoneViewModel'
+import { type MicrophoneViewModel, useMicrophoneViewModel } from './useMicrophoneViewModel'
 
 interface MicrophonePanelProps {
 	active: boolean
@@ -11,10 +12,21 @@ interface MicrophonePanelProps {
 	onSegment: (segment: LessonSegment) => void
 	onSessionEnd: () => void
 	summaryRequesting: boolean
+	model?: MicrophoneViewModel
 }
 
 export function MicrophonePanel(props: MicrophonePanelProps) {
+	if (props.model) return <MicrophonePanelView model={props.model} />
+	return <StandaloneMicrophonePanel {...props} />
+}
+
+function StandaloneMicrophonePanel(props: MicrophonePanelProps) {
 	const model = useMicrophoneViewModel(props)
+	return <MicrophonePanelView model={model} />
+}
+
+function MicrophonePanelView({ model }: { readonly model: MicrophoneViewModel }) {
+	const { messages } = useI18n()
 
 	return (
 		<div className="microphone-panel">
@@ -30,7 +42,11 @@ export function MicrophonePanel(props: MicrophonePanelProps) {
 							type="button"
 							className="call-mic"
 							aria-pressed={model.running}
-							aria-label={model.running ? 'Stop recording' : 'Start recording'}
+							aria-label={
+								model.running
+									? messages.assistant.live.stopRecording
+									: messages.assistant.live.startRecording
+							}
 							disabled={model.disabled}
 							onClick={model.toggleRecording}
 						>
@@ -47,10 +63,10 @@ export function MicrophonePanel(props: MicrophonePanelProps) {
 					</div>
 					<span className="call-action-label">
 						{model.running
-							? 'Tap to end the conversation'
+							? messages.assistant.live.tapToStop
 							: model.includeMeetingAudio
-								? 'Tap to share meeting audio & start'
-								: 'Tap the microphone to start'}
+								? messages.assistant.live.tapToShareAndStart
+								: messages.assistant.live.tapToStart}
 					</span>
 					<span className="call-ai-status">{model.aiLabel}</span>
 					{model.meetingAudioSupported && (
@@ -63,7 +79,7 @@ export function MicrophonePanel(props: MicrophonePanelProps) {
 							onClick={model.toggleMeetingAudio}
 						>
 							<MonitorSpeaker size={14} aria-hidden="true" />
-							<span>Include meeting audio</span>
+							<span>{messages.assistant.live.includeMeetingAudio}</span>
 						</button>
 					)}
 				</div>
@@ -74,15 +90,17 @@ export function MicrophonePanel(props: MicrophonePanelProps) {
 							className="call-wave"
 							height={52}
 							role="img"
-							aria-label="Microphone waveform"
+							aria-label={messages.assistant.live.waveformLabel}
 						/>
 					</div>
 					<div className="call-caption" aria-live="polite">
-						<span className="lesson-live-label">Live transcript</span>
+						<span className="lesson-live-label">{messages.assistant.live.transcriptLabel}</span>
 						<p>
 							{!model.live.confirmed && !model.live.hypothesis ? (
 								<span className="lesson-live-empty">
-									{model.running ? 'Listening for speech…' : 'Waiting for speech…'}
+									{model.running
+										? messages.assistant.live.listening
+										: messages.assistant.live.waiting}
 								</span>
 							) : (
 								<>

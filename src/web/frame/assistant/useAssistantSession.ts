@@ -313,7 +313,11 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		const field = composerRef.current
 		if (!field) return
 		const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 560
-		const timer = window.setTimeout(() => field.focus(), delay)
+		const timer = window.setTimeout(() => {
+			const active = document.activeElement
+			if (active && active !== document.body && !panelRef.current?.contains(active)) return
+			field.focus()
+		}, delay)
 		return () => window.clearTimeout(timer)
 	}, [state.open, tab])
 

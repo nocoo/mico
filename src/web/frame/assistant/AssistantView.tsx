@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import type { FormEvent } from 'react'
 import { IconButton } from '../../IconButton'
+import { useI18n } from '../../i18n'
 import { isWaitReply } from '../../stt/transcript'
 import type { AssistantActions, AssistantState } from '../contracts'
 import { AiSettings } from './AiSettings'
@@ -25,12 +26,14 @@ import { LessonPanel, type LessonSegment } from './LessonPanel'
 import { MicrophonePanel } from './MicrophonePanel'
 import { MossPanel } from './MossPanel'
 import type { AssistantViewModel } from './useAssistantSession'
+import type { MicrophoneViewModel } from './useMicrophoneViewModel'
 import type { MossAssistantStatus } from './useMossViewModel'
 
 interface AssistantViewProps {
 	state: AssistantState
 	actions: AssistantActions
 	model: AssistantViewModel
+	micModel?: MicrophoneViewModel
 	mossActivity: AssistantViewModel['activity']
 	onMossStatusChange: (status: MossAssistantStatus | null) => void
 }
@@ -185,9 +188,11 @@ export function AssistantView({
 	state,
 	actions,
 	model,
+	micModel,
 	mossActivity,
 	onMossStatusChange,
 }: AssistantViewProps) {
+	const { messages } = useI18n()
 	const submit = (event?: FormEvent) => model.submit(event)
 
 	return (
@@ -197,7 +202,9 @@ export function AssistantView({
 					<button
 						type="button"
 						className="ai-trigger-button"
-						aria-label={state.open ? 'Close AI assistant' : 'Open AI assistant'}
+						aria-label={
+							state.open ? messages.assistant.closeTrigger : messages.assistant.openTrigger
+						}
 						aria-pressed={state.open}
 						aria-expanded={state.open}
 						aria-controls="ai-panel"
@@ -241,10 +248,10 @@ export function AssistantView({
 					<div className="ai-tabs" role="tablist" aria-label="AI modes" onKeyDown={model.focusTab}>
 						{(
 							[
-								{ id: 'chat', label: 'Chat', icon: MessageSquare },
-								{ id: 'audio', label: 'Audio', icon: AudioLines },
-								{ id: 'live', label: 'Live', icon: Mic },
-								{ id: 'settings', label: 'Settings', icon: Settings },
+								{ id: 'chat', label: messages.assistant.tabChat, icon: MessageSquare },
+								{ id: 'audio', label: messages.assistant.tabAudio, icon: AudioLines },
+								{ id: 'live', label: messages.assistant.tabLive, icon: Mic },
+								{ id: 'settings', label: messages.assistant.tabSettings, icon: Settings },
 							] as const
 						)
 							.filter(({ id }) => model.tabs.includes(id))
@@ -396,8 +403,8 @@ export function AssistantView({
 							<textarea
 								ref={model.composerRef}
 								className="ai-composer-input"
-								aria-label="Message the assistant"
-								placeholder="Describe what to draw…"
+								aria-label={messages.assistant.composerLabel}
+								placeholder={messages.assistant.composerPlaceholder}
 								rows={1}
 								value={model.draft}
 								onChange={(event) => {
@@ -414,14 +421,14 @@ export function AssistantView({
 							{model.busy ? (
 								<IconButton
 									icon={Square}
-									label="Stop response"
+									label={messages.assistant.stopResponse}
 									className="ai-send ai-stop"
 									onClick={model.stop}
 								/>
 							) : (
 								<IconButton
 									icon={ArrowUp}
-									label="Send message"
+									label={messages.assistant.sendMessage}
 									type="submit"
 									className="ai-send"
 									disabled={!model.draft.trim()}
@@ -518,6 +525,7 @@ export function AssistantView({
 							}
 							onSessionEnd={model.endSession}
 							summaryRequesting={model.summaryRequesting}
+							model={micModel}
 						/>
 					)}
 				</div>

@@ -38,7 +38,7 @@ export function summaryToolsCompleted(parts: UIMessage['parts']): boolean {
 }
 
 export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
-export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'audio'
+export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'chat'
 
 export function assistantTabs(settingsVisible: boolean): readonly AssistantTab[] {
 	return ASSISTANT_TABS.filter((tab) => settingsVisible || tab !== 'settings')
