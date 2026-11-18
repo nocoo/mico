@@ -2,7 +2,11 @@
 
 ## Unreleased
 
+- Keep independently drawn shapes through concurrent edits and lost acknowledgements: creates apply on the latest board without a whole-board revision, a committed shape is verified by id before retrying, unconfirmed shapes stay visible with the failure reason, and undo records the confirmed create once.
+- Scope browser API and image requests with the `meetingid` query parameter instead of a raw header, so Unicode meeting ids and meeting-scoped image assets work.
+- Fix PostgreSQL consistency and durability: read projections use one snapshot without write-back, a normalizing read cannot erase a newer board, shutdown drains admitted writes, and generated images use the configured BlobStore.
 - Remove the unsupported Cloudflare D1 + R2 storage adapter: D1 has no interactive transactions, so BoardStore read-then-write transactions could not roll back. `MICO_STORAGE_BACKEND=cloudflare` now fails with a clear error; SQLite and PostgreSQL + Azure Blob remain the supported backends.
+- Stop an idle assistant page from re-reporting its live topbar every render, skip duplicate board application, make the state poll single-flight, and extract creation/pending/viewport logic into tested view-model modules.
 
 - Describe the shipped multi-user model in the human documentation: presence rooms inside one tenant replace the removed shared-whiteboard collection, its endpoints and its example, and the deployment guide no longer claims a separate shared board set.
 - Hide the AI Settings tab in deployment mode while preserving local access, visible-tab keyboard navigation and the server's read-only settings policy.
