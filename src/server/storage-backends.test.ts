@@ -7,11 +7,11 @@ import test from 'node:test'
 import { createMemoryBlobStore, imageBlobKey } from './blob.ts'
 import { createAzureBlobStore } from './blob-azure.ts'
 import { createR2BlobStore, type R2BucketLike, signR2S3Request } from './blob-r2.ts'
-import { rewritePgPlaceholders, splitSqlStatements } from './sql.ts'
+import { createSqliteSql, rewritePgPlaceholders, splitSqlStatements } from './sql.ts'
 import { createD1Sql, type D1DatabaseLike, type D1PreparedStatementLike } from './sql-d1.ts'
 import { createPostgresSql, type PgClientLike, type PgPoolLike } from './sql-postgres.ts'
 import { createBoardStoreFromEnv, resolveStorageBackend } from './storage.ts'
-import { BoardStore } from './store.ts'
+import { BoardStore, MAX_CANVAS_IMAGES, OperationError } from './store.ts'
 
 /**
  * In-memory SQLite-backed `PgPoolLike` simulator that verifies PostgreSQL
@@ -450,5 +450,192 @@ test('storage factory resolves sqlite/azure/cloudflare and fails fast on missing
 		await boards.close()
 	} finally {
 		rmSync(dir, { recursive: true, force: true })
+	}
+})
+
+function createTrackedBlobStore(): {
+	blobs: ReturnType<typeof createMemoryBlobStore>
+	keys: () => string[]
+} {
+	const memory = createMemoryBlobStore()
+	const live = new Set<string>()
+	return {
+		blobs: {
+			async put(key, bytes, contentType) {
+				await memory.put(key, bytes, contentType)
+				live.add(key)
+			},
+			async get(key) {
+				return memory.get(key)
+			},
+			async delete(key) {
+				await memory.delete(key)
+				live.delete(key)
+			},
+		},
+		keys: () => [...live],
+	}
+}
+
+test('generated images persist through a blob store like uploads', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-generated-blob-'))
+	const tracked = createTrackedBlobStore()
+	const boards = new BoardStore({
+		sql: createSqliteSql(join(directory, 'board.sqlite')),
+		blobs: tracked.blobs,
+	})
+	const store = boards.forTenant({ tenantId: 'ten-generated' })
+	try {
+		const state = await store.getState()
+		const uploaded = new Uint8Array([1, 2, 3, 4])
+		const uploadedId = await store.saveImage(uploaded, 'image/png')
+
+		const framed = await store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'target-frame',
+						type: 'frame',
+						x: 0,
+						y: 200,
+						w: 400,
+						h: 300,
+						color: '#5b5fc7',
+						title: 'Generated target',
+					},
+				},
+			],
+		})
+		assert.equal(framed.revision, 1)
+
+		const generated = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d])
+		const placed = await store.placeGeneratedImage({
+			canvasId: state.activeCanvasId,
+			shapeId: 'generated-image',
+			frameId: 'target-frame',
+			x: 40,
+			y: 240,
+			w: 120,
+			h: 80,
+			bytes: generated,
+		})
+		assert.equal(placed.backgroundApplied, true)
+
+		const fetched = await store.getImage(placed.imageId)
+		assert.deepEqual(fetched?.bytes, generated)
+		assert.equal(fetched?.contentType, 'image/png')
+		assert.deepEqual((await store.getImage(uploadedId))?.bytes, uploaded)
+
+		for (const assetId of [placed.imageId, uploadedId]) {
+			const row = await boards.sql.get<{ bytes: Uint8Array | null }>(
+				'SELECT bytes FROM image_assets WHERE id = ? AND tenant_id = ?',
+				[assetId, 'ten-generated'],
+			)
+			assert.equal(row?.bytes, null)
+		}
+
+		const assets = await boards.sql.all<{ id: string }>(
+			'SELECT id FROM image_assets WHERE tenant_id = ?',
+			['ten-generated'],
+		)
+		assert.deepEqual(
+			new Set(tracked.keys()),
+			new Set(assets.map((asset) => `ten-generated/${asset.id}`)),
+		)
+	} finally {
+		await boards.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('generated image placements keep guards and compensation with a blob store', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-generated-guards-'))
+	const tracked = createTrackedBlobStore()
+	const boards = new BoardStore({
+		sql: createSqliteSql(join(directory, 'board.sqlite')),
+		blobs: tracked.blobs,
+	})
+	const store = boards.forTenant({ tenantId: 'ten-guards' })
+	const generated = new Uint8Array([0x89, 0x50, 0x4e, 0x47])
+	try {
+		const state = await store.getState()
+		await store.placeGeneratedImage({
+			canvasId: state.activeCanvasId,
+			shapeId: 'generated-image',
+			x: 0,
+			y: 0,
+			w: 120,
+			h: 80,
+			bytes: generated,
+		})
+
+		await assert.rejects(
+			store.placeGeneratedImage({
+				canvasId: state.activeCanvasId,
+				shapeId: 'generated-image',
+				x: 300,
+				y: 0,
+				w: 120,
+				h: 80,
+				bytes: generated,
+			}),
+			(error: unknown) => error instanceof OperationError && error.code === 'DUPLICATE_ID',
+		)
+
+		for (let index = 1; index < MAX_CANVAS_IMAGES; index += 1) {
+			await store.placeGeneratedImage({
+				canvasId: state.activeCanvasId,
+				shapeId: `generated-image-${index}`,
+				x: 300 * index,
+				y: 0,
+				w: 120,
+				h: 80,
+				bytes: generated,
+			})
+		}
+		await assert.rejects(
+			store.placeGeneratedImage({
+				canvasId: state.activeCanvasId,
+				shapeId: 'over-cap-image',
+				x: 0,
+				y: 500,
+				w: 120,
+				h: 80,
+				bytes: generated,
+			}),
+			(error: unknown) => error instanceof OperationError && error.code === 'IMAGE_CAP_REACHED',
+		)
+
+		await boards.sql.exec(`
+			CREATE TRIGGER reject_revision BEFORE UPDATE OF revision ON canvases
+			BEGIN SELECT RAISE(IGNORE); END;
+		`)
+		const conflictCanvas = await store.createCanvas('Conflict canvas', true)
+		await assert.rejects(
+			store.placeGeneratedImage({
+				canvasId: conflictCanvas.canvas.id,
+				shapeId: 'conflicted-image',
+				x: 0,
+				y: 900,
+				w: 120,
+				h: 80,
+				bytes: generated,
+			}),
+			(error: unknown) => error instanceof OperationError && error.code === 'REVISION_CONFLICT',
+		)
+
+		const assets = await boards.sql.all<{ id: string }>(
+			'SELECT id FROM image_assets WHERE tenant_id = ?',
+			['ten-guards'],
+		)
+		assert.equal(assets.length, MAX_CANVAS_IMAGES)
+		assert.deepEqual(
+			new Set(tracked.keys()),
+			new Set(assets.map((asset) => `ten-guards/${asset.id}`)),
+		)
+	} finally {
+		await boards.close()
+		rmSync(directory, { recursive: true, force: true })
 	}
 })
