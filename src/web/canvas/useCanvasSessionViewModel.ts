@@ -454,7 +454,8 @@ export function useCanvasSessionViewModel({
 	}, [])
 
 	const requestCanvas = useCallback(
-		async (path: string, init: RequestInit) => {
+		async (path: string, init: RequestInit, targetCanvasId?: string) => {
+			if (targetCanvasId) requestedCanvasIdRef.current = targetCanvasId
 			try {
 				const response = await fetch(path, {
 					...init,
@@ -477,6 +478,9 @@ export function useCanvasSessionViewModel({
 			} catch (error) {
 				setApiConnected(false)
 				announceRef.current(error instanceof Error ? error.message : 'Canvas request failed')
+			} finally {
+				if (targetCanvasId && requestedCanvasIdRef.current === targetCanvasId)
+					requestedCanvasIdRef.current = activeCanvasIdRef.current
 			}
 		},
 		[applySnapshot],
@@ -505,11 +509,14 @@ export function useCanvasSessionViewModel({
 
 	const switchCanvas = useCallback(
 		(id: string) => {
-			requestedCanvasIdRef.current = id
-			void requestCanvas('/api/active-canvas', {
-				method: 'PUT',
-				body: JSON.stringify({ id }),
-			})
+			void requestCanvas(
+				'/api/active-canvas',
+				{
+					method: 'PUT',
+					body: JSON.stringify({ id }),
+				},
+				id,
+			)
 		},
 		[requestCanvas],
 	)

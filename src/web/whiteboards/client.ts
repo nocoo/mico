@@ -61,7 +61,13 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		url.pathname.startsWith('/api/ai/') ||
 		url.pathname.startsWith('/api/moss/') ||
 		url.pathname === '/mai/config'
-	if (!isAiPath || url.origin !== window.location.origin) return fetch(input, init)
+	const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
+	const isCanvasMutation =
+		(url.pathname === '/api/canvases' && method === 'POST') ||
+		(url.pathname === '/api/active-canvas' && method === 'PUT') ||
+		(/^\/api\/canvases\/[^/]+$/.test(url.pathname) && (method === 'PATCH' || method === 'DELETE'))
+	if ((!isAiPath && !isCanvasMutation) || url.origin !== window.location.origin)
+		return fetch(input, init)
 	const headers = new Headers(input instanceof Request ? input.headers : undefined)
 	new Headers(init?.headers).forEach((value, key) => {
 		headers.set(key, value)
