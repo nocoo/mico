@@ -173,3 +173,20 @@ test('auto-switches UI copy to Chinese when ?lang=zh is set', async ({ page }) =
 	const panel = page.getByRole('region', { name: 'AI assistant' })
 	await expect(panel.getByRole('tab', { name: '对话' })).toHaveAttribute('aria-selected', 'true')
 })
+
+test('topbar bars share 56px height and live mic opens Live tab', async ({ page }) => {
+	await page.setViewportSize({ width: 1440, height: 960 })
+	await openApp(page)
+	const identityBox = await getBox(page.locator('.identity-panel'))
+	const meetingBox = await getBox(page.locator('.meeting-frame'))
+	const liveBox = await getBox(page.locator('.live-topbar-frame'))
+	expect(identityBox.height).toBe(56)
+	expect(meetingBox.height).toBe(56)
+	expect(liveBox.height).toBe(56)
+
+	await page.getByRole('button', { name: 'Close AI assistant' }).click()
+	await expect(page.locator('#ai-panel')).toHaveAttribute('aria-hidden', 'true')
+	await page.locator('.live-topbar-mic').click()
+	await expect(page.locator('#ai-panel')).toHaveAttribute('aria-hidden', 'false')
+	await expect(page.locator('#ai-tab-live')).toHaveAttribute('aria-selected', 'true')
+})

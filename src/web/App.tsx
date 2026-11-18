@@ -1560,6 +1560,13 @@ export default function App({
 					canUseAi && liveTopbar
 						? {
 								...liveTopbar,
+								onToggleRecording: () => {
+									if (!liveTopbar.running) {
+										setAiPanelOpen(true)
+										setOpenLiveSignal((value) => value + 1)
+									}
+									liveTopbar.onToggleRecording()
+								},
 								onOpenLivePanel: () => {
 									setAiPanelOpen(true)
 									setOpenLiveSignal((value) => value + 1)
