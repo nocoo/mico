@@ -73,6 +73,8 @@ test('reduced motion does not replay new nodes when preference changes', async (
 	request,
 }) => {
 	await page.emulateMedia({ reducedMotion: 'reduce' })
+	await page.reload()
+	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 	const created = await request.post('/api/operations', {
 		data: {
 			operations: [
