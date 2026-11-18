@@ -28,9 +28,9 @@ export function WhiteboardCursors({
 								} as CSSProperties
 							}
 						>
-							<svg width="20" height="25" viewBox="0 0 20 25">
+							<svg width="20" height="22" viewBox="0 0 22 24">
 								<title>{member.username}</title>
-								<path d="M1 1L18 15L10 16L6 23Z" />
+								<path d="M4.2 3.1C3.4 2.4 2.2 3.1 2.5 4.1L5.8 18.7C6.1 19.7 7.4 20.0 8.1 19.1L11.2 15.0L16.3 14.3C17.4 14.1 17.8 12.8 16.9 12.1L4.2 3.1Z" />
 							</svg>
 							<span>{member.username}</span>
 						</div>

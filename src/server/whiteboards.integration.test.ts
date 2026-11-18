@@ -514,14 +514,49 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 					})
 					assert.equal(adaNowAllowed.status, 200)
 
-					// Direct transfer back without prior request
-					const returned = nextPresence(
+					// Invite transfer: recipient must confirm before presenter role moves
+					const invited = nextPresence(
 						jasonSocket,
-						(event) => event.type === 'presence' && event.presenterId === jason.member.id,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterInvite?.targetMemberId === jason.member.id,
 					)
 					adaSocket.send(
-						JSON.stringify({ type: 'transfer-presenter', targetMemberId: jason.member.id }),
+						JSON.stringify({ type: 'invite-presenter', targetMemberId: jason.member.id }),
 					)
+					await invited
+
+					// Declining keeps Ada as presenter
+					const inviteDeclined = nextPresence(
+						adaSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterId === ada.member.id &&
+							event.presenterInvite === null,
+					)
+					jasonSocket.send(JSON.stringify({ type: 'respond-presenter-invite', accept: false }))
+					await inviteDeclined
+
+					// Re-invite and accept transfers presenter to Jason
+					const reinvited = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterInvite?.targetMemberId === jason.member.id,
+					)
+					adaSocket.send(
+						JSON.stringify({ type: 'invite-presenter', targetMemberId: jason.member.id }),
+					)
+					await reinvited
+
+					const returned = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterId === jason.member.id &&
+							event.presenterInvite === null,
+					)
+					jasonSocket.send(JSON.stringify({ type: 'respond-presenter-invite', accept: true }))
 					await returned
 				} finally {
 					for (const socket of sockets) socket.terminate()

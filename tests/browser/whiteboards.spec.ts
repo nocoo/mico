@@ -174,6 +174,7 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 		>()
 		const sockets = new Map<string, import('@playwright/test').WebSocketRoute>()
 		const requesterIds = new Set<string>()
+		let presenterInvite: { targetMemberId: string; fromMemberId: string } | null = null
 		const broadcastPresence = () => {
 			const list = [...members.values()].map(({ token: _t, ...member }) => member)
 			const presenter = list.find((member) => member.sharer)
@@ -183,6 +184,7 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 				presenterId: presenter?.id ?? null,
 				viewport: null,
 				requesterIds: [...requesterIds],
+				presenterInvite,
 			})
 			for (const ws of sockets.values()) ws.send(payload)
 		}
@@ -246,6 +248,8 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 					| { type: 'request-presenter'; requested: boolean }
 					| { type: 'transfer-presenter'; targetMemberId: string }
 					| { type: 'decline-presenter'; targetMemberId: string }
+					| { type: 'invite-presenter'; targetMemberId: string }
+					| { type: 'respond-presenter-invite'; accept: boolean }
 				const sender = members.get(token)
 				if (!sender) return
 				if (message.type === 'request-presenter') {
@@ -260,8 +264,23 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 					if (!target) return
 					sender.sharer = false
 					target.sharer = true
+					presenterInvite = null
 					requesterIds.delete(sender.id)
 					requesterIds.delete(target.id)
+					broadcastPresence()
+				} else if (message.type === 'invite-presenter' && sender.sharer) {
+					const target = [...members.values()].find((m) => m.id === message.targetMemberId)
+					if (!target) return
+					presenterInvite = { targetMemberId: target.id, fromMemberId: sender.id }
+					broadcastPresence()
+				} else if (message.type === 'respond-presenter-invite') {
+					if (!presenterInvite || presenterInvite.targetMemberId !== sender.id) return
+					const inviter = [...members.values()].find((m) => m.id === presenterInvite?.fromMemberId)
+					presenterInvite = null
+					if (message.accept && inviter) {
+						inviter.sharer = false
+						sender.sharer = true
+					}
 					broadcastPresence()
 				}
 			})
@@ -315,10 +334,18 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 		})
 		expect(aiTokensSeen.length).toBeGreaterThan(0)
 
-		// Direct transfer back without a request
+		// Transfer sends an invite; recipient must confirm via the 20s invite dialog
 		await viewer.getByRole('button', { name: 'Workspace profile' }).click()
 		await expect(viewerPanel).toBeVisible()
 		await viewerPanel.getByRole('button', { name: 'Transfer', exact: true }).click()
+		await expect(viewerPanel.getByText('Invited', { exact: true })).toBeVisible()
+
+		const inviteDialog = presenter.getByRole('dialog', { name: 'Presenter invite' })
+		await expect(inviteDialog).toBeVisible()
+		await expect(inviteDialog).toContainText('Ada invited you to present')
+		await inviteDialog.getByRole('button', { name: 'Accept', exact: true }).click()
+
+		await expect(inviteDialog).toHaveCount(0)
 		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toBeVisible()
 		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
 	} finally {

@@ -3,6 +3,7 @@ import type { Point } from '../../shared/types'
 import type {
 	PresenceEvent,
 	PresenceMessage,
+	PresenterInvite,
 	PresenterView,
 	WhiteboardMember,
 	WhiteboardSession,
@@ -19,6 +20,7 @@ export function usePresence(
 	const [members, setMembers] = useState<WhiteboardMember[]>([])
 	const [presenterId, setPresenterId] = useState<string | null>(null)
 	const [requesterIds, setRequesterIds] = useState<string[]>([])
+	const [presenterInvite, setPresenterInvite] = useState<PresenterInvite | null>(null)
 	const [following, setFollowing] = useState(true)
 	const followingRef = useRef(true)
 	const sharerRef = useRef(Boolean(session?.member.sharer))
@@ -51,6 +53,7 @@ export function usePresence(
 				setMembers(event.members)
 				setPresenterId(event.presenterId)
 				setRequesterIds(event.requesterIds ?? [])
+				setPresenterInvite(event.presenterInvite ?? null)
 				presenterView.current = event.viewport
 				const isSharer = event.presenterId
 					? event.presenterId === sessionIdRef.current
@@ -100,6 +103,7 @@ export function usePresence(
 	useEffect(() => {
 		if (!session) {
 			setRequesterIds([])
+			setPresenterInvite(null)
 			return
 		}
 		const interval = window.setInterval(() => {
@@ -146,10 +150,17 @@ export function usePresence(
 	const declinePresenter = useCallback((targetMemberId: string) => {
 		send.current({ type: 'decline-presenter', targetMemberId })
 	}, [])
+	const invitePresenter = useCallback((targetMemberId: string) => {
+		send.current({ type: 'invite-presenter', targetMemberId })
+	}, [])
+	const respondPresenterInvite = useCallback((accept: boolean) => {
+		send.current({ type: 'respond-presenter-invite', accept })
+	}, [])
 	return {
 		members,
 		presenterId,
 		requesterIds,
+		presenterInvite,
 		following,
 		detach,
 		follow,
@@ -160,5 +171,7 @@ export function usePresence(
 		requestPresenter,
 		transferPresenter,
 		declinePresenter,
+		invitePresenter,
+		respondPresenterInvite,
 	}
 }

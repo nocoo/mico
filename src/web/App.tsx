@@ -39,6 +39,7 @@ import {
 } from './design'
 import { AssistantFrame } from './frame/assistant'
 import type { BrushWidth, DockLayout } from './frame/contracts'
+import { PresenterInviteDialog } from './frame/demo/PresenterInviteDialog'
 import { PresenterRequestDialog } from './frame/demo/PresenterRequestDialog'
 import { EmptyState } from './frame/empty/EmptyState'
 import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
@@ -1507,6 +1508,7 @@ export default function App({
 								presenterId: presence.presenterId,
 								selfId: demoSession?.member.id ?? null,
 								requesterIds: presence.requesterIds,
+								invitedMemberId: presence.presenterInvite?.targetMemberId ?? null,
 								following: presence.following,
 								ephemeral,
 								aiEnabled,
@@ -1515,6 +1517,7 @@ export default function App({
 								onRequestPresenter: presence.requestPresenter,
 								onTransferPresenter: presence.transferPresenter,
 								onDeclinePresenter: presence.declinePresenter,
+								onInvitePresenter: presence.invitePresenter,
 							}
 						: undefined
 				}
@@ -1549,6 +1552,13 @@ export default function App({
 				selfId={demoSession?.member.id ?? null}
 				onApprove={presence.transferPresenter}
 				onDecline={presence.declinePresenter}
+			/>
+			<PresenterInviteDialog
+				active={Boolean(presenceActive && !demoSharer)}
+				invite={presence.presenterInvite}
+				members={presence.members}
+				selfId={demoSession?.member.id ?? null}
+				onRespond={presence.respondPresenterInvite}
 			/>
 			<Toolbar
 				state={{

@@ -17,6 +17,7 @@ export interface DemoPanelProps {
 	presenterId: string | null
 	selfId: string | null
 	requesterIds?: string[]
+	invitedMemberId?: string | null
 	following: boolean
 	ephemeral: boolean
 	aiEnabled: boolean
@@ -25,6 +26,7 @@ export interface DemoPanelProps {
 	onRequestPresenter?: (requested: boolean) => void
 	onTransferPresenter?: (targetMemberId: string) => void
 	onDeclinePresenter?: (targetMemberId: string) => void
+	onInvitePresenter?: (targetMemberId: string) => void
 }
 
 export function DemoPanel({
@@ -38,6 +40,7 @@ export function DemoPanel({
 	presenterId,
 	selfId,
 	requesterIds = [],
+	invitedMemberId = null,
 	following,
 	ephemeral,
 	aiEnabled,
@@ -46,6 +49,7 @@ export function DemoPanel({
 	onRequestPresenter,
 	onTransferPresenter,
 	onDeclinePresenter,
+	onInvitePresenter,
 }: DemoPanelProps) {
 	const [draftName, setDraftName] = useState(username)
 	const presenterLabelId = useId()
@@ -215,11 +219,17 @@ export function DemoPanel({
 																Decline
 															</button>
 														</>
+													) : invitedMemberId === member.id ? (
+														<span className="demo-member-badge demo-member-badge--request">
+															Invited
+														</span>
 													) : (
 														<button
 															type="button"
 															className="demo-member-btn"
-															onClick={() => onTransferPresenter?.(member.id)}
+															onClick={() =>
+																(onInvitePresenter ?? onTransferPresenter)?.(member.id)
+															}
 														>
 															Transfer
 														</button>
