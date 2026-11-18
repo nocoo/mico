@@ -6,8 +6,10 @@ import type { WhiteboardSession } from '../shared/whiteboards'
 import {
 	clearWhiteboard,
 	configurePresence,
+	currentMeetingId,
 	canvasFetch as fetch,
 	joinWhiteboard,
+	setMeetingScope,
 	updatePresenceSharer,
 } from './whiteboards/client'
 import { usePresence } from './whiteboards/usePresence'
@@ -351,6 +353,7 @@ export default function App({
 			const url = new URL(window.location.href)
 			url.search = ''
 			url.searchParams.set('localMode', role)
+			setMeetingScope(url, currentMeetingId())
 			if (role === 'guest') {
 				const guestCount = presence.members.filter((member) => !member.sharer).length
 				url.searchParams.set('username', `Guest ${guestCount + 1}`)
