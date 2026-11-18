@@ -85,6 +85,10 @@ L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minu
 
 In demo mode (`MICO_AUTH_MODE=demo`), only the active presenter in the `demo` presence room can create, switch, rename, or delete canvases. These requests must carry the presenter's `X-Mico-Whiteboard` session token (or `whiteboardSession` query parameter). Guests and requests without a session receive `403 WHITEBOARD_READ_ONLY`; the browser displays the server's hint to become or request presenter through **Workspace profile**. With no presenter, users must first claim that role. Canvas lists and the active canvas remain shared, and everyone can still draw and read canvases. Non-demo canvas management is unchanged. Demo roles remain self-declared, not an identity-based access control system.
 
+The meeting bar uses live demo participants (including local Presenter/Guest mode), with a ring and presentation badge on the active presenter. Tooltips and accessible avatar labels identify the presenter and yourself. The highlight follows presenter transfers; outside presence mode, the bar retains its disconnected sample preview. `tests/browser/whiteboards.spec.ts` verifies the highlight on both clients before and after a handoff; meeting controls remain disabled.
+
+Visual examples: [before](images/presenter-avatar-before.png), [after](images/presenter-avatar-after.png), and [compact dark mode](images/presenter-avatar-dark.png).
+
 `POST /api/operations` accepts `{ operations, expectedRevision?, canvasId? }`. It defaults to the active canvas and can target any canvas without switching. A batch is validated and persisted atomically per canvas; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.
 
 - `create` carries a complete shape. `update` carries `{ id, patch }`; patch keys are scoped per shape type. `delete` removes the shape, its connectors and releases frame members.

@@ -199,7 +199,7 @@ test('demo draw survives delayed initial state without duplicate whiteboard join
 test('demo mode gates AI to presenter and supports presenter request and transfer', async ({
 	browser,
 	request,
-}) => {
+}, testInfo) => {
 	test.setTimeout(45000)
 	await resetBoard(request, [])
 	const snapshot = await (await request.get('/api/state')).json()
@@ -323,6 +323,37 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 		await expect(viewer.getByRole('button', { name: 'Rectangle', exact: true })).toBeVisible()
 		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
 
+		await presenter.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'light' })
+		await presenter.screenshot({
+			path: testInfo.outputPath('meeting-bar.png'),
+			clip: { x: 0, y: 0, width: 850, height: 110 },
+			animations: 'disabled',
+		})
+		for (const participantPage of [presenter, viewer]) {
+			await expect(participantPage.locator('.meeting-avatar')).toHaveCount(2)
+			await expect(
+				participantPage.locator('.meeting-avatar[data-presenter="true"]'),
+			).toHaveAttribute('aria-label', /Host, .*presenter/)
+			await expect(
+				participantPage.locator('.meeting-avatar[data-presenter="true"] .meeting-presenter-badge'),
+			).toBeVisible()
+		}
+		await presenter.emulateMedia({ colorScheme: 'dark' })
+		const darkTheme = await presenter.addStyleTag({
+			content: '.radix-themes { color-scheme: dark; }',
+		})
+		await presenter.setViewportSize({ width: 1100, height: 800 })
+		await expect(presenter.locator('.meeting-frame')).toHaveCSS('color-scheme', 'dark')
+		await expect(presenter.locator('.meeting-presenter-badge')).toBeVisible()
+		await presenter.screenshot({
+			path: testInfo.outputPath('meeting-bar-dark.png'),
+			clip: { x: 0, y: 0, width: 600, height: 110 },
+			animations: 'disabled',
+		})
+		await darkTheme.evaluate((element) => element.remove())
+		await presenter.emulateMedia({ colorScheme: 'light' })
+		await presenter.setViewportSize({ width: 1440, height: 960 })
+
 		// Non-presenter in demo mode can still draw manually on canvas
 		await viewer.getByRole('button', { name: 'Sticky note', exact: true }).click()
 		await viewer.mouse.click(420, 320)
@@ -348,6 +379,11 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 
 		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toBeVisible()
 		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+		for (const participantPage of [presenter, viewer]) {
+			await expect(
+				participantPage.locator('.meeting-avatar[data-presenter="true"]'),
+			).toHaveAttribute('aria-label', /Ada, .*presenter/)
+		}
 
 		// Newly promoted presenter can immediately open and use AI, with Demo session token attached
 		const chat = await openAssistant(viewer, 'Chat')
@@ -365,6 +401,10 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 		await viewerPanel.getByRole('button', { name: 'Transfer', exact: true }).click()
 		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toBeVisible()
 		await expect(viewer.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+		await expect(viewer.locator('.meeting-avatar[data-presenter="true"]')).toHaveAttribute(
+			'aria-label',
+			'Host, presenter',
+		)
 	} finally {
 		await context.close()
 	}
