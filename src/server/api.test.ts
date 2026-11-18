@@ -270,6 +270,40 @@ test('health, board snapshots, revisions and method contracts', async () => {
 	})
 })
 
+test('independent creates commit on the latest revision without a guard', async () => {
+	await withDaemon(async (url) => {
+		const baseline = await apply(url, [{ type: 'create', shape: rectangle }])
+		assert.equal(baseline.status, 200)
+
+		const intervening = await apply(url, [
+			{ type: 'create', shape: { ...ellipse, id: 'peer-ellipse' } },
+		])
+		assert.equal(intervening.status, 200)
+		assert.equal((intervening.body as Board).revision, 2)
+
+		const late = await apply(url, [{ type: 'create', shape: { ...ellipse, id: 'author-note' } }])
+		assert.equal(late.status, 200)
+		const lateBoard = late.body as Board
+		assert.equal(lateBoard.revision, 3)
+		assert.deepEqual(lateBoard.shapes.map((shape) => shape.id).sort(), [
+			'author-note',
+			'peer-ellipse',
+			'rect',
+		])
+
+		const duplicate = await apply(url, [{ type: 'create', shape: rectangle }])
+		assertError(duplicate, 400, 'DUPLICATE_ID')
+
+		const stale = await apply(url, [{ type: 'create', shape: { ...ellipse, id: 'guarded' } }], 2)
+		assertError(stale, 409, 'REVISION_CONFLICT')
+
+		const guardedUpdate = await apply(url, [{ type: 'update', id: 'rect', patch: { x: 1 } }], 2)
+		assertError(guardedUpdate, 409, 'REVISION_CONFLICT')
+		const final = await api(url, '/api/board')
+		assert.equal((final.body as Board).revision, 3)
+	})
+})
+
 test('every shape type round-trips through one batch', async () => {
 	await withDaemon(async (url) => {
 		const response = await apply(url, [
