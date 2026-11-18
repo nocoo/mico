@@ -82,11 +82,11 @@ async function joinDemo(
 	})
 }
 
-test('demo members share canvas management and active-canvas snapshots', async () => {
+test('demo presenters manage canvases and broadcast active-canvas snapshots', async () => {
 	await withDemoServer(async ({ baseUrl }) => {
 		const joined = await joinDemo(baseUrl, {
-			username: 'Guest',
-			sharer: false,
+			username: 'Presenter',
+			sharer: true,
 			clientId: randomUUID(),
 		})
 		assert.equal(joined.status, 200)
@@ -165,6 +165,92 @@ test('demo members share canvas management and active-canvas snapshots', async (
 		} finally {
 			viewer.socket.terminate()
 		}
+	})
+})
+
+test('demo canvas management rejects guests and missing sessions without changing shared state', async () => {
+	await withDemoServer(async ({ baseUrl }) => {
+		const request = (path: string, method = 'GET', body?: unknown, token?: string) =>
+			fetch(`${baseUrl}${path}`, {
+				method,
+				headers: {
+					origin: DEV_ORIGIN,
+					'Content-Type': 'application/json',
+					...(token ? { 'X-Mico-Whiteboard': token } : {}),
+				},
+				body: body === undefined ? undefined : JSON.stringify(body),
+			})
+		const guestResponse = await joinDemo(baseUrl, {
+			username: 'Guest',
+			sharer: false,
+			clientId: randomUUID(),
+		})
+		assert.equal(guestResponse.status, 200)
+		const guest = (await guestResponse.json()) as WhiteboardSession
+		const initial = (await (await request('/api/state')).json()) as CanvasSnapshot
+		const create = { name: 'Blocked canvas', activate: true }
+		for (const token of [undefined, guest.token]) {
+			const response = await request('/api/canvases', 'POST', create, token)
+			assert.equal(response.status, 403)
+			const error = await response.json()
+			assert.equal(error.error, 'WHITEBOARD_READ_ONLY')
+			assert.match(error.message, /Only the presenter.*Workspace profile/)
+		}
+
+		const presenterClientId = randomUUID()
+		const presenterResponse = await joinDemo(baseUrl, {
+			username: 'Presenter',
+			sharer: true,
+			clientId: presenterClientId,
+		})
+		assert.equal(presenterResponse.status, 200)
+		const presenter = (await presenterResponse.json()) as WhiteboardSession
+		const created = await request(
+			'/api/canvases',
+			'POST',
+			{ name: 'Presenter canvas', activate: true },
+			presenter.token,
+		)
+		assert.equal(created.status, 200)
+		const state = (await created.json()) as CanvasSnapshot
+		const otherRoomResponse = await request('/api/whiteboards/join', 'POST', {
+			whiteboardid: 'another-room',
+			username: 'Other presenter',
+			sharer: true,
+			clientId: randomUUID(),
+		})
+		assert.equal(otherRoomResponse.status, 200)
+		const otherRoom = (await otherRoomResponse.json()) as WhiteboardSession
+		for (const token of [undefined, guest.token, otherRoom.token]) {
+			for (const [path, method, body] of [
+				['/api/canvases', 'POST', create],
+				['/api/active-canvas', 'PUT', { id: initial.activeCanvasId }],
+				[`/api/canvases/${state.activeCanvasId}`, 'PATCH', { name: 'Blocked rename' }],
+				[`/api/canvases/${state.activeCanvasId}`, 'DELETE', undefined],
+			] as const) {
+				const response = await request(path, method, body, token)
+				assert.equal(response.status, 403, `${method} ${path}`)
+				assert.match((await response.json()).message, /Only the presenter.*Workspace profile/)
+			}
+			assert.equal((await request('/api/canvases', 'GET', undefined, token)).status, 200)
+			assert.equal(
+				(await request(`/api/canvases/${state.activeCanvasId}`, 'GET', undefined, token)).status,
+				200,
+			)
+		}
+		assert.equal((await request('/api/canvases', 'POST', create, randomUUID())).status, 401)
+		const unchanged = (await (await request('/api/state')).json()) as CanvasSnapshot
+		assert.equal(unchanged.stateVersion, state.stateVersion)
+		assert.equal(unchanged.activeCanvasId, state.activeCanvasId)
+		assert.deepEqual(unchanged.canvases, state.canvases)
+
+		const steppedDown = await joinDemo(baseUrl, {
+			username: 'Presenter',
+			sharer: false,
+			clientId: presenterClientId,
+		})
+		assert.equal(steppedDown.status, 200)
+		assert.equal((await request('/api/canvases', 'POST', create, presenter.token)).status, 403)
 	})
 })
 
@@ -485,6 +571,22 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 					)
 					const [, closed] = await Promise.all([transferred, voiceClosed])
 					assert.equal(closed[0], 1008)
+
+					for (const [token, status] of [
+						[jason.token, 403],
+						[ada.token, 200],
+					] as const) {
+						const response = await fetch(`${baseUrl}/api/canvases`, {
+							method: 'POST',
+							headers: {
+								origin: DEV_ORIGIN,
+								'Content-Type': 'application/json',
+								'X-Mico-Whiteboard': token,
+							},
+							body: JSON.stringify({ name: 'After presenter transfer', activate: true }),
+						})
+						assert.equal(response.status, status)
+					}
 
 					const jasonNowBlocked = await fetch(`${baseUrl}/api/ai/settings`, {
 						method: 'PUT',

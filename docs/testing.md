@@ -83,6 +83,8 @@ L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minu
 
 `GET /api/state` returns `{stateVersion, activeCanvasId, canvases, board}`; `?previews=0` omits previews, and `stateVersion` orders delayed snapshots. Canvas summaries carry `id`, `name`, `revision`, `createdAt`, `updatedAt` and a 160×100 SVG data-URL preview. Canvas management uses `GET/POST /api/canvases` (also supports `?previews=0`), `GET/PATCH/DELETE /api/canvases/:id` and `PUT /api/active-canvas`; every metadata response is the updated state snapshot. The last canvas cannot be deleted (`LAST_CANVAS`).
 
+In demo mode (`MICO_AUTH_MODE=demo`), only the active presenter in the `demo` presence room can create, switch, rename, or delete canvases. These requests must carry the presenter's `X-Mico-Whiteboard` session token (or `whiteboardSession` query parameter). Guests and requests without a session receive `403 WHITEBOARD_READ_ONLY`; the browser displays the server's hint to become or request presenter through **Workspace profile**. With no presenter, users must first claim that role. Canvas lists and the active canvas remain shared, and everyone can still draw and read canvases. Non-demo canvas management is unchanged. Demo roles remain self-declared, not an identity-based access control system.
+
 `POST /api/operations` accepts `{ operations, expectedRevision?, canvasId? }`. It defaults to the active canvas and can target any canvas without switching. A batch is validated and persisted atomically per canvas; `expectedRevision` rejects stale writers with `409 REVISION_CONFLICT`.
 
 - `create` carries a complete shape. `update` carries `{ id, patch }`; patch keys are scoped per shape type. `delete` removes the shape, its connectors and releases frame members.

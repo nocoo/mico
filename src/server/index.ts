@@ -835,6 +835,18 @@ export function createDaemon(
 				return
 			}
 
+			if (
+				runtimeConfig.auth.mode === 'demo' &&
+				((isPath('api', 'canvases') && req.method === 'POST') ||
+					(canvasId !== null && (req.method === 'PATCH' || req.method === 'DELETE')) ||
+					(isPath('api', 'active-canvas') && req.method === 'PUT'))
+			) {
+				whiteboards.requirePresenter(
+					membership?.whiteboardid === 'demo' ? membership : undefined,
+					'Only the presenter can create or change demo canvases. Use Workspace profile to become or request presenter.',
+				)
+			}
+
 			if (isPath('api', 'canvases')) {
 				if (req.method === 'GET') {
 					sendJson(res, 200, await store.getCanvasList(includePreviews), origin)
