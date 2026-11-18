@@ -66,7 +66,7 @@ import {
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
-import { fitViewport, panelViewportInset } from './viewport'
+import { clientToWorldPoint, fitViewport, panelViewportInset } from './viewport'
 
 const isConnector = (shape: Shape): shape is Connector => shape.type === 'connector'
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
@@ -586,14 +586,8 @@ export default function App({
 		if (tool !== 'connector' || spacePressed) clearConnectionHover()
 	}, [tool, spacePressed, clearConnectionHover])
 
-	const clientToWorld = (clientX: number, clientY: number) => {
-		const rect = svgRef.current?.getBoundingClientRect()
-		if (!rect) return { x: 0, y: 0 }
-		return {
-			x: (clientX - rect.left - viewport.x) / viewport.zoom,
-			y: (clientY - rect.top - viewport.y) / viewport.zoom,
-		}
-	}
+	const clientToWorld = (clientX: number, clientY: number) =>
+		clientToWorldPoint(clientX, clientY, svgRef.current?.getBoundingClientRect() ?? null, viewport)
 
 	const connectionHitShape = (event: React.PointerEvent<SVGElement>) => {
 		const element = event.target instanceof Element ? event.target : null

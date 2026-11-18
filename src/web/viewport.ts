@@ -1,8 +1,21 @@
-import type { CanvasShape, Shape } from '../shared/types.ts'
+import type { CanvasShape, Point, Shape } from '../shared/types.ts'
 import { getConnectorVisualBounds } from './canvas/connectorGeometry.ts'
 
 export interface ViewportInsets {
 	right?: number
+}
+
+export function clientToWorldPoint(
+	clientX: number,
+	clientY: number,
+	rect: { left: number; top: number } | null,
+	viewport: { x: number; y: number; zoom: number },
+): Point {
+	if (!rect) return { x: 0, y: 0 }
+	return {
+		x: (clientX - rect.left - viewport.x) / viewport.zoom,
+		y: (clientY - rect.top - viewport.y) / viewport.zoom,
+	}
 }
 
 export function panelViewportInset(
