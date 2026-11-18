@@ -384,3 +384,65 @@ test('local mode switcher toggles Local/Presenter/Guest in-place and opens Guest
 	await expect(localModeButton).toContainText('Local')
 	await expect(page.getByRole('button', { name: /AI assistant/i })).toBeVisible()
 })
+
+test('presenter receives a 20s floating request dialog that queues multiple guests and resets on new requests', async ({
+	browser,
+}) => {
+	const context = await browser.newContext()
+	try {
+		const presenter = await context.newPage()
+		const guestA = await context.newPage()
+		const guestB = await context.newPage()
+
+		await presenter.goto('/?localMode=presenter')
+		await guestA.goto('/?localMode=guest')
+		await guestB.goto('/?localMode=guest')
+
+		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+
+		// Guest A requests presenter
+		await guestA.getByRole('button', { name: 'Workspace profile', exact: true }).click()
+		await guestA.getByRole('button', { name: 'Request presenter', exact: true }).click()
+
+		const requestDialog = presenter.getByRole('dialog', { name: 'Presenter requests' })
+		await expect(requestDialog).toBeVisible()
+		await expect(requestDialog).toContainText('Presenter request')
+		await expect(requestDialog.locator('.presenter-request-item')).toHaveCount(1)
+
+		// Wait ~2.2s so the timer ticks down below 19s
+		await presenter.waitForTimeout(2200)
+		const timerTextBeforeB = await requestDialog.locator('.presenter-request-timer').textContent()
+		expect(Number.parseInt(timerTextBeforeB ?? '20', 10)).toBeLessThanOrEqual(18)
+
+		// Guest B also requests presenter -> both appear in list and timer resets to 20s
+		await guestB.getByRole('button', { name: 'Workspace profile', exact: true }).click()
+		await guestB.getByRole('button', { name: 'Request presenter', exact: true }).click()
+
+		await expect(requestDialog).toContainText('2 presenter requests')
+		await expect(requestDialog.locator('.presenter-request-item')).toHaveCount(2)
+		const timerTextAfterB = await requestDialog.locator('.presenter-request-timer').textContent()
+		expect(Number.parseInt(timerTextAfterB ?? '0', 10)).toBeGreaterThanOrEqual(19)
+
+		// Presenter dismisses dialog -> dialog hides while requests stay in profile panel
+		await requestDialog
+			.getByRole('button', { name: 'Ignore presenter requests', exact: true })
+			.click()
+		await expect(requestDialog).toHaveCount(0)
+
+		// Guest B cancels & re-requests -> dialog pops back up at 20s, Presenter approves Guest B directly
+		await guestB.getByRole('button', { name: 'Cancel request', exact: true }).click()
+		await guestB.getByRole('button', { name: 'Request presenter', exact: true }).click()
+		await expect(requestDialog).toBeVisible()
+		await requestDialog
+			.locator('.presenter-request-item')
+			.nth(1)
+			.getByRole('button', { name: 'Approve', exact: true })
+			.click()
+
+		await expect(requestDialog).toHaveCount(0)
+		await expect(guestB.getByRole('button', { name: /AI assistant/i })).toBeVisible()
+		await expect(presenter.getByRole('button', { name: /AI assistant/i })).toHaveCount(0)
+	} finally {
+		await context.close()
+	}
+})

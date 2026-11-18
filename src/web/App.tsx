@@ -39,6 +39,7 @@ import {
 } from './design'
 import { AssistantFrame } from './frame/assistant'
 import type { BrushWidth, DockLayout } from './frame/contracts'
+import { PresenterRequestDialog } from './frame/demo/PresenterRequestDialog'
 import { EmptyState } from './frame/empty/EmptyState'
 import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
 import { IdentityFrame } from './frame/identity'
@@ -1540,6 +1541,14 @@ export default function App({
 							}
 						: undefined
 				}
+			/>
+			<PresenterRequestDialog
+				active={Boolean(presenceActive && demoSharer)}
+				members={presence.members}
+				requesterIds={presence.requesterIds}
+				selfId={demoSession?.member.id ?? null}
+				onApprove={presence.transferPresenter}
+				onDecline={presence.declinePresenter}
 			/>
 			<Toolbar
 				state={{
