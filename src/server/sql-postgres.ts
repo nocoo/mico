@@ -47,6 +47,11 @@ function normalizeParams(params: readonly SqlValue[]): unknown[] {
 	return params.map(normalizeParam)
 }
 
+function isSerializationError(error: unknown): boolean {
+	const code = (error as { code?: unknown } | null)?.code
+	return code === '40001' || code === '40P01'
+}
+
 function buildTransactionSql(
 	queryable: Pick<PgClientLike, 'query'>,
 	isClosed: () => boolean,
@@ -113,22 +118,31 @@ export function createPostgresSql(config: PostgresSqlConfig): Sql {
 		...base,
 		async transaction<T>(operation: (tx: SqlTransaction) => Promise<T>): Promise<T> {
 			if (closed) throw new Error('SQL driver is closed')
-			const client = await pool.connect()
-			const tx = buildTransactionSql(client, () => closed)
-			let completed = false
-			try {
-				await client.query('BEGIN')
-				const result = await operation(tx)
-				await client.query('COMMIT')
-				completed = true
-				return result
-			} catch (error) {
-				if (!completed) {
-					await client.query('ROLLBACK').catch(() => undefined)
+			const attempts = 3
+			for (let attempt = 1; ; attempt++) {
+				const client = await pool.connect()
+				const tx = buildTransactionSql(client, () => closed)
+				let completed = false
+				try {
+					// One stable snapshot per transaction: under the default READ
+					// COMMITTED, separate statements can mix rows from different commits.
+					await client.query('BEGIN ISOLATION LEVEL REPEATABLE READ')
+					const result = await operation(tx)
+					await client.query('COMMIT')
+					completed = true
+					return result
+				} catch (error) {
+					if (!completed) {
+						await client.query('ROLLBACK').catch(() => undefined)
+					}
+					// A repeatable-read transaction that loses a write race reports a
+					// serialization failure; read-then-validate-then-write operations
+					// retry safely against a fresh snapshot instead of failing.
+					if (attempt < attempts && isSerializationError(error)) continue
+					throw error
+				} finally {
+					client.release()
 				}
-				throw error
-			} finally {
-				client.release()
 			}
 		},
 		close(): Promise<void> {

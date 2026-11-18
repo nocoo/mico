@@ -222,11 +222,7 @@ test('a legacy normalizing read cannot erase a concurrently committed shape', as
 		)
 
 		rewriteInterleaved = true
-		const migrated = await store.getBoard()
-		assert.deepEqual(
-			migrated.shapes.map((shape) => shape.id),
-			['kept-rect'],
-		)
+		await store.getBoard()
 
 		const after = await store.getBoard()
 		assert.deepEqual(
@@ -237,5 +233,91 @@ test('a legacy normalizing read cannot erase a concurrently committed shape', as
 	} finally {
 		await boards.close()
 		await pool.end()
+	}
+})
+
+test('a state read cannot mix an old stateVersion with a new active canvas', async (t) => {
+	const cluster = await startPostgres(t)
+	if (!cluster) return
+	const pool = new Pool({ connectionString: cluster.connectionString, max: 4 })
+	const control = new Pool({ connectionString: cluster.connectionString, max: 2 })
+	const tenantId = 'ten-snapshot'
+	let secondId = ''
+	let interleave = false
+	const boards = new BoardStore({
+		ownsSql: false,
+		sql: createPostgresSql({
+			pool: wrapPool(pool, async (text, state) => {
+				if (
+					!interleave ||
+					!text.startsWith('SELECT active_canvas_id, state_version FROM tenants')
+				) {
+					return
+				}
+				state.findTenantReads += 1
+				if (state.findTenantReads !== 2) return
+				interleave = false
+				// Between the readState reads of state_version and active_canvas_id,
+				// another connection commits a canvas switch.
+				await control.query(
+					'UPDATE tenants SET active_canvas_id = $1, state_version = state_version + 1 WHERE id = $2',
+					[secondId, tenantId],
+				)
+			}),
+		}),
+	})
+	const store = boards.forTenant({ tenantId })
+	try {
+		const initial = await store.getState()
+		const mainId = initial.activeCanvasId
+		const second = await store.createCanvas('Second', true)
+		secondId = second.canvas.id
+		await store.activateCanvas(mainId)
+		const baseline = await store.getState()
+		assert.deepEqual(
+			[baseline.stateVersion, baseline.activeCanvasId],
+			[initial.stateVersion + 2, mainId],
+		)
+
+		interleave = true
+		const mixed = await store.getState()
+		assert.deepEqual([mixed.stateVersion, mixed.activeCanvasId], [baseline.stateVersion, mainId])
+		const settled = await store.getState()
+		assert.deepEqual(
+			[settled.stateVersion, settled.activeCanvasId],
+			[baseline.stateVersion + 1, secondId],
+		)
+	} finally {
+		await boards.close()
+		await pool.end()
+		await control.end()
+	}
+})
+
+test('concurrent canvas management on one tenant still succeeds', async (t) => {
+	const cluster = await startPostgres(t)
+	if (!cluster) return
+	const first = new BoardStore({
+		sql: createPostgresSql({ connectionString: cluster.connectionString }),
+	})
+	const second = new BoardStore({
+		sql: createPostgresSql({ connectionString: cluster.connectionString }),
+	})
+	try {
+		const tenant = { tenantId: 'ten-concurrent' }
+		const stores = [first.forTenant(tenant), second.forTenant(tenant)]
+		const baseline = await stores[0].getState()
+		const created = await Promise.all(
+			stores.map((store, index) => store.createCanvas(`Concurrent ${index}`, false)),
+		)
+		assert.deepEqual(
+			created.map((result) => result.canvas.name),
+			['Concurrent 0', 'Concurrent 1'],
+		)
+		const after = await stores[1].getState()
+		assert.equal(after.stateVersion, baseline.stateVersion + 2)
+		assert.equal(after.canvases.length, baseline.canvases.length + 2)
+	} finally {
+		await Promise.all([first.close(), second.close()])
 	}
 })

@@ -40,9 +40,9 @@ function createFakePgPool(): {
 	const runQuery = (text: string, values: readonly unknown[] = []) => {
 		queries.push(text)
 		const trimmed = text.trim()
-		if (trimmed === 'BEGIN' || trimmed === 'COMMIT' || trimmed === 'ROLLBACK') {
+		if (/^BEGIN\b/.test(trimmed) || trimmed === 'COMMIT' || trimmed === 'ROLLBACK') {
 			txCalls.push(trimmed)
-			db.exec(trimmed)
+			db.exec(trimmed === 'BEGIN ISOLATION LEVEL REPEATABLE READ' ? 'BEGIN' : trimmed)
 			return { rows: [], rowCount: 0 }
 		}
 		if (trimmed === 'SELECT to_regclass($1) AS name') {
@@ -240,7 +240,7 @@ test('PostgreSQL + Azure BlobStore supports full BoardStore lifecycle and tenant
 	await boards.waitUntilReady()
 
 	assert.ok(fakePg.queries.some((q) => q.includes('bytes BYTEA')))
-	assert.ok(fakePg.txCalls.includes('BEGIN'))
+	assert.ok(fakePg.txCalls.includes('BEGIN ISOLATION LEVEL REPEATABLE READ'))
 	assert.ok(fakePg.txCalls.includes('COMMIT'))
 	assert.ok(!fakePg.queries.some((q) => q.includes('sqlite_master')))
 
