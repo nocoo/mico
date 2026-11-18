@@ -422,10 +422,7 @@ test('default pencil ink uses the reference color and selection glow', async ({
 		.toMatchObject({ brush: 'pencil', strokeWidth: 4, color: JELLY_COLORS.grape })
 })
 
-test('text, sticky note and html tools create their primitives on click', async ({
-	page,
-	request,
-}) => {
+test('text and sticky note tools create their primitives on click', async ({ page, request }) => {
 	await page.getByRole('button', { name: 'Text', exact: true }).click()
 	await clickWorld(page, 300, 200)
 	await expect.poll(async () => countOf(request, 'text')).toBe(1)
@@ -444,14 +441,6 @@ test('text, sticky note and html tools create their primitives on click', async 
 		text: 'Note',
 		color: CANDY_TINTS.yellow,
 	})
-
-	await page.getByRole('button', { name: 'HTML card', exact: true }).click()
-	await clickWorld(page, 1100, 300)
-	await expect.poll(async () => countOf(request, 'html')).toBe(1)
-	const html = (await board(request)).shapes.find((shape) => shape.type === 'html')
-	expect(html).toMatchObject({ title: 'HTML card', html: '', w: 520, h: 360 })
-	await expect(page.locator('.html-card-empty')).toHaveCount(1)
-	await expect(page.getByLabel('Card title')).toHaveValue('HTML card')
 })
 
 test('sticky palette, brush style and brush width apply to new objects', async ({
@@ -629,7 +618,6 @@ test('keyboard shortcuts switch tools and control delete, zoom and fit', async (
 		['l', 'Line'],
 		['p', 'Brush'],
 		['n', 'Sticky note'],
-		['w', 'HTML card'],
 		['c', 'Connector'],
 	]
 	for (const [key, label] of tools) {
@@ -910,16 +898,33 @@ test('frame membership accepts lines, strokes and html cards but never html as h
 		})
 		.toBe('membership-a')
 
-	await page.getByRole('button', { name: 'HTML card', exact: true }).click()
-	await clickWorld(page, 500, 350)
-	await expect
-		.poll(async () => {
-			const shape = (await board(request)).shapes.find((item) => item.type === 'html')
-			return shape?.type === 'html' ? shape.frameId : 'missing'
-		})
-		.toBe('membership-a')
-
-	const html = (await board(request)).shapes.find((item) => item.type === 'html') as CanvasShape
+	const seeded = await request.post('/api/operations', {
+		data: {
+			expectedRevision: (await board(request)).revision,
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'membership-html',
+						type: 'html',
+						x: 200,
+						y: 380,
+						w: 360,
+						h: 180,
+						color: '#22c55e',
+						title: 'Seeded card',
+						html: '<p>content</p>',
+						frameId: 'membership-a',
+					},
+				},
+			],
+		},
+	})
+	expect(seeded.ok()).toBe(true)
+	const html = (await board(request)).shapes.find(
+		(item) => item.id === 'membership-html',
+	) as CanvasShape
+	expect(html).toMatchObject({ type: 'html', frameId: 'membership-a' })
 	const rejectedHost = await request.post('/api/operations', {
 		data: {
 			operations: [
@@ -1117,6 +1122,15 @@ test('properties icon is centered and the panel clears top surfaces at every wid
 
 	await page.setViewportSize({ width: 769, height: 844 })
 	await page.getByRole('button', { name: 'Open AI assistant', exact: true }).click()
+	await expect(page.locator('#ai-panel')).toHaveClass(/is-open/)
+	await page.locator('#ai-panel').evaluate(async (element) => {
+		await Promise.all(
+			element
+				.getAnimations({ subtree: true })
+				.filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().iterations))
+				.map((animation) => animation.finished.catch(() => undefined)),
+		)
+	})
 	await expect(properties).toBeVisible()
 	const narrowProperties = await properties.boundingBox()
 	const narrowIdentity = await identity.boundingBox()
