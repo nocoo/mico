@@ -353,12 +353,28 @@ export function createDaemon(
 	}
 
 	const socketTenant = new WeakMap<WebSocket, string>()
+	const tenantSockets = new Map<string, Set<WebSocket>>()
+
+	const trackTenantSocket = (client: WebSocket, tenantId: string): void => {
+		socketTenant.set(client, tenantId)
+		let group = tenantSockets.get(tenantId)
+		if (!group) {
+			group = new Set()
+			tenantSockets.set(tenantId, group)
+		}
+		group.add(client)
+		client.once('close', () => {
+			group.delete(client)
+			if (group.size === 0) tenantSockets.delete(tenantId)
+		})
+	}
 
 	const broadcast = (event: unknown, tenantId: string): void => {
+		const group = tenantSockets.get(tenantId)
+		if (!group || group.size === 0) return
 		const payload = JSON.stringify(event)
-		for (const client of wss.clients) {
+		for (const client of group) {
 			if (client.readyState !== WebSocket.OPEN) continue
-			if ((socketTenant.get(client) ?? LOCAL_TENANT.tenantId) !== tenantId) continue
 			client.send(payload)
 		}
 	}
@@ -1186,7 +1202,7 @@ export function createDaemon(
 		}
 
 		wss.handleUpgrade(req, socket, head, (client) => {
-			socketTenant.set(client, tenantId)
+			trackTenantSocket(client, tenantId)
 			if (runtimeConfig.auth.mode === 'entra') auth.attachSocket(req, client)
 			wss.emit('connection', client, req)
 		})

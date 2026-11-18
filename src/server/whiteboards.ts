@@ -27,6 +27,7 @@ interface Membership extends WhiteboardSession {
 
 export class Whiteboards {
 	private readonly sessions = new Map<string, Membership>()
+	private readonly rooms = new Map<string, Set<Membership>>()
 	private readonly views = new Map<string, PresenterView>()
 	private readonly requests = new Map<string, Set<string>>()
 	private readonly requestTimers = new Map<string, ReturnType<typeof setTimeout>>()
@@ -51,20 +52,48 @@ export class Whiteboards {
 		this.timer.unref()
 	}
 
+	private roomMembers(roomId: string): Set<Membership> | undefined {
+		return this.rooms.get(roomId)
+	}
+
+	private addToRoom(member: Membership) {
+		let room = this.rooms.get(member.whiteboardid)
+		if (!room) {
+			room = new Set()
+			this.rooms.set(member.whiteboardid, room)
+		}
+		room.add(member)
+	}
+
+	private removeFromRoom(member: Membership) {
+		const room = this.rooms.get(member.whiteboardid)
+		if (!room) return
+		room.delete(member)
+		if (room.size === 0) this.rooms.delete(member.whiteboardid)
+	}
+
 	private prune() {
 		for (const [token, member] of this.sessions) {
-			if (!member.socket && member.expiresAt <= Date.now()) this.sessions.delete(token)
+			if (!member.socket && member.expiresAt <= Date.now()) {
+				this.sessions.delete(token)
+				this.removeFromRoom(member)
+			}
 		}
 	}
 
 	private presenter(whiteboardid: string, except?: Membership) {
-		return [...this.sessions.values()].find(
-			(member) =>
+		const room = this.roomMembers(whiteboardid)
+		if (!room) return undefined
+		for (const member of room) {
+			if (
 				member !== except &&
-				member.whiteboardid === whiteboardid &&
 				member.member.sharer &&
-				(member.socket || member.reservedUntil > Date.now()),
-		)
+				(member.socket || member.reservedUntil > Date.now())
+			) {
+				return member
+			}
+		}
+		return undefined
 	}
 
 	async join(body: unknown, owner: string): Promise<WhiteboardSession> {
@@ -73,9 +102,10 @@ export class Whiteboards {
 		const input = parsed.data
 		const roomId = `${owner}:${input.whiteboardid}`
 		this.prune()
-		const existing = [...this.sessions.values()].find(
-			(member) => member.owner === owner && member.clientId === input.clientId,
-		)
+		const room = this.roomMembers(roomId)
+		const existing = room
+			? [...room].find((member) => member.owner === owner && member.clientId === input.clientId)
+			: undefined
 		if (existing) {
 			if (existing.whiteboardid !== roomId)
 				throw new OperationError(
@@ -114,9 +144,7 @@ export class Whiteboards {
 		if (this.sessions.size >= 512) {
 			throw new OperationError(503, 'ROOMS_FULL', 'Too many whiteboard sessions. Try again later.')
 		}
-		const count = [...this.sessions.values()].filter(
-			(member) => member.whiteboardid === roomId,
-		).length
+		const count = room?.size ?? 0
 		if (count >= 64) {
 			throw new OperationError(409, 'ROOM_FULL', 'This whiteboard has reached its 64-person limit.')
 		}
@@ -142,6 +170,7 @@ export class Whiteboards {
 			lastViewAt: 0,
 		}
 		this.sessions.set(member.token, member)
+		this.addToRoom(member)
 		return this.publicSession(member)
 	}
 
@@ -324,13 +353,18 @@ export class Whiteboards {
 	}
 
 	private findOnlineTarget(member: Membership, targetMemberId: string): Membership | undefined {
-		return [...this.sessions.values()].find(
-			(candidate) =>
+		const room = this.roomMembers(member.whiteboardid)
+		if (!room) return undefined
+		for (const candidate of room) {
+			if (
 				candidate !== member &&
-				candidate.whiteboardid === member.whiteboardid &&
 				candidate.socket?.readyState === WebSocket.OPEN &&
-				candidate.member.id === targetMemberId,
-		)
+				candidate.member.id === targetMemberId
+			) {
+				return candidate
+			}
+		}
+		return undefined
 	}
 
 	private commitTransfer(from: Membership, to: Membership) {
@@ -363,14 +397,20 @@ export class Whiteboards {
 			const requests = this.requests.get(whiteboardid)
 			if (!requests || requests.size === 0) return
 			let target: Membership | undefined
-			for (const requesterId of requests) {
-				target = [...this.sessions.values()].find(
-					(candidate) =>
-						candidate.whiteboardid === whiteboardid &&
-						candidate.socket?.readyState === WebSocket.OPEN &&
-						candidate.member.id === requesterId,
-				)
-				if (target) break
+			const room = this.roomMembers(whiteboardid)
+			if (room) {
+				for (const requesterId of requests) {
+					for (const candidate of room) {
+						if (
+							candidate.socket?.readyState === WebSocket.OPEN &&
+							candidate.member.id === requesterId
+						) {
+							target = candidate
+							break
+						}
+					}
+					if (target) break
+				}
 			}
 			if (!target) {
 				this.emitPresence(whiteboardid)
@@ -399,13 +439,18 @@ export class Whiteboards {
 	}
 
 	private findNextPresenter(leaving: Membership): Membership | undefined {
-		const online = [...this.sessions.values()].filter(
-			(candidate) =>
+		const room = this.roomMembers(leaving.whiteboardid)
+		if (!room) return undefined
+		const online: Membership[] = []
+		for (const candidate of room) {
+			if (
 				candidate !== leaving &&
-				candidate.whiteboardid === leaving.whiteboardid &&
 				candidate.socket?.readyState === WebSocket.OPEN &&
-				!candidate.member.sharer,
-		)
+				!candidate.member.sharer
+			) {
+				online.push(candidate)
+			}
+		}
 		if (online.length === 0) return undefined
 		const requests = this.requests.get(leaving.whiteboardid)
 		if (requests) {
@@ -441,9 +486,10 @@ export class Whiteboards {
 	}
 
 	private emitPresence(whiteboardid: string) {
-		const members = [...this.sessions.values()]
-			.filter((member) => member.whiteboardid === whiteboardid && member.socket)
-			.map((member) => ({ ...member.member }))
+		const room = this.roomMembers(whiteboardid)
+		const members = room
+			? [...room].filter((member) => member.socket).map((member) => ({ ...member.member }))
+			: []
 		const presenter = members.find((member) => member.sharer)
 		const eligible = new Set(members.filter((member) => !member.sharer).map((member) => member.id))
 		const requests = this.requests.get(whiteboardid)
@@ -477,11 +523,13 @@ export class Whiteboards {
 	}
 
 	emit(whiteboardid: string, event: unknown) {
-		const payload = JSON.stringify(event)
-		for (const member of this.sessions.values()) {
-			if (member.whiteboardid === whiteboardid && member.socket?.readyState === WebSocket.OPEN) {
-				member.socket.send(payload)
-			}
+		const room = this.roomMembers(whiteboardid)
+		if (!room || room.size === 0) return
+		let payload: string | undefined
+		for (const member of room) {
+			if (member.socket?.readyState !== WebSocket.OPEN) continue
+			payload ??= JSON.stringify(event)
+			member.socket.send(payload)
 		}
 	}
 
@@ -497,6 +545,7 @@ export class Whiteboards {
 			for (const voice of member.voiceSockets) voice.terminate()
 		}
 		this.sessions.clear()
+		this.rooms.clear()
 		this.views.clear()
 		this.requests.clear()
 		for (const timer of this.requestTimers.values()) clearTimeout(timer)

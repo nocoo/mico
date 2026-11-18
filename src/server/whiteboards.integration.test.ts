@@ -615,3 +615,102 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 		await new Promise<void>((resolve) => upstream.close(() => resolve()))
 	}
 })
+
+test('separate meetingIds isolate presenters, board events, and presence broadcasts', async () => {
+	await withDemoServer(async ({ baseUrl, wsUrl }) => {
+		const alphaJoin = await fetch(`${baseUrl}/api/whiteboards/join`, {
+			method: 'POST',
+			headers: {
+				origin: DEV_ORIGIN,
+				'Content-Type': 'application/json',
+				'X-Mico-Meeting': 'room-alpha',
+			},
+			body: JSON.stringify({
+				username: 'Alpha Host',
+				sharer: true,
+				clientId: randomUUID(),
+			}),
+		})
+		assert.equal(alphaJoin.status, 200)
+		const alphaSession = (await alphaJoin.json()) as WhiteboardSession
+
+		const betaJoin = await fetch(`${baseUrl}/api/whiteboards/join`, {
+			method: 'POST',
+			headers: {
+				origin: DEV_ORIGIN,
+				'Content-Type': 'application/json',
+				'X-Mico-Meeting': 'room-beta',
+			},
+			body: JSON.stringify({
+				username: 'Beta Host',
+				sharer: true,
+				clientId: randomUUID(),
+			}),
+		})
+		assert.equal(betaJoin.status, 200)
+		const betaSession = (await betaJoin.json()) as WhiteboardSession
+
+		const alphaSocket = new WebSocket(
+			`${wsUrl}/api/events?whiteboardSession=${alphaSession.token}&meetingId=room-alpha`,
+			{ headers: { origin: DEV_ORIGIN } },
+		)
+		const betaSocket = new WebSocket(
+			`${wsUrl}/api/events?whiteboardSession=${betaSession.token}&meetingId=room-beta`,
+			{ headers: { origin: DEV_ORIGIN } },
+		)
+		const betaEvents: string[] = []
+		betaSocket.on('message', (raw) => betaEvents.push(raw.toString()))
+
+		try {
+			const alphaPresence = nextPresence(
+				alphaSocket,
+				(event) => event.type === 'presence' && event.members.length === 1,
+			)
+			await Promise.all([
+				once(alphaSocket, 'open', { signal: AbortSignal.timeout(4000) }),
+				once(betaSocket, 'open', { signal: AbortSignal.timeout(4000) }),
+			])
+			await alphaPresence
+
+			// Board operation in alpha must stay isolated from beta
+			const opRes = await fetch(`${baseUrl}/api/operations`, {
+				method: 'POST',
+				headers: {
+					origin: DEV_ORIGIN,
+					'Content-Type': 'application/json',
+					'X-Mico-Meeting': 'room-alpha',
+				},
+				body: JSON.stringify({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'alpha-only',
+								type: 'rectangle',
+								x: 0,
+								y: 0,
+								w: 80,
+								h: 60,
+								color: '#00a2e1',
+							},
+						},
+					],
+				}),
+			})
+			assert.equal(opRes.status, 200)
+
+			// Presence event in alpha must stay isolated from beta
+			alphaSocket.send(
+				JSON.stringify({ type: 'live-transcript', text: 'Alpha secret', active: true }),
+			)
+			await nextPresence(alphaSocket, (event) => event.type === 'live-transcript')
+			await new Promise((resolve) => setTimeout(resolve, 120))
+			assert.ok(
+				betaEvents.every((raw) => !raw.includes('alpha-only') && !raw.includes('Alpha secret')),
+			)
+		} finally {
+			alphaSocket.terminate()
+			betaSocket.terminate()
+		}
+	})
+})
