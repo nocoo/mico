@@ -150,8 +150,7 @@ export default function App({
 					},
 				}
 	}, [presenceActive, demoSession, demoSharer, demoUsername])
-	const isDemoPresenter = Boolean(activeDemoSession?.member.sharer)
-	const canUseAi = aiEnabled && (!presenceActive || isDemoPresenter)
+	const canUseAi = aiEnabled
 	const svgRef = useRef<SVGSVGElement>(null)
 	const animatedObjectsRef = useRef(new Set<string>())
 	const suppressedEntryIdsRef = useRef(new Map<string, Set<string>>())

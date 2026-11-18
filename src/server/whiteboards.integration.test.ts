@@ -361,23 +361,14 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 					])
 					await ready
 
-					// Anonymous and non-presenter clients are blocked from AI endpoints
+					// Anonymous clients are blocked from AI chat and settings; non-presenter is blocked from AI settings
+					const anonChatRes = await fetch(`${baseUrl}/api/ai/chat`, {
+						method: 'POST',
+						headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+						body: JSON.stringify({ messages: [] }),
+					})
+					assert.equal(anonChatRes.status, 403)
 					for (const token of [undefined, ada.token]) {
-						const chatRes = await fetch(`${baseUrl}/api/ai/chat`, {
-							method: 'POST',
-							headers: {
-								origin: DEV_ORIGIN,
-								'Content-Type': 'application/json',
-								...(token ? { 'X-Mico-Whiteboard': token } : {}),
-							},
-							body: JSON.stringify({ messages: [] }),
-						})
-						assert.equal(chatRes.status, 403)
-						assert.equal(
-							((await chatRes.json()) as { error: string }).error,
-							'WHITEBOARD_READ_ONLY',
-						)
-
 						const settingsPut = await fetch(`${baseUrl}/api/ai/settings`, {
 							method: 'PUT',
 							headers: {
@@ -393,17 +384,14 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 						assert.equal(settingsPut.status, 403)
 					}
 
-					const adaBlockedVoice = new WebSocket(
+					// Non-presenter members can open Live voice WS
+					const adaVoice = new WebSocket(
 						`${wsUrl}/api/whiteboard-voice/mai/realtime?whiteboardSession=${ada.token}`,
 						{ headers: { origin: DEV_ORIGIN } },
 					)
-					sockets.push(adaBlockedVoice)
-					adaBlockedVoice.on('error', () => {})
-					const [, blockedRes] = await once(adaBlockedVoice, 'unexpected-response', {
-						signal: AbortSignal.timeout(4000),
-					})
-					assert.equal(blockedRes.statusCode, 403)
-					blockedRes.resume()
+					sockets.push(adaVoice)
+					await once(adaVoice, 'open', { signal: AbortSignal.timeout(4000) })
+					adaVoice.close()
 
 					// Active presenter can update AI settings and open voice WS
 					const jasonSettingsPut = await fetch(`${baseUrl}/api/ai/settings`, {

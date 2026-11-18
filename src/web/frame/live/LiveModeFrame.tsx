@@ -1,6 +1,6 @@
 import { Popover } from '@radix-ui/themes'
 import { ChevronDown, Mic, MonitorSpeaker, PanelRightOpen, Square } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useI18n } from '../../i18n'
 import type { MeetingFrameProps } from '../meeting/MeetingFrame'
 import { buildMeetingViewModel } from '../meeting/viewmodel'
@@ -30,30 +30,18 @@ export function LiveModeFrame({
 }) {
 	const { messages } = useI18n()
 	const [open, setOpen] = useState(false)
-	const [meetingElapsedSeconds, setMeetingElapsedSeconds] = useState(0)
-
-	useEffect(() => {
-		if (!meeting.presenceActive) {
-			setMeetingElapsedSeconds(0)
-			return
-		}
-		const startedAt = Date.now()
-		const interval = window.setInterval(() => {
-			setMeetingElapsedSeconds(Math.floor((Date.now() - startedAt) / 1000))
-		}, 1000)
-		return () => window.clearInterval(interval)
-	}, [meeting.presenceActive])
 
 	const meetingModel = buildMeetingViewModel({
 		...meeting,
-		elapsedSeconds: meetingElapsedSeconds,
+		elapsedSeconds: 0,
 		messages,
 	})
 
 	const running = model?.running ?? false
 	const phase = model?.phase ?? 'idle'
-	const elapsed = running ? (model?.elapsed ?? '00:00') : meetingModel.elapsed
+	const elapsed = model?.elapsed ?? '00:00'
 	const transcript = model?.transcript.trim() ?? ''
+	const hasTranscriptArea = running || Boolean(transcript)
 	const transcriptLine =
 		transcript ||
 		(phase === 'connecting'
@@ -62,7 +50,7 @@ export function LiveModeFrame({
 				? messages.liveTopbar.stoppingText
 				: running
 					? messages.liveTopbar.listeningEmpty
-					: messages.liveTopbar.idleText)
+					: '')
 
 	return (
 		<Popover.Root open={open} onOpenChange={setOpen}>
@@ -121,8 +109,10 @@ export function LiveModeFrame({
 					</span>
 					<div
 						className="live-topbar-transcript"
+						data-expanded={hasTranscriptArea ? 'true' : undefined}
 						data-active={transcript ? 'true' : undefined}
 						aria-live="polite"
+						aria-hidden={!hasTranscriptArea}
 					>
 						<span key={transcriptLine} className="live-topbar-transcript-text">
 							{transcriptLine}
