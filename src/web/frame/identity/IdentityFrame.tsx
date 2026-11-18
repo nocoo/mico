@@ -49,7 +49,7 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 					{demo ? <DemoPanel {...demo} /> : showDebug ? <DebugPanel {...debug} /> : null}
 					{localMode && <LocalModeMenu {...localMode} />}
 				</div>
-				<MeetingFrame />
+				<MeetingFrame presence={demo} />
 			</header>
 			{identity.mounted && (
 				<section
