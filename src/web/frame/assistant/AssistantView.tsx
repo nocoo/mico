@@ -27,13 +27,14 @@ import { MicrophonePanel } from './MicrophonePanel'
 import { MossPanel } from './MossPanel'
 import type { AssistantViewModel } from './useAssistantSession'
 import type { MicrophoneViewModel } from './useMicrophoneViewModel'
-import type { MossAssistantStatus } from './useMossViewModel'
+import type { MossAssistantStatus, MossViewModel } from './useMossViewModel'
 
 interface AssistantViewProps {
 	state: AssistantState
 	actions: AssistantActions
 	model: AssistantViewModel
 	micModel?: MicrophoneViewModel
+	mossModel?: MossViewModel
 	mossActivity: AssistantViewModel['activity']
 	onMossStatusChange: (status: MossAssistantStatus | null) => void
 }
@@ -189,6 +190,7 @@ export function AssistantView({
 	actions,
 	model,
 	micModel,
+	mossModel,
 	mossActivity,
 	onMossStatusChange,
 }: AssistantViewProps) {
@@ -511,6 +513,7 @@ export function AssistantView({
 							canvasId={state.canvasId}
 							selectedIds={state.selectedIds}
 							onStatusChange={onMossStatusChange}
+							model={mossModel}
 						/>
 					) : (
 						<MicrophonePanel

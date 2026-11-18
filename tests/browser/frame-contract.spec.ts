@@ -1,5 +1,11 @@
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { flexContentWidth, ISOLATED_ORIGIN, resetBoard } from './support'
+import {
+	flexContentWidth,
+	ISOLATED_ORIGIN,
+	installMicrophoneMock,
+	mockMaiTranscription,
+	resetBoard,
+} from './support'
 
 interface Box {
 	x: number
@@ -169,7 +175,9 @@ test('auto-switches UI copy to Chinese when ?lang=zh is set', async ({ page }) =
 	await expect(panel.getByRole('tab', { name: '对话' })).toHaveAttribute('aria-selected', 'true')
 })
 
-test('topbar bars share 56px height and live mic opens Live tab', async ({ page }) => {
+test('topbar bars share 56px height and live mic opens Live tab', async ({ context, page }) => {
+	await installMicrophoneMock(context)
+	await mockMaiTranscription(page)
 	await page.setViewportSize({ width: 1440, height: 960 })
 	await openApp(page)
 	const identityBox = await getBox(page.locator('.identity-panel'))

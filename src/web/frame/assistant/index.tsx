@@ -6,7 +6,11 @@ import { AssistantView } from './AssistantView'
 import type { LessonSegment } from './LessonPanel'
 import { useAssistantSession } from './useAssistantSession'
 import { useMicrophoneViewModel } from './useMicrophoneViewModel'
-import { type MossAssistantStatus, mossAssistantActivity } from './useMossViewModel'
+import {
+	type MossAssistantStatus,
+	mossAssistantActivity,
+	useMossViewModel,
+} from './useMossViewModel'
 
 export interface AssistantFrameProps {
 	state: AssistantState
@@ -53,8 +57,20 @@ export function AssistantFrame({
 	onLiveStateChange,
 }: AssistantFrameProps) {
 	const model = useAssistantSession({ state, actions })
+	const isMossLive = state.mossEnabled && model.liveProvider === 'moss'
+	const moss = useAssistantMossStatus({
+		enabled: isMossLive && state.open && model.tab === 'live',
+		canvasId: state.canvasId,
+		fallback: model.activity,
+	})
+	const mossModel = useMossViewModel({
+		active: isMossLive && state.open && model.tab === 'live',
+		canvasId: state.canvasId,
+		selectedIds: state.selectedIds,
+		onStatusChange: moss.onStatusChange,
+	})
 	const micModel = useMicrophoneViewModel({
-		active: state.open && model.tab === 'live',
+		active: !isMossLive && state.open && model.tab === 'live',
 		canvasId: state.canvasId,
 		aiBusy: model.busy,
 		aiQueued: model.lectureQueued,
@@ -71,8 +87,9 @@ export function AssistantFrame({
 		if (openLiveSignal !== undefined && openLiveSignal !== lastLiveSignal.current) {
 			lastLiveSignal.current = openLiveSignal
 			model.setTab('live')
+			model.selectLiveProvider('mai')
 		}
-	}, [openLiveSignal, model.setTab])
+	}, [openLiveSignal, model.setTab, model.selectLiveProvider])
 
 	useEffect(() => {
 		if (!onLiveStateChange) return
@@ -106,18 +123,13 @@ export function AssistantFrame({
 
 	useEffect(() => () => onLiveStateChange?.(null), [onLiveStateChange])
 
-	const moss = useAssistantMossStatus({
-		enabled:
-			state.mossEnabled && state.open && model.tab === 'live' && model.liveProvider === 'moss',
-		canvasId: state.canvasId,
-		fallback: model.activity,
-	})
 	return (
 		<AssistantView
 			state={state}
 			actions={actions}
 			model={model}
 			micModel={micModel}
+			mossModel={mossModel}
 			mossActivity={moss.activity}
 			onMossStatusChange={moss.onStatusChange}
 		/>

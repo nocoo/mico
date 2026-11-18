@@ -158,22 +158,30 @@ export async function openMicrophone(
 	let displayStream: MediaStream | null = null
 	let displayAudioTracks: MediaStreamTrack[] = []
 	if (includeMeetingAudio) {
-		if (!mediaDevices.getDisplayMedia) {
-			throw new Error('Meeting audio capture is not supported in this browser')
-		}
-		displayStream = await mediaDevices.getDisplayMedia({ video: true, audio: true })
-		const videoTracks =
-			typeof displayStream.getVideoTracks === 'function' ? displayStream.getVideoTracks() : []
-		stopMediaTracks(videoTracks)
-		displayAudioTracks =
-			typeof displayStream.getAudioTracks === 'function'
-				? displayStream.getAudioTracks()
-				: displayStream.getTracks()
-		if (displayAudioTracks.length === 0) {
-			stopMediaTracks(displayStream.getTracks())
-			throw new Error(
-				'No meeting audio was shared. Select a tab or screen and enable audio sharing.',
-			)
+		if (mediaDevices.getDisplayMedia) {
+			try {
+				displayStream = await mediaDevices.getDisplayMedia({ video: true, audio: true })
+				const videoTracks =
+					typeof displayStream.getVideoTracks === 'function' ? displayStream.getVideoTracks() : []
+				stopMediaTracks(videoTracks)
+				displayAudioTracks =
+					typeof displayStream.getAudioTracks === 'function'
+						? displayStream.getAudioTracks()
+						: displayStream.getTracks()
+				if (displayAudioTracks.length === 0) {
+					stopMediaTracks(displayStream.getTracks())
+					throw new Error(
+						'No meeting audio was shared. Select a tab or screen and enable audio sharing.',
+					)
+				}
+			} catch (error) {
+				if (error instanceof DOMException && error.name === 'NotSupportedError') {
+					displayStream = null
+					displayAudioTracks = []
+				} else {
+					throw error
+				}
+			}
 		}
 	}
 

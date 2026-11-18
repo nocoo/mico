@@ -65,6 +65,8 @@ export function nextMossToolActivity(
 	}
 }
 
+export type MossViewModel = ReturnType<typeof useMossViewModel>
+
 export function useMossViewModel({
 	active,
 	canvasId,
@@ -75,6 +77,8 @@ export function useMossViewModel({
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const peaks = useRef<number[]>([])
 	const pendingTools = useRef(0)
+	const keepAliveRef = useRef(false)
+	const lastCanvasIdRef = useRef(canvasId)
 	const [phase, setPhase] = useState<MossPhase>('idle')
 	const [detail, setDetail] = useState('')
 	const [elapsed, setElapsed] = useState(0)
@@ -95,7 +99,18 @@ export function useMossViewModel({
 	}
 
 	useEffect(() => {
-		if (active) return
+		if (lastCanvasIdRef.current !== canvasId) {
+			lastCanvasIdRef.current = canvasId
+			keepAliveRef.current = false
+			const session = sessionRef.current
+			sessionRef.current = null
+			session?.stop()
+			setPhase('idle')
+		}
+	}, [canvasId])
+
+	useEffect(() => {
+		if (active || keepAliveRef.current) return
 		const session = sessionRef.current
 		sessionRef.current = null
 		session?.stop()
@@ -193,7 +208,22 @@ export function useMossViewModel({
 		running,
 		hasTranscript,
 		hasOutput: running || hasTranscript,
-		start,
-		stop,
+		start: () => {
+			keepAliveRef.current = false
+			start()
+		},
+		stop: () => {
+			keepAliveRef.current = false
+			stop()
+		},
+		toggleFromTopbar: () => {
+			if (running) {
+				keepAliveRef.current = false
+				stop()
+			} else {
+				keepAliveRef.current = true
+				start()
+			}
+		},
 	}
 }

@@ -181,6 +181,7 @@ export default function App({
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
 	const [liveTopbar, setLiveTopbar] = useState<LiveTopbarModel | null>(null)
 	const [openLiveSignal, setOpenLiveSignal] = useState(0)
+	const pendingLiveOpenRef = useRef(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
 		aiEnabled &&
 		(authMode !== 'demo' || initialDemoSharer()) &&
@@ -754,6 +755,20 @@ export default function App({
 	}, [connection.reset])
 
 	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
+	useEffect(() => {
+		const phase = liveTopbar?.phase
+		if (!pendingLiveOpenRef.current) return
+		if (phase === 'listening') {
+			pendingLiveOpenRef.current = false
+			setAiPanelOpen(true)
+			setOpenLiveSignal((value) => value + 1)
+			return
+		}
+		if (phase === 'idle' || phase === 'error' || phase === 'done') {
+			pendingLiveOpenRef.current = false
+		}
+	}, [liveTopbar?.phase])
+
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
@@ -1561,10 +1576,7 @@ export default function App({
 						? {
 								...liveTopbar,
 								onToggleRecording: () => {
-									if (!liveTopbar.running) {
-										setAiPanelOpen(true)
-										setOpenLiveSignal((value) => value + 1)
-									}
+									pendingLiveOpenRef.current = !liveTopbar.running
 									liveTopbar.onToggleRecording()
 								},
 								onOpenLivePanel: () => {
