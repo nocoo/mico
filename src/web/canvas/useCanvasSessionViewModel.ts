@@ -562,8 +562,14 @@ export function useCanvasSessionViewModel({
 				setApiConnected(false)
 				announceRef.current(error instanceof Error ? error.message : 'Canvas request failed')
 			} finally {
-				if (targetCanvasId && requestedCanvasIdRef.current === targetCanvasId)
+				if (targetCanvasId) {
+					if (requestedCanvasIdRef.current === targetCanvasId)
+						requestedCanvasIdRef.current = activeCanvasIdRef.current
+				} else {
+					// A metadata request can change the active canvas (for example a
+					// delete); with no switch intent, follow the confirmed snapshot.
 					requestedCanvasIdRef.current = activeCanvasIdRef.current
+				}
 			}
 		},
 		[applySnapshot],
