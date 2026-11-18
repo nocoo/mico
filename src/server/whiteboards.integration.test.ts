@@ -558,6 +558,14 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 					)
 					jasonSocket.send(JSON.stringify({ type: 'respond-presenter-invite', accept: true }))
 					await returned
+
+					// Disconnecting the active presenter automatically promotes the next online member
+					const autoPromoted = nextPresence(
+						adaSocket,
+						(event) => event.type === 'presence' && event.presenterId === ada.member.id,
+					)
+					jasonSocket.terminate()
+					await autoPromoted
 				} finally {
 					for (const socket of sockets) socket.terminate()
 				}

@@ -299,6 +299,25 @@ export class Whiteboards {
 		return set
 	}
 
+	private findNextPresenter(leaving: Membership): Membership | undefined {
+		const online = [...this.sessions.values()].filter(
+			(candidate) =>
+				candidate !== leaving &&
+				candidate.whiteboardid === leaving.whiteboardid &&
+				candidate.socket?.readyState === WebSocket.OPEN &&
+				!candidate.member.sharer,
+		)
+		if (online.length === 0) return undefined
+		const requests = this.requests.get(leaving.whiteboardid)
+		if (requests) {
+			for (const requesterId of requests) {
+				const match = online.find((candidate) => candidate.member.id === requesterId)
+				if (match) return match
+			}
+		}
+		return online[0]
+	}
+
 	private disconnect(member: Membership) {
 		member.socket = undefined
 		for (const voice of member.voiceSockets) voice.close(1008, 'Presenter disconnected')
@@ -307,6 +326,13 @@ export class Whiteboards {
 		this.requests.get(member.whiteboardid)?.delete(member.member.id)
 		if (member.member.sharer) {
 			this.views.delete(member.whiteboardid)
+			this.invites.delete(member.whiteboardid)
+			const nextPresenter = this.findNextPresenter(member)
+			if (nextPresenter) {
+				member.member.sharer = false
+				nextPresenter.member.sharer = true
+				this.requests.get(member.whiteboardid)?.delete(nextPresenter.member.id)
+			}
 		}
 		member.reservedUntil = 0
 		member.expiresAt = Date.now() + 60000
