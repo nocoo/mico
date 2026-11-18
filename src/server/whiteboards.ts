@@ -272,10 +272,17 @@ export class Whiteboards {
 					this.commitTransfer(currentPresenter, member)
 				} else if (message.type === 'live-transcript') {
 					if (!member.member.sharer) return
+					const previous = this.liveTranscripts.get(member.whiteboardid)
+					const startedAt = message.active
+						? previous?.active && previous.startedAt
+							? previous.startedAt
+							: Date.now()
+						: undefined
 					const nextState: LiveTranscriptState = {
 						memberId: member.member.id,
 						text: message.text,
 						active: message.active,
+						...(startedAt !== undefined ? { startedAt } : {}),
 					}
 					if (!message.active && !message.text) {
 						this.liveTranscripts.delete(member.whiteboardid)

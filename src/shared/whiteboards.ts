@@ -102,6 +102,7 @@ export interface LiveTranscriptState {
 	memberId: string
 	text: string
 	active: boolean
+	startedAt?: number
 }
 
 export type PresenceEvent =
@@ -116,7 +117,13 @@ export type PresenceEvent =
 	  }
 	| { type: 'cursor'; memberId: string; point: Point | null }
 	| { type: 'presenter-view'; viewport: PresenterView }
-	| { type: 'live-transcript'; memberId: string; text: string; active: boolean }
+	| {
+			type: 'live-transcript'
+			memberId: string
+			text: string
+			active: boolean
+			startedAt?: number
+	  }
 	| { type: 'selection'; memberId: string; selectedIds: string[] }
 
 export const PRESENCE_COLORS = [

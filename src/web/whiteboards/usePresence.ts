@@ -21,7 +21,11 @@ export function usePresence(
 	const [presenterId, setPresenterId] = useState<string | null>(null)
 	const [requesterIds, setRequesterIds] = useState<string[]>([])
 	const [presenterInvite, setPresenterInvite] = useState<PresenterInvite | null>(null)
-	const [presenterLive, setPresenterLive] = useState<{ text: string; active: boolean } | null>(null)
+	const [presenterLive, setPresenterLive] = useState<{
+		text: string
+		active: boolean
+		startedAt?: number
+	} | null>(null)
 	const [following, setFollowing] = useState(true)
 	const followingRef = useRef(true)
 	const sharerRef = useRef(Boolean(session?.member.sharer))
@@ -57,7 +61,11 @@ export function usePresence(
 				setPresenterInvite(event.presenterInvite ?? null)
 				setPresenterLive(
 					event.liveTranscript && (event.liveTranscript.active || event.liveTranscript.text)
-						? { text: event.liveTranscript.text, active: event.liveTranscript.active }
+						? {
+								text: event.liveTranscript.text,
+								active: event.liveTranscript.active,
+								startedAt: event.liveTranscript.startedAt,
+							}
 						: null,
 				)
 				presenterView.current = event.viewport
@@ -74,7 +82,9 @@ export function usePresence(
 				)
 			} else if (event.type === 'live-transcript') {
 				setPresenterLive(
-					event.active || event.text ? { text: event.text, active: event.active } : null,
+					event.active || event.text
+						? { text: event.text, active: event.active, startedAt: event.startedAt }
+						: null,
 				)
 			} else if (event.type === 'selection') {
 				setMembers((current) =>
@@ -201,14 +211,24 @@ export function usePresence(
 		setFollowing(true)
 		if (presenterView.current) applyPresenter(presenterView.current)
 	}, [applyPresenter])
-	const lastSelectionRef = useRef<string>('')
+	const latestSelectionRef = useRef<readonly string[]>([])
+	const lastSentSelectionKeyRef = useRef<string | null>(null)
 	const publishSelection = useCallback((selectedIds: readonly string[]) => {
 		const normalized = selectedIds.slice(0, 100)
+		latestSelectionRef.current = normalized
 		const key = normalized.join('\u0000')
-		if (key === lastSelectionRef.current) return
-		lastSelectionRef.current = key
+		if (key === lastSentSelectionKeyRef.current) return
+		lastSentSelectionKeyRef.current = key
 		send.current({ type: 'selection', selectedIds: [...normalized] })
 	}, [])
+
+	const onSocketReady = useCallback(() => {
+		queueView()
+		lastSentSelectionKeyRef.current = latestSelectionRef.current.join('\u0000')
+		if (latestSelectionRef.current.length > 0) {
+			send.current({ type: 'selection', selectedIds: [...latestSelectionRef.current] })
+		}
+	}, [queueView])
 
 	const pointer = (point: Point | null) => {
 		cursorScreen.current = point
@@ -243,6 +263,7 @@ export function usePresence(
 		pointer,
 		send,
 		queueView,
+		onSocketReady,
 		onEvent,
 		publishLiveTranscript,
 		publishSelection,

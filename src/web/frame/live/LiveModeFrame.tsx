@@ -8,8 +8,9 @@ import {
 	PanelRightOpen,
 	Square,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
+import { formatClock } from '../../stt/transcript'
 import type { MeetingFrameProps } from '../meeting/MeetingFrame'
 import { buildMeetingViewModel } from '../meeting/viewmodel'
 import '../meeting/meeting.css'
@@ -38,6 +39,7 @@ export interface LiveTopbarFollow {
 export interface LiveTopbarRemote {
 	readonly active: boolean
 	readonly text: string
+	readonly startedAt?: number
 }
 
 export function LiveModeFrame({
@@ -53,6 +55,22 @@ export function LiveModeFrame({
 }) {
 	const { messages } = useI18n()
 	const [open, setOpen] = useState(false)
+	const [remoteElapsedSeconds, setRemoteElapsedSeconds] = useState(0)
+
+	const remoteActive = !model && Boolean(remoteLive?.active)
+	const remoteStartedAt = remoteLive?.startedAt
+	useEffect(() => {
+		if (!remoteActive || !remoteStartedAt) {
+			setRemoteElapsedSeconds(0)
+			return
+		}
+		const update = () => {
+			setRemoteElapsedSeconds(Math.max(0, Math.floor((Date.now() - remoteStartedAt) / 1000)))
+		}
+		update()
+		const timer = window.setInterval(update, 1000)
+		return () => window.clearInterval(timer)
+	}, [remoteActive, remoteStartedAt])
 
 	const meetingModel = buildMeetingViewModel({
 		...meeting,
@@ -62,9 +80,8 @@ export function LiveModeFrame({
 
 	const localRunning = model?.running ?? false
 	const phase = model?.phase ?? 'idle'
-	const elapsed = model?.elapsed ?? '00:00'
+	const elapsed = model?.elapsed ?? (remoteActive ? formatClock(remoteElapsedSeconds) : '00:00')
 	const localTranscript = model?.transcript.trim() ?? ''
-	const remoteActive = !model && Boolean(remoteLive?.active)
 	const remoteTranscript = !model ? (remoteLive?.text.trim() ?? '') : ''
 	const running = localRunning || remoteActive
 	const transcript = localTranscript || remoteTranscript

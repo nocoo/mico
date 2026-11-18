@@ -537,7 +537,7 @@ export default function App({
 		whiteboard: demoSession,
 		readOnly: false,
 		onPresence: presence.onEvent,
-		onSocketReady: presence.queueView,
+		onSocketReady: presence.onSocketReady,
 	})
 	presence.send.current = sendPresence
 	const selected = board.shapes.find((shape) => shape.id === selectedId) ?? null

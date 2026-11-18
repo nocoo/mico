@@ -473,3 +473,54 @@ test('presenter receives a 20s floating request dialog that queues multiple gues
 		await context.close()
 	}
 })
+
+test('guest sticky note selection renders remote selection highlight in presenter view', async ({
+	page,
+	context,
+	request,
+}) => {
+	const created = await request.post('/api/operations', {
+		data: {
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'collab-note',
+						type: 'note',
+						x: 120,
+						y: 120,
+						w: 180,
+						h: 120,
+						color: '#ffe599',
+						text: 'Shared Note',
+					},
+				},
+			],
+		},
+	})
+	expect(created.ok()).toBe(true)
+
+	await page.goto('/')
+	const localModeButton = page.getByRole('button', { name: 'Local mode', exact: true })
+	await localModeButton.click()
+	const modePanel = page.getByRole('dialog', { name: 'Local mode' })
+	await modePanel.getByRole('button', { name: 'Presenter', exact: true }).click()
+
+	const popupPromise = context.waitForEvent('page')
+	await modePanel.getByRole('button', { name: 'Open Guest window', exact: true }).click()
+	const guest = await popupPromise
+	await guest.waitForLoadState('domcontentloaded')
+	await expect(guest.getByRole('button', { name: 'Local mode', exact: true })).toContainText(
+		'Guest',
+	)
+
+	await guest.locator('[data-shape-id="collab-note"]').click()
+	const remoteSelection = page.locator('.whiteboard-remote-selection[data-shape-id="collab-note"]')
+	await expect(remoteSelection).toBeVisible()
+	const borderColor = await remoteSelection.evaluate((el) =>
+		getComputedStyle(el).getPropertyValue('--member-color').trim(),
+	)
+	expect(borderColor).not.toBe('')
+
+	await guest.close()
+})
