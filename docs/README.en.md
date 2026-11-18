@@ -7,19 +7,39 @@
 
 ## What it does
 
-A local-first canvas experiment where people and local agents edit the same boards. The browser renders the canvas; the daemon owns a collection of named canvases and stores them in SQLite; the CLI and HTTP API give agents complete access to the same boards, canvases and operations. Anonymous mode keeps one `local` tenant for ordinary requests, while Entra login gives every verified identity its own private tenant. An explicit, separate shared-whiteboard collection supports one presenter and multiple read-only participants without exposing existing private canvases.
+A local-first canvas experiment where people and local agents edit the same boards. The browser renders the canvas; the daemon owns a collection of named canvases and stores them in SQLite; the CLI and HTTP API give agents complete access to the same boards, canvases and operations. Anonymous mode keeps one `local` tenant for ordinary requests, while Entra login gives every verified identity its own private tenant. Multi-user sessions are presence rooms inside one tenant: one presenter and several participants share that tenant's boards, while members, cursors and the presenter viewport stay inside a single daemon.
 
 Local mode trusts processes running on the machine. Cloud hosting uses the same container with a configured public origin and optional Entra login; Azure supports a disposable preview with optional managed-identity Chat and MAI transcription; MOSS is disabled in that profile. See [deployment options](deployment.md). A public deployment without login is accessible to every reachable caller. Resizing and MCP are not implemented yet. Live microphone capture needs the selected provider's credentials and proxy. Chat and MAI drawing depend on the configured AI gateway; MOSS Live uses its own voice model and native tool calls.
 
-## Shared whiteboards
+## Demo and multi-user sessions
 
-For caller developers and agents, see the [shared-whiteboard integration guide](shared-whiteboards-api.md) (Chinese): list/create/join contracts, browser links, session lifecycle, errors, and an implementation checklist.
+Mico has no separate shared-whiteboard collection. Multi-user sessions are presence rooms **inside one tenant**: members share that tenant's canvas list, active canvas and image assets, while members, cursors, selections and the presenter viewport live in a single daemon process and do not work across replicas.
 
-Open `/?whiteboards=1` to list IDs, create a board or join one. Direct links use `/?whiteboardid=<id>&username=Jason%20Huang&sharer=true` (presenter) or `sharer=false` (participant). Everyone sees member names and matching-color cursors. Participants can only pan/zoom, initially following the presenter's world-space center and zoom. Exploring independently shows a colored border and a **回到演示者视角** button to resume following. A second presenter receives `409`; a disconnected presenter releases the slot. AI, microphone input and editing remain available to the presenter, subject to existing provider configuration.
+How to join:
 
-**Trusted presentation mode:** roles are self-declared in the URL, not securely authorized. Anyone with service access may request presenter status. Entra authentication is still required when enabled; shared boards are visible to all admitted identities, while private tenants remain isolated. Boards persist in SQLite; presence/viewports are single-process, in-memory state, not cross-replica collaboration. Pending joins reserve a slot for 10 seconds, disconnected identities are retained for 60 seconds, and heartbeat checks remove dead sockets. Limits are 64 retained sessions per board and 512 per daemon.
+- In demo mode (`MICO_AUTH_MODE=demo`) the browser joins the `demo` presence room automatically. `?username=<name>` sets the display name and `?sharer=true` claims the presenter slot.
+- In local mode (`MICO_AUTH_MODE=none`) the **Local mode** panel switches between Local, Presenter and Guest, or open `/?localmode=presenter` and `/?localmode=guest` directly.
+- The browser turns `?meetingid=<meeting id>` (equivalent to the `X-Mico-Meeting` header) into a tenant hashed from that meeting: members of one meeting share the boards and different meetings stay invisible to each other. With Entra login each verified identity still uses its own private tenant.
 
-`GET /api/whiteboards` returns `{whiteboards: [...]}` (including an initial blank board). `POST /api/whiteboards` accepts `{name}` and returns `201 {whiteboard}`. `POST /api/whiteboards/join` accepts `{whiteboardid, username, sharer, clientId}`; `clientId` is a private random UUID used for reconnects. The response includes `{token, whiteboardid, member}`. Send `X-Mico-Whiteboard: <token>` on subsequent HTTP requests and connect `/api/events?whiteboardSession=<token>`. Existing `snapshot`/`board` events are joined by `presence`, `cursor` and `presenter-view` events. Presenter writes are pinned to the joined board; participant writes, AI requests and voice upgrades are rejected. Shared voice connections use `/api/whiteboard-voice/mai/realtime` and `/api/whiteboard-voice/moss`, including in development. See the [API details](../README.md#共享白板) and [executable example](../examples/shared-whiteboard.ts).
+Room rules:
+
+- Each room has one presenter at a time. Participants can request the presenter role from **Workspace profile**, and the presenter can invite another member or hand the role over; a request is approved automatically when the presenter does not answer within 20 seconds. When the presenter disconnects, another member of the room takes over.
+- Everyone can draw and read the boards. In a presence session only the presenter can use Chat and Live voice; in demo mode only the presenter can create, rename, delete or switch canvases.
+- Participants initially follow the presenter's world-space center and zoom; after panning manually the top bar offers **Follow presenter**.
+- A room keeps at most 64 sessions and a daemon at most 512; a join without a connection reserves a slot for 10 seconds, a disconnected identity is retained for 60 seconds for reconnects, and a 15-second heartbeat removes dead connections.
+
+This is **trusted presentation mode, not a secure role authorization system**: the presenter role is self-declared by the client, so anyone who can reach the service can request it.
+
+HTTP surface (plus the existing session cookie when login is enabled):
+
+| Interface / parameter                                              | Request / response                                                                                                                  |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `POST /api/whiteboards/join`                                       | `{"whiteboardid":"demo","username":"Jason Huang","sharer":true,"clientId":"<random UUID>"}` → `{token, whiteboardid, member}`       |
+| `X-Mico-Whiteboard: <token>`                                       | Session token for later HTTP requests; `clientId` is a private reconnect identifier, never share it, and a name is not a credential |
+| `/api/events?whiteboardsession=<token>`                            | The canvas WebSocket, which also carries presence events                                                                            |
+| `/api/whiteboard-voice/mai/realtime`, `/api/whiteboard-voice/moss` | The presenter's voice connections, with the same session token                                                                      |
+
+Besides `snapshot` and `board`, the connection receives `presence`, `cursor`, `selection` and `presenter-view` events. The client sends `{type:"cursor",point:{x,y}}` (`null` when the pointer leaves the canvas), and the presenter can also send `{type:"presenter-view",viewport:{centerX,centerY,zoom}}`; the server broadcasts per room. A room follows the active canvas of its tenant, so a canvas switch is visible to every member.
 
 ## Features
 

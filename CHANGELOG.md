@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Describe the shipped multi-user model in the human documentation: presence rooms inside one tenant replace the removed shared-whiteboard collection, its endpoints and its example, and the deployment guide no longer claims a separate shared board set.
 - Hide the AI Settings tab in deployment mode while preserving local access, visible-tab keyboard navigation and the server's read-only settings policy.
 
 ## v0.8.1

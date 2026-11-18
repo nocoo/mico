@@ -25,7 +25,7 @@ The image serves UI, API and WebSocket traffic on one port. The reverse proxy mu
 | `MICO_STATIC_DIR`         | Built frontend directory; `/app/dist` in the image.                                                                                                                                                       |
 | `MICO_DB_PATH`            | SQLite path; choose a writable local filesystem. The Azure preview uses `/tmp/mico/board.sqlite`.                                                                                                         |
 | `MICO_PUBLIC_ORIGIN`      | Exact canonical public HTTPS origin, with no path/query/fragment. Required for Entra login. Host/Origin checks use it rather than trusting forwarded headers.                                             |
-| `MICO_AUTH_MODE`          | `none` (default) or `entra`. Optional and independent of runtime/hosting provider.                                                                                                                        |
+| `MICO_AUTH_MODE`          | `none` (default), `demo` or `entra`. Optional and independent of runtime/hosting provider. `demo` gives every caller one shared tenant with presenter-gated canvas management.                            |
 | `MICO_AI_ENABLED`         | `true` (default) or `false`. False disables AI/voice/image-generation entrypoints and removes the requirement for Chat provider configuration. Manual drawing and image uploads still work.               |
 | `MICO_EPHEMERAL`          | `true` displays the temporary-data warning. Default false. This is a notice, not a persistence implementation.                                                                                            |
 
@@ -33,7 +33,7 @@ AI configuration is documented separately in [ai-configuration.md](ai-configurat
 
 ### Authentication is optional, not implicit
 
-`MICO_AUTH_MODE=none` is useful on loopback or a genuinely access-controlled network. A public deployment with this mode gives every reachable caller access to the shared canvas and its mutations. Merely putting a login page in front of the frontend does not protect API or WebSocket routes.
+`MICO_AUTH_MODE=none` is useful on loopback or a genuinely access-controlled network. A public deployment with this mode gives every reachable caller access to the instance's canvas and its mutations. Merely putting a login page in front of the frontend does not protect API or WebSocket routes.
 
 For Entra login set:
 
@@ -66,7 +66,7 @@ Durable deployment is a separate change: use a local disk on a single host with 
 
 Each signed-in identity gets its own workspace: a personal tenant with its own canvas list, active canvas and image assets, derived from the verified object id. A signed-in user never sees another user's canvases, and no request can reach a canvas belonging to a different tenant. Anonymous mode (`MICO_AUTH_MODE=none`) keeps one `local` tenant for the whole instance, so a public deployment without login still shares every canvas with every caller.
 
-Private tenants are not shared. The separate `/?whiteboards=1` collection is explicitly shared across admitted identities and never includes existing private canvases. It uses trusted, URL-declared presenter roles, not invitation-based authorization: anyone with access may request the single presenter slot with `sharer=true`. Participant sessions are read-only, with presence/cursor updates and presenter-view following. Shared content persists in the same SQLite database; presence, role reservations and viewports are in-memory and require one live replica. See the [shared-whiteboard contract](../README.md#共享白板).
+Private tenants are not shared, and there is no separate shared collection of boards. Multi-user sessions are presence rooms inside one tenant: `MICO_AUTH_MODE=demo` gives every caller of that daemon one shared tenant, and `?meetingid=<id>` (or the `X-Mico-Meeting` header) scopes a tenant to one meeting by hash. Roles are trusted, client-declared presenter roles, not invitation-based authorization: anyone with access may request the single presenter slot with `sharer=true`. Participants draw and read like the presenter; only canvas management in demo mode and the AI/voice endpoints require the presenter role. Presence, role reservations and viewports are in-memory and require one live replica, while the boards themselves persist in that tenant's SQLite database. See the [demo and multi-user contract](../README.md#演示与多人在线).
 
 ## Acceptance
 
