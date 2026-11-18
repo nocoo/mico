@@ -76,6 +76,12 @@ export function usePresence(
 				setPresenterLive(
 					event.active || event.text ? { text: event.text, active: event.active } : null,
 				)
+			} else if (event.type === 'selection') {
+				setMembers((current) =>
+					current.map((member) =>
+						member.id === event.memberId ? { ...member, selectedIds: event.selectedIds } : member,
+					),
+				)
 			} else {
 				presenterView.current = event.viewport
 				if (!sharerRef.current && followingRef.current) applyPresenter(event.viewport)
@@ -195,6 +201,15 @@ export function usePresence(
 		setFollowing(true)
 		if (presenterView.current) applyPresenter(presenterView.current)
 	}, [applyPresenter])
+	const lastSelectionRef = useRef<string>('')
+	const publishSelection = useCallback((selectedIds: readonly string[]) => {
+		const normalized = selectedIds.slice(0, 100)
+		const key = normalized.join('\u0000')
+		if (key === lastSelectionRef.current) return
+		lastSelectionRef.current = key
+		send.current({ type: 'selection', selectedIds: [...normalized] })
+	}, [])
+
 	const pointer = (point: Point | null) => {
 		cursorScreen.current = point
 		queueCursor()
@@ -230,6 +245,7 @@ export function usePresence(
 		queueView,
 		onEvent,
 		publishLiveTranscript,
+		publishSelection,
 		requestPresenter,
 		transferPresenter,
 		declinePresenter,

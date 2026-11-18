@@ -46,6 +46,12 @@ export const presenceMessageSchema = z.discriminatedUnion('type', [
 			active: z.boolean(),
 		})
 		.strict(),
+	z
+		.object({
+			type: z.literal('selection'),
+			selectedIds: z.array(z.string().min(1).max(128)).max(100),
+		})
+		.strict(),
 ])
 
 export const joinWhiteboardSchema = z
@@ -78,6 +84,7 @@ export interface WhiteboardMember {
 	sharer: boolean
 	color: string
 	cursor: Point | null
+	selectedIds?: string[]
 }
 
 export interface WhiteboardSession {
@@ -110,6 +117,7 @@ export type PresenceEvent =
 	| { type: 'cursor'; memberId: string; point: Point | null }
 	| { type: 'presenter-view'; viewport: PresenterView }
 	| { type: 'live-transcript'; memberId: string; text: string; active: boolean }
+	| { type: 'selection'; memberId: string; selectedIds: string[] }
 
 export const PRESENCE_COLORS = [
 	CANDY_COLORS.blue,

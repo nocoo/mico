@@ -780,6 +780,11 @@ export default function App({
 		presence.publishLiveTranscript,
 	])
 
+	useEffect(() => {
+		if (!presenceActive) return
+		presence.publishSelection(selectedIds)
+	}, [presenceActive, selectedIds, presence.publishSelection])
+
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
@@ -1475,6 +1480,7 @@ export default function App({
 					session={activeDemoSession}
 					members={presence.members}
 					viewport={viewport}
+					shapeById={shapeById}
 				/>
 			)}
 			<CanvasMinimap

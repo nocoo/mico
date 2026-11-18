@@ -286,6 +286,21 @@ export class Whiteboards {
 						type: 'live-transcript',
 						...nextState,
 					})
+				} else if (message.type === 'selection') {
+					const previous = member.member.selectedIds ?? []
+					const next = message.selectedIds
+					if (
+						previous.length === next.length &&
+						previous.every((id, index) => id === next[index])
+					) {
+						return
+					}
+					member.member.selectedIds = [...next]
+					this.emit(member.whiteboardid, {
+						type: 'selection',
+						memberId: member.member.id,
+						selectedIds: member.member.selectedIds,
+					})
 				}
 			} catch {
 				socket.close(1008, 'Invalid presence message')
@@ -393,6 +408,7 @@ export class Whiteboards {
 		for (const voice of member.voiceSockets) voice.close(1008, 'Presenter disconnected')
 		member.voiceSockets.clear()
 		member.member.cursor = null
+		member.member.selectedIds = []
 		this.requests.get(member.whiteboardid)?.delete(member.member.id)
 		if (member.member.sharer) {
 			this.views.delete(member.whiteboardid)
