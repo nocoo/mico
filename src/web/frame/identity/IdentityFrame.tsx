@@ -12,7 +12,7 @@ import {
 	type LiveTopbarRemote,
 } from '../live/LiveModeFrame'
 import { LocalModeMenu, type LocalModeMenuProps } from '../local/LocalModeMenu'
-import type { MeetingFrameProps } from '../meeting/MeetingFrame'
+import type { MeetingFrameProps } from '../meeting/viewmodel'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
 import './identity.css'

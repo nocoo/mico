@@ -90,8 +90,6 @@ export const zh: I18nMessages = {
 		openPresenterWindow: '打开 Presenter 新窗口',
 	},
 	meeting: {
-		ariaLabel: (detail: string) => `会议状态：${detail}`,
-		clockSr: '会话时长',
 		participantsSr: '在线成员',
 		localTitle: '工作区',
 		localDetail: '本地会话',
@@ -100,9 +98,6 @@ export const zh: I18nMessages = {
 		demoPresenting: (online: number, presenterName: string) =>
 			`${online} 人在线 · ${presenterName} 演示中`,
 		demoYouPresenting: (online: number) => `${online} 人在线 · 你正在演示`,
-		micUnavailable: '麦克风在预览中不可用',
-		cameraUnavailable: '摄像头在预览中不可用',
-		leaveUnavailable: '离开会议在预览中不可用',
 	},
 	liveTopbar: {
 		title: '实时转录',

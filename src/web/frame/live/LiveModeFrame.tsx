@@ -12,7 +12,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
 import { formatClock } from '../../stt/transcript'
-import type { MeetingFrameProps } from '../meeting/MeetingFrame'
+import type { MeetingFrameProps } from '../meeting/viewmodel'
 import { buildMeetingViewModel } from '../meeting/viewmodel'
 import '../meeting/meeting.css'
 import './live.css'

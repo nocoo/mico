@@ -88,8 +88,6 @@ export const en = {
 		openPresenterWindow: 'Open Presenter window',
 	},
 	meeting: {
-		ariaLabel: (detail: string) => `Meeting status: ${detail}`,
-		clockSr: 'Session time',
 		participantsSr: 'Online participants',
 		localTitle: 'Workspace',
 		localDetail: 'Local session',
@@ -98,9 +96,6 @@ export const en = {
 		demoPresenting: (online: number, presenterName: string) =>
 			`${online} online · ${presenterName} presenting`,
 		demoYouPresenting: (online: number) => `${online} online · You are presenting`,
-		micUnavailable: 'Microphone unavailable in preview',
-		cameraUnavailable: 'Camera unavailable in preview',
-		leaveUnavailable: 'Leave meeting unavailable in preview',
 	},
 	liveTopbar: {
 		title: 'Live mode',

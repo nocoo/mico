@@ -2,6 +2,16 @@ import type { AuthMode } from '../../../shared/runtime.ts'
 import type { WhiteboardMember } from '../../../shared/whiteboards.ts'
 import { getMessages, type I18nMessages } from '../../i18n/index.ts'
 
+export interface MeetingFrameProps {
+	readonly presenceActive: boolean
+	readonly authMode: AuthMode
+	readonly canvasName: string
+	readonly members: readonly WhiteboardMember[]
+	readonly presenterId: string | null
+	readonly selfId: string | null
+	readonly selfName?: string
+}
+
 export interface MeetingParticipant {
 	readonly id: string
 	readonly name: string
