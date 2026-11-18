@@ -25,6 +25,7 @@ test('demo mode resolves default callers to demo tenant and isolates meetingId i
 	assert.notEqual(meetingA.tenantId, meetingB.tenantId)
 	assert.match(meetingA.tenantId, /^mtg-[0-9a-f]{24}$/)
 	assert.match(meetingB.tenantId, /^mtg-[0-9a-f]{24}$/)
+	assert.equal(tenantScopeFor(undefined, 'none', 'meeting-alpha').tenantId, meetingA.tenantId)
 })
 
 test('each identity resolves to its own stable opaque tenant', () => {

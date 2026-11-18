@@ -9,12 +9,12 @@ export function tenantScopeFor(
 	authMode: AuthMode = 'none',
 	meetingId?: string,
 ): TenantScope {
-	if (authMode === 'demo') {
-		const trimmed = meetingId?.trim()
-		if (!trimmed) return DEMO_TENANT
-		const digest = createHash('sha256').update(trimmed).digest('hex')
+	const trimmedMeeting = meetingId?.trim()
+	if (authMode !== 'entra' && trimmedMeeting) {
+		const digest = createHash('sha256').update(trimmedMeeting).digest('hex')
 		return { tenantId: `mtg-${digest.slice(0, 24)}` }
 	}
+	if (authMode === 'demo') return DEMO_TENANT
 	if (!session) return LOCAL_TENANT
 	const digest = createHash('sha256').update(session.identity).digest('hex')
 	return { tenantId: `ten-${digest.slice(0, 32)}` }
