@@ -805,7 +805,7 @@ svg {
 	--selection-panel-top: 14px;
 	position: fixed;
 	top: var(--selection-panel-top);
-	right: 84px;
+	right: 14px;
 	left: auto;
 	transform: none;
 	z-index: 30;
@@ -837,7 +837,10 @@ svg {
 		0 26px 50px -26px var(--ui-shadow),
 		0 3px 8px -3px var(--ui-shadow);
 }
-.app.ai-open .selection-panel {
+.app.has-ai .selection-panel {
+	right: 84px;
+}
+.app.has-ai.ai-open .selection-panel {
 	right: var(--frame-panel-reserved);
 }
 .image-file-input {

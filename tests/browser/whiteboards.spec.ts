@@ -515,6 +515,15 @@ test('guest sticky note selection renders remote selection highlight in presente
 	)
 
 	await guest.locator('[data-shape-id="collab-note"]').click()
+	const guestProps = guest.getByRole('region', { name: 'Selected object properties' })
+	await expect(guestProps).toBeVisible()
+	const guestPropsBox = await guestProps.boundingBox()
+	const guestViewport = guest.viewportSize()
+	expect(guestPropsBox).not.toBeNull()
+	expect(guestViewport).not.toBeNull()
+	if (guestPropsBox && guestViewport) {
+		expect(guestViewport.width - (guestPropsBox.x + guestPropsBox.width)).toBeCloseTo(14, 1)
+	}
 	const remoteSelection = page.locator('.whiteboard-remote-selection[data-shape-id="collab-note"]')
 	await expect(remoteSelection).toBeVisible()
 	const borderColor = await remoteSelection.evaluate((el) =>

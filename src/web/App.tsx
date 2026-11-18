@@ -1461,7 +1461,7 @@ export default function App({
 
 	return (
 		<main
-			className={`app ${aiPanelOpen ? 'ai-open' : ''}`}
+			className={`app${canUseAi ? ' has-ai' : ''}${canUseAi && aiPanelOpen ? ' ai-open' : ''}`}
 			style={
 				{
 					'--control-size': `${CONTROL_SIZE}px`,
