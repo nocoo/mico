@@ -164,7 +164,7 @@ test('demo draw survives delayed initial state without duplicate whiteboard join
 	})
 	const tokenedSockets: string[] = []
 	await page.routeWebSocket(/\/api\/events/, async (socket) => {
-		const token = new URL(socket.url()).searchParams.get('whiteboardSession')
+		const token = new URL(socket.url()).searchParams.get('whiteboardsession')
 		if (token) tokenedSockets.push(token)
 		await stateGate
 		const server = socket.connectToServer()
@@ -281,7 +281,7 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 			})
 		})
 		await context.routeWebSocket(/\/api\/events/, async (socket) => {
-			const token = new URL(socket.url()).searchParams.get('whiteboardSession')
+			const token = new URL(socket.url()).searchParams.get('whiteboardsession')
 			if (!token) return
 			sockets.set(token, socket)
 			socket.send(JSON.stringify({ type: 'snapshot', ...snapshot }))
