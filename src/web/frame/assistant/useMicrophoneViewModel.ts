@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { type I18nMessages, useI18n } from '../../i18n/index.ts'
 import { TARGET_RATE } from '../../stt/audioSource.ts'
 import { MaiClient, type MaiConfig } from '../../stt/maiClient.ts'
@@ -134,6 +134,11 @@ export function useMicrophoneViewModel({
 	callbacks.current = { onStart, onSegment, onSessionEnd }
 	const stopRef = useRef<() => void>(() => {})
 	const keepAliveRef = useRef(false)
+	const runningRef = useRef(false)
+	const togglesRef = useRef<{ stop: () => void; start: () => Promise<void> }>({
+		stop: () => {},
+		start: async () => {},
+	})
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const [phase, setPhase] = useState<MicrophonePhase>('idle')
 	const [detail, setDetail] = useState('')
@@ -369,6 +374,8 @@ export function useMicrophoneViewModel({
 	}
 
 	const running = phase === 'connecting' || phase === 'listening'
+	runningRef.current = running
+	togglesRef.current = { stop, start }
 	const hasOutput = Boolean(running || live.confirmed || live.hypothesis || segments.length > 0)
 	const meetingAudioSupported =
 		typeof navigator !== 'undefined' &&
@@ -388,22 +395,22 @@ export function useMicrophoneViewModel({
 		hasOutput,
 		includeMeetingAudio,
 		meetingAudioSupported,
-		toggleMeetingAudio: () => setIncludeMeetingAudio((value) => !value),
+		toggleMeetingAudio: useCallback(() => setIncludeMeetingAudio((value) => !value), []),
 		disabled: phase === 'stopping' || summaryRequesting,
 		aiLabel,
-		toggleRecording: () => {
+		toggleRecording: useCallback(() => {
 			keepAliveRef.current = false
-			if (running) stop()
-			else void start()
-		},
-		toggleFromTopbar: () => {
-			if (running) {
+			if (runningRef.current) togglesRef.current.stop()
+			else void togglesRef.current.start()
+		}, []),
+		toggleFromTopbar: useCallback(() => {
+			if (runningRef.current) {
 				keepAliveRef.current = false
-				stop()
+				togglesRef.current.stop()
 			} else {
 				keepAliveRef.current = true
-				void start()
+				void togglesRef.current.start()
 			}
-		},
+		}, []),
 	}
 }

@@ -171,3 +171,27 @@ test('MOSS session errors surface in the assistant status pill', async ({ contex
 	await expect(status).toHaveAttribute('data-state', 'attention')
 	await expect(status).toContainText('MOSS regression status mock unavailable')
 })
+
+test('an idle AI-enabled page reports no update-depth storms', async ({ page }) => {
+	const errors: string[] = []
+	page.on('console', (message) => {
+		if (message.type() === 'error') errors.push(message.text())
+	})
+	await page.goto('/')
+	await expectLive(page)
+	const assistant = page.getByRole('region', { name: 'AI assistant' })
+	await expect(assistant).toBeVisible()
+
+	await page.evaluate(
+		() =>
+			new Promise<void>((resolve) => {
+				const startedAt = performance.now()
+				const tick = () => {
+					if (performance.now() - startedAt >= 1000) resolve()
+					else requestAnimationFrame(tick)
+				}
+				requestAnimationFrame(tick)
+			}),
+	)
+	expect(errors.filter((text) => text.includes('Maximum update depth'))).toEqual([])
+})
