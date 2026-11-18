@@ -350,7 +350,7 @@ test('demo mode gates AI to presenter and supports presenter request and transfe
 			clip: { x: 0, y: 0, width: 600, height: 110 },
 			animations: 'disabled',
 		})
-		await darkTheme.evaluate((element) => element.remove())
+		await darkTheme.evaluate((element) => element.parentNode?.removeChild(element))
 		await presenter.emulateMedia({ colorScheme: 'light' })
 		await presenter.setViewportSize({ width: 1440, height: 960 })
 
