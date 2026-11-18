@@ -229,20 +229,45 @@ function build(): void {
 				'--query',
 				'accessToken',
 			])
-			run(
-				'container',
-				[
-					'registry',
-					'login',
-					registry.loginServer,
-					'-u',
-					'00000000-0000-0000-0000-000000000000',
-					'--password-stdin',
-				],
-				false,
-				token,
-			)
-			run('container', ['image', 'push', image], false)
+			const hasCrane =
+				spawnSync('crane', ['version'], { encoding: 'utf8', stdio: 'ignore', timeout: 5000 })
+					.status === 0
+			if (hasCrane) {
+				const ociTar = join(directory, 'image-oci.tar')
+				const ociDir = join(directory, 'image-oci')
+				run('container', ['image', 'save', '--platform', 'linux/amd64', '-o', ociTar, image], false)
+				run('mkdir', ['-p', ociDir])
+				run('tar', ['-xf', ociTar, '-C', ociDir])
+				run(
+					'crane',
+					[
+						'auth',
+						'login',
+						registry.loginServer,
+						'-u',
+						'00000000-0000-0000-0000-000000000000',
+						'--password-stdin',
+					],
+					false,
+					token,
+				)
+				run('crane', ['push', ociDir, image], false)
+			} else {
+				run(
+					'container',
+					[
+						'registry',
+						'login',
+						registry.loginServer,
+						'-u',
+						'00000000-0000-0000-0000-000000000000',
+						'--password-stdin',
+					],
+					false,
+					token,
+				)
+				run('container', ['image', 'push', image], false)
+			}
 		} else {
 			run(
 				'docker',

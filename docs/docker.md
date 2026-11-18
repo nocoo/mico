@@ -85,3 +85,24 @@ The check creates a unique Compose project and fresh volumes, clears provider cr
 Only that check's project and volumes are removed afterward, including on failure. Screenshots and container logs are retained in the printed `mico-docker-smoke-*` directory under the OS temporary directory. It never uses the daily host board or an existing deployment. Stop an existing Docker deployment with `docker compose down` before running the check, then start it again afterward.
 
 For source-level checks, use `pnpm check`, `pnpm test`, `pnpm test:e2e` and `pnpm build`. `src/server/production.test.ts` and `src/server/realtimeProxy.test.ts` belong to L3 integration and run without Docker or real providers.
+
+## Apple container (macOS)
+
+On Apple Silicon Macs running macOS 26+, [`apple/container`](https://github.com/apple/container) can replace Docker Desktop for building `linux/amd64` images and running isolated smoke checks without `docker compose`:
+
+```sh
+brew install container crane
+container system start --enable-kernel-install
+```
+
+Run the isolated `apple/container` smoke test (port `47063` must be free; stop any daily or Docker instance first):
+
+```sh
+MICO_CONTAINER_DNS=<corporate-dns-ip-if-needed> NPM_REGISTRY=https://registry.npmmirror.com/ node scripts/container-smoke.ts
+```
+
+Operational notes for `apple/container`:
+
+- **DNS behind corporate fake-ip proxies:** `apple/container` forwards VM DNS through `192.168.64.1`, which can resolve fake-ip addresses (`6.6.x.x`) and time out during `npm install`. Pass `MICO_CONTAINER_DNS=<reachable-dns-ip>` (e.g. the host interface DNS from `scutil --dns`). If an earlier `buildkit` helper container was started without `--dns`, reset it with `container stop buildkit && container rm buildkit`.
+- **Named volume ownership:** `container volume create` mounts ext4 volumes owned by `root:root` rather than copying image directory ownership. Before running the non-root `USER node` (`1000:1000`) container with `--cap-drop ALL`, `scripts/container-smoke.ts` initializes `/data` and `/home/node/.config/mico` ownership with a one-shot `chown -R 1000:1000`.
+- **Host port forwarding:** `apple/container` 1.7.1 `-p` loopback forwarding can reset connections on this host, whereas each container's VM IP (`192.168.64.x:47063`) is directly reachable. `scripts/container-smoke.ts` bridges `127.0.0.1:47063` to the container VM IP so browser and CLI `Host` checks match production.

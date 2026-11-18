@@ -37,7 +37,7 @@ Keep configuration in a private file outside the repository, such as `$HOME/.con
 
 Do not put real values in tracked `.env.example`, scripts or documentation. The build uses a Git archive of the committed revision, not the working directory; local environment files and untracked files never enter the image build context.
 
-Requirements: Node.js 24+, Docker with `linux/amd64` builds, Azure CLI with Container Apps commands, and an existing Azure login. The operator needs resource-creation permissions, the ability to assign the registry-scoped role, and ACR push permission. The script never logs in or changes the CLI default subscription. Every resource command passes the configured subscription explicitly.
+Requirements: Node.js 24+, either [`apple/container`](https://github.com/apple/container) (with `crane` for reliable ACR pushes on macOS) or Docker with `linux/amd64` builds, Azure CLI with Container Apps commands, and an existing Azure login. The operator needs resource-creation permissions, the ability to assign the registry-scoped role, and ACR push permission. The script never logs in or changes the CLI default subscription. Every resource command passes the configured subscription explicitly.
 
 ## Managed AI profile
 
@@ -87,6 +87,8 @@ node scripts/deploy-azure.ts deploy
 ```
 
 `build` rejects tracked uncommitted changes, exports the current Git commit to a temporary directory, builds `linux/amd64`, signs in to ACR through Azure CLI and pushes `mico:<full-git-sha>`. It removes only its own temporary directory afterward. Untracked files are not packaged.
+
+When `container` is running (`MICO_CONTAINER_CLI=auto`, or explicitly `MICO_CONTAINER_CLI=container`), `build` uses `container build --platform linux/amd64` (forwarding `MICO_CONTAINER_DNS` as `--dns` when set), fetches an ACR refresh token via `az acr login --expose-token`, and pushes the saved OCI layout through `crane` when available (avoiding `container-core-images` Keychain XPC hangs in non-GUI/agent sessions), falling back to `container registry login` + `container image push` otherwise. Set `MICO_CONTAINER_CLI=docker` to force Docker.
 
 `deploy` resolves that commit's image digest and pins it on the Container App. It configures runtime environment variables, the independent user-auth choice, the selected AI profile, disabled MOSS, ephemeral SQLite under `/tmp`, and explicit startup/liveness/readiness probes. Updates use the same command; the canonical domain stays stable while the environment and app names remain unchanged.
 

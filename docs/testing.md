@@ -153,7 +153,7 @@ Agent examples are executable specifications: `examples/architecture.json`, `exa
 
 ## Docker acceptance
 
-`docker compose --env-file /dev/null build && node scripts/docker-smoke.ts` checks the actual production image on `127.0.0.1:47063` using a unique Compose project, isolated volumes, empty provider credentials and headless Chrome. It covers UI drawing, API/WebSocket synchronization, audio ranges, image storage, CLI access, security boundaries and persistence after container recreation. It cleans up only its own containers and volumes, retaining screenshots and logs in the OS temporary directory. See [docker.md](docker.md).
+`docker compose --env-file /dev/null build && node scripts/docker-smoke.ts` checks the actual production image on `127.0.0.1:47063` using a unique Compose project, isolated volumes, empty provider credentials and headless Chrome. It covers UI drawing, API/WebSocket synchronization, audio ranges, image storage, CLI access, security boundaries and persistence after container recreation. It cleans up only its own containers and volumes, retaining screenshots and logs in the OS temporary directory. See [docker.md](docker.md). On macOS without Docker Desktop, run `node scripts/container-smoke.ts` using `apple/container` instead.
 
 `src/server/production.test.ts` and `src/server/realtimeProxy.test.ts` run in L3 without Docker. They cover production asset serving, HTTP caching/ranges, missing-file and source-file rejection, same-origin API/events, provider upgrade routing, missing credentials and mock upstream forwarding.
 
