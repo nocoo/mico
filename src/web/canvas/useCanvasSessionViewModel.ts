@@ -132,7 +132,7 @@ export function useCanvasSessionViewModel({
 			const initialLoad = activeCanvasIdRef.current === ''
 			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
 			activeCanvasIdRef.current = snapshot.activeCanvasId
-			requestedCanvasIdRef.current = snapshot.activeCanvasId
+			if (!requestedCanvasIdRef.current) requestedCanvasIdRef.current = snapshot.activeCanvasId
 			setActiveCanvasId(snapshot.activeCanvasId)
 			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
 			const liveIds = new Set(snapshot.canvases.map((canvas) => canvas.id))
