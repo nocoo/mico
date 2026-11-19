@@ -1,4 +1,6 @@
 import { Button, Checkbox, Select, TextField, Theme } from '@radix-ui/themes'
+import { REASONING_EFFORT_OPTIONS } from '../../../shared/aiReasoning'
+import { SelectField } from '../../SelectField'
 import { useAiSettingsViewModel } from './useAiSettingsViewModel'
 
 export function AiSettings({ active }: { active: boolean }) {
@@ -72,6 +74,30 @@ export function AiSettings({ active }: { active: boolean }) {
 							{model.modelNote}
 						</p>
 					)}
+					<div className="ai-settings-row">
+						<div className="ai-settings-field">
+							<label htmlFor="ai-settings-lecture-reasoning">Live / Audio reasoning</label>
+							<SelectField
+								id="ai-settings-lecture-reasoning"
+								label="Live / Audio reasoning"
+								value={model.lectureReasoning}
+								options={REASONING_EFFORT_OPTIONS}
+								onChange={model.setLectureReasoning}
+								disabled={model.settings.readOnly}
+							/>
+						</div>
+						<div className="ai-settings-field">
+							<label htmlFor="ai-settings-chat-reasoning">Chat reasoning</label>
+							<SelectField
+								id="ai-settings-chat-reasoning"
+								label="Chat reasoning"
+								value={model.chatReasoning}
+								options={REASONING_EFFORT_OPTIONS}
+								onChange={model.setChatReasoning}
+								disabled={model.settings.readOnly}
+							/>
+						</div>
+					</div>
 					{model.settings.authMode === 'api-key' && (
 						<label className="ai-settings-field" htmlFor="ai-settings-key">
 							<span>API key</span>

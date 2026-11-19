@@ -13,16 +13,26 @@ import { mossCompletedToolActivity } from './frame/assistant/useMossViewModel.ts
 import { en } from './i18n/index.ts'
 import { zh } from './i18n/zh.ts'
 
-test('AI settings payload preserves key and clear semantics', () => {
-	assert.deepEqual(buildAiSettingsPayload(' https://example.test/ ', ' gpt-model ', '', false), {
-		baseURL: 'https://example.test/',
-		model: 'gpt-model',
-	})
-	assert.deepEqual(buildAiSettingsPayload('https://example.test', 'model', 'secret', false), {
-		baseURL: 'https://example.test',
-		model: 'model',
-		apiKey: 'secret',
-	})
+test('AI settings payload preserves key, reasoning and clear semantics', () => {
+	assert.deepEqual(
+		buildAiSettingsPayload(' https://example.test/ ', ' gpt-model ', '', false, 'none', 'low'),
+		{
+			baseURL: 'https://example.test/',
+			model: 'gpt-model',
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
+		},
+	)
+	assert.deepEqual(
+		buildAiSettingsPayload('https://example.test', 'model', 'secret', false, 'minimal', 'medium'),
+		{
+			baseURL: 'https://example.test',
+			model: 'model',
+			lectureReasoning: 'minimal',
+			chatReasoning: 'medium',
+			apiKey: 'secret',
+		},
+	)
 	assert.deepEqual(buildAiSettingsPayload('https://example.test', 'model', 'ignored', true), {
 		baseURL: 'https://example.test',
 		model: 'model',
@@ -30,7 +40,7 @@ test('AI settings payload preserves key and clear semantics', () => {
 	})
 })
 
-test('AI settings validation requires auth mode and rejects invalid payloads', () => {
+test('AI settings validation requires auth mode and valid reasoning levels', () => {
 	assert.deepEqual(
 		parseAiSettings({
 			baseURL: 'https://example.test/v1',
@@ -38,6 +48,8 @@ test('AI settings validation requires auth mode and rejects invalid payloads', (
 			hasApiKey: false,
 			readOnly: true,
 			authMode: 'managed-identity',
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		}),
 		{
 			baseURL: 'https://example.test/v1',
@@ -45,6 +57,8 @@ test('AI settings validation requires auth mode and rejects invalid payloads', (
 			hasApiKey: false,
 			readOnly: true,
 			authMode: 'managed-identity',
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		},
 	)
 	assert.throws(
@@ -58,7 +72,9 @@ test('AI settings validation requires auth mode and rejects invalid payloads', (
 				model: '',
 				hasApiKey: false,
 				readOnly: false,
-				authMode: 'unknown',
+				authMode: 'api-key',
+				lectureReasoning: 'invalid',
+				chatReasoning: 'low',
 			}),
 		/Invalid AI settings/,
 	)

@@ -226,9 +226,18 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 	expect(saveBox?.height).toBe(40)
 	await settings.getByLabel('Endpoint').fill('https://example.test/v1')
 	await settings.getByLabel('Model', { exact: true }).fill('example-model')
+	await settings.getByRole('combobox', { name: 'Live / Audio reasoning' }).click()
+	await page.getByRole('option', { name: 'Minimal', exact: true }).click()
+	await settings.getByRole('combobox', { name: 'Chat reasoning' }).click()
+	await page.getByRole('option', { name: 'High', exact: true }).click()
 	await settings.getByRole('button', { name: 'Save settings' }).click()
 	await expect(settings.getByRole('status')).toHaveText('Settings saved.')
-	expect(writes[0]).toEqual({ baseURL: 'https://example.test/v1', model: 'example-model' })
+	expect(writes[0]).toEqual({
+		baseURL: 'https://example.test/v1',
+		model: 'example-model',
+		lectureReasoning: 'minimal',
+		chatReasoning: 'high',
+	})
 
 	await settings.getByLabel('API key', { exact: true }).fill('example-key')
 	await settings.getByRole('button', { name: 'Save settings' }).click()
@@ -236,6 +245,8 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 	expect(writes[1]).toEqual({
 		baseURL: 'https://example.test/v1',
 		model: 'example-model',
+		lectureReasoning: 'minimal',
+		chatReasoning: 'high',
 		apiKey: 'example-key',
 	})
 
@@ -245,12 +256,18 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 	expect(writes[2]).toEqual({
 		baseURL: 'https://example.test/v1',
 		model: 'example-model',
+		lectureReasoning: 'minimal',
+		chatReasoning: 'high',
 		apiKey: '',
 	})
 	await page.reload()
 	await openAssistant(page, 'Settings')
 	await expect(settings.getByLabel('Endpoint')).toHaveValue('https://example.test/v1')
 	await expect(settings.getByLabel('Model', { exact: true })).toHaveValue('example-model')
+	await expect(settings.getByRole('combobox', { name: 'Live / Audio reasoning' })).toHaveText(
+		'Minimal',
+	)
+	await expect(settings.getByRole('combobox', { name: 'Chat reasoning' })).toHaveText('High')
 	await expect(settings.getByLabel('Remove current API key')).toHaveCount(0)
 	const result = await request.get('/api/ai/settings')
 	expect(await result.json()).toEqual({
@@ -259,6 +276,8 @@ test('AI settings save endpoint and model without exposing or accidentally clear
 		hasApiKey: false,
 		readOnly: false,
 		authMode: 'api-key',
+		lectureReasoning: 'minimal',
+		chatReasoning: 'high',
 	})
 })
 

@@ -661,6 +661,8 @@ test('AI-disabled daemon blocks every AI route and provider-backed WebSocket wit
 				hasApiKey: false,
 				authMode: 'api-key',
 				readOnly: true,
+				lectureReasoning: 'none',
+				chatReasoning: 'low',
 			})
 
 			for (const [path, method, body] of [

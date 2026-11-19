@@ -49,11 +49,26 @@ test('AI settings use environment defaults, saved-file precedence, and atomic fi
 			hasApiKey: true,
 			authMode: 'api-key',
 			readOnly: false,
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
+		})
+		assert.deepEqual(store.getReasoning(), {
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		})
 		assert.equal(statSync(settingsPath).mode & 0o777, 0o600)
 
-		await store.update({ baseURL: 'https://next.example/v2/', model: 'next-model' })
+		await store.update({
+			baseURL: 'https://next.example/v2/',
+			model: 'next-model',
+			lectureReasoning: 'minimal',
+			chatReasoning: 'medium',
+		})
 		assert.equal(JSON.parse(readFileSync(settingsPath, 'utf8')).apiKey, 'saved-secret')
+		assert.deepEqual(store.getReasoning(), {
+			lectureReasoning: 'minimal',
+			chatReasoning: 'medium',
+		})
 		assert.equal(statSync(settingsPath).mode & 0o777, 0o600)
 		assert.equal(statSync(join(directory, 'mico')).mode & 0o777, 0o700)
 
@@ -61,6 +76,18 @@ test('AI settings use environment defaults, saved-file precedence, and atomic fi
 		const cleared = new AiSettingsStore({ path: settingsPath, config: loadAiConfig({}) })
 		assert.equal(cleared.getEffective().apiKey, '')
 		assert.equal(cleared.getPublic().hasApiKey, false)
+		assert.deepEqual(cleared.getReasoning(), {
+			lectureReasoning: 'minimal',
+			chatReasoning: 'medium',
+		})
+		await assert.rejects(
+			store.update({
+				baseURL: 'https://next.example/v2',
+				model: 'next-model',
+				lectureReasoning: 'invalid',
+			}),
+			{ code: 'INVALID_REQUEST', status: 400 },
+		)
 	} finally {
 		rmSync(directory, { recursive: true, force: true })
 	}
@@ -95,6 +122,8 @@ test('deploy ignores saved credentials and refuses all settings writes without t
 					hasApiKey: true,
 					authMode: 'api-key',
 					readOnly: true,
+					lectureReasoning: 'none',
+					chatReasoning: 'low',
 				})
 				assert.equal(JSON.stringify(store.getPublic()).includes('cloud-secret'), false)
 				await assert.rejects(
@@ -154,6 +183,8 @@ test('managed identity settings are readonly and ignore saved provider credentia
 			hasApiKey: false,
 			authMode: 'managed-identity',
 			readOnly: true,
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		})
 		assert.equal(JSON.stringify(store.getPublic()).includes('saved-secret'), false)
 		assert.equal(JSON.stringify(store.getPublic()).includes('environment-secret'), false)

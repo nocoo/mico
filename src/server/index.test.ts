@@ -203,6 +203,8 @@ test('AI settings expose only public fields and preserve the existing key contra
 			hasApiKey: true,
 			authMode: 'api-key',
 			readOnly: false,
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		})
 
 		const secret = 'test-api-secret'
@@ -223,6 +225,8 @@ test('AI settings expose only public fields and preserve the existing key contra
 			hasApiKey: true,
 			authMode: 'api-key',
 			readOnly: false,
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		})
 		assert.equal(JSON.stringify(publicSettings).includes(secret), false)
 
@@ -256,6 +260,8 @@ test('AI settings expose only public fields and preserve the existing key contra
 			hasApiKey: false,
 			authMode: 'api-key',
 			readOnly: false,
+			lectureReasoning: 'none',
+			chatReasoning: 'low',
 		})
 
 		const invalid = await fetch(`${url}/api/ai/settings`, {

@@ -32,6 +32,8 @@ async function mockManagedSettings(page: Parameters<typeof openAssistant>[0]) {
 				hasApiKey: false,
 				readOnly: true,
 				authMode: 'managed-identity',
+				lectureReasoning: 'none',
+				chatReasoning: 'low',
 			},
 		})
 	})
@@ -112,6 +114,8 @@ test.describe('managed AI runtime', () => {
 		await expect(settings.getByRole('status')).toContainText('no API key required')
 		await expect(settings.getByLabel('Endpoint')).toBeDisabled()
 		await expect(settings.getByLabel('Model', { exact: true })).toBeDisabled()
+		await expect(settings.getByRole('combobox', { name: 'Live / Audio reasoning' })).toBeDisabled()
+		await expect(settings.getByRole('combobox', { name: 'Chat reasoning' })).toBeDisabled()
 		await expect(settings.getByLabel('API key', { exact: true })).toHaveCount(0)
 		await expect(settings.getByRole('button', { name: 'Save settings' })).toBeDisabled()
 		expect(mossRequests).toBe(0)

@@ -1762,6 +1762,12 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	gap: 12px;
 }
 
+.ai-assistant .ai-settings-row {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+
 .ai-assistant .ai-settings-field {
 	display: flex;
 	flex-direction: column;
@@ -1769,6 +1775,17 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	color: var(--ui-ink-2);
 	font-size: 11.5px;
 	font-weight: 700;
+}
+
+.ai-assistant .ai-settings-field .select-trigger {
+	width: 100%;
+	height: 40px;
+	border-radius: 14px;
+	background: var(--ui-well);
+	box-shadow:
+		inset 0 1px 2px color-mix(in oklch, var(--ui-shadow) 34%, transparent),
+		inset 0 0 0 1px var(--ui-hair);
+	font-weight: 600;
 }
 
 .ai-assistant .ai-settings-clear {
@@ -1942,6 +1959,12 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 
 	.ai-assistant:has(.ai-panel.is-open) .ai-status-pill {
 		opacity: 0;
+	}
+}
+
+@media (max-width: 420px) {
+	.ai-assistant .ai-settings-row {
+		grid-template-columns: minmax(0, 1fr);
 	}
 }
 

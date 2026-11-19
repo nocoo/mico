@@ -71,15 +71,17 @@ The identity panel holds the logo and Canvases button. A separate AI button in t
 
 The server uses one [AI configuration contract](ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration. `MICO_AI_AUTH_MODE=managed-identity` uses the attached Azure identity for Chat and MAI, ignores saved keys and makes Settings read-only. User login remains independent. `MICO_MOSS_ENABLED=false` disables MOSS in both the UI and server; Live then uses MAI.
 
-Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure uses the Responses API for reasoning and canvas tools. The following settings apply to local API-key mode. Open **AI → Settings** to set the endpoint, model and API key. Changes apply to the next request and persist in `~/.config/mico/settings.json` (owner-only permissions). The key is stored as plaintext on the local machine and is never returned to the browser. Leave the key field blank to keep the current key, or select **Remove current API key** to send requests without one. Use HTTPS for remote endpoints.
+Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure uses the Responses API for reasoning and canvas tools. The following settings apply to local API-key mode. Open **AI → Settings** to set the endpoint, model, Live/Audio & Chat reasoning levels, and API key. Changes apply to the next request and persist in `~/.config/mico/settings.json` (owner-only permissions). The key is stored as plaintext on the local machine and is never returned to the browser. Leave the key field blank to keep the current key, or select **Remove current API key** to send requests without one. Use HTTPS for remote endpoints.
 
 Until settings are saved, the daemon uses these environment variables and defaults:
 
-| Variable          | Default                    | Purpose                                               |
-| ----------------- | -------------------------- | ----------------------------------------------------- |
-| `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | Gateway URL, including `/v1`.                         |
-| `MAGPIE_MODEL`    | `auto/gpt-6-sol`           | Model id sent to the gateway.                         |
-| `MAGPIE_API_KEY`  | `magpie`                   | Bearer token; set it to an empty string to send none. |
+| Variable                   | Default                    | Purpose                                                 |
+| -------------------------- | -------------------------- | ------------------------------------------------------- |
+| `MAGPIE_BASE_URL`          | `http://127.0.0.1:3425/v1` | Gateway URL, including `/v1`.                           |
+| `MAGPIE_MODEL`             | `auto/gpt-6-sol`           | Model id sent to the gateway.                           |
+| `MAGPIE_API_KEY`           | `magpie`                   | Bearer token; set it to an empty string to send none.   |
+| `MAGPIE_LECTURE_REASONING` | `none`                     | Default Live/Audio & summary reasoning effort (`none`). |
+| `MAGPIE_CHAT_REASONING`    | `low`                      | Default interactive Chat reasoning effort (`low`).      |
 
 Saved settings take precedence over the environment. If the gateway is unreachable, the panel shows an actionable error and a Continue button. The assistant can only operate the canvas; it is not a general chat endpoint.
 

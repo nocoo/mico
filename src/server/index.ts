@@ -272,6 +272,7 @@ export function createDaemon(
 	}
 	const port = options.port ?? parsePort(env)
 	const config = loadAiConfig(env)
+	const explicitSummaryReasoning = Boolean(env.MAGPIE_SUMMARY_REASONING?.trim())
 	const managedIdentityAuth =
 		runtimeConfig.aiEnabled && config.authMode === 'managed-identity'
 			? createManagedIdentityAuth(config.azureClientId as string, options.managedIdentityCredential)
@@ -1076,6 +1077,7 @@ export function createDaemon(
 					chunkSize: config.lectureChunkSize,
 				})
 				const effectiveSettings = aiSettings.getEffective()
+				const reasoning = aiSettings.getReasoning()
 				const routedSettings =
 					isPostSessionSummaryRequest(request) && config.summaryModel
 						? { ...effectiveSettings, model: config.summaryModel }
@@ -1089,8 +1091,11 @@ export function createDaemon(
 					request,
 					origin,
 					imageGeneration: images(),
-					lectureReasoning: config.lectureReasoning,
-					summaryReasoning: config.summaryReasoning,
+					lectureReasoning: reasoning.lectureReasoning,
+					summaryReasoning: explicitSummaryReasoning
+						? config.summaryReasoning
+						: reasoning.lectureReasoning,
+					chatReasoning: reasoning.chatReasoning,
 				})
 				return
 			}

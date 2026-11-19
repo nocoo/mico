@@ -26,6 +26,8 @@ test.beforeEach(async ({ page, request }) => {
 				hasApiKey: true,
 				readOnly: false,
 				authMode: 'api-key',
+				lectureReasoning: 'none',
+				chatReasoning: 'low',
 			},
 		})
 	})
@@ -133,6 +135,8 @@ test('Settings controls remain usable on a narrow assistant panel', async ({ pag
 		settings.getByLabel('Endpoint'),
 		settings.getByLabel('Model', { exact: true }),
 		settings.getByRole('combobox', { name: 'Choose model' }),
+		settings.getByRole('combobox', { name: 'Live / Audio reasoning' }),
+		settings.getByRole('combobox', { name: 'Chat reasoning' }),
 		settings.getByLabel('API key', { exact: true }),
 		settings.getByRole('checkbox', { name: 'Remove current API key' }),
 		settings.getByRole('button', { name: 'Save settings' }),
@@ -165,6 +169,8 @@ test('Settings controls remain usable on a narrow assistant panel', async ({ pag
 				hasApiKey: true,
 				readOnly: false,
 				authMode: 'api-key',
+				lectureReasoning: 'none',
+				chatReasoning: 'low',
 			},
 		})
 	})
@@ -173,6 +179,8 @@ test('Settings controls remain usable on a narrow assistant panel', async ({ pag
 	expect(saved).toEqual({
 		baseURL: 'https://new.example.test/v1',
 		model: 'model/custom',
+		lectureReasoning: 'none',
+		chatReasoning: 'low',
 		apiKey: 'new-key',
 	})
 })
@@ -195,6 +203,8 @@ test('deployment-managed AI settings are read-only without provider requests', a
 				hasApiKey: true,
 				readOnly: true,
 				authMode: 'api-key',
+				lectureReasoning: 'none',
+				chatReasoning: 'low',
 			},
 		})
 	})

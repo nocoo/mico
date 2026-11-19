@@ -193,6 +193,7 @@ interface AiResponseOptions {
 	imageGeneration?: ImageGenerationService
 	lectureReasoning: string
 	summaryReasoning?: string
+	chatReasoning?: string
 }
 
 function appendBoardContextToLastUserMessage(
@@ -222,6 +223,7 @@ export async function streamAiChat({
 	imageGeneration,
 	lectureReasoning,
 	summaryReasoning,
+	chatReasoning,
 }: AiResponseOptions): Promise<void> {
 	const canvasId = request.canvasId ?? (await store.getActiveCanvasId())
 	const board = await store.getBoard(canvasId)
@@ -239,7 +241,7 @@ export async function streamAiChat({
 			? lectureReasoning
 			: isSummary
 				? (summaryReasoning ?? lectureReasoning)
-				: 'low'
+				: (chatReasoning ?? 'low')
 	const imageGenerationAvailable = imageGeneration?.isAvailable() ?? false
 	const allTools = await createCanvasTools({
 		store,

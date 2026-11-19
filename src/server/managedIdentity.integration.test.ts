@@ -295,6 +295,8 @@ test('real daemon Chat and model routes use managed bearer credentials, not save
 			hasApiKey: false,
 			authMode: 'managed-identity',
 			readOnly: true,
+			lectureReasoning: 'low',
+			chatReasoning: 'low',
 		})
 		const models = await originalFetch(`${url}/api/ai/models`)
 		assert.deepEqual(await models.json(), { models: [modelId] })

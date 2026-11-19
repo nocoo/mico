@@ -670,6 +670,25 @@ test('post-session summary writes a reusable HTML card and preserves action comp
 test('AI settings updates create the model used by subsequent chats', async () => {
 	const directory = mkdtempSync(join(tmpdir(), 'mico-ai-settings-chat-'))
 	const seen: Array<{ baseURL: string; model: string; apiKey: string }> = []
+	const streamModel = new MockLanguageModelV4({
+		doStream: async () => ({
+			stream: simulateReadableStream({
+				chunks: [
+					{ type: 'text-start', id: 'txt' },
+					{ type: 'text-delta', id: 'txt', delta: 'WAIT' },
+					{ type: 'text-end', id: 'txt' },
+					{
+						type: 'finish',
+						finishReason: { unified: 'stop', raw: undefined },
+						usage: {
+							inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+							outputTokens: { total: 4, text: 4, reasoning: undefined },
+						},
+					},
+				],
+			}),
+		}),
+	})
 	const daemon = createDaemon({
 		port: 0,
 		dbPath: join(directory, 'board.sqlite'),
@@ -677,7 +696,7 @@ test('AI settings updates create the model used by subsequent chats', async () =
 		env: {},
 		createAiModel: (settings) => {
 			seen.push(settings)
-			return createMockAiModel()
+			return streamModel
 		},
 	})
 	daemon.server.listen(0, '127.0.0.1')
@@ -693,6 +712,8 @@ test('AI settings updates create the model used by subsequent chats', async () =
 				baseURL: 'https://chat.example/v1',
 				model: 'chat-model',
 				apiKey: 'chat-secret',
+				lectureReasoning: 'minimal',
+				chatReasoning: 'high',
 			}),
 		})
 		assert.equal(put.status, 200)
@@ -706,11 +727,27 @@ test('AI settings updates create the model used by subsequent chats', async () =
 		})
 		assert.equal(chat.status, 200)
 		await chat.text()
+		const lecture = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'lecture',
+				messages: [{ id: 'u-lec', role: 'user', parts: [{ type: 'text', text: '[00:00] Draw' }] }],
+			}),
+		})
+		assert.equal(lecture.status, 200)
+		await lecture.text()
 		assert.deepEqual(seen.at(-1), {
 			baseURL: 'https://chat.example/v1',
 			model: 'chat-model',
 			apiKey: 'chat-secret',
 			authMode: 'api-key',
+		})
+		assert.deepEqual(streamModel.doStreamCalls[0]?.providerOptions, {
+			magpie: { reasoningEffort: 'high' },
+		})
+		assert.deepEqual(streamModel.doStreamCalls[1]?.providerOptions, {
+			magpie: { reasoningEffort: 'minimal' },
 		})
 	} finally {
 		for (const client of daemon.wss.clients) client.terminate()

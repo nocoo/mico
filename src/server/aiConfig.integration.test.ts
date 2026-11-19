@@ -140,6 +140,8 @@ test('deploy HTTP routes use environment credentials and reject browser configur
 			hasApiKey: true,
 			authMode: 'api-key',
 			readOnly: true,
+			lectureReasoning: 'medium',
+			chatReasoning: 'low',
 		})
 		const changed = await fetch(`${url}/api/ai/settings`, {
 			method: 'PUT',

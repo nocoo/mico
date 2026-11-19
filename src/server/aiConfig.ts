@@ -1,5 +1,11 @@
 import { readFileSync } from 'node:fs'
 import { parseEnv } from 'node:util'
+import {
+	DEFAULT_CHAT_REASONING,
+	DEFAULT_LECTURE_REASONING,
+	isReasoningEffort,
+	type ReasoningEffort,
+} from '../shared/aiReasoning.ts'
 import { isMossEnabled } from '../shared/runtime.ts'
 
 export type RuntimeMode = 'laptop' | 'deploy'
@@ -24,9 +30,10 @@ export interface AiConfig {
 	authMode: AiAuthMode
 	azureClientId?: string
 	chat: ChatSettings
-	lectureReasoning: string
+	lectureReasoning: ReasoningEffort
+	chatReasoning: ReasoningEffort
 	summaryModel?: string
-	summaryReasoning: string
+	summaryReasoning: ReasoningEffort
 	lectureHotMin: number
 	lectureChunkSize: number
 	mai: { host: string; apiKey: string; deployment: string }
@@ -101,6 +108,19 @@ function boundedInt(
 	return parsed
 }
 
+function reasoningEffortFromEnv(
+	env: NodeJS.ProcessEnv,
+	key: string,
+	fallback: ReasoningEffort,
+): ReasoningEffort {
+	const raw = env[key]?.trim()
+	if (!raw) return fallback
+	if (!isReasoningEffort(raw)) {
+		throw new Error(`Invalid ${key}`)
+	}
+	return raw
+}
+
 export function loadImageConfig(env: NodeJS.ProcessEnv = process.env): ImageProviderConfig {
 	return {
 		endpoint: endpoint(env.AZURE_OPENAI_ENDPOINT?.trim() ?? '', 'AZURE_OPENAI_ENDPOINT'),
@@ -161,9 +181,10 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 			authMode: aiAuthMode,
 			azureClientId,
 			chat: { baseURL: '', model: '', apiKey: '', authMode: aiAuthMode },
-			lectureReasoning: 'none',
+			lectureReasoning: DEFAULT_LECTURE_REASONING,
+			chatReasoning: DEFAULT_CHAT_REASONING,
 			summaryModel: undefined,
-			summaryReasoning: 'none',
+			summaryReasoning: DEFAULT_LECTURE_REASONING,
 			lectureHotMin: 8,
 			lectureChunkSize: 12,
 			mai: { host: '', apiKey: '', deployment: '' },
@@ -208,7 +229,13 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 	}
 	const image = loadImageConfig(env)
 	const maiApiKey = aiAuthMode === 'managed-identity' ? '' : image.apiKey
-	const lectureReasoning = env.MAGPIE_LECTURE_REASONING?.trim() || 'none'
+	const chatReasoning = reasoningEffortFromEnv(env, 'MAGPIE_CHAT_REASONING', DEFAULT_CHAT_REASONING)
+	const lectureReasoning = reasoningEffortFromEnv(
+		env,
+		'MAGPIE_LECTURE_REASONING',
+		DEFAULT_LECTURE_REASONING,
+	)
+	const summaryReasoning = reasoningEffortFromEnv(env, 'MAGPIE_SUMMARY_REASONING', lectureReasoning)
 	return {
 		runtime,
 		authMode: aiAuthMode,
@@ -223,8 +250,9 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 			authMode: aiAuthMode,
 		},
 		lectureReasoning,
+		chatReasoning,
 		summaryModel: optionalModel(env, 'MAGPIE_SUMMARY_MODEL'),
-		summaryReasoning: env.MAGPIE_SUMMARY_REASONING?.trim() || lectureReasoning,
+		summaryReasoning,
 		lectureHotMin: boundedInt(env, 'MICO_LECTURE_HOT_MIN', 8, 4, 64),
 		lectureChunkSize: boundedInt(env, 'MICO_LECTURE_CHUNK_SIZE', 12, 4, 64),
 		mai: {

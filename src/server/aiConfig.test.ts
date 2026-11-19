@@ -56,6 +56,7 @@ test('laptop and local production builds keep the existing provider defaults', (
 	assert.deepEqual(config.image, { endpoint: '', apiKey: '', model: DEFAULT_IMAGE_MODEL })
 	assert.deepEqual(config.moss, { url: DEFAULT_MOSS_URL, apiKey: '' })
 	assert.equal(config.lectureReasoning, 'none')
+	assert.equal(config.chatReasoning, 'low')
 	assert.equal(config.summaryModel, undefined)
 	assert.equal(config.summaryReasoning, 'none')
 	assert.equal(config.lectureHotMin, 8)
@@ -97,6 +98,7 @@ test('one environment snapshot configures all four AI paths', () => {
 		MAGPIE_MODEL: ' cloud-chat ',
 		MAGPIE_API_KEY: 'chat-test-secret',
 		MAGPIE_LECTURE_REASONING: 'medium',
+		MAGPIE_CHAT_REASONING: 'high',
 		MAGPIE_SUMMARY_MODEL: ' summary-chat ',
 		MAGPIE_SUMMARY_REASONING: 'low',
 		MICO_LECTURE_HOT_MIN: '6',
@@ -120,6 +122,7 @@ test('one environment snapshot configures all four AI paths', () => {
 			authMode: 'api-key',
 		},
 		lectureReasoning: 'medium',
+		chatReasoning: 'high',
 		summaryModel: 'summary-chat',
 		summaryReasoning: 'low',
 		lectureHotMin: 6,
@@ -232,6 +235,8 @@ test('managed identity requires explicit identity and deployment settings', () =
 test('invalid configuration fails without including credential-bearing values', () => {
 	for (const [name, value] of [
 		['MICO_RUNTIME', 'unknown'],
+		['MAGPIE_LECTURE_REASONING', 'extreme'],
+		['MAGPIE_CHAT_REASONING', 'turbo'],
 		['MAGPIE_BASE_URL', 'https://user:private-value@gateway.example/v1'],
 		['MAGPIE_BASE_URL', 'https://gateway.example/v1?token=private-value'],
 		['MAGPIE_BASE_URL', 'file:///private-value'],

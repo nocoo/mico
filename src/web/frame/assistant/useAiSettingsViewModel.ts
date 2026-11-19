@@ -1,4 +1,10 @@
 import { type FormEvent, useCallback, useEffect, useState } from 'react'
+import {
+	DEFAULT_CHAT_REASONING,
+	DEFAULT_LECTURE_REASONING,
+	isReasoningEffort,
+	type ReasoningEffort,
+} from '../../../shared/aiReasoning.ts'
 import { canvasFetch as fetch } from '../../whiteboards/client.ts'
 
 export type AiAuthMode = 'api-key' | 'managed-identity'
@@ -9,6 +15,8 @@ export interface AiSettingsData {
 	hasApiKey: boolean
 	readOnly: boolean
 	authMode: AiAuthMode
+	lectureReasoning: ReasoningEffort
+	chatReasoning: ReasoningEffort
 }
 
 export function parseAiSettings(body: unknown): AiSettingsData {
@@ -19,7 +27,9 @@ export function parseAiSettings(body: unknown): AiSettingsData {
 		typeof value.model !== 'string' ||
 		typeof value.hasApiKey !== 'boolean' ||
 		typeof value.readOnly !== 'boolean' ||
-		(value.authMode !== 'api-key' && value.authMode !== 'managed-identity')
+		(value.authMode !== 'api-key' && value.authMode !== 'managed-identity') ||
+		!isReasoningEffort(value.lectureReasoning) ||
+		!isReasoningEffort(value.chatReasoning)
 	)
 		throw new Error('Invalid AI settings')
 	return {
@@ -28,6 +38,8 @@ export function parseAiSettings(body: unknown): AiSettingsData {
 		hasApiKey: value.hasApiKey,
 		readOnly: value.readOnly,
 		authMode: value.authMode,
+		lectureReasoning: value.lectureReasoning,
+		chatReasoning: value.chatReasoning,
 	}
 }
 
@@ -48,10 +60,14 @@ export function buildAiSettingsPayload(
 	model: string,
 	apiKey: string,
 	clearKey: boolean,
+	lectureReasoning?: ReasoningEffort,
+	chatReasoning?: ReasoningEffort,
 ) {
 	return {
 		baseURL: baseURL.trim(),
 		model: model.trim(),
+		...(lectureReasoning ? { lectureReasoning } : {}),
+		...(chatReasoning ? { chatReasoning } : {}),
 		...(clearKey ? { apiKey: '' } : apiKey ? { apiKey } : {}),
 	}
 }
@@ -60,6 +76,9 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 	const [settings, setSettings] = useState<AiSettingsData | null>(null)
 	const [baseURL, setBaseURL] = useState('')
 	const [model, setModel] = useState('')
+	const [lectureReasoning, setLectureReasoning] =
+		useState<ReasoningEffort>(DEFAULT_LECTURE_REASONING)
+	const [chatReasoning, setChatReasoning] = useState<ReasoningEffort>(DEFAULT_CHAT_REASONING)
 	const [apiKey, setApiKey] = useState('')
 	const [clearKey, setClearKey] = useState(false)
 	const [loading, setLoading] = useState(false)
@@ -79,6 +98,8 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 			setSettings(next)
 			setBaseURL(next.baseURL)
 			setModel(next.model)
+			setLectureReasoning(next.lectureReasoning)
+			setChatReasoning(next.chatReasoning)
 			setFailed(false)
 		} catch {
 			if (signal?.aborted) return
@@ -123,13 +144,17 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 			const response = await fetch('/api/ai/settings', {
 				method: 'PUT',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(buildAiSettingsPayload(baseURL, model, apiKey, clearKey)),
+				body: JSON.stringify(
+					buildAiSettingsPayload(baseURL, model, apiKey, clearKey, lectureReasoning, chatReasoning),
+				),
 			})
 			if (!response.ok) throw new Error('Settings request failed')
 			const next = parseAiSettings(await response.json())
 			setSettings(next)
 			setBaseURL(next.baseURL)
 			setModel(next.model)
+			setLectureReasoning(next.lectureReasoning)
+			setChatReasoning(next.chatReasoning)
 			setApiKey('')
 			setClearKey(false)
 			setFailed(false)
@@ -157,6 +182,8 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 		settings,
 		baseURL,
 		model,
+		lectureReasoning,
+		chatReasoning,
 		apiKey,
 		clearKey,
 		loading,
@@ -169,6 +196,8 @@ export function useAiSettingsViewModel({ active }: { active: boolean }) {
 		save,
 		setBaseURL,
 		setModel,
+		setLectureReasoning,
+		setChatReasoning,
 		setApiKey,
 		setClearKey,
 	}

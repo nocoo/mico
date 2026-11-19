@@ -71,15 +71,17 @@ Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.
 
 The server uses one [AI configuration contract](docs/ai-configuration.md). `MICO_RUNTIME=laptop` retains the local sources below; `MICO_RUNTIME=deploy` uses only process environment configuration. `MICO_AI_AUTH_MODE=managed-identity` uses the attached Azure identity for Chat and MAI, ignores saved keys and makes Settings read-only. User login remains independent. `MICO_MOSS_ENABLED=false` disables MOSS in both the UI and server; Live then uses MAI.
 
-Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure uses the Responses API for reasoning and canvas tools. 以下设置说明适用于本地 API-key 模式。打开 **AI → Settings** 设置端点、模型和 API Key。改动在下一次请求生效，并保存到 `~/.config/mico/settings.json`（仅所有者可读写）。密钥以明文存在本机，不会返回给浏览器。密钥输入框留空表示保留当前值，也可以选 **Remove current API key** 让后续请求不带密钥。远端端点请用 HTTPS。
+Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure uses the Responses API for reasoning and canvas tools. 以下设置说明适用于本地 API-key 模式。打开 **AI → Settings** 设置端点、模型、思考等级（Live/Audio 与 Chat）和 API Key。改动在下一次请求生效，并保存到 `~/.config/mico/settings.json`（仅所有者可读写）。密钥以明文存在本机，不会返回给浏览器。密钥输入框留空表示保留当前值，也可以选 **Remove current API key** 让后续请求不带密钥。远端端点请用 HTTPS。
 
 在保存设置之前，守护进程读取以下环境变量和默认值：
 
-| 变量              | 默认值                     | 用途                                 |
-| ----------------- | -------------------------- | ------------------------------------ |
-| `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | 网关地址，包含 `/v1`。               |
-| `MAGPIE_MODEL`    | `auto/gpt-6-sol`           | 发给网关的模型 ID。                  |
-| `MAGPIE_API_KEY`  | `magpie`                   | Bearer token；设为空字符串则不发送。 |
+| 变量                       | 默认值                     | 用途                                                |
+| -------------------------- | -------------------------- | --------------------------------------------------- |
+| `MAGPIE_BASE_URL`          | `http://127.0.0.1:3425/v1` | 网关地址，包含 `/v1`。                              |
+| `MAGPIE_MODEL`             | `auto/gpt-6-sol`           | 发给网关的模型 ID。                                 |
+| `MAGPIE_API_KEY`           | `magpie`                   | Bearer token；设为空字符串则不发送。                |
+| `MAGPIE_LECTURE_REASONING` | `none`                     | 实时/录音边听边画与会后总结默认思考等级（`none`）。 |
+| `MAGPIE_CHAT_REASONING`    | `low`                      | 交互式 Chat 对话默认思考等级（`low`）。             |
 
 已保存的设置优先于环境变量。网关不可达时，面板会给出可操作的错误信息和 Continue 按钮。助手只能操作画布，不是通用聊天端点。
 
