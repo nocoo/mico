@@ -44,7 +44,13 @@ export interface ShapeDigest {
 const MAX_TEXT = 180
 const MAX_HTML = 200000
 const MAX_SHAPES = 150
+const MAX_PINNED_ANCHORS = 48
 const MAX_ACTION_PREVIEW_ITEMS = 3
+
+function isAnchorShape(shape: Shape): boolean {
+	if (shape.type === 'frame' || shape.type === 'html' || shape.type === 'actions') return true
+	return shape.type === 'text' && (shape.fontSize ?? 32) >= 36
+}
 
 export function clip(value: string, limit: number): string {
 	return value.length <= limit ? value : `${value.slice(0, limit - 1)}…`
@@ -231,9 +237,33 @@ export function boardDigest(
 ): BoardDigest {
 	const wanted = options.ids ? new Set(options.ids) : null
 	const liveSelection = selection.filter((id) => board.shapes.some((shape) => shape.id === id))
-	let shapes = wanted ? board.shapes.filter((shape) => wanted.has(shape.id)) : board.shapes
-	const omitted = Math.max(0, shapes.length - MAX_SHAPES)
-	if (omitted > 0) shapes = shapes.slice(-MAX_SHAPES)
+	const selectionSet = new Set(liveSelection)
+	const filtered = wanted ? board.shapes.filter((shape) => wanted.has(shape.id)) : board.shapes
+	let shapes = filtered
+	if (!wanted && filtered.length > MAX_SHAPES) {
+		const keptIndices = new Set<number>()
+		const pinnedSelected: number[] = []
+		const pinnedAnchors: number[] = []
+		for (let index = 0; index < filtered.length; index++) {
+			const shape = filtered[index]
+			if (selectionSet.has(shape.id)) pinnedSelected.push(index)
+			else if (isAnchorShape(shape)) pinnedAnchors.push(index)
+		}
+		for (const index of pinnedSelected) {
+			if (keptIndices.size >= MAX_SHAPES) break
+			keptIndices.add(index)
+		}
+		const anchorBudget = Math.max(0, MAX_PINNED_ANCHORS - keptIndices.size)
+		for (const index of pinnedAnchors.slice(-anchorBudget)) {
+			if (keptIndices.size >= MAX_SHAPES) break
+			keptIndices.add(index)
+		}
+		for (let index = filtered.length - 1; index >= 0 && keptIndices.size < MAX_SHAPES; index--) {
+			keptIndices.add(index)
+		}
+		shapes = filtered.filter((_, index) => keptIndices.has(index))
+	}
+	const omitted = Math.max(0, filtered.length - shapes.length)
 	return {
 		revision: board.revision,
 		count: board.shapes.length,
@@ -257,6 +287,26 @@ export function selectedDigests(board: Board, selection: string[]): ShapeDigest[
 		.map((shape) => digestShape(shape, true, shape.type !== 'actions'))
 }
 
+function compactShapeLine(shape: ShapeDigest): string {
+	if (shape.type === 'connector') {
+		return `- ${shape.id} connector ${shape.from ?? '?'}->${shape.to ?? '?'}`
+	}
+	const geom = `@(${shape.x ?? 0},${shape.y ?? 0} ${shape.w ?? 0}x${shape.h ?? 0})`
+	const frame = shape.frameId ? ` frame=${shape.frameId}` : ''
+	if (shape.type === 'frame') {
+		return `- ${shape.id} frame ${geom} title=${JSON.stringify(shape.title ?? '')}`
+	}
+	if (shape.type === 'html') {
+		return `- ${shape.id} html ${geom}${frame} title=${JSON.stringify(shape.title ?? '')} htmlChars=${shape.htmlLength ?? 0}`
+	}
+	if (shape.type === 'actions') {
+		return `- ${shape.id} actions ${geom}${frame} title=${JSON.stringify(shape.title ?? '')} items=${shape.itemCount ?? 0}`
+	}
+	const label = shape.label ? ` [${shape.label}]` : ''
+	const text = shape.text ? ` ${JSON.stringify(clip(shape.text, 60))}` : ''
+	return `- ${shape.id} ${shape.type} ${geom}${frame}${label}${text}`
+}
+
 export function formatBoardContext(board: Board, selection: string[]): string {
 	const selected = selectedDigests(board, selection)
 	const digest = boardDigest(board, selection, { includeHtml: false })
@@ -270,7 +320,12 @@ export function formatBoardContext(board: Board, selection: string[]): string {
 		)
 		lines.push(`Selection detail: ${JSON.stringify(selected)}`)
 	}
-	lines.push(`Board objects: ${JSON.stringify(digest.shapes)}`)
+	if (digest.shapes.length === 0) {
+		lines.push('Board objects: none')
+	} else {
+		lines.push('Board objects:')
+		for (const shape of digest.shapes) lines.push(compactShapeLine(shape))
+	}
 	if (digest.omitted > 0) lines.push(`(${digest.omitted} older objects omitted.)`)
 	lines.push(
 		digest.warnings.length > 0

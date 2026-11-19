@@ -6,13 +6,15 @@ import {
 	isStepCount,
 	isToolUIPart,
 	type LanguageModel,
+	type ModelMessage,
 	safeValidateUIMessages,
 	streamText,
 	type UIMessage,
 } from 'ai'
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
+import { formatBoardContext } from './aiBoard.ts'
 import type { ChatSettings } from './aiConfig.ts'
-import { buildInstructions } from './aiPrompt.ts'
+import { buildStaticInstructions } from './aiPrompt.ts'
 import { createCanvasTools, selectToolsForTurn } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
 import { createRedirectSafeFetch } from './managedIdentity.ts'
@@ -173,6 +175,23 @@ interface AiResponseOptions {
 	lectureReasoning: string
 }
 
+function appendBoardContextToLastUserMessage(
+	messages: ModelMessage[],
+	boardContext: string,
+): ModelMessage[] {
+	const suffix = `\n\n# Current canvas\n\n${boardContext}`
+	for (let index = messages.length - 1; index >= 0; index--) {
+		const message = messages[index]
+		if (message.role !== 'user') continue
+		const updated: ModelMessage =
+			typeof message.content === 'string'
+				? { ...message, content: `${message.content}${suffix}` }
+				: { ...message, content: [...message.content, { type: 'text', text: suffix }] }
+		return [...messages.slice(0, index), updated, ...messages.slice(index + 1)]
+	}
+	return [{ role: 'user', content: `# Current canvas\n\n${boardContext}` }, ...messages]
+}
+
 export async function streamAiChat({
 	res,
 	store,
@@ -192,6 +211,7 @@ export async function streamAiChat({
 		headers['Access-Control-Allow-Origin'] = origin
 		headers.Vary = 'Origin'
 	}
+	const imageGenerationAvailable = imageGeneration?.isAvailable() ?? false
 	const allTools = await createCanvasTools({
 		store,
 		broadcast,
@@ -202,13 +222,17 @@ export async function streamAiChat({
 	})
 	const tools = selectToolsForTurn(allTools, {
 		mode: request.mode,
-		imageGenerationAvailable: imageGeneration?.isAvailable() ?? false,
+		imageGenerationAvailable,
 		hasBoardImages: board.shapes.some((shape) => shape.type === 'image'),
 	})
+	const modelMessages = appendBoardContextToLastUserMessage(
+		await convertToModelMessages(request.messages),
+		formatBoardContext(board, request.selection),
+	)
 	const result = streamText({
 		model,
-		instructions: buildInstructions(board, request.selection, request.mode),
-		messages: await convertToModelMessages(request.messages),
+		instructions: buildStaticInstructions(request.mode, { imageGenerationAvailable }),
+		messages: modelMessages,
 		tools,
 		stopWhen:
 			request.mode === 'lecture'

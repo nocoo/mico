@@ -1572,3 +1572,94 @@ test('get_board requires ids for include_html and selectToolsForTurn gates capab
 		assert.equal('add_images' in chatWithImages, true)
 	})
 })
+
+test('streamAiChat keeps system prompt invariant across revisions and attaches canvas to last user turn', async () => {
+	const model = new MockLanguageModelV4({
+		doStream: async () => ({
+			stream: simulateReadableStream({
+				chunks: [
+					{ type: 'stream-start', warnings: [] },
+					{ type: 'text-start', id: 't1' },
+					{ type: 'text-delta', id: 't1', delta: 'WAIT' },
+					{ type: 'text-end', id: 't1' },
+					{
+						type: 'finish',
+						finishReason: { unified: 'stop', raw: undefined },
+						usage: {
+							inputTokens: { total: 4, noCache: 4, cacheRead: undefined, cacheWrite: undefined },
+							outputTokens: { total: 1, text: 1, reasoning: undefined },
+						},
+					},
+				],
+			}),
+		}),
+	})
+
+	await withDaemon(async ({ daemon, url }) => {
+		const res1 = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'lecture',
+				messages: [{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Segment 1' }] }],
+			}),
+		})
+		assert.equal(res1.status, 200)
+		await res1.text()
+
+		await daemon.store.applyRequest({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'mid-note',
+						type: 'note',
+						x: 80,
+						y: 240,
+						w: 260,
+						h: 180,
+						color: '#e2f5fc',
+						text: 'Revision bump note',
+					},
+				},
+			],
+		})
+
+		const res2 = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'lecture',
+				messages: [
+					{ id: 'u1', role: 'user', parts: [{ type: 'text', text: 'Segment 1' }] },
+					{ id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'WAIT' }] },
+					{ id: 'u2', role: 'user', parts: [{ type: 'text', text: 'Segment 2' }] },
+				],
+			}),
+		})
+		assert.equal(res2.status, 200)
+		await res2.text()
+
+		const sysText = (callIndex: number) =>
+			(model.doStreamCalls[callIndex]?.prompt ?? [])
+				.filter((part) => part.role === 'system')
+				.map((part) =>
+					typeof part.content === 'string' ? part.content : JSON.stringify(part.content),
+				)
+				.join('\n')
+
+		const sys1 = sysText(0)
+		const sys2 = sysText(1)
+		assert.ok(sys1.length > 0)
+		assert.equal(sys1, sys2)
+		assert.equal(sys1.includes('# Current canvas'), false)
+
+		const turn2Users = (model.doStreamCalls[1]?.prompt ?? []).filter((part) => part.role === 'user')
+		assert.equal(turn2Users.length, 2)
+		const firstUserText = JSON.stringify(turn2Users[0]?.content)
+		const lastUserText = JSON.stringify(turn2Users[1]?.content)
+		assert.equal(firstUserText.includes('# Current canvas'), false)
+		assert.equal(lastUserText.includes('# Current canvas'), true)
+		assert.match(lastUserText, /mid-note/)
+	}, model)
+})
