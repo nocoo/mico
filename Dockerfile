@@ -3,7 +3,7 @@ FROM node:26.13.0-bookworm-slim AS build
 ARG NPM_REGISTRY=https://packagefeedproxy.microsoft.io/npm/
 WORKDIR /app
 RUN npm install --global pnpm@12.18.0 --registry="$NPM_REGISTRY"
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile --registry="$NPM_REGISTRY"
 COPY . .
 RUN pnpm build && pnpm prune --prod --ignore-scripts --registry="$NPM_REGISTRY"
