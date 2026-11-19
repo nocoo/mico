@@ -206,6 +206,17 @@
 	box-shadow: 0 0 0 4px oklch(0.65 0.19 22 / 0.18);
 }
 
+.gate-screen[data-tone="busy"] .gate-eyebrow-dot {
+	animation: gate-dot-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes gate-dot-pulse {
+	50% {
+		opacity: 0.45;
+		box-shadow: 0 0 0 6px var(--ui-accent-soft);
+	}
+}
+
 .gate-stage h1 {
 	margin: 2px 0 0;
 	font-size: clamp(30px, 4vw, 44px);
@@ -325,6 +336,7 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.gate-orb i,
+	.gate-screen[data-tone="busy"] .gate-eyebrow-dot,
 	.gate-progress::before {
 		animation: none;
 	}

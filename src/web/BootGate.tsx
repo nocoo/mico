@@ -3,6 +3,7 @@ import './canvas/canvas.css'
 import './gate.css'
 import { ArrowRight, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { getQueryParam } from '../shared/query'
 import App from './App'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { clearMsalCache, completeCallback, loginWithMsal } from './msal'
@@ -16,13 +17,114 @@ import {
 } from './runtime'
 import { useUserAvatar } from './useUserAvatar'
 
+type GatePreviewMode =
+	| 'loading'
+	| 'error'
+	| 'login'
+	| 'callback'
+	| 'callback-error'
+	| 'logout'
+	| 'logout-error'
+
+function gatePreviewFromSearch(search: string): GatePreviewMode | null {
+	const value = getQueryParam(search, 'gate')?.trim().toLowerCase()
+	if (!value) return null
+	if (value === '1' || value === 'true' || value === 'loading') return 'loading'
+	if (
+		value === 'error' ||
+		value === 'login' ||
+		value === 'callback' ||
+		value === 'callback-error' ||
+		value === 'logout' ||
+		value === 'logout-error'
+	) {
+		return value
+	}
+	return null
+}
+
 let initialRuntimeRequest: Promise<RuntimeConfig> | null =
-	typeof window === 'undefined' ? null : fetchRuntime().catch((error) => Promise.reject(error))
+	typeof window === 'undefined' || gatePreviewFromSearch(window.location.search) !== null
+		? null
+		: fetchRuntime().catch((error) => Promise.reject(error))
 
 function consumeInitialRuntime(signal: AbortSignal): Promise<RuntimeConfig> {
 	const pending = initialRuntimeRequest
 	initialRuntimeRequest = null
 	return pending ?? fetchRuntime(signal)
+}
+
+function exitGatePreview(): void {
+	const url = new URL(window.location.href)
+	for (const key of [...url.searchParams.keys()]) {
+		if (key.toLowerCase() === 'gate') url.searchParams.delete(key)
+	}
+	window.location.assign(`${url.pathname}${url.search}${url.hash}`)
+}
+
+const OPENING_GATE_PROPS = {
+	eyebrow: 'Starting workspace',
+	tone: 'busy',
+	title: 'Opening Mico',
+	message: 'Preparing your canvas workspace…',
+} as const
+
+const GATE_PREVIEW_PROPS: Record<
+	GatePreviewMode,
+	{
+		eyebrow: string
+		tone: 'default' | 'warning' | 'busy'
+		icon?: 'retry' | 'signin'
+		title: string
+		message: string
+		actionLabel?: string
+	}
+> = {
+	loading: OPENING_GATE_PROPS,
+	error: {
+		eyebrow: 'Workspace offline',
+		tone: 'warning',
+		icon: 'retry',
+		title: 'Mico could not start',
+		message: 'Workspace configuration is unavailable. The canvas is closed for safety.',
+		actionLabel: 'Retry',
+	},
+	login: {
+		eyebrow: 'Workspace access',
+		tone: 'default',
+		icon: 'signin',
+		title: 'Sign in to Mico',
+		message: 'Use your Microsoft account to open this Mico workspace.',
+		actionLabel: 'Sign in with Microsoft',
+	},
+	callback: {
+		eyebrow: 'Verifying session',
+		tone: 'busy',
+		title: 'Completing sign-in',
+		message: 'Verifying your Microsoft account…',
+	},
+	'callback-error': {
+		eyebrow: 'Sign-in interrupted',
+		tone: 'warning',
+		icon: 'retry',
+		title: 'Could not finish sign-in',
+		message: 'Microsoft sign-in could not be completed.',
+		actionLabel: 'Try Microsoft sign-in again',
+	},
+	logout: {
+		eyebrow: 'Closing session',
+		tone: 'busy',
+		title: 'Signing out',
+		message: 'Closing the workspace session…',
+	},
+	'logout-error': {
+		eyebrow: 'Session active',
+		tone: 'warning',
+		icon: 'retry',
+		title: 'Could not sign out',
+		message: 'Sign-out is temporarily unavailable. Please try again.',
+		actionLabel: 'Try sign-out again',
+	},
 }
 
 function GateScreen({
@@ -175,15 +277,27 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 }
 
 export default function BootGate() {
+	const gatePreview =
+		typeof window === 'undefined' ? null : gatePreviewFromSearch(window.location.search)
 	const [runtime, setRuntime] = useState<RuntimeConfig | null>(null)
 	const [session, setSession] = useState<ServerSession | null>(null)
 	const [loading, setLoading] = useState(true)
+	const [showLoading, setShowLoading] = useState(false)
 	const [runtimeError, setRuntimeError] = useState(false)
 	const [loginRequired, setLoginRequired] = useState(false)
 	const [loggingOut, setLoggingOut] = useState(false)
 	const [logoutError, setLogoutError] = useState('')
 	const bootstrapRequest = useRef<AbortController | null>(null)
 	const avatarUrl = useUserAvatar(runtime?.auth, loggingOut ? null : (session?.user ?? null))
+
+	useEffect(() => {
+		if (gatePreview || !loading) {
+			setShowLoading(false)
+			return
+		}
+		const timer = window.setTimeout(() => setShowLoading(true), 180)
+		return () => window.clearTimeout(timer)
+	}, [gatePreview, loading])
 
 	const load = useCallback(() => {
 		bootstrapRequest.current?.abort()
@@ -234,9 +348,10 @@ export default function BootGate() {
 	}, [])
 
 	useEffect(() => {
+		if (gatePreview) return
 		load()
 		return () => bootstrapRequest.current?.abort()
-	}, [load])
+	}, [gatePreview, load])
 
 	useEffect(() => {
 		if (!session?.user || !runtime || runtime.auth.mode !== 'entra') return
@@ -286,6 +401,15 @@ export default function BootGate() {
 		})()
 	}
 
+	if (gatePreview) {
+		const { actionLabel, ...screen } = GATE_PREVIEW_PROPS[gatePreview]
+		return (
+			<GateScreen
+				{...screen}
+				action={actionLabel ? { label: actionLabel, onClick: exitGatePreview } : undefined}
+			/>
+		)
+	}
 	if (loggingOut)
 		return (
 			<GateScreen
@@ -307,7 +431,7 @@ export default function BootGate() {
 			/>
 		)
 	}
-	if (loading) return null
+	if (loading) return showLoading ? <GateScreen {...OPENING_GATE_PROPS} /> : null
 	if (runtimeError) {
 		return (
 			<GateScreen

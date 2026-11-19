@@ -313,3 +313,29 @@ test('expired server sessions return to login', async ({ page }) => {
 	await expect(page.getByRole('heading', { name: 'Sign in to Mico' })).toBeVisible()
 	await expect(page.locator('.app')).toHaveCount(0)
 })
+
+test('gate query parameter previews loading and status screens without bypassing auth', async ({
+	page,
+}) => {
+	await page.goto('/?gate=loading')
+	await expect(page.getByRole('heading', { name: 'Opening Mico' })).toBeVisible()
+	await expect(page.getByRole('progressbar', { name: 'Opening Mico' })).toBeVisible()
+	await expect(page.locator('.app')).toHaveCount(0)
+
+	await mockRuntime(page, runtime('none'))
+	await mockSession(page, 200, { user: null })
+	await page.goto('/?gate=error&keep=1')
+	await expect(page.getByRole('heading', { name: 'Mico could not start' })).toBeVisible()
+	await expect(page.locator('.app')).toHaveCount(0)
+	await page.getByRole('button', { name: 'Retry' }).click()
+	await expect(page.locator('.app')).toBeVisible()
+	expect(new URL(page.url()).search).toBe('?keep=1')
+
+	await mockRuntime(page, runtime('entra'))
+	await mockSession(page, 401)
+	await page.goto('/?gate=login')
+	await expect(page.locator('.app')).toHaveCount(0)
+	await page.getByRole('button', { name: 'Sign in with Microsoft' }).click()
+	await expect(page.getByRole('heading', { name: 'Sign in to Mico' })).toBeVisible()
+	await expect(page.locator('.app')).toHaveCount(0)
+})
