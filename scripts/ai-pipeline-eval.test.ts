@@ -278,16 +278,45 @@ test('board rubric evaluator scores single-topic, premature-singleton and multi-
 })
 
 test('isolated layered eval produces all L1-L5 metrics cleanly', async () => {
+	const suite = loadLayeredEvalSuite()
+	const targets = new Map(suite.layers.map((layer) => [layer.id, layer.targets]))
+	const l1 = targets.get('L1') as Record<string, number | boolean>
+	const l2 = targets.get('L2') as Record<string, number | boolean>
+	const l3 = targets.get('L3') as Record<string, number | boolean>
+	const l4 = targets.get('L4') as Record<string, number | boolean>
+
 	const report = await runLayeredEval({ layer: 'all' })
-	assert.ok(report.L1)
-	assert.ok(report.L2)
-	assert.ok(report.L3)
-	assert.ok(report.L4)
-	assert.ok(report.L5)
-	assert.ok(report.L1.allToolsCount >= 11)
-	assert.ok(report.L1.allToolsSchemaBytes > 5000)
-	assert.ok(report.L2.boardContext50ShapesBytes > 0)
-	assert.ok(report.L3.turn20ModelBytes > 0)
-	assert.ok(report.L4.c14SegmentCount >= 110)
-	assert.equal(typeof report.L5.promptAllowsMultipleTopicCards, 'boolean')
+	assert.ok(report.L1 && report.L2 && report.L3 && report.L4 && report.L5)
+
+	assert.equal(report.L1.parallelChainSucceeded, l1.parallelChainSucceeded)
+	assert.equal(report.L1.geometryReceiptPresent, l1.geometryReceiptPresent)
+	assert.equal(report.L1.htmlCardRuntimeCssInjected, l1.htmlCardRuntimeCssInjected)
+	assert.ok(report.L1.activeLectureNoImageSchemaBytes <= Number(l1.lectureNoImageSchemaBytesMax))
+
+	assert.equal(
+		report.L2.systemPromptInvariantAcrossRevisions,
+		l2.systemPromptInvariantAcrossRevisions,
+	)
+	assert.equal(report.L2.anchorsRetainedAt180Shapes, l2.anchorsRetainedAt180Shapes)
+	assert.ok(report.L2.boardContext180ShapesBytes <= Number(l2.boardContext180ShapesBytesMax))
+
+	assert.equal(report.L3.turn105AcceptedWithoutHttp400, l3.turn105AcceptedWithoutHttp400)
+	assert.equal(report.L3.turn120AcceptedWithoutHttp400, l3.turn120AcceptedWithoutHttp400)
+	assert.ok(
+		(report.L3.turn120ModelBytes ?? Number.POSITIVE_INFINITY) <= Number(l3.turn120ModelBytesMax),
+	)
+	assert.ok(
+		(report.L3.turn120CacheablePrefixRatio ?? 0) >= Number(l3.turn120CacheablePrefixRatioMin),
+	)
+
+	assert.ok(report.L4.liveMicDefaultSilenceMs >= Number(l4.liveMicDefaultSilenceMsMin))
+	assert.equal(report.L4.audioPlaybackDefaultSilenceMs, Number(l4.audioPlaybackDefaultSilenceMs))
+	assert.ok(report.L4.maxQueueDepth <= Number(l4.maxQueueDepthMax))
+	assert.ok(report.L4.p95DrawingLagMs <= Number(l4.p95DrawingLagMsMax))
+	assert.equal(report.L4.summaryRecoveredAfterLectureError, l4.summaryRecoveredAfterLectureError)
+
+	assert.equal(report.L5.promptAllowsMultipleTopicCards, true)
+	assert.equal(report.L5.promptDefinesTopicTransitionTrigger, true)
+	assert.equal(report.L5.promptNoSingletonSummaryLock, true)
+	assert.equal(report.L5.promptRequiresConditionalExecutiveCard, true)
 })

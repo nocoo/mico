@@ -34,9 +34,12 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_SYSTEM_PROMPT, /side-by-side frames, align their top edges/)
 	assert.match(AI_SYSTEM_PROMPT, /topmost member of each group at the same y/)
 	assert.doesNotMatch(AI_SYSTEM_PROMPT, /LAYOUT_LIMIT|exactly two columns|y=1600|Place C below/)
+	assert.doesNotMatch(AI_SYSTEM_PROMPT, /exactly one prominent HTML summary/i)
 	assert.match(AI_LECTURE_PROMPT, /a standalone fact can remain only in the evidence/)
-	assert.match(AI_LECTURE_PROMPT, /clearly enters a final summary/i)
-	assert.match(AI_LECTURE_PROMPT, /rightmost HTML summary/)
+	assert.match(AI_SYSTEM_PROMPT, /Topic Swimlanes/i)
+	assert.match(AI_SYSTEM_PROMPT, /topic-card-/)
+	assert.match(AI_LECTURE_PROMPT, /topic transition|new topic|议题切换/i)
+	assert.match(AI_LECTURE_PROMPT, /executive-summary/i)
 })
 
 test('HTML cards share a preloaded design system', () => {
@@ -49,6 +52,15 @@ test('HTML cards share a preloaded design system', () => {
 		assert.ok(HTML_CARD_FRAGMENTS.includes(part))
 	}
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /reusable HTML card/i)
+})
+
+test('live and post-session prompts enforce two-tier multi-topic summaries and topic transition closeout', () => {
+	assert.doesNotMatch(SUMMARY_CARD_INSTRUCTIONS, /exactly one prominent HTML summary/i)
+	assert.doesNotMatch(POST_SESSION_SUMMARY_PROMPT, /exactly one prominent HTML summary/i)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /topic-card-/)
+	assert.match(POST_SESSION_SUMMARY_PROMPT, /executive-summary/i)
+	assert.match(POST_SESSION_SUMMARY_PROMPT, /2 or more|>= 2|two or more/i)
+	assert.match(AI_SYSTEM_PROMPT, /revisit/i)
 })
 
 test('image generation is optional, asynchronous and respects board layout', () => {
