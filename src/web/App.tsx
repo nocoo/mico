@@ -22,7 +22,7 @@ import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasMinimap } from './canvas/CanvasMinimap'
 import { CanvasView } from './canvas/CanvasView'
-import { beginDraft, finalizeDraft, updateDraft } from './canvas/draft'
+import { beginDraft, finalizeCurrentDraft, finalizeDraft, updateDraft } from './canvas/draft'
 import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { Marquee } from './canvas/Marquee'
@@ -180,6 +180,9 @@ export default function App({
 	const dragTokenRef = useRef(0)
 	const imageInputRef = useRef<HTMLInputElement>(null)
 	const connectionResetRef = useRef<() => void>(() => {})
+	const finishInteractionRef = useRef<
+		(pointerId: number, clientPoint?: { x: number; y: number }) => void
+	>(() => {})
 	const cancelInteractionRef = useRef<() => void>(() => {})
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
 	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
@@ -836,13 +839,20 @@ export default function App({
 			setSpacePressed(false)
 			cancelInteraction()
 		}
+		const onWindowPointerUp = (event: PointerEvent) => {
+			if (interactionRef.current?.pointerId === event.pointerId) {
+				finishInteractionRef.current(event.pointerId, { x: event.clientX, y: event.clientY })
+			}
+		}
 		window.addEventListener('keydown', onKeyDown)
 		window.addEventListener('keyup', onKeyUp)
 		window.addEventListener('blur', onBlur)
+		window.addEventListener('pointerup', onWindowPointerUp)
 		return () => {
 			window.removeEventListener('keydown', onKeyDown)
 			window.removeEventListener('keyup', onKeyUp)
 			window.removeEventListener('blur', onBlur)
+			window.removeEventListener('pointerup', onWindowPointerUp)
 		}
 	}, [cancelInteraction, debugPanelOpen, demoPanelOpen, localModePanelOpen])
 
@@ -1068,12 +1078,12 @@ export default function App({
 		}
 	}
 
-	const onCanvasPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
+	const finishInteraction = (pointerId: number, clientPoint?: { x: number; y: number }) => {
 		const interaction = interactionRef.current
-		if (!interaction || interaction.pointerId !== event.pointerId) return
+		if (!interaction || interaction.pointerId !== pointerId) return
 
-		if (interaction.mode === 'connection') {
-			connection.finish(clientToWorld(event.clientX, event.clientY), event.pointerId)
+		if (interaction.mode === 'connection' && clientPoint) {
+			connection.finish(clientToWorld(clientPoint.x, clientPoint.y), pointerId)
 		}
 
 		if (interaction.mode === 'marquee' && marquee) {
@@ -1082,11 +1092,14 @@ export default function App({
 		}
 
 		if (interaction.mode === 'brush') {
-			const world = clientToWorld(event.clientX, event.clientY)
 			const current = brushPointsRef.current
 			const last = current?.at(-1)
+			const world = clientPoint ? clientToWorld(clientPoint.x, clientPoint.y) : null
 			const strokePoints =
-				current && last && Math.hypot(world.x - last.x, world.y - last.y) * viewport.zoom >= 1.5
+				current &&
+				last &&
+				world &&
+				Math.hypot(world.x - last.x, world.y - last.y) * viewport.zoom >= 1.5
 					? [...current, world]
 					: current
 			if (strokePoints && strokePoints.length >= 2) {
@@ -1119,19 +1132,24 @@ export default function App({
 
 		const activeCreation = creationRef.current
 		if (interaction.mode === 'create' && activeCreation) {
-			const world = clientToWorld(event.clientX, event.clientY)
-			const finalized = finalizeDraft(activeCreation, interaction.startWorld, world)
+			const finalized = clientPoint
+				? finalizeDraft(
+						activeCreation,
+						interaction.startWorld,
+						clientToWorld(clientPoint.x, clientPoint.y),
+					)
+				: finalizeCurrentDraft(activeCreation)
 			if (finalized) createShape(finalized, finalized.type !== 'line')
 		}
 
-		if (interaction.mode === 'shape' && interaction.shape) {
-			const world = clientToWorld(event.clientX, event.clientY)
+		if (interaction.mode === 'shape' && interaction.shape && clientPoint) {
+			const world = clientToWorld(clientPoint.x, clientPoint.y)
 			const dx = world.x - interaction.startWorld.x
 			const dy = world.y - interaction.startWorld.y
 			const moved =
 				Math.hypot(
-					event.clientX - interaction.startClient.x,
-					event.clientY - interaction.startClient.y,
+					clientPoint.x - interaction.startClient.x,
+					clientPoint.y - interaction.startClient.y,
 				) > 2
 			if (moved) {
 				const original = interaction.shape
@@ -1179,6 +1197,9 @@ export default function App({
 				const group = interaction.group ?? [interaction.shape]
 				for (const shape of group) clearDragPreview(shape.id, interaction.previewToken)
 			}
+		} else if (interaction.mode === 'shape' && interaction.shape && interaction.previewToken) {
+			const group = interaction.group ?? [interaction.shape]
+			for (const shape of group) clearDragPreview(shape.id, interaction.previewToken)
 		}
 
 		creationRef.current = null
@@ -1186,8 +1207,13 @@ export default function App({
 		setIsPanning(false)
 		setGuides([])
 		interactionRef.current = null
-		if (svgRef.current?.hasPointerCapture(event.pointerId))
-			svgRef.current.releasePointerCapture(event.pointerId)
+		if (svgRef.current?.hasPointerCapture(pointerId))
+			svgRef.current.releasePointerCapture(pointerId)
+	}
+	finishInteractionRef.current = finishInteraction
+
+	const onCanvasPointerUp = (event: React.PointerEvent<SVGSVGElement>) => {
+		finishInteraction(event.pointerId, { x: event.clientX, y: event.clientY })
 	}
 
 	const captureConnection = (event: React.PointerEvent<SVGElement>, begin: () => boolean) => {
@@ -1751,7 +1777,20 @@ export default function App({
 					if (shape && isCanvasShape(shape)) beginInlineEdit(shape)
 				}}
 				onLostPointerCapture={(event) => {
-					if (interactionRef.current?.pointerId === event.pointerId) cancelInteraction()
+					const interaction = interactionRef.current
+					if (!interaction || interaction.pointerId !== event.pointerId) return
+					if (
+						interaction.mode === 'create' ||
+						interaction.mode === 'brush' ||
+						interaction.mode === 'marquee'
+					) {
+						// Real mouse/trackpad releases can emit lostpointercapture without
+						// delivering pointerup to the SVG; commit the tracked draft instead
+						// of discarding it once the primary button is released.
+						if ((event.buttons & 1) === 0) finishInteraction(event.pointerId)
+						return
+					}
+					cancelInteraction()
 				}}
 			>
 				{frameShapes.map((shape) => (

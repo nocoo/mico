@@ -660,3 +660,46 @@ test('undoing a concurrently committed create keeps peer shapes', async ({ page,
 		.toEqual(['peer-note-concurrent'])
 	await expect(page.locator('[data-shape-id="peer-note-concurrent"]')).toHaveCount(1)
 })
+
+test('lostpointercapture without pointerup commits an active creation draft', async ({
+	page,
+	request,
+}) => {
+	await resetBoard(request, [])
+	await openCanvas(page)
+	await resetView(page)
+
+	await page.getByRole('button', { name: 'Ellipse', exact: true }).click()
+	const start = await worldPoint(page, 260, 220)
+	const end = await worldPoint(page, 403, 464)
+
+	await page.mouse.move(start.x, start.y)
+	await page.mouse.down()
+	await page.mouse.move(end.x, end.y, { steps: 4 })
+	await page.evaluate(() => {
+		const svg = document.querySelector('svg.canvas')
+		if (!svg) throw new Error('Missing canvas svg')
+		svg.dispatchEvent(
+			new PointerEvent('lostpointercapture', {
+				bubbles: true,
+				pointerId: 1,
+				pointerType: 'mouse',
+				button: 0,
+				buttons: 0,
+				clientX: 0,
+				clientY: 0,
+			}),
+		)
+	})
+	await expect
+		.poll(async () => (await board(request)).shapes.filter((s) => s.type === 'ellipse').length)
+		.toBe(1)
+	const ellipse = (await board(request)).shapes.find((s) => s.type === 'ellipse')
+	expect(ellipse).toBeDefined()
+	if (ellipse?.type !== 'ellipse') throw new Error('Missing committed ellipse')
+	expect(Math.round(ellipse.w)).toBe(143)
+	expect(Math.round(ellipse.h)).toBe(244)
+	await page.mouse.up()
+	await expect(page.locator('[data-shape-id]')).toHaveCount(1)
+	expect((await board(request)).shapes.length).toBe(1)
+})

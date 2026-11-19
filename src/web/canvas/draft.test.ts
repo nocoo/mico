@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { CanvasShape } from '../../shared/types.ts'
-import { beginDraft, finalizeDraft, updateDraft } from './draft.ts'
+import { beginDraft, finalizeCurrentDraft, finalizeDraft, updateDraft } from './draft.ts'
 
 const start = { x: 100, y: 80 }
 
@@ -107,4 +107,16 @@ test('finalizeDraft clamps box edges to the minimum size and keeps lines signed'
 	const longLine = finalizeDraft(line, start, { x: 107, y: 200 })
 	assert.ok(longLine)
 	assert.deepEqual({ w: longLine.w, h: longLine.h }, { w: 7, h: 120 })
+})
+
+test('finalizeCurrentDraft commits already-tracked geometry without new pointer coordinates', () => {
+	const ellipse = updateDraft(drafted('ellipse'), start, { x: 243, y: 324 })
+	const committed = finalizeCurrentDraft(ellipse)
+	assert.ok(committed)
+	assert.deepEqual(
+		{ x: committed.x, y: committed.y, w: committed.w, h: committed.h },
+		{ x: 100, y: 80, w: 143, h: 244 },
+	)
+	const tiny = updateDraft(drafted('ellipse'), start, { x: 103, y: 83 })
+	assert.equal(finalizeCurrentDraft(tiny), null)
 })
