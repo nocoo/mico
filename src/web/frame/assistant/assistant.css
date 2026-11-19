@@ -1751,8 +1751,8 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 }
 
 .ai-assistant .ai-settings {
-	gap: 11px;
-	padding: 14px 16px 16px;
+	gap: 12px;
+	padding: 16px;
 }
 
 .ai-assistant .ai-settings-form {
@@ -1765,7 +1765,7 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 .ai-assistant .ai-settings-row {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 10px;
+	gap: 12px;
 }
 
 .ai-assistant .ai-settings-field {
@@ -1773,19 +1773,9 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	flex-direction: column;
 	gap: 6px;
 	color: var(--ui-ink-2);
-	font-size: 11.5px;
-	font-weight: 700;
-}
-
-.ai-assistant .ai-settings-field .select-trigger {
-	width: 100%;
-	height: 40px;
-	border-radius: 14px;
-	background: var(--ui-well);
-	box-shadow:
-		inset 0 1px 2px color-mix(in oklch, var(--ui-shadow) 34%, transparent),
-		inset 0 0 0 1px var(--ui-hair);
-	font-weight: 600;
+	font-size: 12px;
+	line-height: 16px;
+	font-weight: 650;
 }
 
 .ai-assistant .ai-settings-clear {
@@ -1794,31 +1784,126 @@ body:has(.ai-assistant .ai-model-select[aria-expanded="true"])
 	gap: 8px;
 	color: var(--ui-ink-2);
 	font-size: 12px;
+	line-height: 16px;
+}
+
+.ai-assistant .ai-settings-field .rt-TextFieldRoot,
+.ai-assistant .ai-settings-field .select-trigger.rt-SelectTrigger {
+	box-sizing: border-box;
+	width: 100%;
+	height: 40px;
+	border: 0;
+	border-radius: 12px;
+	background: var(--ui-well);
+	box-shadow:
+		inset 0 1px 2px color-mix(in oklch, var(--ui-shadow) 32%, transparent),
+		inset 0 0 0 1px var(--ui-hair);
+	color: var(--ui-ink);
+	font-size: 13.5px;
+	font-weight: 500;
+	line-height: 20px;
+	transition:
+		background 180ms var(--ui-ease),
+		box-shadow 180ms var(--ui-ease);
 }
 
 .ai-assistant .ai-settings-field .rt-TextFieldRoot {
-	width: 100%;
-	height: 40px;
-	border-radius: 14px;
-	background: var(--ui-well);
-	box-shadow:
-		inset 0 1px 2px color-mix(in oklch, var(--ui-shadow) 34%, transparent),
-		inset 0 0 0 1px var(--ui-hair);
+	--text-field-border-width: 0px;
+	padding: 0;
 }
 
-.ai-assistant .ai-settings-field input {
-	height: 38px;
+.ai-assistant .ai-settings-field .rt-TextFieldRoot input {
+	height: 40px;
+	padding: 0 12px;
+	text-indent: 0;
 	background: transparent;
 	color: var(--ui-ink);
+	font-size: 13.5px;
+	font-weight: 500;
+	line-height: 20px;
+}
+
+.ai-assistant .ai-settings-field .rt-TextFieldRoot input::placeholder {
+	color: var(--ui-ink-3);
+	font-weight: 400;
+}
+
+.ai-assistant .ai-settings-field .rt-TextFieldRoot:has(.rt-TextFieldSlot) input {
+	padding-inline-end: 4px;
+}
+
+.ai-assistant .ai-settings-field .rt-TextFieldRoot .rt-TextFieldSlot[data-side="right"] {
+	padding-inline: 0 4px;
+}
+
+.ai-assistant .ai-settings-field .select-trigger.rt-SelectTrigger {
+	padding: 0 12px;
+	gap: 8px;
+	justify-content: space-between;
+	translate: 0;
+}
+
+.ai-assistant .ai-settings-field .select-trigger.rt-SelectTrigger:hover:not(:disabled) {
+	background: color-mix(in oklch, var(--ui-well-2) 65%, var(--ui-well));
+	border-color: transparent;
+	translate: 0;
+}
+
+.ai-assistant .ai-settings-field .rt-TextFieldRoot:focus-within,
+.ai-assistant
+	.ai-settings-field
+	.select-trigger.rt-SelectTrigger:focus-visible:not([data-pointer-focus]),
+.ai-assistant .ai-settings-field .select-trigger.rt-SelectTrigger[aria-expanded="true"] {
+	outline: none;
+	background: var(--ui-glass);
+	box-shadow:
+		inset 0 0 0 1px var(--ui-accent),
+		0 0 0 3px var(--ui-accent-soft);
+}
+
+.ai-assistant .ai-settings-field .rt-TextFieldRoot:focus-within input:focus-visible {
+	outline: none;
+}
+
+.ai-assistant .ai-settings-field .select-trigger.rt-SelectTrigger > .rt-SelectTriggerInner {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ai-assistant .ai-settings-field .select-trigger.rt-SelectTrigger > .rt-SelectIcon {
+	flex: 0 0 14px;
+	width: 14px;
+	height: 14px;
+	margin: 0;
+	color: var(--ui-ink-3);
+	transition:
+		color 180ms var(--ui-ease),
+		rotate 380ms var(--ui-spring);
+}
+
+.ai-assistant
+	.ai-settings-field
+	.select-trigger.rt-SelectTrigger[aria-expanded="true"]
+	> .rt-SelectIcon {
+	color: var(--ui-accent-ink);
+	rotate: 180deg;
 }
 
 .ai-assistant .ai-model-select {
+	box-sizing: border-box;
 	width: 32px;
 	height: 32px;
+	min-width: 32px;
+	min-height: 32px;
+	margin: 0;
 	padding: 0;
 	justify-content: center;
 	border: 1px solid var(--ui-hair);
-	border-radius: 11px;
+	border-radius: 9px;
 	background: linear-gradient(145deg, var(--ui-glass-strong), var(--ui-glass));
 	box-shadow:
 		inset 0 1px 0 var(--ui-gloss),

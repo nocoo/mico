@@ -1,4 +1,12 @@
-export const REASONING_EFFORTS = ['none', 'minimal', 'low', 'medium', 'high', 'omit'] as const
+export const REASONING_EFFORTS = [
+	'none',
+	'minimal',
+	'low',
+	'medium',
+	'high',
+	'xhigh',
+	'omit',
+] as const
 
 export type ReasoningEffort = (typeof REASONING_EFFORTS)[number]
 
@@ -15,5 +23,6 @@ export const REASONING_EFFORT_OPTIONS: readonly { value: ReasoningEffort; label:
 	{ value: 'low', label: 'Low' },
 	{ value: 'medium', label: 'Medium' },
 	{ value: 'high', label: 'High' },
+	{ value: 'xhigh', label: 'Extra high' },
 	{ value: 'omit', label: 'Omit' },
 ]

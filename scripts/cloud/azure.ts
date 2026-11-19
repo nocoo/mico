@@ -33,6 +33,7 @@ export interface AzureTarget {
 		maiHost: string
 		maiDeployment: string
 		lectureReasoning: string
+		chatReasoning: string
 	}
 }
 
@@ -90,6 +91,7 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 			MAGPIE_BASE_URL: env.MAGPIE_BASE_URL,
 			MAGPIE_MODEL: env.MAGPIE_MODEL,
 			MAGPIE_LECTURE_REASONING: env.MAGPIE_LECTURE_REASONING,
+			MAGPIE_CHAT_REASONING: env.MAGPIE_CHAT_REASONING,
 			AZURE_MAI_HOST: env.AZURE_MAI_HOST,
 			AZURE_OPENAI_DEPLOYMENT: env.AZURE_OPENAI_DEPLOYMENT,
 		})
@@ -102,6 +104,7 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 			maiHost: config.mai.host,
 			maiDeployment: config.mai.deployment,
 			lectureReasoning: config.lectureReasoning,
+			chatReasoning: config.chatReasoning,
 		}
 	}
 	if (env.MICO_STORAGE_BACKEND?.trim().toLowerCase() === 'azure') {
@@ -181,6 +184,7 @@ export function containerApp(
 		env.MAGPIE_BASE_URL = target.ai.baseURL
 		env.MAGPIE_MODEL = target.ai.model
 		env.MAGPIE_LECTURE_REASONING = target.ai.lectureReasoning
+		env.MAGPIE_CHAT_REASONING = target.ai.chatReasoning
 		env.AZURE_MAI_HOST = target.ai.maiHost
 		env.AZURE_OPENAI_DEPLOYMENT = target.ai.maiDeployment
 	}

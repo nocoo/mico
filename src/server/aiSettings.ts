@@ -3,7 +3,11 @@ import { chmodSync, readFileSync } from 'node:fs'
 import { chmod, mkdir, open, rename, unlink } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
-import { isReasoningEffort, type ReasoningEffort } from '../shared/aiReasoning.ts'
+import {
+	isReasoningEffort,
+	REASONING_EFFORTS,
+	type ReasoningEffort,
+} from '../shared/aiReasoning.ts'
 import { type AiConfig, type ChatSettings, loadAiConfig } from './aiConfig.ts'
 import { OperationError } from './store.ts'
 
@@ -70,7 +74,7 @@ function validateApiKey(value: unknown): string {
 
 function validateReasoning(value: unknown, field: string): ReasoningEffort {
 	if (!isReasoningEffort(value)) {
-		invalid(`${field} must be one of none, minimal, low, medium, high, omit`)
+		invalid(`${field} must be one of ${REASONING_EFFORTS.join(', ')}`)
 	}
 	return value
 }

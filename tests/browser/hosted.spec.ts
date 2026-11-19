@@ -78,6 +78,8 @@ test('runtime bootstrap failure closes the canvas', async ({ page }) => {
 	await page.route('**/api/runtime', (route) => route.fulfill({ status: 503, body: '' }))
 	await page.goto('/')
 	await expect(page.getByRole('heading', { name: 'Mico could not start' })).toBeVisible()
+	await expect(page.locator('.gate-card')).toHaveCount(0)
+	await expect(page.locator('.gate-screen .canvas-aurora')).toHaveCount(1)
 	await expect(page.locator('.app')).toHaveCount(0)
 	await expect(page.getByRole('button', { name: 'Retry' })).toBeVisible()
 })

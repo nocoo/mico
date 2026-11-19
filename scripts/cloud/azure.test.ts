@@ -115,11 +115,24 @@ test('Azure managed AI explicitly forwards model settings without keys or MOSS',
 	assert.equal(settings.MICO_MOSS_ENABLED, 'false')
 	assert.equal(settings.MAGPIE_MODEL, 'chat-fixture')
 	assert.equal(settings.MAGPIE_LECTURE_REASONING, 'low')
+	assert.equal(settings.MAGPIE_CHAT_REASONING, 'low')
 	assert.equal(settings.AZURE_OPENAI_DEPLOYMENT, 'speech-fixture')
 	assert.equal(settings.AZURE_CLIENT_ID, configured.AZURE_CLIENT_ID)
 	assert.equal(settings.MAGPIE_API_KEY, undefined)
 	assert.equal(settings.AZURE_OPENAI_API_KEY, undefined)
 	assert.ok(!JSON.stringify(target).includes('never-forward'))
+	const withCustomChatReasoning = azureTarget({
+		...configured,
+		MAGPIE_LECTURE_REASONING: 'none',
+		MAGPIE_CHAT_REASONING: 'high',
+	})
+	const customEnv = Object.fromEntries(
+		containerApp(withCustomChatReasoning, input).properties.template.containers[0].env.map(
+			({ name, value }) => [name, value],
+		),
+	)
+	assert.equal(customEnv.MAGPIE_LECTURE_REASONING, 'none')
+	assert.equal(customEnv.MAGPIE_CHAT_REASONING, 'high')
 	assert.throws(
 		() => azureTarget({ ...configured, MICO_AI_AUTH_MODE: 'api-key' }),
 		/managed-identity/,

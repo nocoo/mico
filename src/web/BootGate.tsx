@@ -1,5 +1,10 @@
+import './frame/tokens.css'
+import './canvas/canvas.css'
+import './gate.css'
+import { ArrowRight, RotateCcw } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import App from './App'
+import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { clearMsalCache, completeCallback, loginWithMsal } from './msal'
 import {
 	expiresAtMilliseconds,
@@ -23,22 +28,50 @@ function consumeInitialRuntime(signal: AbortSignal): Promise<RuntimeConfig> {
 function GateScreen({
 	title,
 	message,
+	eyebrow,
+	tone = 'default',
+	icon,
 	action,
 }: {
 	title: string
 	message: string
+	eyebrow: string
+	tone?: 'default' | 'warning' | 'busy'
+	icon?: 'retry' | 'signin'
 	action?: { label: string; onClick: () => void }
 }) {
 	return (
-		<main className="gate-screen">
-			<section className="gate-card">
-				<div className="gate-brand">Mico</div>
+		<main className="gate-screen" data-tone={tone}>
+			<CanvasBackdrop />
+			<div className="gate-dots" aria-hidden="true" />
+			<header className="gate-topbar">
+				<div className="gate-brand">
+					<span className="gate-brand-mark" aria-hidden="true">
+						<img src="/logo.png" alt="" />
+					</span>
+					<strong>mico</strong>
+				</div>
+			</header>
+			<section className="gate-stage">
+				<div className="gate-orb" aria-hidden="true">
+					<i />
+					<i />
+					<i />
+				</div>
+				<span className="gate-eyebrow">
+					<span className="gate-eyebrow-dot" aria-hidden="true" />
+					{eyebrow}
+				</span>
 				<h1>{title}</h1>
-				<p>{message}</p>
-				{action && (
+				<p className="gate-message">{message}</p>
+				{action ? (
 					<button type="button" className="gate-action" onClick={action.onClick}>
-						{action.label}
+						{icon === 'retry' && <RotateCcw size={17} strokeWidth={2.1} aria-hidden="true" />}
+						<span>{action.label}</span>
+						{icon === 'signin' && <ArrowRight size={17} strokeWidth={2.1} aria-hidden="true" />}
 					</button>
+				) : (
+					<div className="gate-progress" role="progressbar" aria-label={title} />
 				)}
 			</section>
 		</main>
@@ -72,6 +105,9 @@ function LoginView({ runtime }: { runtime: RuntimeConfig }) {
 
 	return (
 		<GateScreen
+			eyebrow="Workspace access"
+			tone={error ? 'warning' : 'default'}
+			icon="signin"
 			title="Sign in to Mico"
 			message={`${error ? `${error} ` : ''}Use your Microsoft account to open this Mico workspace.`}
 			action={{
@@ -118,6 +154,9 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 
 	return error ? (
 		<GateScreen
+			eyebrow="Sign-in interrupted"
+			tone="warning"
+			icon="retry"
 			title="Could not finish sign-in"
 			message={error}
 			action={{
@@ -126,7 +165,12 @@ function CallbackView({ runtime }: { runtime: RuntimeConfig }) {
 			}}
 		/>
 	) : (
-		<GateScreen title="Completing sign-in" message="Verifying your Microsoft account…" />
+		<GateScreen
+			eyebrow="Verifying session"
+			tone="busy"
+			title="Completing sign-in"
+			message="Verifying your Microsoft account…"
+		/>
 	)
 }
 
@@ -242,10 +286,21 @@ export default function BootGate() {
 		})()
 	}
 
-	if (loggingOut) return <GateScreen title="Signing out" message="Closing the workspace session…" />
+	if (loggingOut)
+		return (
+			<GateScreen
+				eyebrow="Closing session"
+				tone="busy"
+				title="Signing out"
+				message="Closing the workspace session…"
+			/>
+		)
 	if (logoutError) {
 		return (
 			<GateScreen
+				eyebrow="Session active"
+				tone="warning"
+				icon="retry"
 				title="Could not sign out"
 				message={logoutError}
 				action={{ label: 'Try sign-out again', onClick: signOut }}
@@ -256,6 +311,9 @@ export default function BootGate() {
 	if (runtimeError) {
 		return (
 			<GateScreen
+				eyebrow="Workspace offline"
+				tone="warning"
+				icon="retry"
 				title="Mico could not start"
 				message="Workspace configuration is unavailable. The canvas is closed for safety."
 				action={{ label: 'Retry', onClick: load }}

@@ -51,7 +51,8 @@ AI is disabled by default in this adapter. To enable the verified Chat + MAI pat
 | `AZURE_CLIENT_ID`          | Client ID of `MICO_AZ_IDENTITY`; deployment verifies it matches the attached identity |
 | `MAGPIE_BASE_URL`          | Full HTTPS Foundry Chat prefix, including `/openai/v1`                                |
 | `MAGPIE_MODEL`             | Chat deployment name                                                                  |
-| `MAGPIE_LECTURE_REASONING` | A model-supported effort; the verified GPT 6.1 sol profile uses `low`                 |
+| `MAGPIE_LECTURE_REASONING` | A model-supported effort (`none` on `gpt-6-sol`; `gpt-6.1-sol` requires `low`)        |
+| `MAGPIE_CHAT_REASONING`    | Interactive Chat reasoning effort; defaults to `low`                                  |
 | `AZURE_MAI_HOST`           | Foundry hostname only                                                                 |
 | `AZURE_OPENAI_DEPLOYMENT`  | MAI streaming deployment name                                                         |
 
