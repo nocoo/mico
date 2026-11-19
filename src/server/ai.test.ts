@@ -1727,3 +1727,45 @@ test('streamAiChat keeps system prompt invariant across revisions and attaches c
 		assert.match(lastUserText, /mid-note/)
 	}, model)
 })
+
+test('AI add_html_cards defaults width and auto-estimates height when omitted', async () => {
+	await withStore(async (store) => {
+		const tools = await createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: await store.getActiveCanvasId(),
+		})
+		const shortHtml =
+			'<main class="mico-report"><div class="mico-eyebrow">Stage 1</div><h1>Pricing</h1><section class="mico-panel mico-mint"><h2>Decision</h2><p>Keep A at 1,200.</p></section></main>'
+		const tallHtml = `<main class="mico-report"><div class="mico-eyebrow">Overview</div><h1>Full Meeting Summary</h1><section class="mico-panel mico-hero"><h2>Core</h2><p>First conclusion line with details.</p></section><div class="mico-tiles">${'<div class="mico-tile"><strong>Metric</strong><span>Value</span></div>'.repeat(3)}</div><section class="mico-panel mico-peach"><h2>Plan</h2><ul class="mico-list">${'<li>Action item with clear owner and due date for this stage</li>'.repeat(6)}</ul></section><section class="mico-panel"><table class="mico-table"><thead><tr><th>Topic</th><th>Owner</th><th>Status</th></tr></thead><tbody>${'<tr><td>Stage review</td><td>Team Lead</td><td>Approved</td></tr>'.repeat(6)}</tbody></table></section></main>`
+
+		const created = (await run(tools.add_html_cards, {
+			cards: [
+				{ id: 'short-card', title: 'Short', x: 2040, y: 200, html: shortHtml },
+				{ id: 'tall-card', title: 'Tall', x: 3160, y: 200, html: tallHtml },
+			],
+		})) as { ok: boolean }
+		assert.equal(created.ok, true)
+
+		const board = await store.getBoard()
+		const shortCard = board.shapes.find((s) => s.id === 'short-card')
+		const tallCard = board.shapes.find((s) => s.id === 'tall-card')
+		assert.ok(shortCard?.type === 'html')
+		assert.ok(tallCard?.type === 'html')
+		assert.equal(shortCard.w, 760)
+		assert.equal(tallCard.w, 760)
+		assert.ok(shortCard.h > 160 && shortCard.h < 420, `shortCard.h=${shortCard.h}`)
+		assert.ok(
+			tallCard.h > shortCard.h + 180,
+			`expected tallCard.h (${tallCard.h}) > shortCard.h (${shortCard.h}) + 180`,
+		)
+
+		await run(tools.update_shapes, {
+			updates: [{ id: 'short-card', patch: { html: tallHtml } }],
+		})
+		const expanded = (await store.getBoard()).shapes.find((s) => s.id === 'short-card')
+		assert.ok(expanded?.type === 'html')
+		assert.ok(expanded.h > shortCard.h + 180)
+	})
+})

@@ -2,27 +2,53 @@ export const HTML_CARD_CSS = `
 * { box-sizing: border-box; }
 html, body { background: transparent; }
 body { margin: 0; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: oklch(.27 .04 285); }
-.mico-report { padding: 24px; font-size: 13px; line-height: 1.6; overflow-wrap: anywhere; }
-.mico-report h1 { margin: 2px 0 14px; font-size: 21px; line-height: 1.3; letter-spacing: -.01em; }
-.mico-report h2 { margin: 0 0 6px; font-size: 14px; line-height: 1.4; font-weight: 700; }
+.mico-report { display: flex; flex-direction: column; gap: 12px; padding: 22px 24px; font-size: 13px; line-height: 1.55; overflow-wrap: anywhere; }
+.mico-report h1 { margin: 0; font-size: 20px; line-height: 1.28; letter-spacing: -.015em; font-weight: 750; color: oklch(.24 .045 285); }
+.mico-report h2 { margin: 0 0 6px; font-size: 13.5px; line-height: 1.38; font-weight: 700; color: inherit; }
+.mico-report h3 { margin: 0 0 4px; font-size: 12.5px; line-height: 1.38; font-weight: 700; color: inherit; }
 .mico-report p { margin: 0 0 6px; }
-.mico-report p:last-child { margin-bottom: 0; }
-.mico-eyebrow { color: oklch(.47 .035 285); font-size: 11.5px; }
-.mico-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mico-report p:last-child, .mico-report > p { margin-bottom: 0; }
+.mico-eyebrow { color: oklch(.47 .035 285); font-size: 11.5px; font-weight: 600; letter-spacing: .02em; }
+.mico-eyebrow + h1 { margin-top: -8px; }
+.mico-stack { display: flex; flex-direction: column; gap: 10px; }
+.mico-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.mico-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
 .mico-full { grid-column: 1 / -1; }
-.mico-panel { min-width: 0; padding: 13px 15px; border-radius: 20px; background: oklch(.5 .07 285 / .06); box-shadow: inset 0 0 0 1px oklch(.4 .06 285 / .11); }
-.mico-hero { color: oklch(.98 .01 285); background: linear-gradient(135deg, oklch(.42 .13 285), oklch(.3 .09 262)); box-shadow: inset 0 1.5px 0 oklch(1 0 0 / .3), inset 0 -14px 20px -12px oklch(.7 .18 300 / .5), 0 14px 24px -14px oklch(.4 .15 285 / .8); }
-.mico-hero small { display: block; margin-top: 3px; color: oklch(.9 .03 285 / .85); }
+:where(.mico-panel, .mico-tile, .mico-callout) {
+  --mh: 260;
+  --mc: .035;
+  --ma: .88;
+  color: oklch(.29 calc(var(--mc) * .85 + .01) var(--mh));
+  background: linear-gradient(158deg, oklch(.975 calc(var(--mc) * .45) var(--mh) / var(--ma)), oklch(.915 var(--mc) var(--mh) / var(--ma)));
+  box-shadow: inset 0 1.5px 0 oklch(1 0 0 / .84), inset 0 -12px 20px -12px oklch(.7 calc(var(--mc) * 1.45) var(--mh) / .42), inset 0 0 0 1px oklch(.72 calc(var(--mc) * 1.1) var(--mh) / .24), 0 12px 24px -16px oklch(.66 calc(var(--mc) * 1.4) var(--mh) / .38);
+}
+.mico-panel { min-width: 0; padding: 14px 16px; border-radius: 20px; }
+.mico-panel > *:last-child { margin-bottom: 0; }
+.mico-hero { --mh: 282; --mc: .105; --ma: .94; padding: 16px 18px; }
+.mico-hero small { display: block; margin-top: 5px; font-size: 11.5px; color: oklch(.42 .065 var(--mh) / .9); }
 .mico-tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.mico-tile { min-width: 0; padding: 11px 14px; border-radius: 18px; color: oklch(.35 .09 236); background: linear-gradient(158deg, oklch(.968 .0425 236 / .92), oklch(.9 .085 236 / .92)); box-shadow: inset 0 1.5px 0 oklch(1 0 0 / .75), inset 0 -12px 20px -12px oklch(.7 .1275 236 / .45), 0 16px 30px -16px oklch(.7 .1275 236 / .45); }
-.mico-tile strong { display: block; font-size: 17px; line-height: 1.3; }
-.mico-tile span { font-size: 11px; }
+.mico-tile { --mh: 236; --mc: .085; --ma: .92; min-width: 0; padding: 12px 14px; border-radius: 20px; }
+.mico-tile strong { display: block; font-size: 17px; line-height: 1.25; font-weight: 750; letter-spacing: -.01em; }
+.mico-tile span { display: block; margin-top: 2px; font-size: 11.5px; opacity: .88; }
+.mico-callout { min-width: 0; padding: 11px 14px; border-radius: 16px; border-left: 3px solid oklch(.62 calc(var(--mc) * 1.35 + .03) var(--mh) / .72); }
+.mico-sky, [data-tone="sky"] { --mh: 236; --mc: .085; --ma: .92; }
+.mico-mint, [data-tone="mint"] { --mh: 166; --mc: .095; --ma: .92; }
+.mico-lemon, [data-tone="lemon"] { --mh: 98; --mc: .12; --ma: .92; }
+.mico-peach, [data-tone="peach"] { --mh: 55; --mc: .105; --ma: .92; }
+.mico-pink, [data-tone="pink"] { --mh: 8; --mc: .1; --ma: .92; }
+.mico-grape, [data-tone="grape"] { --mh: 296; --mc: .1; --ma: .92; }
+.mico-kv { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 6px 0; border-top: 1px solid oklch(.4 .05 var(--mh, 260) / .1); }
+.mico-kv:first-child { border-top: 0; padding-top: 0; }
+.mico-kv strong { font-weight: 700; }
 .mico-list { margin: 0; padding-left: 18px; }
 .mico-list li + li { margin-top: 4px; }
 .mico-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.mico-table th { padding: 3px 4px; text-align: left; color: oklch(.47 .035 285); }
-.mico-table td { padding: 5px 4px; border-top: 1px solid oklch(.4 .06 285 / .11); vertical-align: top; }
-.mico-tag { display: inline-block; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; color: oklch(.48 .19 283); background: oklch(.62 .17 285 / .13); }
+.mico-table th { padding: 6px 8px; text-align: left; font-weight: 700; color: oklch(.4 .05 260); background: oklch(.55 .06 260 / .1); }
+.mico-table th:first-child { border-radius: 8px 0 0 8px; }
+.mico-table th:last-child { border-radius: 0 8px 8px 0; }
+.mico-table td { padding: 7px 8px; border-top: 1px solid oklch(.45 .05 260 / .1); vertical-align: top; }
+.mico-table tbody tr:first-child td { border-top: 0; }
+.mico-badge, .mico-tag { --mh: 282; --mc: .11; display: inline-flex; align-items: center; gap: 4px; width: fit-content; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 700; color: oklch(.38 calc(var(--mc) * 1.15) var(--mh)); background: oklch(.84 calc(var(--mc) * .85) var(--mh) / .38); box-shadow: inset 0 1px 0 oklch(1 0 0 / .7), inset 0 0 0 1px oklch(.65 var(--mc) var(--mh) / .24); }
 `
 
 export const HTML_CARD_FRAGMENTS = `<main class="mico-report">
@@ -30,17 +56,18 @@ export const HTML_CARD_FRAGMENTS = `<main class="mico-report">
   <h1>Specific title</h1>
   <div class="mico-grid">
     <section class="mico-panel mico-hero mico-full"><h2>Key conclusion</h2><p>Evidence-based takeaway</p><small>Qualifier or source</small></section>
-    <div class="mico-tiles mico-full"><div class="mico-tile"><strong>Value</strong><span>Metric</span></div><div class="mico-tile"><strong>Value</strong><span>Metric</span></div><div class="mico-tile"><strong>Value</strong><span>Metric</span></div></div>
-    <section class="mico-panel"><h2>Heading</h2><ul class="mico-list"><li>First point</li><li>Second point</li></ul></section>
-    <section class="mico-panel"><h2>Heading</h2><p>Supporting detail</p><span class="mico-tag">Status</span></section>
+    <div class="mico-tiles mico-full"><div class="mico-tile mico-sky"><strong>Value</strong><span>Metric</span></div><div class="mico-tile mico-mint"><strong>Value</strong><span>Metric</span></div><div class="mico-tile mico-peach"><strong>Value</strong><span>Metric</span></div></div>
+    <section class="mico-panel mico-mint"><h2>Heading</h2><ul class="mico-list"><li>First point</li><li>Second point</li></ul></section>
+    <section class="mico-panel mico-peach"><h2>Heading</h2><p>Supporting detail</p><span class="mico-badge mico-mint">Status</span></section>
     <section class="mico-panel mico-full"><h2>Comparison</h2><table class="mico-table"><thead><tr><th>Item</th><th>Detail</th></tr></thead><tbody><tr><td>Topic</td><td>Evidence</td></tr></tbody></table></section>
   </div>
 </main>`
 
 export const HTML_CARD_DESIGN_INSTRUCTIONS = `# Reusable HTML card design
 
-Bootstrap 5 CSS/JS and the reusable .mico-* design CSS are automatically injected into every HTML card's <head>; do NOT copy <style> boilerplate for these base classes into card html. Compose semantic <main class="mico-report"> content directly from the fragments below, omit unused fragments, replace example copy with supported facts, and size cards generously so content fits without clipping or scrolling.
+Bootstrap 5 CSS/JS and the reusable .mico-* jelly design CSS are automatically injected into every HTML card's <head>; do NOT write custom <style> boilerplate for layout or colors. Compose semantic <main class="mico-report"> DOM directly from the classes below, omit unused fragments, replace example copy with supported facts, and omit \`h\` in \`add_html_cards\` so the card fits its content without trailing whitespace.
 
-Available classes: .mico-report, .mico-eyebrow, .mico-grid (2-col), .mico-full (span all cols), .mico-panel, .mico-hero, .mico-tiles (3-col), .mico-tile, .mico-list, .mico-table, .mico-tag.
+Layout classes: .mico-report (vertical stack with auto 12px gaps), .mico-stack, .mico-grid (2-col), .mico-grid-3 (3-col), .mico-full (span grid), .mico-tiles (3-col KPI row), .mico-kv (key-value row).
+Surface & jelly classes: .mico-eyebrow, .mico-hero, .mico-panel, .mico-tile, .mico-callout, .mico-list, .mico-table, .mico-badge, .mico-tag. Add any Mico jelly tone (.mico-sky, .mico-mint, .mico-lemon, .mico-peach, .mico-pink, .mico-grape) onto .mico-hero, .mico-panel, .mico-tile, .mico-callout, or .mico-badge.
 
 ${HTML_CARD_FRAGMENTS}`

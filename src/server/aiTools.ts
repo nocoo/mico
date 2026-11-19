@@ -91,6 +91,192 @@ function actionCardHeight(items: { text: string }[], width: number): number {
 	return Math.max(120, 76 + contentHeight)
 }
 
+const DEFAULT_HTML_CARD_WIDTH = 760
+
+function plainHtmlText(html: string): string {
+	return html
+		.replace(/<[^>]+>/g, ' ')
+		.replace(/&nbsp;/g, ' ')
+		.replace(/&amp;/g, '&')
+		.replace(/&lt;/g, '<')
+		.replace(/&gt;/g, '>')
+		.replace(/\s+/g, ' ')
+		.trim()
+}
+
+function wrappedHtmlLines(text: string, maxWidth: number, fontSize: number): number {
+	const clean = text.trim()
+	if (!clean) return 0
+	const pixels = Array.from(clean).reduce(
+		(total, character) =>
+			total + ((character.codePointAt(0) ?? 0) <= 0x7f ? fontSize * 0.56 : fontSize),
+		0,
+	)
+	return Math.max(1, Math.ceil(pixels / Math.max(80, maxWidth)))
+}
+
+function estimateTableHeight(tableHtml: string, colWidth: number): number {
+	const headerCount = (tableHtml.match(/<tr\b[^>]*>(?=[\s\S]*?<th\b)/gi) ?? []).length
+	const rowMatches = [...tableHtml.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)]
+	let total = headerCount > 0 ? 30 : 0
+	for (const match of rowMatches) {
+		if (/<th\b/i.test(match[1]) && !/<td\b/i.test(match[1])) continue
+		const lines = wrappedHtmlLines(plainHtmlText(match[1]), Math.max(120, colWidth - 20), 12)
+		total += Math.max(30, lines * 19 + 12)
+	}
+	return total || 48
+}
+
+function estimatePanelHeight(panelHtml: string, colWidth: number): number {
+	const isHero = /mico-hero\b/i.test(panelHtml)
+	const pad = isHero ? 36 : 30
+	const innerW = Math.max(140, colWidth - 34)
+	let height = pad
+	let rest = panelHtml
+	for (const match of panelHtml.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/gi)) {
+		height += estimateTableHeight(match[0], innerW)
+		rest = rest.replace(match[0], '')
+	}
+	const headings = rest.match(/<h[23]\b[^>]*>[\s\S]*?<\/h[23]>/gi) ?? []
+	for (const heading of headings) {
+		height += wrappedHtmlLines(plainHtmlText(heading), innerW, 14) * 20 + 6
+	}
+	const items = rest.match(/<li\b[^>]*>[\s\S]*?<\/li>/gi) ?? []
+	for (const item of items) {
+		height += wrappedHtmlLines(plainHtmlText(item), innerW - 20, 13) * 20 + 5
+	}
+	const kvRows = rest.match(/class="[^"]*mico-kv\b[^"]*"/gi) ?? []
+	height += kvRows.length * 28
+	const paragraphs = rest.match(/<p\b[^>]*>[\s\S]*?<\/p>/gi) ?? []
+	for (const paragraph of paragraphs) {
+		height += wrappedHtmlLines(plainHtmlText(paragraph), innerW, 13) * 20 + 6
+	}
+	if (/<small\b/i.test(rest)) height += 20
+	if (headings.length + items.length + kvRows.length + paragraphs.length === 0) {
+		const fallbackLines = wrappedHtmlLines(plainHtmlText(rest), innerW, 13)
+		height += Math.max(1, fallbackLines) * 20
+	}
+	return height
+}
+
+export function estimateHtmlCardHeight(html: string, width = DEFAULT_HTML_CARD_WIDTH): number {
+	const stripped = html
+		.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+		.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+	const innerW = Math.max(240, width - 48)
+	let total = 44
+	let blockCount = 0
+	let work = stripped
+
+	for (const match of work.matchAll(
+		/<div\b[^>]*class="[^"]*mico-tiles\b[^"]*"[^>]*>([\s\S]*?)<\/div>/gi,
+	)) {
+		const tileCount = Math.max(1, (match[1].match(/mico-tile\b/gi) ?? []).length)
+		total += Math.ceil(tileCount / 3) * 76
+		blockCount += 1
+		work = work.replace(match[0], '')
+	}
+
+	const grids = [
+		...work.matchAll(
+			/<div\b[^>]*class="[^"]*\bmico-grid(-3)?\b[^"]*"[^>]*>([\s\S]*?)<\/div>(?=\s*(?:<|$|<section|<div|<table|<main|<\/main))/gi,
+		),
+	]
+	for (const match of grids) {
+		const cols = match[1] ? 3 : 2
+		const body = match[2]
+		const cards = [...body.matchAll(/<(section|div)\b([^>]*)>([\s\S]*?)<\/\1>/gi)]
+		if (cards.length > 0) {
+			let colIndex = 0
+			let rowMax = 0
+			const colW = Math.max(160, (innerW - 12 * (cols - 1)) / cols)
+			for (const card of cards) {
+				const isFull = /mico-full\b/i.test(card[2])
+				const cardHeight = estimatePanelHeight(card[0], isFull ? innerW : colW)
+				if (isFull) {
+					if (colIndex > 0) {
+						total += rowMax + 12
+						colIndex = 0
+						rowMax = 0
+					}
+					total += cardHeight + 12
+				} else {
+					rowMax = Math.max(rowMax, cardHeight)
+					colIndex += 1
+					if (colIndex >= cols) {
+						total += rowMax + 12
+						colIndex = 0
+						rowMax = 0
+					}
+				}
+			}
+			if (colIndex > 0) total += rowMax
+			blockCount += 1
+			work = work.replace(match[0], '')
+		}
+	}
+
+	const sections = [
+		...work.matchAll(
+			/<(section|div)\b[^>]*class="[^"]*\b(mico-panel|mico-callout|mico-hero)\b[^"]*"[^>]*>[\s\S]*?<\/\1>/gi,
+		),
+	]
+	for (const section of sections) {
+		total += estimatePanelHeight(section[0], innerW)
+		blockCount += 1
+		work = work.replace(section[0], '')
+	}
+
+	const tables = [...work.matchAll(/<table\b[^>]*>[\s\S]*?<\/table>/gi)]
+	for (const table of tables) {
+		total += estimateTableHeight(table[0], innerW)
+		blockCount += 1
+		work = work.replace(table[0], '')
+	}
+
+	for (const match of work.matchAll(
+		/<div\b[^>]*class="[^"]*mico-eyebrow\b[^"]*"[^>]*>[\s\S]*?<\/div>/gi,
+	)) {
+		total += 18
+		blockCount += 1
+		work = work.replace(match[0], '')
+	}
+	for (const match of work.matchAll(/<h1\b[^>]*>[\s\S]*?<\/h1>/gi)) {
+		total += wrappedHtmlLines(plainHtmlText(match[0]), innerW, 20) * 26
+		blockCount += 1
+		work = work.replace(match[0], '')
+	}
+	for (const match of work.matchAll(/<p\b[^>]*>[\s\S]*?<\/p>/gi)) {
+		total += wrappedHtmlLines(plainHtmlText(match[0]), innerW, 13) * 20
+		blockCount += 1
+		work = work.replace(match[0], '')
+	}
+	for (const match of work.matchAll(/<li\b[^>]*>[\s\S]*?<\/li>/gi)) {
+		total += wrappedHtmlLines(plainHtmlText(match[0]), innerW - 20, 13) * 20 + 4
+		blockCount += 1
+		work = work.replace(match[0], '')
+	}
+
+	for (const match of work.matchAll(/<svg\b([^>]*)>/gi)) {
+		const attrs = match[1]
+		const explicitHeight = attrs.match(/\bheight="(\d+(?:\.\d+)?)"/i)?.[1]
+		const viewBox = attrs.match(/\bviewBox="[^"]*?\s+(\d+(?:\.\d+)?)\s*"/i)?.[1]
+		const svgHeight = Number.parseFloat(explicitHeight ?? viewBox ?? '160')
+		if (Number.isFinite(svgHeight) && svgHeight > 0) {
+			total += Math.min(480, Math.max(80, svgHeight))
+			blockCount += 1
+		}
+	}
+
+	if (blockCount === 0) {
+		const lines = Math.max(2, wrappedHtmlLines(plainHtmlText(work), innerW, 13))
+		total += lines * 22
+	}
+
+	total += Math.max(0, blockCount - 1) * 12
+	return Math.max(160, Math.min(1600, Math.ceil((total + 12) / 8) * 8))
+}
+
 const generatedId = (kind: string): string => `${kind}-${randomUUID().slice(0, 8)}`
 
 function textExtent(
@@ -1083,7 +1269,7 @@ export async function createCanvasTools(
 
 		add_html_cards: tool({
 			description:
-				'Add rich HTML cards for structured tables, charts, diagrams, or summaries. Bootstrap and the card design CSS are injected automatically; use inline scripts only when interactive, never load remote URLs, and use exact placeholders like <i data-lucide="heart-pulse"></i>.',
+				'Add rich HTML cards for structured tables, charts, diagrams, or summaries. Bootstrap and the card design CSS are injected automatically; omit h to auto-fit content height (default w is 760), use inline scripts only when interactive, never load remote URLs, and use exact placeholders like <i data-lucide="heart-pulse"></i>.',
 			inputSchema: z.object({
 				cards: z
 					.array(
@@ -1091,8 +1277,8 @@ export async function createCanvasTools(
 							id: idSchema.optional(),
 							x: coord('Left edge.'),
 							y: coord('Top edge.'),
-							w: size('Width.'),
-							h: size('Height.'),
+							w: size('Width (defaults to 760).').optional(),
+							h: size('Height (optional; omit to auto-fit content).').optional(),
 							title: z.string().min(1).max(120),
 							html: z.string().min(1).max(40000),
 							color: colorSchema.optional(),
@@ -1104,20 +1290,24 @@ export async function createCanvasTools(
 			}),
 			execute: ({ cards }) =>
 				serialize(async () => {
-					const operations: Operation[] = cards.map((card) => ({
-						type: 'create',
-						shape: {
-							...baseShape(card.id, 'card', card.color ?? CANDY_COLORS.blue),
-							type: 'html',
-							x: card.x,
-							y: card.y,
-							w: card.w,
-							h: card.h,
-							title: card.title,
-							html: expandLucideIcons(card.html),
-							...(card.frameId ? { frameId: card.frameId } : {}),
-						},
-					}))
+					const operations: Operation[] = cards.map((card) => {
+						const width = card.w ?? DEFAULT_HTML_CARD_WIDTH
+						const expandedHtml = expandLucideIcons(card.html)
+						return {
+							type: 'create',
+							shape: {
+								...baseShape(card.id, 'card', card.color ?? CANDY_COLORS.blue),
+								type: 'html',
+								x: card.x,
+								y: card.y,
+								w: width,
+								h: card.h ?? estimateHtmlCardHeight(expandedHtml, width),
+								title: card.title,
+								html: expandedHtml,
+								...(card.frameId ? { frameId: card.frameId } : {}),
+							},
+						}
+					})
 					return applyOperations(operations)
 				}),
 		}),
@@ -1309,21 +1499,30 @@ export async function createCanvasTools(
 						(await store.getBoard(canvasId)).shapes.map((shape) => [shape.id, shape]),
 					)
 					const operations: Operation[] = updates.map((update) => {
+						const existing = shapes.get(update.id)
 						const color =
 							update.patch.color === undefined
 								? undefined
-								: shapes.get(update.id)?.type === 'note'
+								: existing?.type === 'note'
 									? noteFill(update.patch.color)
 									: update.patch.color
+						const expandedHtml =
+							update.patch.html === undefined ? undefined : expandLucideIcons(update.patch.html)
+						const fittedHeight =
+							expandedHtml !== undefined &&
+							update.patch.h === undefined &&
+							existing?.type === 'html' &&
+							expandedHtml.includes('mico-report')
+								? estimateHtmlCardHeight(expandedHtml, update.patch.w ?? existing.w)
+								: undefined
 						return {
 							type: 'update',
 							id: update.id,
 							patch: {
 								...update.patch,
 								...(color === undefined ? {} : { color }),
-								...(update.patch.html === undefined
-									? {}
-									: { html: expandLucideIcons(update.patch.html) }),
+								...(expandedHtml === undefined ? {} : { html: expandedHtml }),
+								...(fittedHeight === undefined ? {} : { h: fittedHeight }),
 							},
 						}
 					})

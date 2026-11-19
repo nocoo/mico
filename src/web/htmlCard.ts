@@ -9,11 +9,30 @@ let cachedCss: string | undefined
 let cachedJs: string | undefined
 let cachedHead = ''
 
+const CARD_SIZE_SCRIPT = `(() => {
+  const post = () => {
+    const report = document.querySelector('.mico-report')
+    if (!report) return
+    const rect = report.getBoundingClientRect()
+    const height = Math.ceil(Math.max(report.scrollHeight, rect.height))
+    if (height > 0) window.parent.postMessage({ type: 'mico-card-size', height }, '*')
+  }
+  const watch = () => {
+    const report = document.querySelector('.mico-report')
+    if (!report) return
+    post()
+    if (typeof ResizeObserver === 'function') new ResizeObserver(post).observe(report)
+    document.fonts?.ready?.then(post)
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch, { once: true })
+  else watch()
+})()`
+
 function frameworkHead(bootstrapCss: string, bootstrapJs: string): string {
 	if (cachedCss !== bootstrapCss || cachedJs !== bootstrapJs) {
 		cachedCss = bootstrapCss
 		cachedJs = bootstrapJs
-		cachedHead = `${CARD_CSP}<style>${bootstrapCss}\n${HTML_CARD_CSS}</style><script>${bootstrapJs}</script>`
+		cachedHead = `${CARD_CSP}<style>${bootstrapCss}\n${HTML_CARD_CSS}</style><script>${bootstrapJs}</script><script>${CARD_SIZE_SCRIPT}</script>`
 	}
 	return cachedHead
 }

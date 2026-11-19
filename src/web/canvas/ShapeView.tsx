@@ -146,15 +146,14 @@ export const ShapeView = memo(function ShapeView({
 	}
 	if (shape.type === 'html') {
 		return (
-			<g {...common}>
-				<HtmlCardSurface shape={shape} active={active} />
-				<HtmlCardLabel
-					shape={shape}
-					onPointerDown={(event) => onPointerDown(event, shape)}
-					onDoubleClick={(event) => onDoubleClick(event, shape)}
-				/>
-				{active && <SelectionOutline shape={shape} zoom={zoom} />}
-			</g>
+			<HtmlShapeNode
+				shape={shape}
+				active={active}
+				zoom={zoom}
+				common={common}
+				onPointerDown={onPointerDown}
+				onDoubleClick={onDoubleClick}
+			/>
 		)
 	}
 	if (shape.type === 'image') {
@@ -266,6 +265,39 @@ export function FrameLabel({ shape, onPointerDown, onDoubleClick }: FrameLabelPr
 			{hitWidth > 0 && (
 				<rect x={shape.x} y={shape.y - 36} width={hitWidth} height={28} fill="transparent" />
 			)}
+		</g>
+	)
+}
+
+function HtmlShapeNode({
+	shape,
+	active,
+	zoom,
+	common,
+	onPointerDown,
+	onDoubleClick,
+}: {
+	shape: CanvasShape
+	active: boolean
+	zoom: number
+	common: React.SVGProps<SVGGElement>
+	onPointerDown: (event: React.PointerEvent<SVGGElement>, shape: CanvasShape) => void
+	onDoubleClick: (event: React.MouseEvent<SVGGElement>, shape: CanvasShape) => void
+}) {
+	const [measuredHeight, setMeasuredHeight] = useState<number | null>(null)
+	const effectiveShape =
+		measuredHeight !== null && shape.type === 'html' && shape.html?.includes('mico-report')
+			? { ...shape, h: measuredHeight }
+			: shape
+	return (
+		<g {...common}>
+			<HtmlCardSurface shape={shape} active={active} onMeasuredHeight={setMeasuredHeight} />
+			<HtmlCardLabel
+				shape={shape}
+				onPointerDown={(event) => onPointerDown(event, shape)}
+				onDoubleClick={(event) => onDoubleClick(event, shape)}
+			/>
+			{active && <SelectionOutline shape={effectiveShape} zoom={zoom} />}
 		</g>
 	)
 }

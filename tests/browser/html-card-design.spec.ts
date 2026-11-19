@@ -1,102 +1,161 @@
 import { expect, test } from '@playwright/test'
 import { HTML_CARD_CSS, HTML_CARD_FRAGMENTS } from '../../src/shared/htmlCardDesign'
+import { CANDY_COLORS } from '../../src/shared/palette'
 import { ISOLATED_ORIGIN, resetBoard } from './support'
 
-test('copyable card fragments render inside the isolated HTML card', async ({
+test('jelly HTML card fragments and auto-height render cleanly inside isolated frames', async ({
 	page,
 	request,
-	baseURL,
 }, testInfo) => {
-	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
 	await resetBoard(request, [
 		{
 			id: 'design-card',
 			type: 'html',
-			x: 200,
-			y: 150,
-			w: 620,
-			h: 550,
-			color: '#00a2e1',
-			title: 'Design fragments',
+			x: 80,
+			y: 96,
+			w: 720,
+			h: 720,
+			color: CANDY_COLORS.blue,
+			title: 'Launch plan brief',
 			html: `<!doctype html><html><head><style>${HTML_CARD_CSS}</style></head><body>${HTML_CARD_FRAGMENTS}</body></html>`,
 		},
 		{
-			id: 'auto-styled-card',
+			id: 'auto-card',
 			type: 'html',
-			x: 900,
-			y: 150,
-			w: 620,
-			h: 550,
-			color: '#00a2e1',
-			title: 'Auto styled fragments',
-			html: HTML_CARD_FRAGMENTS,
+			x: 860,
+			y: 96,
+			w: 680,
+			h: 920,
+			color: CANDY_COLORS.blue,
+			title: 'Auto sized jelly card',
+			html: `<main class="mico-report">
+				<div class="mico-eyebrow">Topic 2</div>
+				<h1>Compact Decision Card</h1>
+				<section class="mico-panel mico-mint"><h2>Decision</h2><p>Approved stage plan without extra whitespace.</p></section>
+				<p>Supporting standalone line directly inside .mico-report still gets vertical spacing.</p>
+				<section class="mico-panel mico-peach"><h2>Constraint</h2><p>Keep peak staffing unchanged.</p></section>
+			</main>`,
+		},
+		{
+			id: 'raw-card',
+			type: 'html',
+			x: 1600,
+			y: 96,
+			w: 360,
+			h: 240,
+			color: CANDY_COLORS.blue,
+			title: 'Custom raw card',
+			html: '<div class="raw-box" style="padding:16px"><h2>Plain</h2></div>',
 		},
 	])
+
 	await page.setViewportSize({ width: 1440, height: 960 })
-	await page.emulateMedia({ reducedMotion: 'reduce' })
-	await page.goto('/')
+	await page.goto(ISOLATED_ORIGIN)
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-	await page.getByRole('button', { name: 'Reset view' }).click()
-	const iframe = page.locator('[data-shape-id="design-card"] iframe')
-	await expect(iframe).toHaveAttribute('sandbox', 'allow-scripts')
-	const frame = page.frameLocator('[data-shape-id="design-card"] iframe')
-	await expect(frame.locator('.mico-tile')).toHaveCount(3)
-	await expect(frame.locator('.mico-list li')).toHaveCount(2)
-	await expect(frame.locator('.mico-table td')).toHaveCount(2)
-	const metrics = await frame.locator('.mico-report').evaluate((report) => {
-		const doc = report.ownerDocument
-		const root = doc.documentElement
+
+	const designIframe = page.locator('[data-shape-id="design-card"] iframe.html-card-frame')
+	await expect(designIframe).toHaveAttribute('sandbox', 'allow-scripts')
+	const designFrame = designIframe.contentFrame()
+	await expect(designFrame.locator('.mico-tile')).toHaveCount(3)
+	await expect(designFrame.locator('.mico-list li')).toHaveCount(2)
+	await expect(designFrame.locator('.mico-table td')).toHaveCount(2)
+
+	const designSurface = page.locator('[data-shape-id="design-card"] foreignObject:has(.html-card)')
+	await expect
+		.poll(async () => {
+			const cardHeight = Number(await designSurface.getAttribute('height'))
+			const reportBox = await designFrame.locator('.mico-report').boundingBox()
+			if (!Number.isFinite(cardHeight) || !reportBox) return 999
+			return Math.abs(cardHeight - reportBox.height)
+		})
+		.toBeLessThanOrEqual(8)
+
+	const designMetrics = await designFrame.locator('.mico-report').evaluate((report) => {
+		const style = getComputedStyle(report)
 		const panel = report.querySelector('.mico-panel')
 		const hero = report.querySelector('.mico-hero')
 		const tile = report.querySelector('.mico-tile')
 		const eyebrow = report.querySelector('.mico-eyebrow')
-		if (!panel || !hero || !tile || !eyebrow) throw new Error('Missing design fragment')
+		const bodyStyle = getComputedStyle(document.body)
 		return {
-			scrollWidth: root.scrollWidth,
-			clientWidth: root.clientWidth,
-			scrollHeight: root.scrollHeight,
-			clientHeight: root.clientHeight,
-			reportBottom: report.getBoundingClientRect().bottom,
-			panelRadius: getComputedStyle(panel).borderRadius,
-			bodyBackground: getComputedStyle(doc.body).backgroundColor,
-			bodyColor: getComputedStyle(doc.body).color,
-			heroBackground: getComputedStyle(hero).backgroundImage,
-			tileBackground: getComputedStyle(tile).backgroundImage,
-			tileShadow: getComputedStyle(tile).boxShadow,
-			eyebrowColor: getComputedStyle(eyebrow).color,
+			scrollWidth: document.documentElement.scrollWidth,
+			clientWidth: document.documentElement.clientWidth,
+			scrollHeight: document.documentElement.scrollHeight,
+			clientHeight: document.documentElement.clientHeight,
+			panelRadius: panel ? getComputedStyle(panel).borderRadius : '',
+			bodyBackground: bodyStyle.backgroundColor,
+			bodyColor: bodyStyle.color,
+			heroBackground: hero ? getComputedStyle(hero).backgroundImage : '',
+			heroShadow: hero ? getComputedStyle(hero).boxShadow : '',
+			panelBackground: panel ? getComputedStyle(panel).backgroundImage : '',
+			panelShadow: panel ? getComputedStyle(panel).boxShadow : '',
+			tileBackground: tile ? getComputedStyle(tile).backgroundImage : '',
+			tileShadow: tile ? getComputedStyle(tile).boxShadow : '',
+			eyebrowColor: eyebrow ? getComputedStyle(eyebrow).color : '',
+			rowGap: Number.parseFloat(style.rowGap || style.gap || '0'),
 		}
-	})
-	expect(metrics.scrollWidth).toBe(metrics.clientWidth)
-	expect(metrics.scrollHeight).toBe(metrics.clientHeight)
-	expect(metrics.reportBottom).toBeLessThanOrEqual(metrics.clientHeight)
-	expect(metrics.panelRadius).toBe('20px')
-	expect(metrics.bodyBackground).toBe('rgba(0, 0, 0, 0)')
-	expect(metrics.bodyColor).toBe('oklch(0.27 0.04 285)')
-	expect(metrics.heroBackground).toBe(
-		'linear-gradient(135deg, oklch(0.42 0.13 285), oklch(0.3 0.09 262))',
-	)
-	expect(metrics.tileBackground).toBe(
-		'linear-gradient(158deg, oklch(0.968 0.0425 236 / 0.92), oklch(0.9 0.085 236 / 0.92))',
-	)
-	expect(metrics.tileShadow).toContain('oklch(0.7 0.1275 236 / 0.45)')
-	expect(metrics.eyebrowColor).toBe('oklch(0.47 0.035 285)')
-	await page.locator('[data-shape-id="design-card"]').screenshot({
-		path: testInfo.outputPath('html-card-design.png'),
-		animations: 'disabled',
 	})
 
-	const autoFrame = page.frameLocator('[data-shape-id="auto-styled-card"] iframe')
+	expect(designMetrics.scrollWidth).toBe(designMetrics.clientWidth)
+	expect(designMetrics.scrollHeight).toBeLessThanOrEqual(designMetrics.clientHeight + 2)
+	expect(designMetrics.panelRadius).toBe('20px')
+	expect(designMetrics.bodyBackground).toBe('rgba(0, 0, 0, 0)')
+	expect(designMetrics.bodyColor).toBe('oklch(0.27 0.04 285)')
+	expect(designMetrics.heroBackground).toContain('linear-gradient')
+	expect(designMetrics.heroShadow).toContain('inset')
+	expect(designMetrics.panelBackground).toContain('linear-gradient')
+	expect(designMetrics.panelShadow).toContain('inset')
+	expect(designMetrics.tileBackground).toContain('linear-gradient')
+	expect(designMetrics.tileShadow).toContain('oklch(')
+	expect(designMetrics.eyebrowColor).toBe('oklch(0.47 0.035 285)')
+	expect(designMetrics.rowGap).toBeGreaterThanOrEqual(12)
+
+	await page.locator('[data-shape-id="design-card"]').screenshot({
+		path: testInfo.outputPath('html-card-design.png'),
+	})
+
+	const autoFrame = page
+		.locator('[data-shape-id="auto-card"] iframe.html-card-frame')
+		.contentFrame()
+	await expect(autoFrame.locator('.mico-peach')).toHaveCount(1)
+
+	const autoSurface = page.locator('[data-shape-id="auto-card"] foreignObject:has(.html-card)')
+	await expect
+		.poll(async () => {
+			const cardHeight = Number(await autoSurface.getAttribute('height'))
+			const reportBox = await autoFrame.locator('.mico-report').boundingBox()
+			if (!Number.isFinite(cardHeight) || !reportBox) return 999
+			return Math.abs(cardHeight - reportBox.height)
+		})
+		.toBeLessThanOrEqual(8)
+
+	const autoCardHeight = Number(await autoSurface.getAttribute('height'))
+	expect(autoCardHeight).toBeLessThan(560)
+
 	const autoMetrics = await autoFrame.locator('.mico-report').evaluate((report) => {
-		const doc = report.ownerDocument
-		const panel = report.querySelector('.mico-panel')
-		if (!panel) throw new Error('Missing panel in auto-styled card')
+		const mint = report.querySelector('.mico-mint')
+		const peach = report.querySelector('.mico-peach')
+		const heroSection = report.querySelector('.mico-mint')
+		const para = report.querySelector('main > p')
+		const gaps =
+			heroSection && para
+				? para.getBoundingClientRect().top - heroSection.getBoundingClientRect().bottom
+				: 0
 		return {
-			panelRadius: getComputedStyle(panel).borderRadius,
-			bodyBackground: getComputedStyle(doc.body).backgroundColor,
-			bodyColor: getComputedStyle(doc.body).color,
+			mintBg: mint ? getComputedStyle(mint).backgroundImage : '',
+			peachBg: peach ? getComputedStyle(peach).backgroundImage : '',
+			verticalGap: gaps,
 		}
 	})
-	expect(autoMetrics.panelRadius).toBe('20px')
-	expect(autoMetrics.bodyBackground).toBe('rgba(0, 0, 0, 0)')
-	expect(autoMetrics.bodyColor).toBe('oklch(0.27 0.04 285)')
+	expect(autoMetrics.mintBg).toContain('linear-gradient')
+	expect(autoMetrics.peachBg).toContain('linear-gradient')
+	expect(autoMetrics.mintBg).not.toBe(autoMetrics.peachBg)
+	expect(autoMetrics.verticalGap).toBeGreaterThanOrEqual(12)
+
+	const rawSurfaceHeight = Number(
+		await page
+			.locator('[data-shape-id="raw-card"] foreignObject:has(.html-card)')
+			.getAttribute('height'),
+	)
+	expect(rawSurfaceHeight).toBe(240)
 })

@@ -93,3 +93,23 @@ test('live and post-session summaries share the same instructions', () => {
 	assert.match(SUMMARY_CARD_INSTRUCTIONS, /rather than adding a large empty gap/)
 	assert.doesNotMatch(SUMMARY_CARD_INSTRUCTIONS, /below the lowest/)
 })
+
+test('fixed 4-column master grid aligns topic swimlanes and stacks global outcome in column 4', () => {
+	assert.match(AI_SYSTEM_PROMPT, /x=80.*x=400/s)
+	assert.match(AI_SYSTEM_PROMPT, /x=1040.*x=1400/s)
+	assert.match(AI_SYSTEM_PROMPT, /x=2040/)
+	assert.match(AI_SYSTEM_PROMPT, /w=760/)
+	assert.match(AI_SYSTEM_PROMPT, /x=3160/)
+	assert.match(AI_SYSTEM_PROMPT, /omit `h`|omit h\b/i)
+
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /x=2040/)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /x=3160/)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /w=760/)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /omit `h`|omit h\b/i)
+	assert.doesNotMatch(SUMMARY_CARD_INSTRUCTIONS, /leave >=30% extra vertical margin|h=560/)
+
+	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /x=3160/)
+	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /w=760/)
+	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /stacked vertically|below executive-summary/i)
+	assert.doesNotMatch(SUMMARY_ACTION_INSTRUCTIONS, /to the right of executive-summary/i)
+})

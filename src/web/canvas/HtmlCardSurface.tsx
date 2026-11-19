@@ -1,17 +1,24 @@
 import bootstrapCss from 'bootstrap/dist/css/bootstrap.min.css?raw'
 import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
-import { memo, useMemo } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { CanvasShape } from '../../shared/types'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from '../htmlCard'
 import './html-card.css'
 
+const BORDER_ALLOWANCE = 2
+
 export const HtmlCardSurface = memo(function HtmlCardSurface({
 	shape,
 	active,
+	onMeasuredHeight,
 }: {
 	shape: CanvasShape
 	active: boolean
+	onMeasuredHeight?: (height: number | null) => void
 }) {
+	const iframeRef = useRef<HTMLIFrameElement>(null)
+	const [measuredHeight, setMeasuredHeight] = useState<number | null>(null)
+	const hasReportLayout = shape.type === 'html' && Boolean(shape.html?.includes('mico-report'))
 	const document = useMemo(
 		() =>
 			shape.type === 'html' && shape.html
@@ -19,6 +26,37 @@ export const HtmlCardSurface = memo(function HtmlCardSurface({
 				: null,
 		[shape],
 	)
+
+	useEffect(() => {
+		if (!document || !hasReportLayout) {
+			setMeasuredHeight(null)
+			onMeasuredHeight?.(null)
+			return
+		}
+		const handleMessage = (event: MessageEvent) => {
+			const frameWindow = iframeRef.current?.contentWindow
+			if (!frameWindow || event.source !== frameWindow) return
+			const payload = event.data
+			if (
+				typeof payload !== 'object' ||
+				payload === null ||
+				payload.type !== 'mico-card-size' ||
+				typeof payload.height !== 'number' ||
+				!Number.isFinite(payload.height) ||
+				payload.height <= 0
+			) {
+				return
+			}
+			const next = Math.max(120, Math.ceil(payload.height) + BORDER_ALLOWANCE)
+			setMeasuredHeight((previous) => (previous === next ? previous : next))
+			onMeasuredHeight?.(next)
+		}
+		window.addEventListener('message', handleMessage)
+		return () => window.removeEventListener('message', handleMessage)
+	}, [document, hasReportLayout, onMeasuredHeight])
+
+	const effectiveHeight = hasReportLayout && measuredHeight !== null ? measuredHeight : shape.h
+
 	if (shape.type !== 'html') return null
 
 	return (
@@ -27,7 +65,7 @@ export const HtmlCardSurface = memo(function HtmlCardSurface({
 				x={shape.x}
 				y={shape.y}
 				width={shape.w}
-				height={shape.h}
+				height={effectiveHeight}
 				fill="transparent"
 				pointerEvents="all"
 			/>
@@ -35,22 +73,21 @@ export const HtmlCardSurface = memo(function HtmlCardSurface({
 				x={shape.x}
 				y={shape.y}
 				width={shape.w}
-				height={shape.h}
+				height={effectiveHeight}
 				overflow="visible"
 				pointerEvents={active ? 'auto' : 'none'}
 			>
 				<div className="html-card html-card-reference-surface">
 					{document ? (
 						<iframe
+							ref={iframeRef}
 							className="html-card-frame"
 							title={shape.title ?? 'HTML card'}
 							sandbox={HTML_CARD_SANDBOX}
 							referrerPolicy="no-referrer"
 							srcDoc={document}
 						/>
-					) : (
-						<div className="html-card-empty">HTML content is generated through the API</div>
-					)}
+					) : null}
 				</div>
 			</foreignObject>
 		</>
