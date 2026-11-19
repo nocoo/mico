@@ -644,7 +644,9 @@ test('a queued frame selection keeps its captured revision guard', async ({ page
 	await expect.poll(() => secondStatus).toBeDefined()
 	expect((secondBody as { expectedRevision: number }).expectedRevision).toBeLessThan(remoteRevision)
 	expect(secondStatus).toBe(409)
-	await expect(page.locator('.notice')).toContainText('HTTP 409')
+	await expect(page.locator('.notice')).toHaveText(
+		'Canvas revision does not match expectedRevision',
+	)
 	await page.unroute('**/api/operations')
 	const after = await state(request)
 	expect(after.board.shapes.some((shape) => shape.type === 'frame')).toBe(false)
