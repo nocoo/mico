@@ -2,12 +2,16 @@
 
 ## Unreleased
 
+## v0.9.0
+
+- Organize live and post-session meetings into vertical multi-topic swimlanes with per-topic HTML summary cards (`topic-card-<slug>`) on topic transitions, conditional cross-topic `executive-summary` cards when two or more topics exist, a fixed 4-column master grid (`x=80/400`, `1040/1400`, `2040`, `3160` with the global action checklist stacked vertically in Column 4), Mico translucent OKLCH jelly `.mico-*` card styling, and automatic server estimation plus client `ResizeObserver` height fitting.
+- Optimize the layered AI pipeline across tool schemas, KV-cache prefix stability, anchor-preserving board digests, chunk-aligned long-session compaction, and adaptive lecture queue batching/VAD tuning, backed by the `mico-ai-eval` L1–L5 evaluation suite.
+- Add demo canvas object ownership, presenter edit grants (`PUT /api/canvases/:id/permissions`), ownership tombstones, and presenter/editor avatar badges.
 - Keep independently drawn shapes through concurrent edits and lost acknowledgements: creates apply on the latest board without a whole-board revision, a committed shape is verified by id before retrying, unconfirmed shapes stay visible with the failure reason, and undo records the confirmed create once.
 - Scope browser API and image requests with the `meetingid` query parameter instead of a raw header, so Unicode meeting ids and meeting-scoped image assets work.
 - Fix PostgreSQL consistency and durability: read projections use one snapshot without write-back, a normalizing read cannot erase a newer board, shutdown drains admitted writes, and generated images use the configured BlobStore.
 - Remove the unsupported Cloudflare D1 + R2 storage adapter: D1 has no interactive transactions, so BoardStore read-then-write transactions could not roll back. `MICO_STORAGE_BACKEND=cloudflare` now fails with a clear error; SQLite and PostgreSQL + Azure Blob remain the supported backends.
 - Stop an idle assistant page from re-reporting its live topbar every render, skip duplicate board application, make the state poll single-flight, and extract creation/pending/viewport logic into tested view-model modules.
-
 - Describe the shipped multi-user model in the human documentation: presence rooms inside one tenant replace the removed shared-whiteboard collection, its endpoints and its example, and the deployment guide no longer claims a separate shared board set.
 - Hide the AI Settings tab in deployment mode while preserving local access, visible-tab keyboard navigation and the server's read-only settings policy.
 
