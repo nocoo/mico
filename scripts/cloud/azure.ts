@@ -236,7 +236,7 @@ export function containerApp(
 						],
 					},
 				],
-				scale: { minReplicas: 1, maxReplicas: 1 },
+				scale: { minReplicas: 0, maxReplicas: 1 },
 			},
 		},
 	}

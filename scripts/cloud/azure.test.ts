@@ -72,7 +72,7 @@ test('Azure template pins digest, uses UAMI, disables AI and marks ephemeral sto
 	const web = app.properties.template.containers[0]
 	const settings = Object.fromEntries(web.env.map(({ name, value }) => [name, value]))
 	assert.equal(web.image, `${input.registryServer}/mico@${input.digest}`)
-	assert.deepEqual(app.properties.template.scale, { minReplicas: 1, maxReplicas: 1 })
+	assert.deepEqual(app.properties.template.scale, { minReplicas: 0, maxReplicas: 1 })
 	assert.equal(app.properties.configuration.activeRevisionsMode, 'Single')
 	assert.equal(app.properties.configuration.ingress.allowInsecure, false)
 	assert.equal(app.properties.configuration.registries[0].identity, input.identityId)
