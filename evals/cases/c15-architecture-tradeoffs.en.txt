@@ -1,0 +1,47 @@
+Good morning everyone, today's architecture review covers three topics: WebSocket sync bottlenecks, database read scaling, and our canary rollout checklist.
+Yeah, ready when you are.
+Topic one: let's review the live WebSocket sync metrics from last week's stress test.
+Right, let's pull up those numbers.
+When a room reached 50 concurrent viewers on a board with 180 shapes, median broadcast fan-out latency climbed from 18 ms to 420 ms.
+At the 95th percentile, frame delivery actually spiked past 950 ms during simultaneous drag gestures.
+The root cause is that every minor shape drag broadcasts the entire serialized board snapshot instead of delta operations, averaging 84 KB per frame.
+On top of that, clients re-parse the whole array on every tick and re-render downstream SVG edges.
+Memory peaked at 1.9 GB on a single daemon pod because unacknowledged client send buffers queued duplicate snapshots.
+Uh-huh, yeah, that matches what we saw in staging logs.
+Switching broadcasts to operation deltas plus revision watermarks cut payload size by 91 percent in our local benchmark, down to 7.4 KB median.
+Even with 50 viewers, p95 fan-out stayed under 45 ms when testing delta frames.
+One open question remains: how should a viewer recover cleanly if two delta frames arrive out of order after a brief mobile sleep?
+Right, if we see a gap in `expectedRevision`, the client can fall back to one `/api/board` snapshot fetch instead of applying stale patches.
+Let's keep delta compression as our confirmed direction for sync and flag out-of-order recovery for protocol design.
+Got it.
+That wraps up topic one on WebSocket sync bottlenecks; let's move to topic two.
+
+Topic two is storage scaling: comparing SQLite WAL single-writer tuning against adding a Postgres read replica for canvas snapshots.
+Okay, let's look at the two options.
+Option one keeps SQLite WAL with batched write coalescing; it costs zero extra infrastructure and keeps single-file backups intact.
+However, heavy concurrent GET snapshot polling still competes with write checkpoints above 300 requests per second.
+Option two introduces a managed Postgres read replica for read-heavy snapshot queries while keeping primary mutations transactional.
+Option two handles 2,500 read QPS easily, though it adds roughly 650 dollars per month and requires asynchronous replication lag handling.
+If a user switches canvases immediately after creating one, replica lag can serve an outdated active canvas unless we pin reads to primary.
+Since our primary deployment profile is single-replica cloud preview plus local workspaces, adding a managed replica right now adds operational overhead we don't need.
+Hold on—let's double check our expected QPS for the preview.
+At most 80 concurrent requests per second in the next quarter, well under the 300 RPS threshold.
+Yes, let's decide on Option one: stay on SQLite WAL with connection pool cap set to 16 read connections and 1 serialized writer, owned by Priya, target next Tuesday.
+Okay, sounds good.
+
+Moving to topic three: canary rollout safety and observability checks before we ship v0.9.
+Sure.
+First, every canary pod must expose a separate health check on revision mismatch rate and WebSocket disconnect ratio.
+Second, we need automated rollback if p95 broadcast latency exceeds 150 ms for three consecutive minutes.
+Third, security asked whether the telemetry endpoint exposes canvas titles; that's still an unresolved privacy question for legal review.
+If legal forbids canvas names in metrics, we can hash the canvas ID and drop title labels entirely.
+Wait, going back briefly to topic two on SQLite WAL: Priya just pinged that node:sqlite read concurrency saturates above 8 connections on container CPU limits.
+Beyond 8 readers, context-switch overhead actually lowers throughput by 18 percent.
+Good catch—update topic two's decision: cap the SQLite read pool at 8 connections instead of 16, and shift Priya's delivery target from Tuesday to Thursday.
+Got it, updating that now.
+For topic three's rollout checklist, Sam will wire the Prometheus latency alerts by Monday.
+And Dana will run the canary soak test once legal signs off on the telemetry fields.
+Let's make sure the rollback runbook is linked in the release checklist before Friday.
+Sounds clear.
+Okay, thanks everyone.
+Let's stop here and review our tasks offline.

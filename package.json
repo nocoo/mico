@@ -12,6 +12,7 @@
 		"eval:server": "node scripts/eval-server.ts",
 		"eval:capture": "node scripts/eval-capture.ts",
 		"eval:live-case": "node scripts/run-live-case.ts",
+		"eval:ai": "node scripts/ai-pipeline-eval.ts",
 		"mico": "node src/cli/index.ts",
 		"build": "tsc --noEmit && vite build",
 		"check": "pnpm run lint && pnpm run typecheck",

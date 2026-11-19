@@ -1,0 +1,127 @@
+{
+	"version": 1,
+	"layers": [
+		{
+			"id": "L1",
+			"name": "Core tools contract, concurrency & runtime HTML card CSS",
+			"targets": {
+				"parallelChainSucceeded": true,
+				"geometryReceiptPresent": true,
+				"htmlCardRuntimeCssInjected": true,
+				"lectureNoImageSchemaBytesMax": 15500
+			}
+		},
+		{
+			"id": "L2",
+			"name": "Static KV-cache system prefix & anchor-preserving board digest",
+			"targets": {
+				"systemPromptInvariantAcrossRevisions": true,
+				"anchorsRetainedAt180Shapes": true,
+				"boardContext180ShapesBytesMax": 15000
+			}
+		},
+		{
+			"id": "L3",
+			"name": "Chunk-aligned conversation compaction & long-session scale",
+			"targets": {
+				"turn105AcceptedWithoutHttp400": true,
+				"turn120AcceptedWithoutHttp400": true,
+				"turn120ModelBytesMax": 45000,
+				"turn120CacheablePrefixRatioMin": 0.72
+			}
+		},
+		{
+			"id": "L4",
+			"name": "Live VAD tuning, filler coalescing & adaptive queue drain",
+			"targets": {
+				"liveMicDefaultSilenceMsMin": 800,
+				"audioPlaybackDefaultSilenceMs": 500,
+				"maxQueueDepthMax": 12,
+				"p95DrawingLagMsMax": 20000,
+				"summaryRecoveredAfterLectureError": true
+			}
+		},
+		{
+			"id": "L5",
+			"name": "Multi-topic swimlanes, topic-transition Rich Cards & executive summary",
+			"targets": {
+				"promptAllowsMultipleTopicCards": true,
+				"promptDefinesTopicTransitionTrigger": true,
+				"promptNoSingletonSummaryLock": true,
+				"promptRequiresConditionalExecutiveCard": true
+			}
+		}
+	],
+	"cases": [
+		{
+			"id": "c12-service-incident",
+			"lang": "zh",
+			"subject": "服务故障复盘",
+			"title": "线上结算故障复盘",
+			"file": "evals/cases/c12-service-incident.zh.txt",
+			"kind": "single-topic",
+			"expectedTopics": ["结算故障机制与恢复"],
+			"revisitedTopics": [],
+			"expectedExecutiveCard": false,
+			"minTopicCards": 1,
+			"maxTopicCards": 1,
+			"minActionItems": 3,
+			"keyFacts": ["09:42", "99.6%", "82%", "京", "鲁", "配置", "10:12"]
+		},
+		{
+			"id": "c13-microsoft-outlook",
+			"lang": "en",
+			"subject": "Earnings outlook",
+			"title": "Microsoft FY27 Q1: cloud outlook and investor Q&A",
+			"file": "evals/cases/c13-microsoft-outlook.en.txt",
+			"kind": "single-topic",
+			"expectedTopics": ["FY27 Q1 Results, Capacity & Q&A"],
+			"revisitedTopics": [],
+			"expectedExecutiveCard": false,
+			"minTopicCards": 1,
+			"maxTopicCards": 1,
+			"minActionItems": 0,
+			"keyFacts": ["92.3", "63.9", "48%", "45.2", "96", "50"]
+		},
+		{
+			"id": "c14-quarterly-product-review",
+			"lang": "zh",
+			"subject": "季度复盘与规划",
+			"title": "Q3业务复盘与Q4技术规划会",
+			"file": "evals/cases/c14-quarterly-product-review.zh.txt",
+			"kind": "multi-topic",
+			"expectedTopics": [
+				"Q3核心业务与转化率复盘",
+				"结算服务高可用方案选型",
+				"客户端冷启动优化与排期风险",
+				"Q4算力预算与招聘编制",
+				"双十一全链路压测演练"
+			],
+			"revisitedTopics": ["结算服务高可用方案选型"],
+			"expectedExecutiveCard": true,
+			"minTopicCards": 5,
+			"maxTopicCards": 6,
+			"minActionItems": 4,
+			"keyFacts": ["184万", "11.6%", "方案B", "下周五", "小陈", "1.1", "40万", "10月28日"]
+		},
+		{
+			"id": "c15-architecture-tradeoffs",
+			"lang": "en",
+			"subject": "Architecture review",
+			"title": "Sync bottleneck, storage scaling and canary rollout",
+			"file": "evals/cases/c15-architecture-tradeoffs.en.txt",
+			"kind": "multi-topic",
+			"expectedTopics": [
+				"WebSocket sync bottlenecks",
+				"SQLite WAL vs Postgres scaling",
+				"Canary rollout & observability"
+			],
+			"revisitedTopics": ["SQLite WAL vs Postgres scaling"],
+			"expectedExecutiveCard": true,
+			"minTopicCards": 3,
+			"maxTopicCards": 4,
+			"minActionItems": 2,
+			"keyFacts": ["420 ms", "91%", "SQLite WAL", "8 connections", "Thursday", "150 ms"]
+		}
+	]
+}
