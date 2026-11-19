@@ -12,6 +12,7 @@ import {
 	type UIMessage,
 } from 'ai'
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
+import { compactUiMessages } from '../shared/conversationCompact.ts'
 import { formatBoardContext } from './aiBoard.ts'
 import type { ChatSettings } from './aiConfig.ts'
 import { buildStaticInstructions } from './aiPrompt.ts'
@@ -134,8 +135,8 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 	if (!Array.isArray(record.messages) || record.messages.length === 0) {
 		throw new OperationError(400, 'INVALID_REQUEST', 'messages must be a non-empty array')
 	}
-	if (record.messages.length > 200) {
-		throw new OperationError(400, 'INVALID_REQUEST', 'messages must contain at most 200 entries')
+	if (record.messages.length > 1200) {
+		throw new OperationError(400, 'INVALID_REQUEST', 'messages must contain at most 1200 entries')
 	}
 	const selection = record.selection === undefined ? [] : record.selection
 	if (!Array.isArray(selection) || selection.some((id) => typeof id !== 'string')) {
@@ -155,7 +156,7 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 		throw new OperationError(400, 'INVALID_REQUEST', 'messages are not valid UI messages')
 	}
 	return {
-		messages: sanitizeInterruptedMessages(validated.data),
+		messages: compactUiMessages(sanitizeInterruptedMessages(validated.data)),
 		mode,
 		canvasId,
 		selection: selection

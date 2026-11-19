@@ -739,7 +739,71 @@ test('AI chat rejects invalid requests', async () => {
 			}),
 		})
 		assert.equal(badMode.status, 400)
+
+		const tooMany = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				messages: Array.from({ length: 1201 }, (_, index) => ({
+					id: `u-${index}`,
+					role: 'user',
+					parts: [{ type: 'text', text: `Msg ${index}` }],
+				})),
+			}),
+		})
+		assert.equal(tooMany.status, 400)
+		const tooManyBody = (await tooMany.json()) as { error: string }
+		assert.equal(tooManyBody.error, 'INVALID_REQUEST')
 	})
+})
+
+test('long lecture session over 240 messages succeeds via server-side compaction', async () => {
+	const model = new MockLanguageModelV4({
+		doStream: async () => ({
+			stream: simulateReadableStream({
+				chunks: [
+					{ type: 'stream-start', warnings: [] },
+					{ type: 'text-start', id: 't1' },
+					{ type: 'text-delta', id: 't1', delta: 'WAIT' },
+					{ type: 'text-end', id: 't1' },
+					{
+						type: 'finish',
+						finishReason: { unified: 'stop', raw: undefined },
+						usage: {
+							inputTokens: { total: 4, noCache: 4, cacheRead: undefined, cacheWrite: undefined },
+							outputTokens: { total: 1, text: 1, reasoning: undefined },
+						},
+					},
+				],
+			}),
+		}),
+	})
+
+	await withDaemon(async ({ url }) => {
+		const messages = Array.from({ length: 241 }, (_, index) =>
+			index % 2 === 0
+				? {
+						id: `u-${index}`,
+						role: 'user',
+						parts: [{ type: 'text', text: `Speech segment ${index}` }],
+					}
+				: {
+						id: `a-${index}`,
+						role: 'assistant',
+						parts: [{ type: 'text', text: `Added segment ${index}.` }],
+					},
+		)
+		const response = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ mode: 'lecture', messages }),
+		})
+		assert.equal(response.status, 200)
+		await response.text()
+		const sentPrompt = model.doStreamCalls[0]?.prompt ?? []
+		assert.ok(sentPrompt.length < 40, `Expected compacted model prompt, got ${sentPrompt.length}`)
+		assert.match(JSON.stringify(sentPrompt), /Archived session summary/)
+	}, model)
 })
 
 test('AI tools stay pinned to the canvas captured at request time', async () => {

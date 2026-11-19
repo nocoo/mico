@@ -2,6 +2,7 @@ import { useChat } from '@ai-sdk/react'
 import { DefaultChatTransport } from 'ai'
 import type { FormEvent, KeyboardEvent } from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { compactUiMessages } from '../../../shared/conversationCompact'
 import { POST_SESSION_SUMMARY_PROMPT } from '../../../shared/summaryPrompt'
 import { type LessonClip, lectureSegmentText } from '../../stt/transcript'
 import { canvasFetch } from '../../whiteboards/client'
@@ -69,7 +70,20 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	canvasIdRef.current = state.canvasId
 
 	const transport = useMemo(
-		() => new DefaultChatTransport({ api: '/api/ai/chat', fetch: canvasFetch }),
+		() =>
+			new DefaultChatTransport({
+				api: '/api/ai/chat',
+				fetch: canvasFetch,
+				prepareSendMessagesRequest: ({ id, messages, trigger, messageId, body }) => ({
+					body: {
+						...body,
+						id,
+						messages: compactUiMessages(messages),
+						trigger,
+						messageId,
+					},
+				}),
+			}),
 		[],
 	)
 	const { messages, setMessages, sendMessage, status, error, stop, clearError } = useChat({
