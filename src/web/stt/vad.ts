@@ -39,9 +39,11 @@ export class SilenceSegmenter {
 	constructor({
 		rate = 16000,
 		maxSegmentMs = 15_000,
-	}: { rate?: number; maxSegmentMs?: number | null } = {}) {
+		silenceMs,
+	}: { rate?: number; maxSegmentMs?: number | null; silenceMs?: number } = {}) {
 		this.frameSamples = Math.round((rate * FRAME_MS) / 1000)
 		this.maxSegmentMs = maxSegmentMs
+		if (silenceMs !== undefined) this.setSilenceMs(silenceMs)
 	}
 
 	get speaking(): boolean {

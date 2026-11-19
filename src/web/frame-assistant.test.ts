@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import * as protocol from './frame/assistant/protocol.ts'
 import {
 	appendCompletedTranscript,
 	assistantTabs,
@@ -15,6 +16,7 @@ import {
 	summaryToolsCompleted,
 	takeLectureBatch,
 } from './frame/assistant/protocol.ts'
+import * as micVm from './frame/assistant/useMicrophoneViewModel.ts'
 
 test('summary requires successful HTML and action card results', () => {
 	const html = {
@@ -160,4 +162,85 @@ test('composer focus follows explicit opens, not initial mount or tab changes', 
 	assert.equal(shouldFocusComposer(false, true, 'chat'), true)
 	assert.equal(shouldFocusComposer(true, true, 'chat'), false)
 	assert.equal(shouldFocusComposer(false, true, 'audio'), false)
+})
+
+test('Live microphone defaults to 900 ms silence cut and detects standalone fillers', () => {
+	assert.equal((micVm as Record<string, unknown>).LIVE_MICROPHONE_SILENCE_MS, 900)
+	const isLowSignal = (protocol as Record<string, unknown>).isLowSignalSegment as (
+		text: string,
+	) => boolean
+	assert.equal(typeof isLowSignal, 'function')
+
+	for (const filler of [
+		'嗯。',
+		'好的，收到。',
+		'行，没问题。',
+		'Uh-huh.',
+		'Okay, got it.',
+		'All right, makes sense.',
+	]) {
+		assert.equal(isLowSignal(filler), true, `Expected filler: ${filler}`)
+	}
+	for (const substantive of [
+		'Q3 DAU 涨到了 184 万。',
+		'We should switch to pooled connections.',
+		'接下来看第二个议题。',
+		'Now let us move to the next topic.',
+	]) {
+		assert.equal(isLowSignal(substantive), false, `Expected substantive: ${substantive}`)
+	}
+})
+
+test('adaptive lecture batching scales up on backlog and flushes at session end', () => {
+	const mkSeg = (len: number, count: number) =>
+		Array.from({ length: count }, (_, idx) => `seg-${idx} ${'a'.repeat(Math.max(0, len - 8))}`)
+
+	const takeAdaptive = takeLectureBatch as (
+		queue: readonly string[],
+		maxCount?: number,
+		maxChars?: number,
+		options?: { flushAll?: boolean },
+	) => { batch: string[]; remaining: string[] }
+
+	assert.equal(takeAdaptive(mkSeg(250, 3)).batch.length, 3)
+	assert.equal(takeAdaptive(mkSeg(300, 6)).batch.length, 6)
+	assert.equal(takeAdaptive(mkSeg(320, 9)).batch.length, 8)
+	assert.equal(
+		takeAdaptive(mkSeg(320, 9), undefined, undefined, { flushAll: true }).batch.length,
+		8,
+	)
+	assert.equal(takeAdaptive(mkSeg(300, 6), 3, 900).batch.length, 3)
+})
+
+test('post-session auto summary recovers from transient lecture errors without looping summary errors', () => {
+	const shouldAuto = (protocol as Record<string, unknown>).shouldAutoRequestSummary as (state: {
+		sessionEnded: boolean
+		error: boolean
+		lastErrorSource: 'lecture' | 'summary' | 'chat' | null
+		busy: boolean
+		summaryDone: boolean
+		summaryRequesting: boolean
+		summaryAttempted: boolean
+		messagesLength: number
+		requestLock: boolean
+		queueLength: number
+	}) => boolean
+	assert.equal(typeof shouldAuto, 'function')
+
+	const base = {
+		sessionEnded: true,
+		error: true,
+		lastErrorSource: 'lecture' as const,
+		busy: false,
+		summaryDone: false,
+		summaryRequesting: false,
+		summaryAttempted: false,
+		messagesLength: 10,
+		requestLock: false,
+		queueLength: 0,
+	}
+	assert.equal(shouldAuto(base), true)
+	assert.equal(shouldAuto({ ...base, lastErrorSource: 'summary' }), false)
+	assert.equal(shouldAuto({ ...base, summaryAttempted: true }), false)
+	assert.equal(shouldAuto({ ...base, queueLength: 2 }), false)
 })

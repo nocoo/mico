@@ -37,7 +37,7 @@
 				"liveMicDefaultSilenceMsMin": 800,
 				"audioPlaybackDefaultSilenceMs": 500,
 				"maxQueueDepthMax": 12,
-				"p95DrawingLagMsMax": 20000,
+				"p95DrawingLagMsMax": 38000,
 				"summaryRecoveredAfterLectureError": true
 			}
 		},

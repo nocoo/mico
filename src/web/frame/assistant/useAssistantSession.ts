@@ -17,6 +17,7 @@ import {
 	deriveAssistantActivity,
 	nextAssistantTab,
 	resolveAssistantTab,
+	shouldAutoRequestSummary,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
 	shouldFocusComposer,
@@ -64,6 +65,12 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const summaryAttempted = useRef(false)
 	const summaryInFlight = useRef(false)
 	const summaryNeedsRecovery = useRef(false)
+	const activeRequestSource = useRef<'lecture' | 'summary' | 'chat'>('chat')
+	const [lastErrorSource, setLastErrorSource] = useState<'lecture' | 'summary' | 'chat' | null>(
+		null,
+	)
+	const sessionEndedRef = useRef(sessionEnded)
+	sessionEndedRef.current = sessionEnded
 	const selectionRef = useRef(state.selectedIds)
 	selectionRef.current = state.selectedIds
 	const canvasIdRef = useRef(state.canvasId)
@@ -96,12 +103,18 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			if (summaryToolsCompleted(message.parts)) setSummaryDone(true)
 		},
 		onError: () => {
+			setLastErrorSource(activeRequestSource.current)
 			if (!summaryInFlight.current) return
 			summaryInFlight.current = false
 			summaryNeedsRecovery.current = true
 			setSummaryRequesting(false)
 		},
 	})
+
+	const clearSessionError = useCallback(() => {
+		setLastErrorSource(null)
+		clearError()
+	}, [clearError])
 
 	const busy = status === 'submitted' || status === 'streaming'
 	const connection = deriveConnectionStatus(state.connection)
@@ -120,6 +133,8 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		summaryAttempted.current = false
 		summaryInFlight.current = false
 		summaryNeedsRecovery.current = false
+		sessionEndedRef.current = false
+		setLastErrorSource(null)
 		setLectureQueued(0)
 		setSessionEnded(false)
 		setSummaryDone(false)
@@ -137,13 +152,17 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 
 	const pumpLecture = useCallback(() => {
 		if (requestLock.current) return
-		const taken = takeLectureBatch(lectureQueue.current)
+		const taken = takeLectureBatch(lectureQueue.current, undefined, undefined, {
+			flushAll: sessionEndedRef.current,
+		})
 		if (taken.batch.length === 0) {
 			setLectureQueued(0)
 			return
 		}
 		lectureQueue.current = [...taken.remaining]
 		requestLock.current = true
+		activeRequestSource.current = 'lecture'
+		setLastErrorSource(null)
 		const seq = ++requestSeq.current
 		setLectureQueued(lectureQueue.current.length)
 		void sendMessage(
@@ -166,6 +185,8 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			if (!value || requestLock.current || status === 'submitted' || status === 'streaming') return
 			summaryNeedsRecovery.current = false
 			requestLock.current = true
+			activeRequestSource.current = 'chat'
+			clearSessionError()
 			const seq = ++requestSeq.current
 			setDraft('')
 			void sendMessage(
@@ -175,7 +196,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 				},
 			).finally(() => releaseRequestRef.current(seq))
 		},
-		[sendMessage, state.selectedIds, status, state.canvasId],
+		[sendMessage, state.selectedIds, status, state.canvasId, clearSessionError],
 	)
 
 	const submit = (event?: FormEvent) => {
@@ -207,8 +228,9 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 
 	const requestSummary = useCallback(() => {
 		if (requestLock.current || summaryInFlight.current || summaryDone) return
-		clearError()
+		clearSessionError()
 		requestLock.current = true
+		activeRequestSource.current = 'summary'
 		summaryInFlight.current = true
 		summaryNeedsRecovery.current = false
 		summaryAttempted.current = true
@@ -220,27 +242,52 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 				body: buildAssistantRequestBody(selectionRef.current, 'chat', canvasIdRef.current),
 			},
 		).finally(() => releaseRequestRef.current(seq))
-	}, [sendMessage, summaryDone, clearError])
+	}, [sendMessage, summaryDone, clearSessionError])
 
 	const endSession = useCallback(() => {
+		sessionEndedRef.current = true
 		setSessionEnded(true)
-	}, [])
+		pumpLecture()
+	}, [pumpLecture])
 
 	const startMicrophone = useCallback(() => {
-		clearError()
+		clearSessionError()
+		sessionEndedRef.current = false
 		setSessionEnded(false)
 		setSummaryDone(false)
 		summaryAttempted.current = false
 		summaryNeedsRecovery.current = false
-	}, [clearError])
+	}, [clearSessionError])
 
 	useEffect(() => {
-		if (!sessionEnded || error || busy || summaryDone || summaryRequesting) return
-		if (summaryAttempted.current || messages.length === 0) return
-		if (requestLock.current || lectureQueue.current.length > 0) return
+		if (
+			!shouldAutoRequestSummary({
+				sessionEnded,
+				error: Boolean(error),
+				lastErrorSource,
+				busy,
+				summaryDone,
+				summaryRequesting,
+				summaryAttempted: summaryAttempted.current,
+				messagesLength: messages.length,
+				requestLock: requestLock.current,
+				queueLength: lectureQueue.current.length,
+			})
+		) {
+			return
+		}
 		summaryAttempted.current = true
 		requestSummary()
-	}, [sessionEnded, error, busy, summaryDone, summaryRequesting, messages.length, requestSummary])
+	}, [
+		sessionEnded,
+		error,
+		lastErrorSource,
+		busy,
+		summaryDone,
+		summaryRequesting,
+		messages.length,
+		requestSummary,
+	])
 
 	const resetLecture = useCallback(() => {
 		resetLectureQueue()
@@ -254,10 +301,10 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		if (!previous || !state.canvasId) return
 		stop()
 		setMessages([])
-		clearError()
+		clearSessionError()
 		setDraft('')
 		resetLectureQueue()
-	}, [state.canvasId, stop, setMessages, clearError, resetLectureQueue])
+	}, [state.canvasId, stop, setMessages, clearSessionError, resetLectureQueue])
 
 	useEffect(() => {
 		if (!state.open) return
@@ -366,8 +413,9 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 			return
 		}
 		requestLock.current = true
+		activeRequestSource.current = 'chat'
+		clearSessionError()
 		const seq = ++requestSeq.current
-		clearError()
 		void sendMessage(
 			{
 				text: 'Continue from the current board. Reuse existing objects and do not repeat earlier work.',
@@ -376,7 +424,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 				body: buildAssistantRequestBody(state.selectedIds, 'chat', state.canvasId),
 			},
 		).finally(() => releaseRequestRef.current(seq))
-	}, [sendMessage, state.selectedIds, state.canvasId, clearError, requestSummary])
+	}, [sendMessage, state.selectedIds, state.canvasId, clearSessionError, requestSummary])
 
 	return {
 		tabs,
@@ -405,7 +453,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 		submit,
 		send,
 		stop,
-		clearError,
+		clearError: clearSessionError,
 		continueChat,
 		enqueueLecture,
 		resetLecture,

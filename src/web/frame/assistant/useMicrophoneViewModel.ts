@@ -8,7 +8,9 @@ import { SilenceSegmenter } from '../../stt/vad.ts'
 import { drawWave, observeWaveformCanvas } from '../../waveform.ts'
 import { canvasFetch as fetch } from '../../whiteboards/client.ts'
 import type { LessonSegment } from './LessonPanel'
-import { appendCompletedTranscript } from './protocol.ts'
+import { appendCompletedTranscript, isLowSignalSegment } from './protocol.ts'
+
+export const LIVE_MICROPHONE_SILENCE_MS = 900
 
 export type MicrophonePhase = 'idle' | 'connecting' | 'listening' | 'stopping' | 'done' | 'error'
 
@@ -41,6 +43,8 @@ interface Recording {
 	pending: { start: number; end: number }[]
 	deltas: string[]
 	intermediate: string
+	pendingFillerText: string
+	pendingFillerStart: number | null
 	segments: number
 	stopping: boolean
 	timer: number | null
@@ -55,7 +59,7 @@ function newRecording(): Recording {
 		started: false,
 		stopComplete: false,
 		draining: false,
-		segmenter: new SilenceSegmenter({ rate: TARGET_RATE }),
+		segmenter: new SilenceSegmenter({ rate: TARGET_RATE, silenceMs: LIVE_MICROPHONE_SILENCE_MS }),
 		buffer: [],
 		buffered: 0,
 		peaks: [],
@@ -64,6 +68,8 @@ function newRecording(): Recording {
 		pending: [],
 		deltas: [],
 		intermediate: '',
+		pendingFillerText: '',
+		pendingFillerStart: null,
 		segments: 0,
 		stopping: false,
 		timer: null,
@@ -154,7 +160,22 @@ export function useMicrophoneViewModel({
 		setDetail(message)
 	}
 
+	const flushPendingFiller = (rt: Recording, endSeconds: number) => {
+		if (!rt.pendingFillerText) return
+		const segment = {
+			id: ++rt.segments,
+			text: rt.pendingFillerText,
+			start: rt.pendingFillerStart ?? 0,
+			end: endSeconds,
+		}
+		rt.pendingFillerText = ''
+		rt.pendingFillerStart = null
+		setSegments((previousSegments) => [...previousSegments, segment])
+		callbacks.current.onSegment(segment)
+	}
+
 	const finish = (rt: Recording) => {
+		flushPendingFiller(rt, rt.sent / TARGET_RATE)
 		rt.generation++
 		cleanup(rt)
 		setPhase('done')
@@ -347,14 +368,25 @@ export function useMicrophoneViewModel({
 						confirmed: appendCompletedTranscript(current.confirmed, text),
 						hypothesis: '',
 					}))
-					const segment = {
-						id: ++rt.segments,
-						text,
-						start: pending?.start ?? 0,
-						end: pending?.end ?? rt.sent / TARGET_RATE,
+					const start = pending?.start ?? 0
+					const end = pending?.end ?? rt.sent / TARGET_RATE
+					if (isLowSignalSegment(text) && !rt.draining) {
+						rt.pendingFillerText = appendCompletedTranscript(rt.pendingFillerText, text)
+						if (rt.pendingFillerStart === null) rt.pendingFillerStart = start
+					} else {
+						const mergedText = appendCompletedTranscript(rt.pendingFillerText, text)
+						const mergedStart = rt.pendingFillerStart ?? start
+						rt.pendingFillerText = ''
+						rt.pendingFillerStart = null
+						const segment = {
+							id: ++rt.segments,
+							text: mergedText,
+							start: mergedStart,
+							end,
+						}
+						setSegments((previousSegments) => [...previousSegments, segment])
+						callbacks.current.onSegment(segment)
 					}
-					setSegments((previousSegments) => [...previousSegments, segment])
-					callbacks.current.onSegment(segment)
 				}
 				if (rt.draining && rt.pending.length === 0) finish(rt)
 			})

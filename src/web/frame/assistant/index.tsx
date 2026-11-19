@@ -91,10 +91,14 @@ export function AssistantFrame({
 		}
 	}, [openLiveSignal, model.setTab, model.selectLiveProvider])
 
+	const liveEmitTimer = useRef<number | null>(null)
+	const lastLiveMeta = useRef('')
+	const latestLivePayload = useRef<Parameters<NonNullable<typeof onLiveStateChange>>[0]>(null)
+
 	useEffect(() => {
 		if (!onLiveStateChange) return
 		const transcript = `${micModel.live.confirmed}${micModel.live.hypothesis}`
-		onLiveStateChange({
+		const payload = {
 			running: micModel.running,
 			phase: micModel.phase,
 			elapsed: micModel.elapsed,
@@ -105,7 +109,31 @@ export function AssistantFrame({
 			meetingAudioSupported: micModel.meetingAudioSupported,
 			onToggleRecording: micModel.toggleFromTopbar,
 			onToggleMeetingAudio: micModel.toggleMeetingAudio,
-		})
+		}
+		latestLivePayload.current = payload
+		const meta = [
+			micModel.running,
+			micModel.phase,
+			micModel.detail,
+			micModel.disabled,
+			micModel.includeMeetingAudio,
+			micModel.meetingAudioSupported,
+		].join('|')
+		if (meta !== lastLiveMeta.current) {
+			lastLiveMeta.current = meta
+			if (liveEmitTimer.current !== null) {
+				window.clearTimeout(liveEmitTimer.current)
+				liveEmitTimer.current = null
+			}
+			onLiveStateChange(payload)
+			return
+		}
+		if (liveEmitTimer.current === null) {
+			liveEmitTimer.current = window.setTimeout(() => {
+				liveEmitTimer.current = null
+				onLiveStateChange(latestLivePayload.current)
+			}, 120)
+		}
 	}, [
 		onLiveStateChange,
 		micModel.running,
@@ -121,7 +149,16 @@ export function AssistantFrame({
 		micModel.toggleMeetingAudio,
 	])
 
-	useEffect(() => () => onLiveStateChange?.(null), [onLiveStateChange])
+	useEffect(
+		() => () => {
+			if (liveEmitTimer.current !== null) {
+				window.clearTimeout(liveEmitTimer.current)
+				liveEmitTimer.current = null
+			}
+			onLiveStateChange?.(null)
+		},
+		[onLiveStateChange],
+	)
 
 	return (
 		<AssistantView

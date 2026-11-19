@@ -88,12 +88,64 @@ export function nextAssistantTab(
 	return tabs[(index + direction + tabs.length) % tabs.length]
 }
 
-export function takeLectureBatch(queue: readonly string[], maxCount = 3, maxChars = 900) {
+const LOW_SIGNAL_FILLER_CLAUSE =
+	/^(?:嗯+|啊+|哦+|唉+|诶+|呃+|好的|好哒|好吧|好呀|好|收到|明白|了解|知道了|没问题|没啥问题|行|对|对的|对对|是的|可以|那行|谢谢|多谢|感谢|uh-huh|uh huh|uh|um+|hmm+|ah+|oh+|yeah|yep|yup|ok|okay|got it|makes sense|sure|right|alright|all right|sounds good|thank you|thanks)$/i
+
+export function isLowSignalSegment(text: string): boolean {
+	const trimmed = text.trim()
+	if (!trimmed) return true
+	if (/\d/.test(trimmed)) return false
+	if (/议题|话题|主题|总结|conclusion|summary|topic|agenda/i.test(trimmed)) return false
+	const clauses = trimmed
+		.split(/[\s,，.。!！?？;；:：、…~—]+/)
+		.map((part) => part.trim())
+		.filter(Boolean)
+	if (clauses.length === 0) return true
+	if (clauses.length === 1 && clauses[0].length <= 1) return true
+	if (clauses.length > 6 || trimmed.length > 32) return false
+	for (let index = 0; index < clauses.length; index++) {
+		if (LOW_SIGNAL_FILLER_CLAUSE.test(clauses[index])) continue
+		if (
+			index + 1 < clauses.length &&
+			LOW_SIGNAL_FILLER_CLAUSE.test(`${clauses[index]} ${clauses[index + 1]}`)
+		) {
+			index++
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+export function takeLectureBatch(
+	queue: readonly string[],
+	maxCount?: number,
+	maxChars?: number,
+	options?: { flushAll?: boolean },
+) {
+	const limitCount =
+		maxCount ??
+		(maxChars !== undefined
+			? 3
+			: options?.flushAll || queue.length >= 8
+				? 8
+				: queue.length >= 4
+					? 6
+					: 3)
+	const limitChars =
+		maxChars ??
+		(maxCount !== undefined
+			? 900
+			: options?.flushAll || queue.length >= 8
+				? 3200
+				: queue.length >= 4
+					? 2400
+					: 1200)
 	const batch: string[] = []
 	let size = 0
 	for (const next of queue) {
-		if (batch.length >= maxCount) break
-		if (batch.length > 0 && size + next.length > maxChars) break
+		if (batch.length >= limitCount) break
+		if (batch.length > 0 && size + next.length > limitChars) break
 		batch.push(next)
 		size += next.length
 	}
@@ -101,6 +153,27 @@ export function takeLectureBatch(queue: readonly string[], maxCount = 3, maxChar
 		batch,
 		remaining: queue.slice(batch.length),
 	}
+}
+
+export function shouldAutoRequestSummary(state: {
+	sessionEnded: boolean
+	error: boolean
+	lastErrorSource: 'lecture' | 'summary' | 'chat' | null
+	busy: boolean
+	summaryDone: boolean
+	summaryRequesting: boolean
+	summaryAttempted: boolean
+	messagesLength: number
+	requestLock: boolean
+	queueLength: number
+}): boolean {
+	if (!state.sessionEnded || state.busy || state.summaryDone || state.summaryRequesting) {
+		return false
+	}
+	if (state.summaryAttempted || state.messagesLength === 0) return false
+	if (state.requestLock || state.queueLength > 0) return false
+	if (state.error && state.lastErrorSource !== 'lecture') return false
+	return true
 }
 
 export function buildAssistantRequestBody(

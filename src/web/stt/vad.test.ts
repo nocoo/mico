@@ -73,3 +73,11 @@ test('1000 ms is a valid configurable Audio pause threshold', () => {
 	assert.equal(segmenter.push(silence(20)), true)
 	assert.equal(segmenter.currentSilenceMs, 1000)
 })
+
+test('constructor accepts silenceMs while keeping 500 ms as default', () => {
+	assert.equal(new SilenceSegmenter().currentSilenceMs, 500)
+	const live = new SilenceSegmenter({ silenceMs: 900 } as { rate?: number; silenceMs?: number })
+	assert.equal(live.currentSilenceMs, 900)
+	assert.equal(live.push(concat(silence(600), tone(600), silence(700))), false)
+	assert.equal(live.push(silence(240)), true)
+})
