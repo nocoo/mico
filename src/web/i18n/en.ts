@@ -231,6 +231,12 @@ export const en = {
 			createSummary: 'Create session summary',
 		},
 		settings: {
+			appearanceSection: 'Appearance',
+			aiSection: 'AI Service',
+			theme: 'Theme',
+			themeSystem: 'System',
+			themeLight: 'Light',
+			themeDark: 'Dark',
 			baseUrl: 'Base URL',
 			model: 'Model',
 			apiKey: 'API Key',

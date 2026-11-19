@@ -37,7 +37,19 @@ function frameworkHead(bootstrapCss: string, bootstrapJs: string): string {
 	return cachedHead
 }
 
-export function htmlCardDocument(html: string, bootstrapCss: string, bootstrapJs: string): string {
+function withCardTheme(document: string, theme: 'light' | 'dark'): string {
+	if (theme !== 'dark') return document
+	return document.replace(/<html(\b[^>]*)?>/i, (match, attrs = '') =>
+		/\bdata-bs-theme\s*=/i.test(attrs) ? match : `<html${attrs} data-bs-theme="dark">`,
+	)
+}
+
+export function htmlCardDocument(
+	html: string,
+	bootstrapCss: string,
+	bootstrapJs: string,
+	theme: 'light' | 'dark' = 'light',
+): string {
 	const framework = frameworkHead(bootstrapCss, bootstrapJs)
 
 	if (/<head[^>]*>/i.test(html)) {
@@ -45,26 +57,35 @@ export function htmlCardDocument(html: string, bootstrapCss: string, bootstrapJs
 		if (/<!doctype\s+html/i.test(html)) {
 			const withoutDoctype = withFramework.replace(/<!doctype\s+html[^>]*>/i, '')
 			if (!/<html[^>]*>/i.test(html)) {
-				return `<!doctype html><html>${withoutDoctype}</html>`
+				return withCardTheme(`<!doctype html><html>${withoutDoctype}</html>`, theme)
 			}
-			return withFramework
+			return withCardTheme(withFramework, theme)
 		}
 		if (!/<html[^>]*>/i.test(html)) {
-			return `<!doctype html><html>${withFramework}</html>`
+			return withCardTheme(`<!doctype html><html>${withFramework}</html>`, theme)
 		}
-		return withFramework
+		return withCardTheme(withFramework, theme)
 	}
 	if (/<html[^>]*>/i.test(html)) {
-		return html.replace(/<html[^>]*>/i, (root) => `${root}<head>${framework}</head>`)
+		return withCardTheme(
+			html.replace(/<html[^>]*>/i, (root) => `${root}<head>${framework}</head>`),
+			theme,
+		)
 	}
 	if (/<!doctype\s+html/i.test(html)) {
 		const body = html.replace(/<!doctype\s+html[^>]*>/i, '').trim()
-		return /<body[^>]*>/i.test(body)
-			? `<!doctype html><html><head>${framework}</head>${body}</html>`
-			: `<!doctype html><html><head>${framework}</head><body>${body}</body></html>`
+		return withCardTheme(
+			/<body[^>]*>/i.test(body)
+				? `<!doctype html><html><head>${framework}</head>${body}</html>`
+				: `<!doctype html><html><head>${framework}</head><body>${body}</body></html>`,
+			theme,
+		)
 	}
 	if (/<body[^>]*>/i.test(html)) {
-		return `<!doctype html><html><head>${framework}</head>${html}</html>`
+		return withCardTheme(`<!doctype html><html><head>${framework}</head>${html}</html>`, theme)
 	}
-	return `<!doctype html><html><head>${framework}</head><body>${html}</body></html>`
+	return withCardTheme(
+		`<!doctype html><html><head>${framework}</head><body>${html}</body></html>`,
+		theme,
+	)
 }

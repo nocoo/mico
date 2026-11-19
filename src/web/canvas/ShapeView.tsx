@@ -2,7 +2,7 @@ import type React from 'react'
 import { memo, useLayoutEffect, useRef, useState } from 'react'
 import type { CanvasShape, Shape } from '../../shared/types'
 import { BrushStroke } from '../BrushStroke'
-import type { Tool } from '../design'
+import { adaptiveInkEdge, type Tool } from '../design'
 import { StickyNote } from '../StickyNote'
 import { CanvasActions } from './CanvasActions'
 import { CanvasFrame } from './CanvasFrame'
@@ -226,7 +226,7 @@ export const ShapeView = memo(function ShapeView({
 				y1={shape.y}
 				x2={shape.x + shape.w}
 				y2={shape.y + shape.h}
-				stroke={shape.color}
+				stroke={adaptiveInkEdge(shape.color) ?? shape.color}
 				strokeWidth={active ? 3 : 2}
 			/>
 			{active && <SelectionOutline shape={shape} zoom={zoom} />}

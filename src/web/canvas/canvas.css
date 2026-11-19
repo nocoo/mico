@@ -4,7 +4,7 @@
 	z-index: 0;
 	overflow: hidden;
 	pointer-events: none;
-	background: light-dark(oklch(0.975 0.012 290), oklch(0.185 0.025 285));
+	background: light-dark(oklch(0.975 0.012 290), oklch(0.155 0.022 282));
 }
 
 .canvas-aurora {
@@ -24,13 +24,13 @@
 }
 
 .canvas-aurora i:nth-child(1) {
-	--canvas-aurora-color: oklch(0.88 0.09 296 / 0.7);
+	--canvas-aurora-color: light-dark(oklch(0.88 0.09 296 / 0.7), oklch(0.3 0.12 292 / 0.42));
 	inset-inline-start: -18vmax;
 	inset-block-start: -22vmax;
 }
 
 .canvas-aurora i:nth-child(2) {
-	--canvas-aurora-color: oklch(0.9 0.08 200 / 0.6);
+	--canvas-aurora-color: light-dark(oklch(0.9 0.08 200 / 0.6), oklch(0.28 0.095 222 / 0.36));
 	inset-inline-end: -16vmax;
 	inset-block-start: -10vmax;
 	animation-duration: 32s;
@@ -38,7 +38,7 @@
 }
 
 .canvas-aurora i:nth-child(3) {
-	--canvas-aurora-color: oklch(0.91 0.08 20 / 0.55);
+	--canvas-aurora-color: light-dark(oklch(0.91 0.08 20 / 0.55), oklch(0.27 0.1 345 / 0.28));
 	inset-inline-start: 18vmax;
 	inset-block-end: -34vmax;
 	animation-duration: 38s;
@@ -46,7 +46,7 @@
 }
 
 .canvas-aurora i:nth-child(4) {
-	--canvas-aurora-color: oklch(0.93 0.09 105 / 0.45);
+	--canvas-aurora-color: light-dark(oklch(0.93 0.09 105 / 0.45), oklch(0.26 0.08 175 / 0.24));
 	inset-inline-end: 8vmax;
 	inset-block-end: -30vmax;
 	animation-duration: 30s;
@@ -71,12 +71,17 @@
 	mix-blend-mode: multiply;
 }
 
+:root[data-theme="dark"] .canvas-grain {
+	mix-blend-mode: screen;
+	opacity: 0.028;
+}
+
 .canvas {
 	z-index: 1;
 	background-image: radial-gradient(circle, var(--canvas-dot) 1.15px, transparent 1.7px);
 	background-position: var(--canvas-grid-x, 0) var(--canvas-grid-y, 0);
 	background-size: var(--canvas-grid-size, 24px) var(--canvas-grid-size, 24px);
-	--canvas-dot: light-dark(oklch(0.55 0.08 285 / 0.2), oklch(1 0 0 / 0.13));
+	--canvas-dot: light-dark(oklch(0.55 0.08 285 / 0.2), oklch(0.78 0.04 285 / 0.14));
 }
 
 @media (prefers-reduced-motion: reduce) {

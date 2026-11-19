@@ -1,7 +1,7 @@
 import { memo, useMemo } from 'react'
 import type { BrushStyle, Point } from '../shared/types'
 import { buildStroke } from './brush'
-import { jellyStyle } from './canvas/jelly'
+import { adaptiveJellyStyle } from './design'
 
 interface BrushStrokeProps {
 	points: Point[]
@@ -28,7 +28,7 @@ export const BrushStroke = memo(function BrushStroke({
 			<path
 				d={stroke.d}
 				fill="var(--j-edge)"
-				style={jellyStyle(color)}
+				style={adaptiveJellyStyle(color)}
 				opacity={preview ? 0.65 : 0.95}
 			/>
 		)
@@ -39,7 +39,7 @@ export const BrushStroke = memo(function BrushStroke({
 			d={stroke.d}
 			fill="none"
 			stroke="var(--j-edge)"
-			style={jellyStyle(color)}
+			style={adaptiveJellyStyle(color)}
 			strokeWidth={marker ? strokeWidth * 1.8 : strokeWidth}
 			strokeLinecap="round"
 			strokeLinejoin="round"

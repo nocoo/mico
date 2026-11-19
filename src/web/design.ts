@@ -1,5 +1,6 @@
+import type { CSSProperties } from 'react'
 import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
-import { JELLY_COLORS } from './canvas/jelly.ts'
+import { JELLY_COLORS, jellyStyle } from './canvas/jelly.ts'
 import { FRAME_LAYOUT } from './frame/layout.ts'
 
 export { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
@@ -43,6 +44,34 @@ export function candyInk(color: string): string {
 
 export function canvasTextColor(color: string): string {
 	return color === CANDY_COLORS.ink ? 'var(--ui-ink)' : candyInk(color)
+}
+
+export function adaptiveCanvasTextColor(color: string): string {
+	switch (color.toLowerCase()) {
+		case CANDY_COLORS.ink:
+			return 'var(--ui-ink)'
+		case CANDY_COLORS.blue:
+			return `light-dark(${CANDY_LAYOUT.blueStroke}, oklch(0.82 0.12 232))`
+		case CANDY_COLORS.green:
+			return `light-dark(${CANDY_LAYOUT.greenStroke}, oklch(0.84 0.14 142))`
+		case CANDY_COLORS.yellow:
+			return `light-dark(${CANDY_LAYOUT.yellowStroke}, oklch(0.88 0.14 96))`
+		case CANDY_COLORS.pink:
+			return `light-dark(${CANDY_LAYOUT.pinkStroke}, oklch(0.83 0.13 356))`
+		default:
+			return candyInk(color)
+	}
+}
+
+export function adaptiveInkEdge(color: string): string | undefined {
+	return color.toLowerCase() === CANDY_COLORS.ink
+		? `light-dark(${CANDY_COLORS.ink}, oklch(0.9 0.012 285))`
+		: undefined
+}
+
+export function adaptiveJellyStyle(color: string): CSSProperties {
+	const edge = adaptiveInkEdge(color)
+	return edge ? ({ ...jellyStyle(color), '--j-edge': edge } as CSSProperties) : jellyStyle(color)
 }
 
 export function candyLine(color: string, percent = 35): string {

@@ -12,8 +12,8 @@ import {
 	viewportCenteredOn,
 } from '../../shared/overview.ts'
 import type { Shape } from '../../shared/types.ts'
+import { adaptiveJellyStyle } from '../design.ts'
 import { panelViewportInset } from '../viewport.ts'
-import { jellyStyle } from './jelly.ts'
 import { viewportAfterOverviewDrag } from './minimap.ts'
 import './canvas-minimap.css'
 
@@ -239,7 +239,7 @@ export function CanvasMinimap({
 				}}
 			>
 				{shownProjection.blocks.map((block) => {
-					const style = jellyStyle(block.color)
+					const style = adaptiveJellyStyle(block.color)
 					const common = {
 						className: `canvas-minimap-block ${block.type}`,
 						style,

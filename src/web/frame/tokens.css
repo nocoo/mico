@@ -1,20 +1,20 @@
 :root {
-	--ui-glass: light-dark(oklch(1 0 0 / 0.64), oklch(0.27 0.03 285 / 0.66));
-	--ui-glass-strong: light-dark(oklch(1 0 0 / 0.86), oklch(0.33 0.035 285 / 0.86));
-	--ui-glass-edge: light-dark(oklch(1 0 0 / 0.85), oklch(1 0 0 / 0.11));
-	--ui-gloss: light-dark(oklch(1 0 0 / 0.75), oklch(1 0 0 / 0.14));
-	--ui-hair: light-dark(oklch(0.4 0.06 285 / 0.11), oklch(1 0 0 / 0.1));
-	--ui-well: light-dark(oklch(0.5 0.07 285 / 0.06), oklch(0 0 0 / 0.24));
-	--ui-well-2: light-dark(oklch(0.5 0.07 285 / 0.11), oklch(1 0 0 / 0.08));
-	--ui-shadow: light-dark(oklch(0.45 0.13 285 / 0.2), oklch(0 0 0 / 0.55));
-	--ui-ink: light-dark(oklch(0.27 0.04 285), oklch(0.955 0.01 285));
-	--ui-ink-2: light-dark(oklch(0.47 0.035 285), oklch(0.8 0.02 285));
-	--ui-ink-3: light-dark(oklch(0.63 0.03 285), oklch(0.63 0.025 285));
-	--ui-accent: oklch(0.62 0.17 285);
-	--ui-accent-hi: oklch(0.74 0.14 290);
-	--ui-accent-lo: oklch(0.54 0.2 280);
-	--ui-accent-ink: light-dark(oklch(0.48 0.19 283), oklch(0.82 0.11 288));
-	--ui-accent-soft: light-dark(oklch(0.62 0.17 285 / 0.13), oklch(0.7 0.15 285 / 0.24));
+	--ui-glass: light-dark(oklch(1 0 0 / 0.64), oklch(0.215 0.026 282 / 0.72));
+	--ui-glass-strong: light-dark(oklch(1 0 0 / 0.86), oklch(0.245 0.028 282 / 0.88));
+	--ui-glass-edge: light-dark(oklch(1 0 0 / 0.85), oklch(1 0 0 / 0.13));
+	--ui-gloss: light-dark(oklch(1 0 0 / 0.75), oklch(1 0 0 / 0.12));
+	--ui-hair: light-dark(oklch(0.4 0.06 285 / 0.11), oklch(1 0 0 / 0.11));
+	--ui-well: light-dark(oklch(0.5 0.07 285 / 0.06), oklch(0.14 0.02 282 / 0.52));
+	--ui-well-2: light-dark(oklch(0.5 0.07 285 / 0.11), oklch(1 0 0 / 0.09));
+	--ui-shadow: light-dark(oklch(0.45 0.13 285 / 0.2), oklch(0 0 0 / 0.62));
+	--ui-ink: light-dark(oklch(0.27 0.04 285), oklch(0.955 0.012 285));
+	--ui-ink-2: light-dark(oklch(0.47 0.035 285), oklch(0.76 0.02 285));
+	--ui-ink-3: light-dark(oklch(0.63 0.03 285), oklch(0.58 0.022 285));
+	--ui-accent: light-dark(oklch(0.62 0.17 285), oklch(0.68 0.165 285));
+	--ui-accent-hi: light-dark(oklch(0.74 0.14 290), oklch(0.74 0.145 290));
+	--ui-accent-lo: light-dark(oklch(0.54 0.2 280), oklch(0.55 0.195 280));
+	--ui-accent-ink: light-dark(oklch(0.48 0.19 283), oklch(0.84 0.11 288));
+	--ui-accent-soft: light-dark(oklch(0.62 0.17 285 / 0.13), oklch(0.68 0.165 285 / 0.22));
 	--ui-spring: linear(
 		0,
 		0.009,
@@ -44,6 +44,10 @@
 	);
 	--ui-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 	color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
 }
 
 .app {

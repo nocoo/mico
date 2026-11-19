@@ -227,7 +227,7 @@
 		100deg,
 		var(--ui-ink) 18%,
 		var(--ui-accent-ink) 58%,
-		oklch(0.66 0.17 350)
+		light-dark(oklch(0.66 0.17 350), oklch(0.78 0.15 350))
 	);
 	-webkit-background-clip: text;
 	background-clip: text;

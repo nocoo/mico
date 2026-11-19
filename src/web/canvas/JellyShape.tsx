@@ -1,5 +1,5 @@
 import type { CanvasShape } from '../../shared/types'
-import { jellyStyle } from './jelly'
+import { adaptiveJellyStyle } from '../design'
 import './jelly.css'
 import './jelly-shape.css'
 
@@ -45,7 +45,7 @@ export function JellyShape({ shape, editing }: { shape: CanvasShape; editing: bo
 				{flowNode ? (
 					<div
 						className={`jelly-shape el-node canvas-jelly${editing ? ' jelly-shape-editing' : ''}`}
-						style={jellyStyle(shape.color)}
+						style={adaptiveJellyStyle(shape.color)}
 					>
 						<div className="nd-t" data-edit="">
 							{nodeTitle}
@@ -60,7 +60,7 @@ export function JellyShape({ shape, editing }: { shape: CanvasShape; editing: bo
 					<div
 						className={`jelly-shape el-shape canvas-jelly${editing ? ' jelly-shape-editing' : ''}`}
 						data-shape={shape.type}
-						style={jellyStyle(shape.color)}
+						style={adaptiveJellyStyle(shape.color)}
 					>
 						<div data-edit="">{text}</div>
 					</div>

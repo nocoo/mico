@@ -43,7 +43,7 @@
 	border: 2px solid var(--member-color);
 	border-radius: 8px;
 	box-shadow:
-		0 0 0 1px rgba(255, 255, 255, 0.72),
+		0 0 0 1px light-dark(rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.22)),
 		0 4px 12px -4px rgba(17, 24, 39, 0.16);
 	pointer-events: none;
 	will-change: transform;

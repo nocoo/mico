@@ -1,7 +1,7 @@
 import type React from 'react'
 import { useLayoutEffect, useRef } from 'react'
 import type { CanvasShape } from '../../shared/types'
-import { canvasTextColor, FONT_STACKS } from '../design'
+import { adaptiveCanvasTextColor, FONT_STACKS } from '../design'
 import './canvas-text.css'
 
 export function CanvasText({ shape, editing }: { shape: CanvasShape; editing: boolean }) {
@@ -25,7 +25,7 @@ export function CanvasText({ shape, editing }: { shape: CanvasShape; editing: bo
 		fontFamily: FONT_STACKS[font],
 		fontSize: `${shape.fontSize ?? 32}px`,
 		fontWeight: shape.fontWeight ?? 500,
-		color: canvasTextColor(shape.color),
+		color: adaptiveCanvasTextColor(shape.color),
 	} satisfies React.CSSProperties
 
 	return (

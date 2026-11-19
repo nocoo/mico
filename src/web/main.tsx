@@ -1,9 +1,9 @@
-import { Theme } from '@radix-ui/themes'
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import BootGate from './BootGate'
 import { initializeCandyPalette } from './design'
 import { I18nProvider } from './i18n'
+import { applyDocumentTheme, readThemePreference, resolveTheme, ThemeProvider } from './theme'
 import '@radix-ui/themes/tokens/base.css'
 import '@radix-ui/themes/tokens/colors/blue.css'
 import '@radix-ui/themes/tokens/colors/slate.css'
@@ -31,6 +31,7 @@ window.addEventListener(
 )
 
 initializeCandyPalette(document.documentElement)
+applyDocumentTheme(resolveTheme(readThemePreference()))
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Root element missing')
@@ -44,11 +45,11 @@ if (window.location.pathname === '/auth/callback' && (window.parent !== window |
 } else {
 	ReactDOM.createRoot(root).render(
 		<React.StrictMode>
-			<Theme appearance="light" accentColor="blue" grayColor="slate" radius="medium" scaling="100%">
+			<ThemeProvider>
 				<I18nProvider>
 					<BootGate />
 				</I18nProvider>
-			</Theme>
+			</ThemeProvider>
 		</React.StrictMode>,
 	)
 }

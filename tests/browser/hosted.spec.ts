@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { board } from './support'
+import { board, openAssistant } from './support'
 
 const runtime = (
 	mode: 'none' | 'entra' = 'none',
@@ -338,4 +338,63 @@ test('gate query parameter previews loading and status screens without bypassing
 	await page.getByRole('button', { name: 'Sign in with Microsoft' }).click()
 	await expect(page.getByRole('heading', { name: 'Sign in to Mico' })).toBeVisible()
 	await expect(page.locator('.app')).toHaveCount(0)
+})
+
+test('theme follows OS preference, honors URL overrides, and persists Settings choices', async ({
+	page,
+}) => {
+	await mockRuntime(page, runtime('none'))
+	await mockSession(page, 200, { user: null })
+
+	await page.emulateMedia({ colorScheme: 'dark' })
+	await page.goto('/?gate=loading&theme=dark')
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+	await expect(page.locator('.gate-screen')).toHaveCSS('color-scheme', 'dark')
+
+	await page.goto('/')
+	await expect(page.locator('.app')).toBeVisible()
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+	await expect(page.locator('.app')).toHaveCSS('color-scheme', 'dark')
+
+	await page.emulateMedia({ colorScheme: 'light' })
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+	await expect(page.locator('.app')).toHaveCSS('color-scheme', 'light')
+
+	await page.emulateMedia({ colorScheme: 'dark' })
+	await page.goto('/?theme=light')
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+
+	await page.emulateMedia({ colorScheme: 'light' })
+	await page.goto('/?theme=dark')
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+	const panel = await openAssistant(page, 'Settings')
+	const settings = panel.getByRole('tabpanel', { name: 'Settings' })
+	await expect(settings.getByRole('region', { name: 'Appearance' })).toBeVisible()
+	await expect(settings.getByRole('separator')).toBeVisible()
+	await expect(settings.getByRole('region', { name: 'AI Service' })).toBeVisible()
+
+	const themeGroup = settings.getByRole('radiogroup', { name: 'Theme' })
+	const darkRadio = themeGroup.getByRole('radio', { name: 'Dark' })
+	const systemRadio = themeGroup.getByRole('radio', { name: 'System' })
+	const lightRadio = themeGroup.getByRole('radio', { name: 'Light' })
+	await expect(darkRadio).toBeChecked()
+
+	await darkRadio.focus()
+	await page.keyboard.press('ArrowRight')
+	await expect(systemRadio).toBeFocused()
+	await expect(systemRadio).toBeChecked()
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+	expect(new URL(page.url()).searchParams.get('theme')).toBeNull()
+
+	await themeGroup.getByText('Light', { exact: true }).click()
+	await expect(lightRadio).toBeChecked()
+	await themeGroup.getByText('Dark', { exact: true }).click()
+	await expect(darkRadio).toBeChecked()
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+
+	await page.reload()
+	await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark')
+	await openAssistant(page, 'Settings')
+	await expect(darkRadio).toBeChecked()
 })

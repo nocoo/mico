@@ -3,6 +3,7 @@ import bootstrapJs from 'bootstrap/dist/js/bootstrap.bundle.min.js?raw'
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import type { CanvasShape } from '../../shared/types'
 import { HTML_CARD_SANDBOX, htmlCardDocument } from '../htmlCard'
+import { useTheme } from '../theme'
 import './html-card.css'
 
 const BORDER_ALLOWANCE = 2
@@ -16,15 +17,16 @@ export const HtmlCardSurface = memo(function HtmlCardSurface({
 	active: boolean
 	onMeasuredHeight?: (height: number | null) => void
 }) {
+	const { resolvedTheme } = useTheme()
 	const iframeRef = useRef<HTMLIFrameElement>(null)
 	const [measuredHeight, setMeasuredHeight] = useState<number | null>(null)
 	const hasReportLayout = shape.type === 'html' && Boolean(shape.html?.includes('mico-report'))
 	const document = useMemo(
 		() =>
 			shape.type === 'html' && shape.html
-				? htmlCardDocument(shape.html, bootstrapCss, bootstrapJs)
+				? htmlCardDocument(shape.html, bootstrapCss, bootstrapJs, resolvedTheme)
 				: null,
-		[shape],
+		[resolvedTheme, shape],
 	)
 
 	useEffect(() => {

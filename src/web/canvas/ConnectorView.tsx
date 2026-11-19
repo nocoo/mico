@@ -1,9 +1,9 @@
 import type React from 'react'
 import { memo } from 'react'
 import type { CanvasShape, Connector } from '../../shared/types'
+import { adaptiveJellyStyle } from '../design'
 import { ConnectorHead } from './ConnectorHead'
 import { connectorHitPath, connectorPath, getConnectorVisualGeometry } from './connectorGeometry'
-import { jellyStyle } from './jelly'
 import './canvas-entry.css'
 
 export interface ConnectorViewProps {
@@ -33,7 +33,7 @@ export const ConnectorView = memo(function ConnectorView({
 		<g
 			className={`canvas-shape connector edge${selected ? ' sel' : ''}${animate ? ' draw' : ''}`}
 			data-shape-id={shape.id}
-			style={{ ...jellyStyle(shape.color), color: 'var(--j-edge)', cursor }}
+			style={{ ...adaptiveJellyStyle(shape.color), color: 'var(--j-edge)', cursor }}
 			onPointerDown={onPointerDown}
 			onAnimationEnd={(event) => {
 				if (

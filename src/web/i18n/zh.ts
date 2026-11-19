@@ -232,6 +232,12 @@ export const zh: I18nMessages = {
 			createSummary: '生成课堂总结',
 		},
 		settings: {
+			appearanceSection: '外观',
+			aiSection: 'AI 服务',
+			theme: '主题',
+			themeSystem: '跟随系统',
+			themeLight: '浅色',
+			themeDark: '深色',
 			baseUrl: '接口地址 (Base URL)',
 			model: '模型名称',
 			apiKey: 'API Key',

@@ -59,4 +59,8 @@ test('HTML cards embed Bootstrap, scripts and a restrictive CSP', () => {
 	)
 	assert.match(fragment, /^<!doctype html><html><head><meta http-equiv="Content-Security-Policy"/)
 	assert.match(fragment, /<body><p>fragment<\/p><script>ran = true<\/script><\/body><\/html>$/)
+
+	const darkFragment = htmlCardDocument('<p>fragment</p>', bootstrapCss, bootstrapJs, 'dark')
+	assert.match(darkFragment, /^<!doctype html><html data-bs-theme="dark"><head>/)
+	assert.match(darkFragment, /color-scheme: dark/)
 })
