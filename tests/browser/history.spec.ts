@@ -141,7 +141,7 @@ test('an HTTP rejection does not consume undo and a retry remains possible', asy
 		{ times: 1 },
 	)
 	await page.getByRole('button', { name: 'Undo', exact: true }).click()
-	await expect(page.locator('.notice')).toContainText('HTTP 409')
+	await expect(page.locator('.notice')).toHaveText('Concurrent edit')
 	expect(await board(request)).toEqual(before)
 	await expect(page.getByRole('button', { name: 'Undo', exact: true })).toBeEnabled()
 	await page.getByRole('button', { name: 'Undo', exact: true }).click()

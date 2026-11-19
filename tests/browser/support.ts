@@ -118,7 +118,7 @@ export async function installMicrophoneMock(
 				const gain = context.createGain()
 				const destination = context.createMediaStreamDestination()
 				oscillator.frequency.value = 440
-				for (let time = 0; time < 60; time += 1.4) {
+				for (let time = 0; time < 60; time += 1.8) {
 					gain.gain.setValueAtTime(0.1, context.currentTime + time)
 					gain.gain.setValueAtTime(0, context.currentTime + time + 0.7)
 				}
