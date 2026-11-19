@@ -338,10 +338,19 @@ test('MOSS tool args are validated and results come only after real execution', 
 		name: 'add_texts',
 		input: { texts: [{ id: 'pinned', x: 10, y: 20, text: 'Pinned result' }] },
 	})
-	const reply = result.result as { ok: boolean; revision: number; created: { id: string }[] }
+	const reply = result.result as {
+		ok: boolean
+		revision: number
+		created: { id: string; type: string; x?: number; y?: number; w?: number; h?: number }[]
+	}
 	assert.equal(reply.ok, true)
 	assert.equal(reply.revision, 1)
-	assert.deepEqual(reply.created, [{ id: 'pinned', type: 'text' }])
+	assert.equal(reply.created[0]?.id, 'pinned')
+	assert.equal(reply.created[0]?.type, 'text')
+	assert.equal(reply.created[0]?.x, 10)
+	assert.equal(reply.created[0]?.y, 20)
+	assert.ok((reply.created[0]?.w ?? 0) > 40)
+	assert.ok((reply.created[0]?.h ?? 0) > 20)
 	assert.equal((await store.getBoard('canvas-a')).shapes.length, 0)
 	assert.equal((await store.getBoard('canvas-b')).shapes.length, 1)
 

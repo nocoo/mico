@@ -20,6 +20,17 @@ test('copyable card fragments render inside the isolated HTML card', async ({
 			title: 'Design fragments',
 			html: `<!doctype html><html><head><style>${HTML_CARD_CSS}</style></head><body>${HTML_CARD_FRAGMENTS}</body></html>`,
 		},
+		{
+			id: 'auto-styled-card',
+			type: 'html',
+			x: 900,
+			y: 150,
+			w: 620,
+			h: 550,
+			color: '#00a2e1',
+			title: 'Auto styled fragments',
+			html: HTML_CARD_FRAGMENTS,
+		},
 	])
 	await page.setViewportSize({ width: 1440, height: 960 })
 	await page.emulateMedia({ reducedMotion: 'reduce' })
@@ -73,4 +84,19 @@ test('copyable card fragments render inside the isolated HTML card', async ({
 		path: testInfo.outputPath('html-card-design.png'),
 		animations: 'disabled',
 	})
+
+	const autoFrame = page.frameLocator('[data-shape-id="auto-styled-card"] iframe')
+	const autoMetrics = await autoFrame.locator('.mico-report').evaluate((report) => {
+		const doc = report.ownerDocument
+		const panel = report.querySelector('.mico-panel')
+		if (!panel) throw new Error('Missing panel in auto-styled card')
+		return {
+			panelRadius: getComputedStyle(panel).borderRadius,
+			bodyBackground: getComputedStyle(doc.body).backgroundColor,
+			bodyColor: getComputedStyle(doc.body).color,
+		}
+	})
+	expect(autoMetrics.panelRadius).toBe('20px')
+	expect(autoMetrics.bodyBackground).toBe('rgba(0, 0, 0, 0)')
+	expect(autoMetrics.bodyColor).toBe('oklch(0.27 0.04 285)')
 })

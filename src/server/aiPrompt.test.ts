@@ -39,15 +39,16 @@ test('live drawing instructions organize three semantic groups left to right', (
 	assert.match(AI_LECTURE_PROMPT, /rightmost HTML summary/)
 })
 
-test('HTML cards share a copyable design system', () => {
+test('HTML cards share a preloaded design system', () => {
 	assert.ok(AI_SYSTEM_PROMPT.includes(HTML_CARD_DESIGN_INSTRUCTIONS))
-	assert.ok(HTML_CARD_DESIGN_INSTRUCTIONS.includes(`<style>${HTML_CARD_CSS}</style>`))
+	assert.equal(HTML_CARD_DESIGN_INSTRUCTIONS.includes(HTML_CARD_CSS), false)
+	assert.match(HTML_CARD_DESIGN_INSTRUCTIONS, /automatically injected/i)
 	assert.ok(HTML_CARD_DESIGN_INSTRUCTIONS.includes(HTML_CARD_FRAGMENTS))
 	for (const part of ['mico-panel', 'mico-hero', 'mico-list', 'mico-tile', 'mico-table']) {
 		assert.ok(HTML_CARD_CSS.includes(`.${part}`))
 		assert.ok(HTML_CARD_FRAGMENTS.includes(part))
 	}
-	assert.match(SUMMARY_CARD_INSTRUCTIONS, /reusable HTML card CSS/)
+	assert.match(SUMMARY_CARD_INSTRUCTIONS, /reusable HTML card/i)
 })
 
 test('image generation is optional, asynchronous and respects board layout', () => {

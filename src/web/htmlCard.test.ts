@@ -20,8 +20,11 @@ test('HTML cards embed Bootstrap, scripts and a restrictive CSP', () => {
 	assert.match(withHead, /img-src data:/)
 	assert.match(withHead, /font-src data:/)
 	assert.match(withHead, /<style>\.bootstrap-probe/)
+	assert.match(withHead, /\.mico-report/)
+	assert.match(withHead, /\.mico-panel/)
 	assert.match(withHead, /<script>window\.bootstrapProbe = true<\/script>/)
 	assert.ok(withHead.indexOf('.bootstrap-probe') < withHead.indexOf('.user'))
+	assert.ok(withHead.indexOf('.mico-report') < withHead.indexOf('.user'))
 
 	const withoutHead = htmlCardDocument(
 		'<html><body><h1>Hi</h1></body></html>',

@@ -13,7 +13,7 @@ import {
 import { ALLOWED_ORIGINS } from '../shared/config.ts'
 import type { ChatSettings } from './aiConfig.ts'
 import { buildInstructions } from './aiPrompt.ts'
-import { createCanvasTools } from './aiTools.ts'
+import { createCanvasTools, selectToolsForTurn } from './aiTools.ts'
 import type { ImageGenerationService } from './imageGeneration.ts'
 import { createRedirectSafeFetch } from './managedIdentity.ts'
 import { OperationError, type TenantStore } from './store.ts'
@@ -192,18 +192,24 @@ export async function streamAiChat({
 		headers['Access-Control-Allow-Origin'] = origin
 		headers.Vary = 'Origin'
 	}
+	const allTools = await createCanvasTools({
+		store,
+		broadcast,
+		selection: request.selection,
+		canvasId,
+		revision: board.revision,
+		imageGeneration,
+	})
+	const tools = selectToolsForTurn(allTools, {
+		mode: request.mode,
+		imageGenerationAvailable: imageGeneration?.isAvailable() ?? false,
+		hasBoardImages: board.shapes.some((shape) => shape.type === 'image'),
+	})
 	const result = streamText({
 		model,
 		instructions: buildInstructions(board, request.selection, request.mode),
 		messages: await convertToModelMessages(request.messages),
-		tools: await createCanvasTools({
-			store,
-			broadcast,
-			selection: request.selection,
-			canvasId,
-			revision: board.revision,
-			imageGeneration,
-		}),
+		tools,
 		stopWhen:
 			request.mode === 'lecture'
 				? [

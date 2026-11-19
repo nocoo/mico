@@ -302,7 +302,9 @@ test.describe('MOSS Live browser integration', () => {
 			created?: { id: string; type: string }[]
 		}
 		expect(parsedResult.ok).toBe(true)
-		expect(parsedResult.created).toContainEqual({ id: 'moss-note-browser', type: 'note' })
+		expect(parsedResult.created).toContainEqual(
+			expect.objectContaining({ id: 'moss-note-browser', type: 'note' }),
+		)
 		await expect
 			.poll(() =>
 				moss.messages.some(

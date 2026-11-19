@@ -1,3 +1,5 @@
+import { HTML_CARD_CSS } from '../shared/htmlCardDesign.ts'
+
 const CARD_CSP =
 	"<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'\">"
 
@@ -11,7 +13,7 @@ function frameworkHead(bootstrapCss: string, bootstrapJs: string): string {
 	if (cachedCss !== bootstrapCss || cachedJs !== bootstrapJs) {
 		cachedCss = bootstrapCss
 		cachedJs = bootstrapJs
-		cachedHead = `${CARD_CSP}<style>${bootstrapCss}</style><script>${bootstrapJs}</script>`
+		cachedHead = `${CARD_CSP}<style>${bootstrapCss}\n${HTML_CARD_CSS}</style><script>${bootstrapJs}</script>`
 	}
 	return cachedHead
 }

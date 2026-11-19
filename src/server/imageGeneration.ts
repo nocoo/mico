@@ -123,6 +123,10 @@ export class ImageGenerationService {
 		return this.busyJobId
 	}
 
+	isAvailable(): boolean {
+		return Boolean(this.generator || this.env.AZURE_OPENAI_ENDPOINT?.trim())
+	}
+
 	async start(request: ImageGenerationRequest): Promise<{
 		ok: true
 		status: 'pending'

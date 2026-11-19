@@ -39,8 +39,8 @@ export const HTML_CARD_FRAGMENTS = `<main class="mico-report">
 
 export const HTML_CARD_DESIGN_INSTRUCTIONS = `# Reusable HTML card design
 
-For every generated HTML card, copy the following CSS into a <style> element inside the card HTML. The sandbox cannot inherit the whiteboard's CSS. Use and adapt the relevant card, hero, list, tile, tag and table fragments below instead of inventing a new visual system. Replace all example text with supported content and omit unused fragments; do not invent facts to fill the layout. Adjust the grid for the content and card width. Preserve readable spacing and ensure the complete card fits without clipping or scrolling.
+Bootstrap 5 CSS/JS and the reusable .mico-* design CSS are automatically injected into every HTML card's <head>; do NOT copy <style> boilerplate for these base classes into card html. Compose semantic <main class="mico-report"> content directly from the fragments below, omit unused fragments, replace example copy with supported facts, and size cards generously so content fits without clipping or scrolling.
 
-<style>${HTML_CARD_CSS}</style>
+Available classes: .mico-report, .mico-eyebrow, .mico-grid (2-col), .mico-full (span all cols), .mico-panel, .mico-hero, .mico-tiles (3-col), .mico-tile, .mico-list, .mico-table, .mico-tag.
 
 ${HTML_CARD_FRAGMENTS}`

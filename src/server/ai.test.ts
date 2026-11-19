@@ -12,7 +12,8 @@ import { sanitizeInterruptedMessages } from './ai.ts'
 import { boardDigest, digestShape } from './aiBoard.ts'
 import { createMockAiModel } from './aiMock.ts'
 import { buildInstructions } from './aiPrompt.ts'
-import { createCanvasTools } from './aiTools.ts'
+import { createCanvasTools, selectToolsForTurn } from './aiTools.ts'
+import { ImageGenerationService } from './imageGeneration.ts'
 import { createDaemon, type Daemon } from './index.ts'
 import { BoardStore, LOCAL_TENANT, type TenantStore } from './store.ts'
 
@@ -1460,5 +1461,114 @@ test('AI HTML cards embed Lucide icons and expose full markup for later updates'
 		const card = (await store.getBoard()).shapes.find((shape) => shape.id === 'summary')
 		assert.ok(card?.type === 'html')
 		assert.match(card.html ?? '', /<svg[^>]*lucide-clipboard-list/)
+	})
+})
+
+test('parallel same-step canvas tool calls serialize cleanly and return geometry receipts', async () => {
+	await withStore(async (store) => {
+		const tools = await createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: await store.getActiveCanvasId(),
+		})
+		const [noteReply, boxReply, connectorReply, frameReply] = (await Promise.all([
+			run(tools.add_notes, {
+				notes: [{ id: 'p-note', x: 80, y: 240, text: 'Evidence note', label: 'Context' }],
+			}),
+			run(tools.add_boxes, {
+				boxes: [{ id: 'p-box', x: 420, y: 240, w: 200, h: 100, text: 'Logic node' }],
+			}),
+			run(tools.add_connectors, {
+				connectors: [{ id: 'p-conn', from: 'p-note', to: 'p-box' }],
+			}),
+			run(tools.add_frames, {
+				frames: [{ id: 'p-frame', title: 'Topic 1', memberIds: ['p-note', 'p-box'] }],
+			}),
+		])) as Array<{
+			ok: boolean
+			revision: number
+			created?: Array<{ id: string; type: string; x?: number; y?: number; w?: number; h?: number }>
+		}>
+
+		assert.equal(noteReply.ok, true)
+		assert.equal(boxReply.ok, true)
+		assert.equal(connectorReply.ok, true)
+		assert.equal(frameReply.ok, true)
+		assert.equal(noteReply.revision, 1)
+		assert.equal(boxReply.revision, 2)
+		assert.equal(connectorReply.revision, 3)
+		assert.equal(frameReply.revision, 4)
+
+		const createdNote = noteReply.created?.[0]
+		assert.equal(createdNote?.id, 'p-note')
+		assert.equal(createdNote?.type, 'note')
+		assert.equal(createdNote?.x, 80)
+		assert.equal(createdNote?.y, 240)
+		assert.equal(createdNote?.w, 260)
+		assert.ok((createdNote?.h ?? 0) > 180)
+		assert.deepEqual(connectorReply.created, [{ id: 'p-conn', type: 'connector' }])
+		assert.equal(frameReply.created?.[0]?.id, 'p-frame')
+		assert.equal(frameReply.created?.[0]?.x, 40)
+
+		const grown = (await run(tools.update_shapes, {
+			updates: [{ id: 'p-box', patch: { x: 640 } }],
+		})) as {
+			ok: boolean
+			updated?: Array<{ id: string; type: string; x?: number }>
+			grownFrames?: Array<{ id: string; x: number; y: number; w: number; h: number }>
+		}
+		assert.equal(grown.ok, true)
+		assert.equal(grown.updated?.[0]?.id, 'p-box')
+		assert.equal(grown.updated?.[0]?.x, 640)
+		assert.equal(grown.grownFrames?.[0]?.id, 'p-frame')
+		assert.equal(grown.grownFrames?.[0]?.w, 840)
+	})
+})
+
+test('get_board requires ids for include_html and selectToolsForTurn gates capabilities', async () => {
+	await withStore(async (store) => {
+		const imageService = new ImageGenerationService(store, () => {}, {
+			config: { endpoint: '', apiKey: '', model: 'gpt-image-2.5-flare' },
+		})
+		assert.equal(imageService.isAvailable(), false)
+
+		const activeImageService = new ImageGenerationService(store, () => {}, {
+			generator: async () => new Uint8Array([1, 2, 3]),
+		})
+		assert.equal(activeImageService.isAvailable(), true)
+
+		const tools = await createCanvasTools({
+			store,
+			broadcast: () => {},
+			selection: [],
+			canvasId: await store.getActiveCanvasId(),
+		})
+		const rejected = (await run(tools.get_board, { include_html: true })) as {
+			ok: boolean
+			error?: string
+		}
+		assert.equal(rejected.ok, false)
+		assert.equal(rejected.error, 'INVALID_REQUEST')
+
+		const lectureNoImage = selectToolsForTurn(tools, {
+			mode: 'lecture',
+			imageGenerationAvailable: false,
+			hasBoardImages: false,
+		})
+		assert.equal('generate_image' in lectureNoImage, false)
+		assert.equal('image_generation_status' in lectureNoImage, false)
+		assert.equal('add_strokes' in lectureNoImage, false)
+		assert.equal('add_images' in lectureNoImage, false)
+		assert.equal('add_notes' in lectureNoImage, true)
+
+		const chatWithImages = selectToolsForTurn(tools, {
+			mode: 'chat',
+			imageGenerationAvailable: true,
+			hasBoardImages: true,
+		})
+		assert.equal('generate_image' in chatWithImages, true)
+		assert.equal('add_strokes' in chatWithImages, true)
+		assert.equal('add_images' in chatWithImages, true)
 	})
 })
