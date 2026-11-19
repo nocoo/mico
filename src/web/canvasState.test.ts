@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import type { CanvasSummary } from '../shared/types.ts'
-import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from './canvasState.ts'
+import type { CanvasSummary, Shape } from '../shared/types.ts'
+import {
+	mergeSnapshotCanvases,
+	rememberBoard,
+	shouldApplyBoard,
+	upsertCanvasSummary,
+} from './canvasState.ts'
 
 const base = (overrides: Partial<CanvasSummary> = {}): CanvasSummary => ({
 	id: 'canvas',
@@ -66,4 +71,24 @@ test('the board cache never moves backwards', () => {
 	rememberBoard(cache, 'canvas', { revision: 2, shapes: [] })
 	rememberBoard(cache, 'canvas', { revision: 1, shapes: [] })
 	assert.equal(cache.get('canvas')?.revision, 2)
+})
+
+test('duplicate board application is skipped only for an unchanged board', () => {
+	const shape: Shape = {
+		id: 'a',
+		type: 'rectangle',
+		x: 0,
+		y: 0,
+		w: 10,
+		h: 10,
+		color: '#fff',
+	}
+	const current = { revision: 3, shapes: [shape] }
+	assert.equal(shouldApplyBoard(current, { revision: 3, shapes: [{ ...shape }] }), false)
+	assert.equal(shouldApplyBoard(current, current), false)
+	assert.equal(shouldApplyBoard(current, { revision: 3, shapes: [{ ...shape, x: 40 }] }), true)
+	assert.equal(shouldApplyBoard(current, { revision: 3, shapes: [] }), true)
+	assert.equal(shouldApplyBoard(current, { revision: 4, shapes: [] }), true)
+	assert.equal(shouldApplyBoard(current, { revision: 2, shapes: [] }), false)
+	assert.equal(shouldApplyBoard({ revision: 0, shapes: [] }, { revision: 0, shapes: [] }), false)
 })

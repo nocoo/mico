@@ -163,8 +163,3 @@ export type Operation =
 	  }
 	| { type: 'set_action_done'; id: string; itemId: string; done: boolean }
 	| { type: 'delete'; id: string }
-
-export interface OperationRequest {
-	operations: Operation[]
-	expectedRevision?: number
-}

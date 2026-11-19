@@ -3,6 +3,7 @@ import { Sparkles, UserRound, X } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import packageJson from '../../../../package.json' with { type: 'json' }
 import type { WhiteboardMember } from '../../../shared/whiteboards'
+import { useI18n } from '../../i18n'
 import '../debug/debug.css'
 import './demo.css'
 
@@ -17,6 +18,7 @@ export interface DemoPanelProps {
 	presenterId: string | null
 	selfId: string | null
 	requesterIds?: string[]
+	invitedMemberId?: string | null
 	following: boolean
 	ephemeral: boolean
 	aiEnabled: boolean
@@ -30,6 +32,7 @@ export interface DemoPanelProps {
 		editorIds: string[]
 		onChange: (participantId: string, allowed: boolean) => void
 	}
+	onInvitePresenter?: (targetMemberId: string) => void
 }
 
 export function DemoPanel({
@@ -43,6 +46,7 @@ export function DemoPanel({
 	presenterId,
 	selfId,
 	requesterIds = [],
+	invitedMemberId = null,
 	following,
 	ephemeral,
 	aiEnabled,
@@ -52,7 +56,9 @@ export function DemoPanel({
 	onTransferPresenter,
 	onDeclinePresenter,
 	canvasAccess,
+	onInvitePresenter,
 }: DemoPanelProps) {
+	const { messages, preference, setPreference } = useI18n()
 	const [draftName, setDraftName] = useState(username)
 	const presenterLabelId = useId()
 
@@ -87,7 +93,7 @@ export function DemoPanel({
 				<button
 					type="button"
 					className="debug-trigger frame-identity"
-					aria-label="Workspace profile"
+					aria-label={messages.identity.workspaceProfile}
 					aria-expanded={open}
 					aria-controls="demo-panel"
 					data-demo-toggle="true"
@@ -101,7 +107,7 @@ export function DemoPanel({
 			<Popover.Content
 				id="demo-panel"
 				className="debug-panel frame-identity identity-surface"
-				aria-label="Workspace profile"
+				aria-label={messages.identity.workspaceProfile}
 				data-demo-panel="true"
 				side="bottom"
 				align="start"
@@ -109,17 +115,21 @@ export function DemoPanel({
 				collisionPadding={14}
 			>
 				<header className="debug-panel-header">
-					<span className="debug-panel-title">Demo profile</span>
+					<span className="debug-panel-title">{messages.demo.profileTitle}</span>
 					<Popover.Close>
-						<button type="button" className="debug-close" aria-label="Close profile">
+						<button
+							type="button"
+							className="debug-close"
+							aria-label={messages.identity.closeProfile}
+						>
 							<X aria-hidden="true" />
 						</button>
 					</Popover.Close>
 				</header>
 				<div className="debug-panel-content">
-					<form className="demo-panel-form" onSubmit={submitName}>
+					<form className="demo-panel-form demo-card" onSubmit={submitName}>
 						<label className="demo-field">
-							<span>Your name</span>
+							<span>{messages.demo.yourName}</span>
 							<div className="demo-name-row">
 								<input
 									className="demo-name-input"
@@ -127,20 +137,20 @@ export function DemoPanel({
 									maxLength={80}
 									value={draftName}
 									onChange={(event) => setDraftName(event.target.value)}
-									placeholder="Enter your name"
+									placeholder={messages.demo.enterName}
 								/>
 								<button
 									type="submit"
 									className="demo-name-save"
 									disabled={busy || !draftName.trim() || draftName.trim() === username}
 								>
-									Save
+									{messages.common.save}
 								</button>
 							</div>
 						</label>
 						{otherPresenter ? (
 							<div className="demo-presenter-toggle">
-								<span>Presenter</span>
+								<span>{messages.demo.presenter}</span>
 								{onRequestPresenter && (
 									<button
 										type="button"
@@ -148,13 +158,13 @@ export function DemoPanel({
 										disabled={busy}
 										onClick={() => onRequestPresenter(!selfRequested)}
 									>
-										{selfRequested ? 'Cancel request' : 'Request presenter'}
+										{selfRequested ? messages.demo.cancelRequest : messages.demo.requestPresenter}
 									</button>
 								)}
 							</div>
 						) : (
 							<div className="demo-presenter-toggle">
-								<span id={presenterLabelId}>Presenter</span>
+								<span id={presenterLabelId}>{messages.demo.presenter}</span>
 								<button
 									type="button"
 									role="switch"
@@ -175,12 +185,12 @@ export function DemoPanel({
 						)}
 					</form>
 					{members.length > 0 && (
-						<section className="demo-members" aria-label="Online members">
+						<section className="demo-members demo-card" aria-label="Online members">
 							<div className="demo-members-header">
-								<span>Online ({members.length})</span>
+								<span>{messages.demo.onlineMembers(members.length)}</span>
 								{otherPresenter && !following && (
 									<button type="button" className="demo-follow-button" onClick={onFollowPresenter}>
-										Follow presenter
+										{messages.demo.followPresenter}
 									</button>
 								)}
 							</div>
@@ -200,7 +210,7 @@ export function DemoPanel({
 											/>
 											<span className="demo-member-name">
 												{member.username}
-												{member.id === selfId ? ' (you)' : ''}
+												{member.id === selfId ? ` (${messages.common.you})` : ''}
 											</span>
 											<span className="demo-member-actions">
 												{canvasAccess &&
@@ -211,16 +221,22 @@ export function DemoPanel({
 														<button
 															type="button"
 															className="demo-member-btn"
-															aria-label={`${hasCanvasAccess ? 'Revoke edit access from' : 'Grant edit access to'} ${member.username}`}
+															aria-label={
+																hasCanvasAccess
+																	? messages.demo.revokeEditAria(member.username)
+																	: messages.demo.grantEditAria(member.username)
+															}
 															onClick={() => canvasAccess.onChange(participantId, !hasCanvasAccess)}
 														>
-															{hasCanvasAccess ? 'Revoke edit' : 'Grant edit'}
+															{hasCanvasAccess ? messages.demo.revokeEdit : messages.demo.grantEdit}
 														</button>
 													)}
-												{member.sharer && <span className="demo-member-badge">Presenter</span>}
+												{member.sharer && (
+													<span className="demo-member-badge">{messages.demo.badgePresenter}</span>
+												)}
 												{!member.sharer && isRequester && (
 													<span className="demo-member-badge demo-member-badge--request">
-														Requested
+														{messages.demo.badgeRequested}
 													</span>
 												)}
 												{sharer &&
@@ -232,23 +248,29 @@ export function DemoPanel({
 																className="demo-member-btn demo-member-btn--primary"
 																onClick={() => onTransferPresenter?.(member.id)}
 															>
-																Approve
+																{messages.demo.approve}
 															</button>
 															<button
 																type="button"
 																className="demo-member-btn"
 																onClick={() => onDeclinePresenter?.(member.id)}
 															>
-																Decline
+																{messages.demo.decline}
 															</button>
 														</>
+													) : invitedMemberId === member.id ? (
+														<span className="demo-member-badge demo-member-badge--request">
+															{messages.demo.badgeInvited}
+														</span>
 													) : (
 														<button
 															type="button"
 															className="demo-member-btn"
-															onClick={() => onTransferPresenter?.(member.id)}
+															onClick={() =>
+																(onInvitePresenter ?? onTransferPresenter)?.(member.id)
+															}
 														>
-															Transfer
+															{messages.demo.transfer}
 														</button>
 													))}
 											</span>
@@ -259,12 +281,13 @@ export function DemoPanel({
 						</section>
 					)}
 					{canvasAccess && (
-						<section className="debug-row" aria-label="Canvas edit access">
+						<section className="debug-row" aria-label={messages.demo.canvasEditAccess}>
 							<span className="debug-row-copy">
 								<strong>
-									{canvasAccess.name}: {canEditCanvas ? 'Edit all objects' : 'Own objects only'}
+									{canvasAccess.name}:{' '}
+									{canEditCanvas ? messages.demo.editAllObjects : messages.demo.ownObjectsOnly}
 								</strong>
-								<span>Presenter grants apply only to this canvas, until revoked.</span>
+								<span>{messages.demo.canvasGrantHint}</span>
 								{sharer &&
 									canvasAccess.editorIds
 										.filter((id) => !members.some((member) => member.participantId === id))
@@ -275,19 +298,19 @@ export function DemoPanel({
 												className="demo-member-btn"
 												onClick={() => canvasAccess.onChange(id, false)}
 											>
-												Revoke edit: offline participant {id.slice(0, 8)}
+												{messages.demo.revokeOfflineEditor(id.slice(0, 8))}
 											</button>
 										))}
 							</span>
 						</section>
 					)}
 					{ephemeral && (
-						<section className="debug-row" aria-label="Preview status">
-							<strong>Preview</strong>
-							<span>Data may disappear</span>
+						<section className="debug-row" aria-label={messages.identity.previewStatus}>
+							<strong>{messages.identity.previewStatus}</strong>
+							<span>{messages.identity.previewDisappear}</span>
 						</section>
 					)}
-					<section className="debug-row" aria-label="AI availability">
+					<section className="debug-row" aria-label={messages.identity.aiAvailable}>
 						<span
 							className={`debug-status-icon ${aiEnabled && sharer ? 'enabled' : 'unavailable'}`}
 						>
@@ -295,16 +318,43 @@ export function DemoPanel({
 						</span>
 						<span className="debug-row-copy">
 							<strong>
-								{!aiEnabled ? 'AI unavailable' : sharer ? 'AI enabled' : 'AI (Presenter only)'}
+								{!aiEnabled
+									? messages.identity.aiUnavailable
+									: sharer
+										? messages.identity.aiAvailable
+										: messages.identity.aiPresenterOnly}
 							</strong>
 							{(!aiEnabled || !sharer) && (
 								<span>
-									{aiEnabled ? 'Become presenter to use AI' : 'Manual drawing is available'}
+									{aiEnabled
+										? messages.identity.aiPresenterHint
+										: messages.identity.aiNotConfigured}
 								</span>
 							)}
 						</span>
 					</section>
-					<section className="debug-version">Version v{packageJson.version}</section>
+					<section className="debug-row" aria-label={messages.common.language}>
+						<strong>{messages.common.language}</strong>
+						<div className="demo-lang-group">
+							{(['auto', 'en', 'zh'] as const).map((pref) => (
+								<button
+									key={pref}
+									type="button"
+									className={`demo-member-btn${preference === pref ? ' demo-member-btn--primary' : ''}`}
+									onClick={() => setPreference(pref)}
+								>
+									{pref === 'auto'
+										? messages.common.languageAuto
+										: pref === 'en'
+											? messages.common.languageEn
+											: messages.common.languageZh}
+								</button>
+							))}
+						</div>
+					</section>
+					<section className="debug-version">
+						{messages.identity.version} v{packageJson.version}
+					</section>
 				</div>
 			</Popover.Content>
 		</Popover.Root>

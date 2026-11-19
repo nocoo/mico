@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { CanvasHistory, HistoryConflict, type HistoryDirection } from '../../shared/history'
 import type {
 	Board,
 	CanvasDetail,
@@ -8,16 +9,19 @@ import type {
 	ServerEvent,
 } from '../../shared/types'
 import type { PresenceEvent, PresenceMessage, WhiteboardSession } from '../../shared/whiteboards'
-import { mergeSnapshotCanvases, rememberBoard, upsertCanvasSummary } from '../canvasState'
+import {
+	mergeSnapshotCanvases,
+	rememberBoard,
+	shouldApplyBoard,
+	upsertCanvasSummary,
+} from '../canvasState'
 import { canvasFetch as fetch, reconnectWhiteboard, whiteboardUrl } from '../whiteboards/client'
-import { CanvasHistory, HistoryConflict, type HistoryDirection } from './history'
 
 const WS_URL = new URL('/api/events', window.location.href)
 WS_URL.protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
 
 interface CanvasSessionViewModelProps {
 	whiteboard?: WhiteboardSession
-	readOnly?: boolean
 	onPresence?: (event: PresenceEvent) => void
 	onSocketReady?: () => void
 	announce: (message: string) => void
@@ -26,6 +30,21 @@ interface CanvasSessionViewModelProps {
 }
 
 type RebaseCheck = (board: Board) => boolean | Operation[]
+
+export type SubmitStatus = 'applied' | 'rejected' | 'unknown'
+
+export interface SubmitOutcome {
+	readonly status: SubmitStatus
+	readonly message?: string
+	readonly board?: Board
+}
+
+export interface SubmitOptions {
+	readonly expectedRevision?: number
+	readonly canRebase?: RebaseCheck
+	readonly verifyShapeId?: string
+	readonly announce?: boolean
+}
 
 interface PendingReplay {
 	canvasId: string
@@ -50,7 +69,6 @@ async function responseErrorMessage(response: Response, fallback: string): Promi
 
 export function useCanvasSessionViewModel({
 	whiteboard,
-	readOnly = false,
 	onPresence,
 	onSocketReady,
 	announce,
@@ -123,7 +141,7 @@ export function useCanvasSessionViewModel({
 
 	const applyBoard = useCallback(
 		(next: Board) => {
-			if (next.revision < revisionRef.current) return
+			if (!shouldApplyBoard(boardRef.current, next)) return
 			const canvasId = activeCanvasIdRef.current
 			onBoardTransitionRef.current(boardRef.current, next, false, canvasId)
 			revisionRef.current = next.revision
@@ -146,7 +164,7 @@ export function useCanvasSessionViewModel({
 			const initialLoad = activeCanvasIdRef.current === ''
 			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
 			activeCanvasIdRef.current = snapshot.activeCanvasId
-			requestedCanvasIdRef.current = snapshot.activeCanvasId
+			if (!requestedCanvasIdRef.current) requestedCanvasIdRef.current = snapshot.activeCanvasId
 			setActiveCanvasId(snapshot.activeCanvasId)
 			setCanvasEditorIds(snapshot.canvasEditorIds ?? [])
 			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
@@ -178,48 +196,64 @@ export function useCanvasSessionViewModel({
 		[cacheBoard],
 	)
 
+	const verifyCreateCommitted = useCallback(async (canvasId: string, shapeId: string) => {
+		try {
+			const response = await fetch(`/api/canvases/${encodeURIComponent(canvasId)}`, {
+				signal: AbortSignal.timeout(3000),
+			})
+			if (!response.ok) return null
+			const detail = (await response.json()) as CanvasDetail
+			return detail.board.shapes.some((shape) => shape.id === shapeId) ? detail.board : null
+		} catch {
+			return null
+		}
+	}, [])
+
 	const submitOperations = useCallback(
 		(
 			command: Operation[] | HistoryDirection,
-			expectedRevision?: number,
-			canRebase?: RebaseCheck,
-		) => {
-			if (readOnly) {
-				announceRef.current('Participants can only pan and zoom.')
-				return Promise.resolve(false)
-			}
+			options: SubmitOptions = {},
+		): Promise<SubmitOutcome> => {
+			const { expectedRevision, canRebase } = options
+			const independent = typeof command !== 'string' && Boolean(options.verifyShapeId)
 			const targetCanvasId = activeCanvasIdRef.current
 			setPendingOperations((count) => count + 1)
-			const result = operationQueue.current.then(async () => {
+			const result = operationQueue.current.then(async (): Promise<SubmitOutcome> => {
 				if (!activeCanvasIdRef.current && initialFetchRef.current) {
 					await initialFetchRef.current
 				}
 				const resolvedCanvasId = targetCanvasId || activeCanvasIdRef.current
+				let preSubmitBoard: Board | null = null
+				let history: CanvasHistory | undefined
 				try {
-					if (!resolvedCanvasId) return false
+					if (!resolvedCanvasId) return { status: 'rejected', message: 'Canvas is not ready' }
 					if (replayRef.current?.uncertain) {
 						announceRef.current(
 							'Waiting to confirm history replay. Reconnect or reload to reset local history.',
 						)
-						return false
+						return {
+							status: 'rejected',
+							message: 'Waiting to confirm history replay',
+						}
 					}
-					let history = historiesRef.current.get(resolvedCanvasId)
+					history = historiesRef.current.get(resolvedCanvasId)
 					if (!history) {
 						history = new CanvasHistory()
 						historiesRef.current.set(resolvedCanvasId, history)
 					}
-					const maxAttempts = canRebase && typeof command !== 'string' ? 4 : 1
+					const maxAttempts = canRebase && typeof command !== 'string' && !independent ? 4 : 1
 					for (let attempt = 0; attempt < maxAttempts; attempt++) {
 						const targetBoard = boardCacheRef.current.get(resolvedCanvasId)
-						if (!targetBoard) return false
+						if (!targetBoard) return { status: 'rejected', message: 'Canvas is not ready' }
+						preSubmitBoard = targetBoard
 						let operations =
 							typeof command === 'string' ? history.plan(targetBoard, command) : command
-						if (!operations) return false
+						if (!operations) return { status: 'rejected', message: 'Nothing to apply' }
 						if (canRebase) {
 							const rebased = canRebase(targetBoard)
 							if (!rebased) {
 								announceRef.current('Object changed during drag')
-								return false
+								return { status: 'rejected', message: 'Object changed during drag' }
 							}
 							if (Array.isArray(rebased)) operations = rebased
 						}
@@ -240,11 +274,15 @@ export function useCanvasSessionViewModel({
 							signal: AbortSignal.timeout(10000),
 							body: JSON.stringify({
 								operations,
-								expectedRevision: revision,
+								...(independent ? {} : { expectedRevision: revision }),
 								canvasId: resolvedCanvasId,
 							}),
 						})
 						if (!response.ok) {
+							const message = await responseErrorMessage(
+								response,
+								`Operation failed: HTTP ${response.status}`,
+							)
 							let cached = boardCacheRef.current.get(resolvedCanvasId)
 							if (!(response.status === 409 && canRebase && cached && cached.revision > revision)) {
 								const current = await fetch('/api/state?previews=0', {
@@ -264,10 +302,10 @@ export function useCanvasSessionViewModel({
 							) {
 								continue
 							}
-							announceRef.current(
-								await responseErrorMessage(response, `Operation failed: HTTP ${response.status}`),
-							)
-							return false
+							if (options.announce !== false) {
+								announceRef.current(message)
+							}
+							return { status: 'rejected', message }
 						}
 						const next = (await response.json()) as Board
 						if (typeof command === 'string') history.complete(command)
@@ -276,9 +314,9 @@ export function useCanvasSessionViewModel({
 						cacheBoard(resolvedCanvasId, next)
 						if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(next)
 						setApiConnected(true)
-						return true
+						return { status: 'applied', board: next }
 					}
-					return false
+					return { status: 'rejected', message: 'Operation not applied' }
 				} catch (error) {
 					const replay = replayRef.current
 					if (replay && !(error instanceof HistoryConflict)) {
@@ -311,18 +349,38 @@ export function useCanvasSessionViewModel({
 							completeReplay(replay)
 							if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(replay.confirmed)
 							setApiConnected(true)
-							return true
+							return { status: 'applied', board: replay.confirmed }
 						}
 					}
 					if (!(error instanceof HistoryConflict)) setApiConnected(false)
-					announceRef.current(
-						replay?.uncertain
-							? 'Waiting to confirm history replay. Reconnect or reload to reset local history.'
-							: error instanceof Error
-								? error.message
-								: 'Operation failed',
-					)
-					return false
+					if (independent && options.verifyShapeId && resolvedCanvasId) {
+						const verified = await verifyCreateCommitted(resolvedCanvasId, options.verifyShapeId)
+						if (verified) {
+							if (preSubmitBoard && history) history.record(preSubmitBoard, verified)
+							refreshHistory((version) => version + 1)
+							cacheBoard(resolvedCanvasId, verified)
+							if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(verified)
+							setApiConnected(true)
+							return { status: 'applied', board: verified }
+						}
+						return {
+							status: 'unknown',
+							message: error instanceof Error ? error.message : 'Connection lost',
+						}
+					}
+					if (options.announce !== false) {
+						announceRef.current(
+							replay?.uncertain
+								? 'Waiting to confirm history replay. Reconnect or reload to reset local history.'
+								: error instanceof Error
+									? error.message
+									: 'Operation failed',
+						)
+					}
+					return {
+						status: 'unknown',
+						message: error instanceof Error ? error.message : 'Operation failed',
+					}
 				} finally {
 					if (!replayRef.current?.uncertain) replayRef.current = null
 					setPendingOperations((count) => count - 1)
@@ -331,16 +389,29 @@ export function useCanvasSessionViewModel({
 			operationQueue.current = result.then(() => undefined)
 			return result
 		},
-		[applyBoard, applySnapshot, cacheBoard, completeReplay, readOnly],
+		[applyBoard, applySnapshot, cacheBoard, completeReplay, verifyCreateCommitted],
 	)
 
 	const postOperations = useCallback(
 		(operations: Operation[], expectedRevision?: number, canRebase?: RebaseCheck) =>
-			submitOperations(operations, expectedRevision, canRebase),
+			submitOperations(operations, { expectedRevision, canRebase, announce: true }).then(
+				(outcome) => outcome.status === 'applied',
+			),
 		[submitOperations],
 	)
-	const undo = useCallback(() => submitOperations('undo'), [submitOperations])
-	const redo = useCallback(() => submitOperations('redo'), [submitOperations])
+	const postOperationsDetailed = useCallback(
+		(operations: Operation[], options: Pick<SubmitOptions, 'canRebase' | 'verifyShapeId'> = {}) =>
+			submitOperations(operations, { ...options, announce: false }),
+		[submitOperations],
+	)
+	const undo = useCallback(
+		() => void submitOperations('undo', { announce: true }),
+		[submitOperations],
+	)
+	const redo = useCallback(
+		() => void submitOperations('redo', { announce: true }),
+		[submitOperations],
+	)
 
 	useEffect(() => {
 		let stopped = false
@@ -374,7 +445,14 @@ export function useCanvasSessionViewModel({
 		void initial.finally(() => {
 			if (initialFetchRef.current === initial) initialFetchRef.current = null
 		})
-		const poll = window.setInterval(() => void fetchState(false), 3000)
+		let pollInFlight = false
+		const poll = window.setInterval(() => {
+			if (pollInFlight) return
+			pollInFlight = true
+			void fetchState(false).finally(() => {
+				pollInFlight = false
+			})
+		}, 3000)
 
 		return () => {
 			stopped = true
@@ -489,8 +567,14 @@ export function useCanvasSessionViewModel({
 				setApiConnected(false)
 				announceRef.current(error instanceof Error ? error.message : 'Canvas request failed')
 			} finally {
-				if (targetCanvasId && requestedCanvasIdRef.current === targetCanvasId)
+				if (targetCanvasId) {
+					if (requestedCanvasIdRef.current === targetCanvasId)
+						requestedCanvasIdRef.current = activeCanvasIdRef.current
+				} else {
+					// A metadata request can change the active canvas (for example a
+					// delete); with no switch intent, follow the confirmed snapshot.
 					requestedCanvasIdRef.current = activeCanvasIdRef.current
+				}
 			}
 		},
 		[applySnapshot],
@@ -574,15 +658,19 @@ export function useCanvasSessionViewModel({
 		document.title = activeCanvasName ? `mico · ${activeCanvasName}` : 'mico'
 	}, [activeCanvasName])
 
+	useEffect(() => {
+		if (roomError) announceRef.current(roomError)
+	}, [roomError])
+
 	return {
 		board,
 		canvases,
 		activeCanvasId,
 		apiConnected,
 		wsConnected,
-		roomError,
 		sendPresence,
 		postOperations,
+		postOperationsDetailed,
 		undo,
 		redo,
 		canUndo:

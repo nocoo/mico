@@ -6,11 +6,11 @@ import {
 	buildAssistantRequestBody,
 	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
-	initialAssistantTab,
 	nextAssistantTab,
 	resolveAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
+	shouldFocusComposer,
 	shouldRestoreAssistantTriggerFocus,
 	summaryToolsCompleted,
 	takeLectureBatch,
@@ -53,10 +53,8 @@ test('summary requires successful HTML and action card results', () => {
 	)
 })
 
-test('assistant tab keyboard protocol opens recordings and reaches endpoints', () => {
-	assert.equal(DEFAULT_ASSISTANT_TAB, 'audio')
-	assert.equal(initialAssistantTab(''), 'audio')
-	assert.equal(initialAssistantTab('Draw a diagram'), 'chat')
+test('assistant tab keyboard protocol opens chat by default and reaches endpoints', () => {
+	assert.equal(DEFAULT_ASSISTANT_TAB, 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowLeft', true), 'settings')
 	assert.equal(nextAssistantTab('settings', 'ArrowRight', true), 'chat')
 	assert.equal(nextAssistantTab('chat', 'ArrowRight', true), 'audio')
@@ -154,4 +152,12 @@ test('trigger focus and initial prompt consume only after real lifecycle transit
 	assert.equal(shouldConsumeInitialPrompt(true, '  Draw a titration  '), true)
 	assert.equal(shouldConsumeInitialPrompt(false, 'Draw a titration'), false)
 	assert.equal(shouldConsumeInitialPrompt(true, '   '), false)
+})
+
+test('composer focus follows explicit opens, not initial mount or tab changes', () => {
+	assert.equal(shouldFocusComposer(true, true, 'chat'), false)
+	assert.equal(shouldFocusComposer(false, false, 'chat'), false)
+	assert.equal(shouldFocusComposer(false, true, 'chat'), true)
+	assert.equal(shouldFocusComposer(true, true, 'chat'), false)
+	assert.equal(shouldFocusComposer(false, true, 'audio'), false)
 })

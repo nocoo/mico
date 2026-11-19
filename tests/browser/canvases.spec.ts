@@ -215,6 +215,38 @@ test('renaming and deleting canvases uses the panel and keeps one canvas', async
 	).toBeDisabled()
 })
 
+test('deleting the active canvas clears the finished switch intent', async ({ page, request }) => {
+	await page.getByRole('button', { name: 'Canvases', exact: true }).click()
+	const panel = page.getByRole('region', { name: 'Canvases' })
+	await panel.getByRole('button', { name: 'New canvas', exact: true }).click()
+	await expect(page).toHaveTitle('mico · Canvas 2')
+	const created = await state(request)
+	const createdId = created.activeCanvasId
+
+	const item = panel.locator('.canvas-item').filter({ hasText: 'Canvas 2' })
+	await item.hover()
+	await panel.getByRole('button', { name: 'Delete Canvas 2', exact: true }).click()
+	await panel.getByRole('button', { name: 'Confirm delete Canvas 2', exact: true }).click()
+	await expect.poll(async () => (await state(request)).activeCanvasId).not.toBe(createdId)
+	await expect(page).toHaveTitle('mico · My canvas')
+	await page.keyboard.press('Escape')
+
+	await page.getByLabel('Choose image', { exact: true }).setInputFiles({
+		name: 'after-delete.png',
+		mimeType: 'image/png',
+		buffer: Buffer.from(
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+			'base64',
+		),
+	})
+	await expect
+		.poll(
+			async () =>
+				(await state(request)).board.shapes.filter((shape) => shape.type === 'image').length,
+		)
+		.toBe(1)
+})
+
 test('AI canvas operations update lists and synchronize the active canvas', async ({
 	page,
 	request,

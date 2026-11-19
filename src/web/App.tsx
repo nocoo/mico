@@ -7,24 +7,29 @@ import type { WhiteboardSession } from '../shared/whiteboards'
 import {
 	clearWhiteboard,
 	configurePresence,
+	currentMeetingId,
 	canvasFetch as fetch,
 	joinWhiteboard,
+	setMeetingScope,
 	updatePresenceSharer,
 } from './whiteboards/client'
 import { usePresence } from './whiteboards/usePresence'
 import { WhiteboardCursors } from './whiteboards/WhiteboardPresence'
 import './whiteboards/whiteboards.css'
-import { getAnchors, getConnectorAnchors } from './anchors'
+import { getAnchors, getConnectorAnchors } from '../shared/anchors'
+import { getQueryParam } from '../shared/query'
 import { BrushStroke } from './BrushStroke'
 import { ConnectionOverlay } from './ConnectionOverlay'
 import { CanvasBackdrop } from './canvas/CanvasBackdrop'
 import { CanvasMinimap } from './canvas/CanvasMinimap'
 import { CanvasView } from './canvas/CanvasView'
+import { beginDraft, finalizeDraft, updateDraft } from './canvas/draft'
 import { transitionEntryAnimations } from './canvas/entry-animation'
 import { JELLY_COLORS, jellyStyle } from './canvas/jelly'
 import { Marquee } from './canvas/Marquee'
 import { FrameLabel, ShapeView } from './canvas/ShapeView'
 import { useCanvasSessionViewModel } from './canvas/useCanvasSessionViewModel'
+import { usePendingCreations } from './canvas/usePendingCreations'
 import { canRebaseConnector, findSnapTarget, getNearestAnchor } from './connections'
 import { membershipAfterMove, membershipFor } from './containers'
 import {
@@ -40,10 +45,13 @@ import {
 } from './design'
 import { AssistantFrame } from './frame/assistant'
 import type { BrushWidth, DockLayout } from './frame/contracts'
+import { PresenterInviteDialog } from './frame/demo/PresenterInviteDialog'
+import { PresenterRequestDialog } from './frame/demo/PresenterRequestDialog'
 import { EmptyState } from './frame/empty/EmptyState'
 import { useEmptyStateViewModel } from './frame/empty/useEmptyStateViewModel'
 import { IdentityFrame } from './frame/identity'
 import { FRAME_LAYOUT } from './frame/layout'
+import type { LiveTopbarModel } from './frame/live/LiveModeFrame'
 import type { LocalModeOption } from './frame/local/LocalModeMenu'
 import { Toolbar } from './frame/toolbar'
 import { isSupportedImageFile, readImageDimensions, scaleImageDimensions } from './image'
@@ -59,7 +67,7 @@ import {
 } from './selection'
 import { type AlignmentGuide, snapMove } from './snap'
 import { useConnectionGesture } from './useConnectionGesture'
-import { fitViewport, panelViewportInset } from './viewport'
+import { clientToWorldPoint, fitViewport, panelViewportInset } from './viewport'
 
 const isConnector = (shape: Shape): shape is Connector => shape.type === 'connector'
 const isCanvasShape = (shape: Shape): shape is CanvasShape => shape.type !== 'connector'
@@ -69,7 +77,7 @@ const randomId = () => crypto.randomUUID()
 const DEMO_USERNAME_STORAGE_KEY = 'mico.demo.username'
 
 function initialDemoUsername(fallbackName = 'Guest'): string {
-	const fromUrl = new URLSearchParams(window.location.search).get('username')?.trim()
+	const fromUrl = getQueryParam(window.location.search, 'username')?.trim()
 	if (fromUrl) {
 		return fromUrl.slice(0, 80)
 	}
@@ -83,12 +91,12 @@ function initialDemoUsername(fallbackName = 'Guest'): string {
 }
 
 function initialDemoSharer(): boolean {
-	return new URLSearchParams(window.location.search).get('sharer') === 'true'
+	return getQueryParam(window.location.search, 'sharer') === 'true'
 }
 
 function initialLocalMode(authMode?: AuthMode, aiSettingsVisible?: boolean): LocalModeOption {
 	if (authMode !== 'none' || !aiSettingsVisible) return 'local'
-	const raw = new URLSearchParams(window.location.search).get('localMode')
+	const raw = getQueryParam(window.location.search, 'localmode')
 	if (raw === 'presenter' || raw === 'guest') return raw
 	return 'local'
 }
@@ -177,11 +185,14 @@ export default function App({
 	const [canvasPanelOpen, setCanvasPanelOpen] = useState(false)
 	const [debugPanelOpen, setDebugPanelOpen] = useState(false)
 	const [demoPanelOpen, setDemoPanelOpen] = useState(false)
+	const [liveTopbar, setLiveTopbar] = useState<LiveTopbarModel | null>(null)
+	const [openLiveSignal, setOpenLiveSignal] = useState(0)
+	const pendingLiveOpenRef = useRef(false)
 	const [aiPrompt, setAiPrompt] = useState(() =>
 		aiEnabled &&
 		(authMode !== 'demo' || initialDemoSharer()) &&
 		initialLocalMode(authMode, aiSettingsVisible) !== 'guest'
-			? (new URLSearchParams(window.location.search).get('ai')?.trim() ?? '')
+			? (getQueryParam(window.location.search, 'ai')?.trim() ?? '')
 			: '',
 	)
 	const [aiPanelOpen, setAiPanelOpen] = useState(
@@ -347,6 +358,7 @@ export default function App({
 			const url = new URL(window.location.href)
 			url.search = ''
 			url.searchParams.set('localMode', role)
+			setMeetingScope(url, currentMeetingId())
 			if (role === 'guest') {
 				const guestCount = presence.members.filter((member) => !member.sharer).length
 				url.searchParams.set('username', `Guest ${guestCount + 1}`)
@@ -379,10 +391,17 @@ export default function App({
 	const selectOnly = (id: string | null) => setSelectedIds(id ? [id] : [])
 	const [creation, setCreation] = useState<CanvasShape | null>(null)
 	const creationRef = useRef<CanvasShape | null>(null)
-	const [pendingCreations, setPendingCreations] = useState<Map<string, CanvasShape>>(
-		() => new Map(),
-	)
-	const pendingCreationsRef = useRef<Map<string, CanvasShape>>(new Map())
+	const pendingCreations = usePendingCreations()
+	const {
+		entries: pendingCreationEntries,
+		begin: beginPendingCreation,
+		confirm: confirmPendingCreation,
+		uncertain: markPendingCreationUncertain,
+		has: hasPendingCreation,
+		reconcile: reconcilePendingCreations,
+		reset: resetPendingCreations,
+		size: pendingCreationCount,
+	} = pendingCreations
 	const [dragPreviews, setDragPreviews] = useState<
 		Map<string, { x: number; y: number; token: number }>
 	>(() => new Map())
@@ -468,19 +487,17 @@ export default function App({
 					initialLoad &&
 					(interactionRef.current?.mode === 'create' ||
 						interactionRef.current?.mode === 'brush' ||
-						pendingCreationsRef.current.size > 0)
+						pendingCreationCount() > 0)
 				if (preserveInitialDraw) {
 					setSelectedIds((current) =>
 						current.filter(
-							(id) =>
-								pendingCreationsRef.current.has(id) || next.shapes.some((shape) => shape.id === id),
+							(id) => hasPendingCreation(id) || next.shapes.some((shape) => shape.id === id),
 						),
 					)
 					return
 				}
-				if (!initialLoad && pendingCreationsRef.current.size > 0) {
-					pendingCreationsRef.current.clear()
-					setPendingCreations(new Map())
+				if (!initialLoad && pendingCreationCount() > 0) {
+					resetPendingCreations()
 				}
 				cancelInteractionRef.current()
 				connectionResetRef.current()
@@ -496,14 +513,20 @@ export default function App({
 				fitShapesInCanvas(next.shapes)
 				return
 			}
+			reconcilePendingCreations(next)
 			setSelectedIds((current) =>
 				current.filter(
-					(id) =>
-						pendingCreationsRef.current.has(id) || next.shapes.some((shape) => shape.id === id),
+					(id) => hasPendingCreation(id) || next.shapes.some((shape) => shape.id === id),
 				),
 			)
 		},
-		[fitShapesInCanvas],
+		[
+			fitShapesInCanvas,
+			hasPendingCreation,
+			reconcilePendingCreations,
+			resetPendingCreations,
+			pendingCreationCount,
+		],
 	)
 
 	const {
@@ -514,6 +537,7 @@ export default function App({
 		wsConnected,
 		sendPresence,
 		postOperations: submitOperations,
+		postOperationsDetailed,
 		undo,
 		redo,
 		canUndo,
@@ -534,9 +558,8 @@ export default function App({
 		onBoardTransition,
 		onBoardAccepted,
 		whiteboard: demoSession,
-		readOnly: false,
 		onPresence: presence.onEvent,
-		onSocketReady: presence.queueView,
+		onSocketReady: presence.onSocketReady,
 	})
 	presence.send.current = sendPresence
 	const participantId = activeDemoSession?.member.participantId
@@ -608,14 +631,8 @@ export default function App({
 		if (tool !== 'connector' || spacePressed) clearConnectionHover()
 	}, [tool, spacePressed, clearConnectionHover])
 
-	const clientToWorld = (clientX: number, clientY: number) => {
-		const rect = svgRef.current?.getBoundingClientRect()
-		if (!rect) return { x: 0, y: 0 }
-		return {
-			x: (clientX - rect.left - viewport.x) / viewport.zoom,
-			y: (clientY - rect.top - viewport.y) / viewport.zoom,
-		}
-	}
+	const clientToWorld = (clientX: number, clientY: number) =>
+		clientToWorldPoint(clientX, clientY, svgRef.current?.getBoundingClientRect() ?? null, viewport)
 
 	const connectionHitShape = (event: React.PointerEvent<SVGElement>) => {
 		const element = event.target instanceof Element ? event.target : null
@@ -664,28 +681,30 @@ export default function App({
 			return frameId ? { ...shape, frameId } : shape
 		}
 		const created = buildCreated(getCurrentBoard().shapes)
-		pendingCreationsRef.current.set(created.id, created)
-		setPendingCreations((current) => {
-			const next = new Map(current)
-			next.set(created.id, created)
-			return next
-		})
+		beginPendingCreation(created)
 		selectOnly(shape.id)
-		void postOperations([{ type: 'create', shape: created }], undefined, (latest) => [
-			{ type: 'create', shape: buildCreated(latest.shapes) },
-		]).finally(() => {
-			pendingCreationsRef.current.delete(created.id)
-			setPendingCreations((current) => {
-				if (!current.has(created.id)) return current
-				const next = new Map(current)
-				next.delete(created.id)
-				return next
-			})
-			if (!suppressEntry) return
-			const ids = suppressedEntryIdsRef.current.get(canvasId)
-			ids?.delete(shape.id)
-			if (ids?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
+		void postOperationsDetailed([{ type: 'create', shape: created }], {
+			verifyShapeId: created.id,
+			canRebase: (latest) => [{ type: 'create', shape: buildCreated(latest.shapes) }],
 		})
+			.then((outcome) => {
+				if (outcome.status === 'applied') {
+					confirmPendingCreation(created.id)
+					return
+				}
+				markPendingCreationUncertain(created.id)
+				announce(
+					outcome.status === 'rejected'
+						? `Not saved: ${outcome.message ?? 'the canvas rejected the shape'}`
+						: `Not saved: ${outcome.message ?? 'connection lost'}. Keeping your shape.`,
+				)
+			})
+			.finally(() => {
+				if (!suppressEntry) return
+				const ids = suppressedEntryIdsRef.current.get(canvasId)
+				ids?.delete(shape.id)
+				if (ids?.size === 0) suppressedEntryIdsRef.current.delete(canvasId)
+			})
 	}
 
 	const uploadImage = async (file: File) => {
@@ -808,6 +827,36 @@ export default function App({
 	}, [connection.reset])
 
 	const closeCanvasPanel = useCallback(() => setCanvasPanelOpen(false), [])
+	useEffect(() => {
+		const phase = liveTopbar?.phase
+		if (!pendingLiveOpenRef.current) return
+		if (phase === 'listening') {
+			pendingLiveOpenRef.current = false
+			setAiPanelOpen(true)
+			setOpenLiveSignal((value) => value + 1)
+			return
+		}
+		if (phase === 'idle' || phase === 'error' || phase === 'done') {
+			pendingLiveOpenRef.current = false
+		}
+	}, [liveTopbar?.phase])
+
+	useEffect(() => {
+		if (!presenceActive || !isDemoPresenter) return
+		presence.publishLiveTranscript(liveTopbar?.transcript ?? '', Boolean(liveTopbar?.running))
+	}, [
+		presenceActive,
+		isDemoPresenter,
+		liveTopbar?.transcript,
+		liveTopbar?.running,
+		presence.publishLiveTranscript,
+	])
+
+	useEffect(() => {
+		if (!presenceActive) return
+		presence.publishSelection(selectedIds)
+	}, [presenceActive, selectedIds, presence.publishSelection])
+
 	const closeAiPanel = useCallback(() => setAiPanelOpen(false), [])
 	const clearSelection = useCallback(() => setSelectedIds([]), [])
 	const consumeAiPrompt = useCallback(() => setAiPrompt(''), [])
@@ -973,20 +1022,17 @@ export default function App({
 			startWorld: world,
 			startViewport: { x: 0, y: 0 },
 		}
-		const initialCreation: CanvasShape = {
+		const initialCreation = beginDraft({
 			id: randomId(),
-			type: tool as 'rectangle' | 'ellipse' | 'line',
-			x: world.x,
-			y: world.y,
-			w: 0,
-			h: 0,
+			kind: tool as 'rectangle' | 'ellipse' | 'line',
+			start: world,
 			color:
 				tool === 'line'
 					? CANDY_LAYOUT.linePreset
 					: tool === 'ellipse'
 						? JELLY_COLORS.peach
 						: CANDY_COLORS.blue,
-		}
+		})
 		creationRef.current = initialCreation
 		setCreation(initialCreation)
 	}
@@ -1049,20 +1095,7 @@ export default function App({
 
 		const activeCreation = creationRef.current
 		if (interaction.mode === 'create' && activeCreation) {
-			const nextCreation: CanvasShape =
-				activeCreation.type === 'line'
-					? {
-							...activeCreation,
-							w: world.x - interaction.startWorld.x,
-							h: world.y - interaction.startWorld.y,
-						}
-					: {
-							...activeCreation,
-							x: Math.min(interaction.startWorld.x, world.x),
-							y: Math.min(interaction.startWorld.y, world.y),
-							w: Math.abs(world.x - interaction.startWorld.x),
-							h: Math.abs(world.y - interaction.startWorld.y),
-						}
+			const nextCreation = updateDraft(activeCreation, interaction.startWorld, world)
 			creationRef.current = nextCreation
 			setCreation(nextCreation)
 			return
@@ -1146,27 +1179,8 @@ export default function App({
 		const activeCreation = creationRef.current
 		if (interaction.mode === 'create' && activeCreation) {
 			const world = clientToWorld(event.clientX, event.clientY)
-			const finalized: CanvasShape =
-				activeCreation.type === 'line'
-					? {
-							...activeCreation,
-							w: world.x - interaction.startWorld.x,
-							h: world.y - interaction.startWorld.y,
-						}
-					: {
-							...activeCreation,
-							x: Math.min(interaction.startWorld.x, world.x),
-							y: Math.min(interaction.startWorld.y, world.y),
-							w: Math.abs(world.x - interaction.startWorld.x),
-							h: Math.abs(world.y - interaction.startWorld.y),
-						}
-			if (Math.abs(finalized.w) >= 8 || Math.abs(finalized.h) >= 8) {
-				const shape =
-					finalized.type === 'line'
-						? finalized
-						: { ...finalized, w: Math.max(8, finalized.w), h: Math.max(8, finalized.h) }
-				createShape(shape, finalized.type !== 'line')
-			}
+			const finalized = finalizeDraft(activeCreation, interaction.startWorld, world)
+			if (finalized) createShape(finalized, finalized.type !== 'line')
 		}
 
 		if (interaction.mode === 'shape' && interaction.shape) {
@@ -1490,7 +1504,7 @@ export default function App({
 
 	return (
 		<main
-			className={`app ${aiPanelOpen ? 'ai-open' : ''}`}
+			className={`app${canUseAi ? ' has-ai' : ''}${canUseAi && aiPanelOpen ? ' ai-open' : ''}`}
 			style={
 				{
 					'--control-size': `${CONTROL_SIZE}px`,
@@ -1509,6 +1523,7 @@ export default function App({
 					session={activeDemoSession}
 					members={presence.members}
 					viewport={viewport}
+					shapeById={shapeById}
 				/>
 			)}
 			<CanvasMinimap
@@ -1571,6 +1586,7 @@ export default function App({
 								presenterId: presence.presenterId,
 								selfId: demoSession?.member.id ?? null,
 								requesterIds: presence.requesterIds,
+								invitedMemberId: presence.presenterInvite?.targetMemberId ?? null,
 								following: presence.following,
 								ephemeral,
 								aiEnabled,
@@ -1587,6 +1603,7 @@ export default function App({
 												onChange: setCanvasEditor,
 											}
 										: undefined,
+								onInvitePresenter: presence.invitePresenter,
 							}
 						: undefined
 				}
@@ -1613,6 +1630,59 @@ export default function App({
 							}
 						: undefined
 				}
+				meeting={{
+					presenceActive,
+					authMode: authMode ?? 'none',
+					canvasName: canvases.find((canvas) => canvas.id === activeCanvasId)?.name ?? 'My canvas',
+					members: presence.members,
+					presenterId: presence.presenterId,
+					selfId: demoSession?.member.id ?? null,
+					selfName: demoSession?.member.username ?? user?.name,
+					canvasEditorIds: authMode === 'demo' ? canvasEditorIds : undefined,
+				}}
+				live={
+					canUseAi && liveTopbar
+						? {
+								...liveTopbar,
+								onToggleRecording: () => {
+									pendingLiveOpenRef.current = !liveTopbar.running
+									liveTopbar.onToggleRecording()
+								},
+								onOpenLivePanel: () => {
+									setAiPanelOpen(true)
+									setOpenLiveSignal((value) => value + 1)
+								},
+							}
+						: null
+				}
+				liveFollow={
+					presenceActive && presence.presenterId && presence.presenterId !== demoSession?.member.id
+						? {
+								available: true,
+								following: presence.following,
+								onToggle: () => {
+									if (presence.following) presence.detach()
+									else presence.follow()
+								},
+							}
+						: null
+				}
+				remoteLive={presenceActive && !isDemoPresenter ? presence.presenterLive : null}
+			/>
+			<PresenterRequestDialog
+				active={Boolean(presenceActive && demoSharer)}
+				members={presence.members}
+				requesterIds={presence.requesterIds}
+				selfId={demoSession?.member.id ?? null}
+				onApprove={presence.transferPresenter}
+				onDecline={presence.declinePresenter}
+			/>
+			<PresenterInviteDialog
+				active={Boolean(presenceActive && !demoSharer)}
+				invite={presence.presenterInvite}
+				members={presence.members}
+				selfId={demoSession?.member.id ?? null}
+				onRespond={presence.respondPresenterInvite}
 			/>
 			<Toolbar
 				state={{
@@ -1664,6 +1734,8 @@ export default function App({
 			/>
 			{canUseAi && (
 				<AssistantFrame
+					openLiveSignal={openLiveSignal}
+					onLiveStateChange={setLiveTopbar}
 					state={{
 						connection: {
 							apiConnected,
@@ -1773,7 +1845,8 @@ export default function App({
 						onDoubleClick={onShapeDoubleClick}
 					/>
 				))}
-				{[...pendingCreations.values()]
+				{[...pendingCreationEntries.values()]
+					.map((entry) => entry.shape)
 					.filter((shape) => !shapeById.has(shape.id))
 					.map((shape) => (
 						<ShapeView key={shape.id} shape={shape} {...resolvedShapeViewProps(shape)} />

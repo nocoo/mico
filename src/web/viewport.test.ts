@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Shape } from '../shared/types.ts'
-import { fitViewport, panelViewportInset } from './viewport.ts'
+import { clientToWorldPoint, fitViewport, panelViewportInset } from './viewport.ts'
 
 const box: Shape = {
 	id: 'box',
@@ -79,4 +79,19 @@ test('fit includes signed lines, ignores invalid or unresolved connectors, and h
 		zoom: 1,
 	})
 	assert.ok(fitViewport([box], 1, 1).zoom > 0)
+})
+
+test('clientToWorldPoint maps client coordinates through pan and zoom', () => {
+	const rect = { left: 100, top: 50 }
+	assert.deepEqual(clientToWorldPoint(160, 90, rect, { x: 0, y: 0, zoom: 1 }), { x: 60, y: 40 })
+	assert.deepEqual(clientToWorldPoint(260, 240, rect, { x: -80, y: -40, zoom: 2 }), {
+		x: 120,
+		y: 115,
+	})
+	assert.deepEqual(clientToWorldPoint(40, 20, rect, { x: 30, y: 15, zoom: 0.5 }), {
+		x: -180,
+		y: -90,
+	})
+	assert.deepEqual(clientToWorldPoint(160, 90, rect, { x: 0, y: 0, zoom: 4 }), { x: 15, y: 10 })
+	assert.deepEqual(clientToWorldPoint(160, 90, null, { x: 0, y: 0, zoom: 1 }), { x: 0, y: 0 })
 })

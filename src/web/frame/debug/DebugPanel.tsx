@@ -3,6 +3,7 @@ import { Sparkles, UserRound, X } from 'lucide-react'
 import { useState } from 'react'
 import packageJson from '../../../../package.json' with { type: 'json' }
 import type { AuthMode } from '../../../shared/runtime'
+import { useI18n } from '../../i18n'
 import type { DebugUser } from './debugViewModel'
 import { createDebugViewModel } from './debugViewModel'
 import './debug.css'
@@ -51,6 +52,7 @@ export function DebugPanel({
 	aiEnabled,
 	onSignOut,
 }: DebugPanelProps) {
+	const { messages, preference, setPreference } = useI18n()
 	const model = createDebugViewModel({
 		user,
 		avatarUrl,
@@ -69,11 +71,11 @@ export function DebugPanel({
 				<button
 					type="button"
 					className="debug-trigger frame-identity"
-					aria-label="Debug"
+					aria-label={messages.identity.debug}
 					aria-expanded={open}
 					aria-controls="debug-panel"
 					data-debug-toggle="true"
-					title="Debug"
+					title={messages.identity.debug}
 				>
 					<Avatar
 						url={model.avatarUrl}
@@ -85,7 +87,7 @@ export function DebugPanel({
 			<Popover.Content
 				id="debug-panel"
 				className="debug-panel frame-identity identity-surface"
-				aria-label="Debug"
+				aria-label={messages.identity.debug}
 				data-debug-panel="true"
 				side="bottom"
 				align="start"
@@ -93,9 +95,9 @@ export function DebugPanel({
 				collisionPadding={14}
 			>
 				<header className="debug-panel-header">
-					<span className="debug-panel-title">Debug</span>
+					<span className="debug-panel-title">{messages.identity.debug}</span>
 					<Popover.Close>
-						<button type="button" className="debug-close" aria-label="Close Debug">
+						<button type="button" className="debug-close" aria-label={messages.identity.closeDebug}>
 							<X aria-hidden="true" />
 						</button>
 					</Popover.Close>
@@ -110,31 +112,52 @@ export function DebugPanel({
 							/>
 							<div className="debug-user-copy">
 								<strong>{model.user.name}</strong>
-								{expiryText && (
-									<time dateTime={expiresAt?.toISOString()}>Session expires {expiryText}</time>
-								)}
+								{expiryText && <time dateTime={expiresAt?.toISOString()}>{expiryText}</time>}
 							</div>
 						</section>
 					)}
 					{model.preview && (
-						<section className="debug-row" aria-label="Preview status">
-							<strong>Preview</strong>
-							<span>Data may disappear</span>
+						<section className="debug-row" aria-label={messages.identity.previewStatus}>
+							<strong>{messages.identity.previewStatus}</strong>
+							<span>{messages.identity.previewDisappear}</span>
 						</section>
 					)}
-					<section className="debug-row" aria-label="AI availability">
+					<section className="debug-row" aria-label={messages.identity.aiAvailable}>
 						<span className={`debug-status-icon ${model.aiEnabled ? 'enabled' : 'unavailable'}`}>
 							<Sparkles aria-hidden="true" />
 						</span>
 						<span className="debug-row-copy">
-							<strong>{model.aiEnabled ? 'AI enabled' : 'AI unavailable'}</strong>
-							{!model.aiEnabled && <span>Manual drawing is available</span>}
+							<strong>
+								{model.aiEnabled ? messages.identity.aiAvailable : messages.identity.aiUnavailable}
+							</strong>
+							{!model.aiEnabled && <span>{messages.identity.aiNotConfigured}</span>}
 						</span>
 					</section>
-					<section className="debug-version">Version v{model.version}</section>
+					<section className="debug-row" aria-label={messages.common.language}>
+						<strong>{messages.common.language}</strong>
+						<div className="demo-lang-group">
+							{(['auto', 'en', 'zh'] as const).map((pref) => (
+								<button
+									key={pref}
+									type="button"
+									className={`demo-member-btn${preference === pref ? ' demo-member-btn--primary' : ''}`}
+									onClick={() => setPreference(pref)}
+								>
+									{pref === 'auto'
+										? messages.common.languageAuto
+										: pref === 'en'
+											? messages.common.languageEn
+											: messages.common.languageZh}
+								</button>
+							))}
+						</div>
+					</section>
+					<section className="debug-version">
+						{messages.identity.version} v{model.version}
+					</section>
 					{model.hasSignOut && (
 						<button type="button" className="debug-sign-out" onClick={onSignOut}>
-							Sign out
+							{messages.identity.signOut}
 						</button>
 					)}
 				</div>

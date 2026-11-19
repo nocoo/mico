@@ -12,12 +12,13 @@ import {
 	type AssistantTab,
 	assistantTabs,
 	buildAssistantRequestBody,
+	DEFAULT_ASSISTANT_TAB,
 	deriveAssistantActivity,
-	initialAssistantTab,
 	nextAssistantTab,
 	resolveAssistantTab,
 	shouldCloseAssistantEscape,
 	shouldConsumeInitialPrompt,
+	shouldFocusComposer,
 	shouldRestoreAssistantTriggerFocus,
 	summaryToolsCompleted,
 	takeLectureBatch,
@@ -32,9 +33,7 @@ export type LiveProvider = 'moss' | 'mai'
 
 export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const { close, consumeInitialPrompt, isGestureActive } = actions
-	const [selectedTab, setSelectedTab] = useState<AssistantTab>(() =>
-		initialAssistantTab(state.initialPrompt),
-	)
+	const [selectedTab, setSelectedTab] = useState<AssistantTab>(DEFAULT_ASSISTANT_TAB)
 	const tabs = assistantTabs(state.aiSettingsVisible)
 	const tab = resolveAssistantTab(selectedTab, state.aiSettingsVisible)
 	const setTab = useCallback(
@@ -48,7 +47,7 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	const panelRef = useRef<HTMLElement>(null)
 	const messagesRef = useRef<HTMLDivElement>(null)
 	const composerRef = useRef<HTMLTextAreaElement>(null)
-	const keyboardTabSelection = useRef(false)
+	const composerWasOpenRef = useRef(state.open)
 	const pointerInside = useRef(false)
 	const wasOpen = useRef(false)
 	const lastCanvasId = useRef(state.canvasId)
@@ -305,15 +304,17 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 	}, [state.open, tab])
 
 	useEffect(() => {
-		if (!state.open || tab !== 'chat') return
-		if (keyboardTabSelection.current) {
-			keyboardTabSelection.current = false
-			return
-		}
+		const focusComposer = shouldFocusComposer(composerWasOpenRef.current, state.open, tab)
+		composerWasOpenRef.current = state.open
+		if (!focusComposer) return
 		const field = composerRef.current
 		if (!field) return
 		const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 560
-		const timer = window.setTimeout(() => field.focus(), delay)
+		const timer = window.setTimeout(() => {
+			const active = document.activeElement
+			if (active && active !== document.body && !panelRef.current?.contains(active)) return
+			field.focus()
+		}, delay)
 		return () => window.clearTimeout(timer)
 	}, [state.open, tab])
 
@@ -326,7 +327,6 @@ export function useAssistantSession({ state, actions }: AssistantSessionProps) {
 				event.key as 'ArrowLeft' | 'ArrowRight' | 'Home' | 'End',
 				state.aiSettingsVisible,
 			)
-			keyboardTabSelection.current = next !== tab && next === 'chat'
 			setTab(next)
 			document.getElementById(`ai-tab-${next}`)?.focus()
 		},

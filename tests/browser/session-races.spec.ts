@@ -234,3 +234,91 @@ test('ignores an upload response that arrives after the active canvas changes', 
 		await page.unrouteAll({ behavior: 'ignoreErrors' })
 	}
 })
+
+test('a stale poll cannot resurrect the previous canvas for a late upload', async ({
+	page,
+	request,
+}) => {
+	const { firstId, secondId } = await createRaceCanvases(request)
+	await openCanvas(page)
+
+	const uploadGate = gate()
+	const switchGate = gate()
+	let heldUpload = 0
+	let heldSwitch: Route | undefined
+	let stalePolls = 0
+	try {
+		await page.route('**/api/images', async (route) => {
+			if (route.request().method() !== 'POST') {
+				await route.continue()
+				return
+			}
+			const response = await route.fetch()
+			heldUpload += 1
+			await uploadGate.promise
+			await route.fulfill({ response })
+		})
+		await uploadTinyPng(page)
+		await expect.poll(() => heldUpload, POLL).toBe(1)
+
+		await page.route('**/api/active-canvas', async (route) => {
+			heldSwitch = route
+			await switchGate.promise
+			await route.continue()
+		})
+		await page.route(
+			(url) => url.pathname === '/api/state',
+			async (route) => {
+				const url = new URL(route.request().url())
+				if (url.searchParams.get('previews') === '0') stalePolls += 1
+				await route.continue()
+			},
+		)
+		await page.getByRole('button', { name: 'Canvases', exact: true }).click()
+		await page.getByRole('button', { name: 'Open canvas Race B', exact: true }).click()
+		await expect.poll(() => Boolean(heldSwitch), POLL).toBe(true)
+		await expect.poll(() => stalePolls, { timeout: 8000 }).toBeGreaterThan(0)
+		await expect.poll(async () => (await snapshot(request)).activeCanvasId, POLL).toBe(firstId)
+
+		uploadGate.release()
+		await expect(page.locator('.notice')).toContainText('Image uploaded, but the canvas changed')
+		await expect.poll(() => imageShapeCount(request, [firstId, secondId]), POLL).toBe(0)
+		await expect(page.locator('.canvas-image')).toHaveCount(0)
+	} finally {
+		uploadGate.release()
+		switchGate.release()
+		await page.unrouteAll({ behavior: 'ignoreErrors' })
+	}
+	await expect.poll(async () => (await snapshot(request)).activeCanvasId, POLL).toBe(secondId)
+	await expect.poll(() => imageShapeCount(request, [firstId, secondId]), POLL).toBe(0)
+})
+
+test('the state poll stays single-flight while a response is slow', async ({ page, request }) => {
+	const { firstId } = await createRaceCanvases(request)
+	await openCanvas(page)
+
+	const pollGate = gate()
+	let started = 0
+	let finished = 0
+	try {
+		await page.route(
+			(url) => url.pathname === '/api/state' && url.searchParams.get('previews') === '0',
+			async (route) => {
+				started += 1
+				await pollGate.promise
+				const response = await route.fetch()
+				finished += 1
+				await route.fulfill({ response })
+			},
+		)
+		await page.waitForTimeout(6500)
+		expect(started).toBe(1)
+	} finally {
+		pollGate.release()
+		await page.unrouteAll({ behavior: 'ignoreErrors' })
+	}
+	await expect.poll(() => finished, POLL).toBeGreaterThanOrEqual(1)
+	await expect
+		.poll(async () => (await request.get(`/api/canvases/${firstId}`)).ok(), POLL)
+		.toBe(true)
+})

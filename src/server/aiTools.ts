@@ -10,6 +10,7 @@ import { CANDY_COLORS, CANDY_LAYOUT, CANDY_TINTS } from '../shared/palette.ts'
 import type { CanvasShape, Operation, Point, Shape } from '../shared/types.ts'
 import { isMemberType } from '../shared/types.ts'
 import { boardDigest } from './aiBoard.ts'
+import { boardEvent } from './boardEvent.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
 import {
 	addedPlacement,
@@ -421,12 +422,7 @@ async function apply(
 			canvasId,
 			...(mutatesExisting ? { expectedRevision: observedRevision } : {}),
 		})
-		broadcast({
-			type: 'board',
-			canvasId: result.canvasId,
-			canvas: result.canvas,
-			board: result.board,
-		})
+		broadcast(boardEvent(result))
 		const created = normalized
 			.filter(
 				(operation): operation is Extract<Operation, { type: 'create' }> =>

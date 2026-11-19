@@ -480,7 +480,9 @@ test('Escape cancels an active canvas gesture instead of closing the panel', asy
 }) => {
 	const panel = await openAssistant(page, 'Chat')
 	await expect(panel).toBeVisible()
-	await expect(panel.getByRole('textbox', { name: COMPOSER })).toBeFocused()
+	const composer = panel.getByRole('textbox', { name: COMPOSER })
+	await composer.focus()
+	await expect(composer).toBeFocused()
 
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
 	await page.mouse.move(320, 320)

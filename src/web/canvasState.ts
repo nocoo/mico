@@ -11,6 +11,26 @@ export function rememberBoard(cache: Map<string, Board>, canvasId: string, board
 	if (!current || board.revision >= current.revision) cache.set(canvasId, board)
 }
 
+function sameValue(a: unknown, b: unknown): boolean {
+	if (a === b) return true
+	if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false
+	const left = a as Record<string, unknown>
+	const right = b as Record<string, unknown>
+	const keys = Object.keys(left)
+	return (
+		keys.length === Object.keys(right).length &&
+		keys.every((key) => sameValue(left[key], right[key]))
+	)
+}
+
+export function shouldApplyBoard(current: Board, next: Board): boolean {
+	if (next.revision > current.revision) return true
+	if (next.revision < current.revision) return false
+	if (current === next) return false
+	if (current.shapes.length !== next.shapes.length) return true
+	return !current.shapes.every((shape, index) => sameValue(shape, next.shapes[index]))
+}
+
 export function mergeSnapshotCanvases(
 	current: CanvasSummary[],
 	incoming: CanvasSummary[],

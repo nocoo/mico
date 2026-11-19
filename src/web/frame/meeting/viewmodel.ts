@@ -1,59 +1,181 @@
+import type { AuthMode } from '../../../shared/runtime.ts'
 import type { WhiteboardMember } from '../../../shared/whiteboards.ts'
+import { getMessages, type I18nMessages } from '../../i18n/index.ts'
+
+export interface MeetingFrameProps {
+	readonly presenceActive: boolean
+	readonly authMode: AuthMode
+	readonly canvasName: string
+	readonly members: readonly WhiteboardMember[]
+	readonly presenterId: string | null
+	readonly selfId: string | null
+	readonly selfName?: string
+	readonly canvasEditorIds?: readonly string[]
+}
 
 export interface MeetingParticipant {
-	id?: string
-	name: string
-	initial: string
-	color: 'grape' | 'sky' | 'peach' | 'mint' | 'lemon'
-	presenter?: boolean
-	editor?: boolean
-	self?: boolean
+	readonly id: string
+	readonly name: string
+	readonly initial: string
+	readonly hexColor: string
+	readonly isSelf: boolean
+	readonly self: boolean
+	readonly presenter: boolean
+	readonly editor: boolean
 }
 
 export interface MeetingPresence {
-	members: readonly WhiteboardMember[]
-	presenterId: string | null
-	selfId: string | null
-	canvasEditorIds?: readonly string[]
+	readonly members: readonly WhiteboardMember[]
+	readonly presenterId: string | null
+	readonly selfId: string | null
+	readonly canvasEditorIds?: readonly string[]
 }
 
 export interface MeetingViewModel {
-	title: string
-	detail: string
-	elapsed: string
-	participants: readonly MeetingParticipant[]
-	controlsEnabled: boolean
+	readonly title: string
+	readonly detail: string
+	readonly elapsed: string
+	readonly participants: readonly MeetingParticipant[]
+	readonly overflowCount: number
+	readonly liveDot: boolean
+	readonly controlsEnabled: boolean
+}
+
+export interface MeetingStateInput {
+	readonly presenceActive: boolean
+	readonly authMode: AuthMode
+	readonly canvasName: string
+	readonly members: readonly WhiteboardMember[]
+	readonly presenterId: string | null
+	readonly selfId: string | null
+	readonly selfName?: string
+	readonly canvasEditorIds?: readonly string[]
+	readonly elapsedSeconds?: number
+	readonly messages?: I18nMessages
+}
+
+const MAX_VISIBLE_AVATARS = 5
+
+function formatClock(totalSeconds: number): string {
+	const safe = Math.max(0, Math.floor(totalSeconds))
+	const minutes = Math.floor(safe / 60)
+	const seconds = safe % 60
+	return `${minutes}:${String(seconds).padStart(2, '0')}`
+}
+
+function initialFor(name: string): string {
+	const trimmed = name.trim()
+	if (!trimmed) return '?'
+	const first = Array.from(trimmed)[0]
+	return first ? first.toUpperCase() : '?'
+}
+
+export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewModel {
+	const messages = input.messages ?? getMessages('en')
+	const title = input.canvasName.trim() || messages.meeting.localTitle
+
+	if (!input.presenceActive) {
+		const selfName = input.selfName?.trim() || messages.common.you
+		return {
+			title,
+			detail:
+				input.authMode === 'entra' ? messages.meeting.entraDetail : messages.meeting.localDetail,
+			elapsed: formatClock(input.elapsedSeconds ?? 0),
+			participants: [
+				{
+					id: 'self',
+					name: selfName,
+					initial: initialFor(selfName),
+					hexColor: '#00a2e1',
+					isSelf: true,
+					self: true,
+					presenter: false,
+					editor: false,
+				},
+			],
+			overflowCount: 0,
+			liveDot: false,
+			controlsEnabled: false,
+		}
+	}
+
+	const presenter = input.members.find((member) => member.id === input.presenterId || member.sharer)
+	const onlineCount = Math.max(1, input.members.length)
+	const detail = !presenter
+		? messages.meeting.demoNoPresenter
+		: presenter.id === input.selfId
+			? messages.meeting.demoYouPresenting(onlineCount)
+			: messages.meeting.demoPresenting(onlineCount, presenter.username)
+
+	const ordered = [...input.members].sort((a, b) => {
+		if (a.id === input.selfId) return -1
+		if (b.id === input.selfId) return 1
+		if (a.sharer !== b.sharer) return a.sharer ? -1 : 1
+		return 0
+	})
+	const visible = ordered.slice(0, MAX_VISIBLE_AVATARS)
+	const participants: MeetingParticipant[] =
+		visible.length > 0
+			? visible.map((member) => {
+					const isSelf = member.id === input.selfId
+					return {
+						id: member.id,
+						name: member.username,
+						initial: initialFor(member.username),
+						hexColor: member.color,
+						isSelf,
+						self: isSelf,
+						presenter: member.id === input.presenterId,
+						editor:
+							member.id !== input.presenterId &&
+							Boolean(
+								member.participantId && input.canvasEditorIds?.includes(member.participantId),
+							),
+					}
+				})
+			: [
+					{
+						id: 'self',
+						name: input.selfName?.trim() || messages.common.you,
+						initial: initialFor(input.selfName?.trim() || messages.common.you),
+						hexColor: '#00a2e1',
+						isSelf: true,
+						self: true,
+						presenter: false,
+						editor: false,
+					},
+				]
+
+	return {
+		title,
+		detail,
+		elapsed: formatClock(input.elapsedSeconds ?? 0),
+		participants,
+		overflowCount: Math.max(0, ordered.length - MAX_VISIBLE_AVATARS),
+		liveDot: input.members.length > 0,
+		controlsEnabled: false,
+	}
 }
 
 export function meetingPreview(presence?: MeetingPresence): MeetingViewModel {
-	const colors = ['grape', 'sky', 'peach', 'mint', 'lemon'] as const
-	return {
-		title: presence ? 'Demo participants' : 'Meeting preview',
-		detail: presence
-			? `${presence.members.length} online · no meeting connected`
-			: 'Demo · no meeting connected',
-		elapsed: '0:00',
-		participants: presence
-			? presence.members.map((member, index) => ({
-					id: member.id,
-					name: member.username,
-					initial: [...member.username.trim()][0]?.toLocaleUpperCase() ?? '',
-					color: colors[index % colors.length],
-					presenter: member.id === presence.presenterId,
-					editor:
-						member.id !== presence.presenterId &&
-						Boolean(
-							member.participantId && presence.canvasEditorIds?.includes(member.participantId),
-						),
-					self: member.id === presence.selfId,
-				}))
-			: [
-					{ name: 'Participant 1', initial: 'A', color: 'grape' },
-					{ name: 'Participant 2', initial: 'B', color: 'sky' },
-					{ name: 'Participant 3', initial: 'C', color: 'peach' },
-					{ name: 'Participant 4', initial: 'D', color: 'mint' },
-					{ name: 'You', initial: 'Y', color: 'lemon' },
-				],
-		controlsEnabled: false,
+	if (presence) {
+		const model = buildMeetingViewModel({
+			presenceActive: true,
+			authMode: 'demo',
+			canvasName: '',
+			members: presence.members,
+			presenterId: presence.presenterId,
+			selfId: presence.selfId,
+			canvasEditorIds: presence.canvasEditorIds,
+		})
+		return presence.members.length === 0 ? { ...model, participants: [] } : model
 	}
+	return buildMeetingViewModel({
+		presenceActive: false,
+		authMode: 'none',
+		canvasName: '',
+		members: [],
+		presenterId: null,
+		selfId: null,
+	})
 }

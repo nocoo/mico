@@ -14,6 +14,7 @@ import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } fr
 import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { AuthManager } from './auth.ts'
+import { boardEvent } from './boardEvent.ts'
 import { ImageGenerationService, type ImageGenerator } from './imageGeneration.ts'
 import { extractClientIp, isIpAllowed, parseCidrList } from './ipAllowlist.ts'
 import {
@@ -26,7 +27,8 @@ import { createManagedIdentityAuth } from './managedIdentity.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
 import { createMossProxy, MOSS_LOCAL_PATH, type MossRealtimeProxyOptions } from './mossProxy.ts'
 import { parseRequestTarget } from './requestTarget.ts'
-import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
+import { createBoardStoreFromEnv } from './storage.ts'
+import { type BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 import { tenantScopeFor } from './tenant.ts'
 import { Whiteboards } from './whiteboards.ts'
 
@@ -303,8 +305,10 @@ export function createDaemon(
 					onConnection: (req, client) => attachVoiceSession(req, client),
 				})
 			: undefined
-	const dbPath = options.dbPath ?? env.MICO_DB_PATH ?? '.mico/board.sqlite'
-	const boards = new BoardStore(dbPath)
+	const boards = createBoardStoreFromEnv(env, {
+		dbPath: options.dbPath,
+		managedIdentityCredential: options.managedIdentityCredential,
+	})
 	const store = boards.forTenant(LOCAL_TENANT)
 	const settingsPath = options.settingsPath
 	const aiSettings = new AiSettingsStore({
@@ -320,15 +324,28 @@ export function createDaemon(
 	const wss = new WebSocketServer({ noServer: true, maxPayload: 4096 })
 	const auth = new AuthManager(runtimeConfig, options.authJwksResolver)
 	const whiteboards = new Whiteboards()
+	const meetingIdFromRequest = (req: IncomingMessage, requestUrl: URL): string | undefined => {
+		const fromQuery = requestUrl.searchParams.get('meetingid')?.trim()
+		if (fromQuery) return fromQuery.slice(0, 256)
+		const header = req.headers['x-mico-meeting']
+		if (typeof header === 'string') {
+			const trimmed = header.trim()
+			if (trimmed) return trimmed.slice(0, 256)
+		}
+		return undefined
+	}
+
 	function attachVoiceSession(req: IncomingMessage, client: WebSocket) {
 		auth.attachSocket(req, client)
 		try {
+			const targetUrl = parseRequestTarget(req.url).url
 			const member = whiteboards.resolve(
 				req,
-				parseRequestTarget(req.url).url,
+				targetUrl,
 				tenantScopeFor(
 					runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined,
 					runtimeConfig.auth.mode,
+					meetingIdFromRequest(req, targetUrl),
 				).tenantId,
 			)
 			if (member) whiteboards.attachVoice(member, client)
@@ -338,12 +355,28 @@ export function createDaemon(
 	}
 
 	const socketTenant = new WeakMap<WebSocket, string>()
+	const tenantSockets = new Map<string, Set<WebSocket>>()
+
+	const trackTenantSocket = (client: WebSocket, tenantId: string): void => {
+		socketTenant.set(client, tenantId)
+		let group = tenantSockets.get(tenantId)
+		if (!group) {
+			group = new Set()
+			tenantSockets.set(tenantId, group)
+		}
+		group.add(client)
+		client.once('close', () => {
+			group.delete(client)
+			if (group.size === 0) tenantSockets.delete(tenantId)
+		})
+	}
 
 	const broadcast = (event: unknown, tenantId: string): void => {
+		const group = tenantSockets.get(tenantId)
+		if (!group || group.size === 0) return
 		const payload = JSON.stringify(event)
-		for (const client of wss.clients) {
+		for (const client of group) {
 			if (client.readyState !== WebSocket.OPEN) continue
-			if ((socketTenant.get(client) ?? LOCAL_TENANT.tenantId) !== tenantId) continue
 			client.send(payload)
 		}
 	}
@@ -469,7 +502,10 @@ export function createDaemon(
 			}
 			if (origin && isAllowedOrigin(origin)) {
 				res.setHeader('Access-Control-Allow-Origin', origin)
-				res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Mico-Whiteboard')
+				res.setHeader(
+					'Access-Control-Allow-Headers',
+					'Content-Type, X-Mico-Whiteboard, X-Mico-Meeting',
+				)
 				res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
 				res.setHeader('Vary', 'Origin')
 			}
@@ -633,7 +669,11 @@ export function createDaemon(
 				return
 			}
 
-			const owner = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
+			const owner = tenantScopeFor(
+				session,
+				runtimeConfig.auth.mode,
+				meetingIdFromRequest(req, requestUrl),
+			).tenantId
 			const membership = whiteboards.resolve(req, requestUrl, owner)
 			if (isPath('api', 'whiteboards', 'join')) {
 				if (req.method !== 'POST') {
@@ -876,7 +916,7 @@ export function createDaemon(
 					(isPath('api', 'active-canvas') && req.method === 'PUT'))
 			) {
 				whiteboards.requirePresenter(
-					membership?.whiteboardid === 'demo' ? membership : undefined,
+					membership?.publicWhiteboardid === 'demo' ? membership : undefined,
 					'Only the presenter can create or change demo canvases. Use Workspace profile to become or request presenter.',
 				)
 			}
@@ -1047,12 +1087,7 @@ export function createDaemon(
 					return
 				}
 				const result = await store.applyRequest(await readCanvasRequest(true))
-				send({
-					type: 'board',
-					canvasId: result.canvasId,
-					canvas: result.canvas,
-					board: result.board,
-				})
+				send(boardEvent(result))
 				sendJson(res, 200, result.board, origin)
 				return
 			}
@@ -1077,20 +1112,26 @@ export function createDaemon(
 
 	wss.on('connection', (socket: WebSocket, req: IncomingMessage) => {
 		socket.on('error', () => socket.terminate())
+		const targetUrl = parseRequestTarget(req.url).url
 		const member = whiteboards.resolve(
 			req,
-			parseRequestTarget(req.url).url,
+			targetUrl,
 			tenantScopeFor(
 				runtimeConfig.auth.mode === 'entra' ? auth.getSession(req) : undefined,
 				runtimeConfig.auth.mode,
+				meetingIdFromRequest(req, targetUrl),
 			).tenantId,
 		)
 		if (member) {
 			whiteboards.attach(member, socket)
 		}
 		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
-		boards
-			.forTenant(socketScope)
+		const tenantStore = boards.forTenant(socketScope)
+		const snapshotStore =
+			runtimeConfig.auth.mode === 'demo'
+				? tenantStore.forDemoParticipant(() => whiteboards.demoActor(member))
+				: tenantStore
+		snapshotStore
 			.getState()
 			.then((state) => socket.send(JSON.stringify({ type: 'snapshot', ...state })))
 			.catch((error: unknown) => {
@@ -1140,9 +1181,14 @@ export function createDaemon(
 			socket.destroy()
 			return
 		}
-		const tenantId = tenantScopeFor(session, runtimeConfig.auth.mode).tenantId
+		const targetUrl = parseRequestTarget(req.url).url
+		const tenantId = tenantScopeFor(
+			session,
+			runtimeConfig.auth.mode,
+			meetingIdFromRequest(req, targetUrl),
+		).tenantId
 		try {
-			const member = whiteboards.resolve(req, parseRequestTarget(req.url).url, tenantId)
+			const member = whiteboards.resolve(req, targetUrl, tenantId)
 			if (sharedVoice && !member)
 				throw new OperationError(403, 'WHITEBOARD_SESSION_REQUIRED', 'Join a whiteboard first')
 			if (
@@ -1202,7 +1248,7 @@ export function createDaemon(
 		}
 
 		wss.handleUpgrade(req, socket, head, (client) => {
-			socketTenant.set(client, tenantId)
+			trackTenantSocket(client, tenantId)
 			if (runtimeConfig.auth.mode === 'entra') auth.attachSocket(req, client)
 			wss.emit('connection', client, req)
 		})

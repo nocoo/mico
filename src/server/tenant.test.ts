@@ -13,10 +13,19 @@ test('an anonymous request resolves to the local tenant', () => {
 	assert.equal(tenantScopeFor(undefined).tenantId, 'local')
 })
 
-test('demo mode resolves all callers to a single shared demo tenant', () => {
+test('demo mode resolves default callers to demo tenant and isolates meetingId into fixed-length hashed tenants', () => {
 	assert.deepEqual(tenantScopeFor(undefined, 'demo'), DEMO_TENANT)
 	assert.deepEqual(tenantScopeFor({ identity: IDENTITY }, 'demo'), DEMO_TENANT)
 	assert.equal(tenantScopeFor(undefined, 'demo').tenantId, 'demo')
+
+	const meetingA = tenantScopeFor(undefined, 'demo', 'meeting-alpha')
+	const meetingAAgain = tenantScopeFor(undefined, 'demo', '  meeting-alpha  ')
+	const meetingB = tenantScopeFor(undefined, 'demo', 'meeting-beta')
+	assert.equal(meetingA.tenantId, meetingAAgain.tenantId)
+	assert.notEqual(meetingA.tenantId, meetingB.tenantId)
+	assert.match(meetingA.tenantId, /^mtg-[0-9a-f]{24}$/)
+	assert.match(meetingB.tenantId, /^mtg-[0-9a-f]{24}$/)
+	assert.equal(tenantScopeFor(undefined, 'none', 'meeting-alpha').tenantId, meetingA.tenantId)
 })
 
 test('each identity resolves to its own stable opaque tenant', () => {

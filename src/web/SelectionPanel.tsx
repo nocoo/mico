@@ -1,11 +1,4 @@
-import {
-	Card,
-	IconButton as RadixIconButton,
-	Text,
-	TextArea,
-	TextField,
-	Tooltip,
-} from '@radix-ui/themes'
+import { Card, Text, TextArea, TextField, Tooltip } from '@radix-ui/themes'
 import {
 	ArrowUpRight,
 	Brush,
@@ -203,16 +196,19 @@ export function SelectionPanel({
 			<header className="selection-panel-header">
 				<div className="selection-panel-heading">
 					<span className="selection-icon">
-						<Icon size={14} strokeWidth={1.5} aria-hidden="true" />
+						<Icon size={16} strokeWidth={1.7} aria-hidden="true" />
 					</span>
-					<Text size="2" weight="medium" truncate>
-						{title}
-					</Text>
+					<span className="selection-panel-title">{title}</span>
 				</div>
 				<Tooltip content="Close properties">
-					<RadixIconButton size="1" variant="ghost" aria-label="Close properties" onClick={onClose}>
-						<X size={14} />
-					</RadixIconButton>
+					<button
+						type="button"
+						className="selection-close-button"
+						aria-label="Close properties"
+						onClick={onClose}
+					>
+						<X size={18} strokeWidth={1.65} aria-hidden="true" />
+					</button>
 				</Tooltip>
 			</header>
 

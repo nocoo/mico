@@ -397,3 +397,113 @@ test('unsupported AudioWorklet rejects and releases the stream', async () => {
 		cleanupCaptureMocks()
 	}
 })
+
+test('includeMeetingAudio mixes display audio and microphone and stops all tracks', async () => {
+	const micTrack = new MockTrack()
+	const displayAudioTrack = new MockTrack()
+	const displayVideoTrack = new MockTrack()
+	const context = new MockContext()
+	installCaptureMocks(micTrack, context)
+
+	let sourceCalls = 0
+	const baseCreateSource = context.createMediaStreamSource.bind(context)
+	context.createMediaStreamSource = () => {
+		sourceCalls += 1
+		return baseCreateSource()
+	}
+
+	const navigatorMock = globalThis.navigator as unknown as {
+		mediaDevices: {
+			getDisplayMedia?: () => Promise<unknown>
+		}
+	}
+	navigatorMock.mediaDevices.getDisplayMedia = async () => ({
+		getTracks: () => [displayVideoTrack, displayAudioTrack],
+		getVideoTracks: () => [displayVideoTrack],
+		getAudioTracks: () => [displayAudioTrack],
+	})
+
+	try {
+		const capture = await openMicrophone(
+			() => {},
+			() => {},
+			{ includeMeetingAudio: true },
+		)
+		assert.equal(displayVideoTrack.stopCalls, 1)
+		assert.equal(sourceCalls, 2)
+		await capture.stop()
+		assert.equal(micTrack.stopCalls, 1)
+		assert.equal(displayAudioTrack.stopCalls, 1)
+	} finally {
+		cleanupCaptureMocks()
+	}
+})
+
+test('includeMeetingAudio rejects cleanly when shared stream has no audio track', async () => {
+	const micTrack = new MockTrack()
+	const displayVideoTrack = new MockTrack()
+	const context = new MockContext()
+	installCaptureMocks(micTrack, context)
+
+	const navigatorMock = globalThis.navigator as unknown as {
+		mediaDevices: {
+			getDisplayMedia?: () => Promise<unknown>
+		}
+	}
+	navigatorMock.mediaDevices.getDisplayMedia = async () => ({
+		getTracks: () => [displayVideoTrack],
+		getVideoTracks: () => [displayVideoTrack],
+		getAudioTracks: () => [],
+	})
+
+	try {
+		await assert.rejects(
+			openMicrophone(
+				() => {},
+				() => {},
+				{ includeMeetingAudio: true },
+			),
+			/No meeting audio was shared/,
+		)
+		assert.ok(displayVideoTrack.stopCalls >= 1)
+		assert.equal(micTrack.stopCalls, 0)
+	} finally {
+		cleanupCaptureMocks()
+	}
+})
+
+test('includeMeetingAudio releases display tracks if getUserMedia fails', async () => {
+	const micTrack = new MockTrack()
+	const displayAudioTrack = new MockTrack()
+	const context = new MockContext()
+	installCaptureMocks(micTrack, context)
+
+	const navigatorMock = globalThis.navigator as unknown as {
+		mediaDevices: {
+			getUserMedia: () => Promise<unknown>
+			getDisplayMedia?: () => Promise<unknown>
+		}
+	}
+	navigatorMock.mediaDevices.getDisplayMedia = async () => ({
+		getTracks: () => [displayAudioTrack],
+		getVideoTracks: () => [],
+		getAudioTracks: () => [displayAudioTrack],
+	})
+	navigatorMock.mediaDevices.getUserMedia = async () => {
+		throw new Error('Microphone permission denied')
+	}
+
+	try {
+		await assert.rejects(
+			openMicrophone(
+				() => {},
+				() => {},
+				{ includeMeetingAudio: true },
+			),
+			/Microphone permission denied/,
+		)
+		assert.equal(displayAudioTrack.stopCalls, 1)
+	} finally {
+		cleanupCaptureMocks()
+	}
+})

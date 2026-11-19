@@ -70,7 +70,7 @@ test('tool shortcuts cover every toolbar tool in prototype order', () => {
 			['select', 'hand'],
 			['note', 'rectangle', 'ellipse', 'text'],
 			['connector', 'path'],
-			['line', 'html', 'image'],
+			['line', 'image'],
 		],
 	)
 	assert.deepEqual(
@@ -85,7 +85,6 @@ test('tool shortcuts cover every toolbar tool in prototype order', () => {
 			['connector', 'C'],
 			['path', 'P'],
 			['line', 'L'],
-			['html', 'W'],
 			['image', 'I'],
 		],
 	)

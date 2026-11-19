@@ -24,5 +24,10 @@ export function parseRequestTarget(raw: string | undefined): { url: URL; pathnam
 	) {
 		throw new Error('Non-canonical request target')
 	}
+	const normalized = new URLSearchParams()
+	for (const [key, value] of url.searchParams.entries()) {
+		normalized.append(key.toLowerCase(), value)
+	}
+	url.search = normalized.toString()
 	return { url, pathname }
 }

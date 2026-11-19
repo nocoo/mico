@@ -169,3 +169,32 @@ test('Azure target supports demo mode and AI IP allowlist', () => {
 		/Invalid IP/,
 	)
 })
+
+test('Azure target configures persistent PostgreSQL + Blob storage with managed identity', () => {
+	const persistentEnv = {
+		...env,
+		MICO_AUTH_MODE: 'demo',
+		MICO_STORAGE_BACKEND: 'azure',
+		MICO_PG_HOST: 'mico-pg-example.postgres.database.azure.com',
+		MICO_PG_DATABASE: 'mico',
+		MICO_PG_USER: 'mico-uami',
+		MICO_AZURE_STORAGE_ACCOUNT: 'micoblobexample',
+		MICO_AZURE_STORAGE_CONTAINER: 'mico-assets',
+		AZURE_CLIENT_ID: '33333333-3333-4333-8333-333333333333',
+	}
+	const target = azureTarget(persistentEnv)
+	const settings = Object.fromEntries(
+		containerApp(target, input).properties.template.containers[0].env.map(({ name, value }) => [
+			name,
+			value,
+		]),
+	)
+	assert.equal(settings.MICO_EPHEMERAL, 'false')
+	assert.equal(settings.MICO_STORAGE_BACKEND, 'azure')
+	assert.equal(settings.MICO_PG_AUTH_MODE, 'managed-identity')
+	assert.equal(settings.MICO_PG_HOST, 'mico-pg-example.postgres.database.azure.com')
+	assert.equal(settings.MICO_PG_DATABASE, 'mico')
+	assert.equal(settings.MICO_PG_USER, 'mico-uami')
+	assert.equal(settings.MICO_AZURE_STORAGE_ACCOUNT, 'micoblobexample')
+	assert.equal(settings.MICO_AZURE_STORAGE_CONTAINER, 'mico-assets')
+})

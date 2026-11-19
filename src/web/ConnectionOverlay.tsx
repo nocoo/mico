@@ -1,6 +1,6 @@
 import type React from 'react'
+import { getAnchors, getConnectorAnchors } from '../shared/anchors'
 import type { CanvasShape, Connector, Shape } from '../shared/types'
-import { getAnchors, getConnectorAnchors } from './anchors'
 import { ConnectorHead } from './canvas/ConnectorHead'
 import {
 	connectorPath,

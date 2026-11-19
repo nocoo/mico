@@ -29,7 +29,6 @@ export const TOOL_GROUPS = [
 	],
 	[
 		{ id: 'line', label: 'Line', shortcut: 'L' },
-		{ id: 'html', label: 'HTML card', shortcut: 'W' },
 		{ id: 'image', label: 'Image', shortcut: 'I' },
 	],
 ] as const satisfies readonly (readonly { id: Tool; label: string; shortcut: string }[])[]
@@ -116,7 +115,6 @@ export function toolbarCommandForKey(
 		l: 'line',
 		p: 'path',
 		n: 'note',
-		w: 'html',
 		i: 'image',
 		c: 'connector',
 	}

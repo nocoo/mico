@@ -38,7 +38,7 @@ export function summaryToolsCompleted(parts: UIMessage['parts']): boolean {
 }
 
 export const ASSISTANT_TABS: readonly AssistantTab[] = ['chat', 'audio', 'live', 'settings']
-export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'audio'
+export const DEFAULT_ASSISTANT_TAB: AssistantTab = 'chat'
 
 export function assistantTabs(settingsVisible: boolean): readonly AssistantTab[] {
 	return ASSISTANT_TABS.filter((tab) => settingsVisible || tab !== 'settings')
@@ -46,10 +46,6 @@ export function assistantTabs(settingsVisible: boolean): readonly AssistantTab[]
 
 export function resolveAssistantTab(tab: AssistantTab, settingsVisible: boolean): AssistantTab {
 	return tab === 'settings' && !settingsVisible ? 'chat' : tab
-}
-
-export function initialAssistantTab(initialPrompt: string): AssistantTab {
-	return initialPrompt.trim() ? 'chat' : DEFAULT_ASSISTANT_TAB
 }
 
 export function deriveAssistantActivity({
@@ -134,6 +130,10 @@ export function shouldRestoreAssistantTriggerFocus(wasOpen: boolean, open: boole
 
 export function shouldConsumeInitialPrompt(open: boolean, initialPrompt: string) {
 	return open && initialPrompt.trim().length > 0
+}
+
+export function shouldFocusComposer(wasOpen: boolean, open: boolean, tab: AssistantTab): boolean {
+	return !wasOpen && open && tab === 'chat'
 }
 
 export function appendCompletedTranscript(current: string, completed: string): string {

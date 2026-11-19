@@ -3,6 +3,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import BootGate from './BootGate'
 import { initializeCandyPalette } from './design'
+import { I18nProvider } from './i18n'
 import '@radix-ui/themes/tokens/base.css'
 import '@radix-ui/themes/tokens/colors/blue.css'
 import '@radix-ui/themes/tokens/colors/slate.css'
@@ -44,7 +45,9 @@ if (window.location.pathname === '/auth/callback' && (window.parent !== window |
 	ReactDOM.createRoot(root).render(
 		<React.StrictMode>
 			<Theme appearance="light" accentColor="blue" grayColor="slate" radius="medium" scaling="100%">
-				<BootGate />
+				<I18nProvider>
+					<BootGate />
+				</I18nProvider>
 			</Theme>
 		</React.StrictMode>,
 	)

@@ -12,7 +12,8 @@
 			"!pnpm-lock.yaml",
 			"!evals/**/runs",
 			"!artwork/logo-family",
-			"!docs/prototypes"
+			"!docs/prototypes",
+			"!docs/architecture"
 		]
 	},
 	"formatter": {

@@ -3,6 +3,7 @@ import type { Point } from '../../shared/types'
 import type {
 	PresenceEvent,
 	PresenceMessage,
+	PresenterInvite,
 	PresenterView,
 	WhiteboardMember,
 	WhiteboardSession,
@@ -19,6 +20,12 @@ export function usePresence(
 	const [members, setMembers] = useState<WhiteboardMember[]>([])
 	const [presenterId, setPresenterId] = useState<string | null>(null)
 	const [requesterIds, setRequesterIds] = useState<string[]>([])
+	const [presenterInvite, setPresenterInvite] = useState<PresenterInvite | null>(null)
+	const [presenterLive, setPresenterLive] = useState<{
+		text: string
+		active: boolean
+		startedAt?: number
+	} | null>(null)
 	const [following, setFollowing] = useState(true)
 	const followingRef = useRef(true)
 	const sharerRef = useRef(Boolean(session?.member.sharer))
@@ -33,17 +40,68 @@ export function usePresence(
 	viewportRef.current = viewport
 	const setViewportRef = useRef(setViewport)
 	setViewportRef.current = setViewport
+	const followRafRef = useRef<number | null>(null)
+	const cancelFollowAnimation = useCallback(() => {
+		if (followRafRef.current !== null) {
+			window.cancelAnimationFrame(followRafRef.current)
+			followRafRef.current = null
+		}
+	}, [])
+	useEffect(() => cancelFollowAnimation, [cancelFollowAnimation])
 	const applyPresenter = useCallback(
-		(view: PresenterView) => {
+		(view: PresenterView, animate = false) => {
 			const rect = canvas.current?.getBoundingClientRect()
-			if (rect)
+			if (!rect) return
+			const target: Viewport = {
+				x: rect.width / 2 - view.centerX * view.zoom,
+				y: rect.height / 2 - view.centerY * view.zoom,
+				zoom: view.zoom,
+			}
+			cancelFollowAnimation()
+			const reduceMotion =
+				typeof window !== 'undefined' &&
+				window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+			const start = viewportRef.current
+			const delta =
+				Math.abs(target.x - start.x) +
+				Math.abs(target.y - start.y) +
+				Math.abs(target.zoom - start.zoom) * 200
+			if (!animate || reduceMotion || delta < 1) {
+				setViewportRef.current(target)
+				return
+			}
+			const startedAt = performance.now()
+			const duration = 260
+			const step = (now: number) => {
+				if (!followingRef.current) {
+					followRafRef.current = null
+					return
+				}
+				const progress = Math.min(1, (now - startedAt) / duration)
+				const eased = 1 - (1 - progress) ** 3
+				const latestView = presenterView.current ?? view
+				const latestRect = canvas.current?.getBoundingClientRect()
+				const latestTarget: Viewport = latestRect
+					? {
+							x: latestRect.width / 2 - latestView.centerX * latestView.zoom,
+							y: latestRect.height / 2 - latestView.centerY * latestView.zoom,
+							zoom: latestView.zoom,
+						}
+					: target
 				setViewportRef.current({
-					x: rect.width / 2 - view.centerX * view.zoom,
-					y: rect.height / 2 - view.centerY * view.zoom,
-					zoom: view.zoom,
+					x: start.x + (latestTarget.x - start.x) * eased,
+					y: start.y + (latestTarget.y - start.y) * eased,
+					zoom: start.zoom + (latestTarget.zoom - start.zoom) * eased,
 				})
+				if (progress < 1) {
+					followRafRef.current = window.requestAnimationFrame(step)
+				} else {
+					followRafRef.current = null
+				}
+			}
+			followRafRef.current = window.requestAnimationFrame(step)
 		},
-		[canvas],
+		[canvas, cancelFollowAnimation],
 	)
 	const onEvent = useCallback(
 		(event: PresenceEvent) => {
@@ -51,6 +109,16 @@ export function usePresence(
 				setMembers(event.members)
 				setPresenterId(event.presenterId)
 				setRequesterIds(event.requesterIds ?? [])
+				setPresenterInvite(event.presenterInvite ?? null)
+				setPresenterLive(
+					event.liveTranscript && (event.liveTranscript.active || event.liveTranscript.text)
+						? {
+								text: event.liveTranscript.text,
+								active: event.liveTranscript.active,
+								startedAt: event.liveTranscript.startedAt,
+							}
+						: null,
+				)
 				presenterView.current = event.viewport
 				const isSharer = event.presenterId
 					? event.presenterId === sessionIdRef.current
@@ -61,6 +129,18 @@ export function usePresence(
 				setMembers((current) =>
 					current.map((member) =>
 						member.id === event.memberId ? { ...member, cursor: event.point } : member,
+					),
+				)
+			} else if (event.type === 'live-transcript') {
+				setPresenterLive(
+					event.active || event.text
+						? { text: event.text, active: event.active, startedAt: event.startedAt }
+						: null,
+				)
+			} else if (event.type === 'selection') {
+				setMembers((current) =>
+					current.map((member) =>
+						member.id === event.memberId ? { ...member, selectedIds: event.selectedIds } : member,
 					),
 				)
 			} else {
@@ -100,6 +180,8 @@ export function usePresence(
 	useEffect(() => {
 		if (!session) {
 			setRequesterIds([])
+			setPresenterInvite(null)
+			setPresenterLive(null)
 			return
 		}
 		const interval = window.setInterval(() => {
@@ -121,16 +203,85 @@ export function usePresence(
 			observer.disconnect()
 		}
 	}, [session, canvas, queueView, applyPresenter])
+	const liveBroadcastRef = useRef<{
+		lastSentAt: number
+		lastText: string
+		lastActive: boolean
+		pending: { text: string; active: boolean } | null
+		timer: number | null
+	}>({ lastSentAt: 0, lastText: '', lastActive: false, pending: null, timer: null })
+
+	useEffect(
+		() => () => {
+			if (liveBroadcastRef.current.timer !== null) {
+				window.clearTimeout(liveBroadcastRef.current.timer)
+				liveBroadcastRef.current.timer = null
+			}
+		},
+		[],
+	)
+
+	const publishLiveTranscript = useCallback((text: string, active: boolean) => {
+		if (!sharerRef.current) return
+		const clipped = text.trim().slice(-160)
+		const state = liveBroadcastRef.current
+		if (clipped === state.lastText && active === state.lastActive) return
+		const flush = (payload: { text: string; active: boolean }) => {
+			state.lastSentAt = Date.now()
+			state.lastText = payload.text
+			state.lastActive = payload.active
+			state.pending = null
+			send.current({ type: 'live-transcript', text: payload.text, active: payload.active })
+		}
+		const now = Date.now()
+		const elapsed = now - state.lastSentAt
+		if (active !== state.lastActive || elapsed >= 160) {
+			if (state.timer !== null) {
+				window.clearTimeout(state.timer)
+				state.timer = null
+			}
+			flush({ text: clipped, active })
+			return
+		}
+		state.pending = { text: clipped, active }
+		if (state.timer === null) {
+			state.timer = window.setTimeout(() => {
+				state.timer = null
+				if (state.pending && sharerRef.current) flush(state.pending)
+			}, 160 - elapsed)
+		}
+	}, [])
+
 	const detach = useCallback(() => {
-		if (!session || session.member.sharer) return
+		if (!session || sharerRef.current) return
+		cancelFollowAnimation()
 		followingRef.current = false
 		setFollowing(false)
-	}, [session])
-	const follow = () => {
+	}, [session, cancelFollowAnimation])
+	const follow = useCallback(() => {
 		followingRef.current = true
 		setFollowing(true)
-		if (presenterView.current) applyPresenter(presenterView.current)
-	}
+		if (presenterView.current) applyPresenter(presenterView.current, true)
+	}, [applyPresenter])
+	const latestSelectionRef = useRef<readonly string[]>([])
+	const lastSentSelectionKeyRef = useRef<string | null>(null)
+	const publishSelection = useCallback((selectedIds: readonly string[]) => {
+		const normalized = selectedIds.slice(0, 100)
+		latestSelectionRef.current = normalized
+		const key = normalized.join('\u0000')
+		if (key === lastSentSelectionKeyRef.current) return
+		lastSentSelectionKeyRef.current = key
+		send.current({ type: 'selection', selectedIds: [...normalized] })
+	}, [])
+
+	const onSocketReady = useCallback(() => {
+		queueView()
+		lastSentSelectionKeyRef.current = latestSelectionRef.current.join('\u0000')
+		if (latestSelectionRef.current.length > 0) {
+			send.current({ type: 'selection', selectedIds: [...latestSelectionRef.current] })
+		}
+	}, [queueView])
+
 	const pointer = (point: Point | null) => {
 		cursorScreen.current = point
 		queueCursor()
@@ -146,19 +297,32 @@ export function usePresence(
 	const declinePresenter = useCallback((targetMemberId: string) => {
 		send.current({ type: 'decline-presenter', targetMemberId })
 	}, [])
+	const invitePresenter = useCallback((targetMemberId: string) => {
+		send.current({ type: 'invite-presenter', targetMemberId })
+	}, [])
+	const respondPresenterInvite = useCallback((accept: boolean) => {
+		send.current({ type: 'respond-presenter-invite', accept })
+	}, [])
 	return {
 		members,
 		presenterId,
 		requesterIds,
+		presenterInvite,
+		presenterLive,
 		following,
 		detach,
 		follow,
 		pointer,
 		send,
 		queueView,
+		onSocketReady,
 		onEvent,
+		publishLiveTranscript,
+		publishSelection,
 		requestPresenter,
 		transferPresenter,
 		declinePresenter,
+		invitePresenter,
+		respondPresenterInvite,
 	}
 }

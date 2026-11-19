@@ -37,6 +37,7 @@ import {
 	type Tool,
 } from '../../design'
 import { IconButton } from '../../IconButton'
+import { useI18n } from '../../i18n'
 import { SelectField } from '../../SelectField'
 import type { ToolbarActions, ToolbarState } from '../contracts'
 import {
@@ -81,6 +82,20 @@ function focusToolInToolbar(dock: HTMLElement | null, tool: Tool): void {
 }
 
 export function Toolbar({ state, actions }: ToolbarProps) {
+	const { messages } = useI18n()
+	const toolLabelMap: Record<Tool, string> = {
+		select: messages.toolbar.select,
+		hand: messages.toolbar.pan,
+		note: messages.toolbar.note,
+		rectangle: messages.toolbar.rectangle,
+		ellipse: messages.toolbar.ellipse,
+		text: messages.toolbar.text,
+		connector: messages.toolbar.connector,
+		path: messages.toolbar.brush,
+		line: messages.toolbar.line,
+		html: messages.toolbar.html,
+		image: messages.toolbar.image,
+	}
 	const dockRef = useRef<HTMLDivElement>(null)
 	const toolOptionsWrapRef = useRef<HTMLDivElement>(null)
 	const viewModel = deriveToolbarViewModel(state)
@@ -323,11 +338,11 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					{TOOL_GROUPS.map((group, groupIndex) => (
 						<Fragment key={group[0].id}>
 							{groupIndex > 0 && <span className="panel-divider" />}
-							{group.map(({ id, label, shortcut }) => (
+							{group.map(({ id, shortcut }) => (
 								<div className="tool-slot" key={id} data-tool-id={id}>
 									<IconButton
 										icon={toolIcons[id]}
-										label={label}
+										label={toolLabelMap[id]}
 										shortcut={shortcut}
 										aria-pressed={state.tool === id}
 										tabIndex={state.tool === id ? 0 : -1}
@@ -340,7 +355,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					<span className="panel-divider" />
 					<IconButton
 						icon={Undo2}
-						label="Undo"
+						label={messages.toolbar.undo}
 						shortcut="⌘/Ctrl Z"
 						tabIndex={-1}
 						disabled={!state.canUndo}
@@ -348,7 +363,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					/>
 					<IconButton
 						icon={Redo2}
-						label="Redo"
+						label={messages.toolbar.redo}
 						shortcut="⌘/Ctrl Shift Z"
 						tabIndex={-1}
 						disabled={!state.canRedo}
@@ -357,7 +372,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					<span className="panel-divider" />
 					<IconButton
 						icon={Trash2}
-						label="Delete selected"
+						label={messages.toolbar.deleteSelected}
 						shortcut="Delete"
 						tabIndex={-1}
 						disabled={!viewModel.canDelete}
@@ -366,7 +381,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					/>
 					<IconButton
 						icon={Frame}
-						label="Frame selection"
+						label={messages.toolbar.frameSelection}
 						tabIndex={-1}
 						disabled={!viewModel.canFrame}
 						onClick={actions.frameSelection}
@@ -381,7 +396,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					<div className="zoom-controls">
 						<IconButton
 							icon={Minus}
-							label="Zoom out"
+							label={messages.toolbar.zoomOut}
 							shortcut="−"
 							tabIndex={-1}
 							onClick={() => actions.zoom(1 / 1.2)}
@@ -391,14 +406,14 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 							type="button"
 							tabIndex={-1}
 							onClick={actions.resetView}
-							aria-label="Reset view"
-							title="Reset view (0)"
+							aria-label={messages.toolbar.resetView}
+							title={`${messages.toolbar.resetView} (0)`}
 						>
 							{viewModel.zoomPercent}%
 						</button>
 						<IconButton
 							icon={Plus}
-							label="Zoom in"
+							label={messages.toolbar.zoomIn}
 							shortcut="+"
 							tabIndex={-1}
 							onClick={() => actions.zoom(1.2)}
@@ -407,7 +422,7 @@ export function Toolbar({ state, actions }: ToolbarProps) {
 					<span className="panel-divider" />
 					<IconButton
 						icon={Maximize}
-						label="Fit board"
+						label={messages.toolbar.fitBoard}
 						shortcut="F"
 						tabIndex={-1}
 						onClick={actions.fitBoard}

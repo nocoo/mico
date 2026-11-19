@@ -10,6 +10,7 @@ A visual canvas workspace with three interfaces: the browser canvas (React/Vite)
 - Agent examples under `examples/` are executable specifications covered by `scripts/examples.test.ts`; update examples alongside API changes.
 - `docs/prototypes/` contains frozen visual references compared by the browser suite and is excluded from Biome.
 - Do not publish, deploy, or alter branch protection without explicit authorization.
+- Containerized builds and deployments support `apple/container` (`MICO_CONTAINER_CLI=auto|container|docker`, optional `MICO_CONTAINER_DNS` behind fake-ip proxies, and `crane` for ACR pushes) without requiring Docker Desktop; see [docs/docker.md](docs/docker.md) and [docs/deployment-azure.md](docs/deployment-azure.md).
 
 ## Commands
 
@@ -23,6 +24,7 @@ pnpm test:integration     # L3: real daemon HTTP/WebSocket, CLI, examples
 pnpm test:e2e             # L4: CI Playwright browser subset (Chromium)
 pnpm test:browser         # L4: full Playwright suite
 pnpm build                # tsc --noEmit && vite build
+node scripts/container-smoke.ts  # Isolated apple/container production image smoke check
 git diff --check
 ```
 

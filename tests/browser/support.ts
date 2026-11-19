@@ -135,6 +135,8 @@ export async function installMicrophoneMock(
 				return stream
 			}
 
+			media.getDisplayMedia = async () => createFakeStream()
+
 			if (mode === 'denied') {
 				media.getUserMedia = () =>
 					Promise.reject(new DOMException('Microphone permission denied', 'NotAllowedError'))

@@ -3,7 +3,9 @@ import type { IncomingMessage } from 'node:http'
 import WebSocket from 'ws'
 import {
 	joinWhiteboardSchema,
+	type LiveTranscriptState,
 	PRESENCE_COLORS,
+	type PresenterInvite,
 	type PresenterView,
 	presenceMessageSchema,
 	type WhiteboardSession,
@@ -12,6 +14,7 @@ import { type DemoActor, OperationError } from './store.ts'
 
 interface Membership extends WhiteboardSession {
 	owner: string
+	publicWhiteboardid: string
 	clientId: string
 	socket?: WebSocket
 	voiceSockets: Set<WebSocket>
@@ -24,8 +27,12 @@ interface Membership extends WhiteboardSession {
 
 export class Whiteboards {
 	private readonly sessions = new Map<string, Membership>()
+	private readonly rooms = new Map<string, Set<Membership>>()
 	private readonly views = new Map<string, PresenterView>()
 	private readonly requests = new Map<string, Set<string>>()
+	private readonly requestTimers = new Map<string, ReturnType<typeof setTimeout>>()
+	private readonly invites = new Map<string, PresenterInvite>()
+	private readonly liveTranscripts = new Map<string, LiveTranscriptState>()
 	private readonly timer: ReturnType<typeof setInterval>
 
 	constructor() {
@@ -45,20 +52,48 @@ export class Whiteboards {
 		this.timer.unref()
 	}
 
+	private roomMembers(roomId: string): Set<Membership> | undefined {
+		return this.rooms.get(roomId)
+	}
+
+	private addToRoom(member: Membership) {
+		let room = this.rooms.get(member.whiteboardid)
+		if (!room) {
+			room = new Set()
+			this.rooms.set(member.whiteboardid, room)
+		}
+		room.add(member)
+	}
+
+	private removeFromRoom(member: Membership) {
+		const room = this.rooms.get(member.whiteboardid)
+		if (!room) return
+		room.delete(member)
+		if (room.size === 0) this.rooms.delete(member.whiteboardid)
+	}
+
 	private prune() {
 		for (const [token, member] of this.sessions) {
-			if (!member.socket && member.expiresAt <= Date.now()) this.sessions.delete(token)
+			if (!member.socket && member.expiresAt <= Date.now()) {
+				this.sessions.delete(token)
+				this.removeFromRoom(member)
+			}
 		}
 	}
 
 	private presenter(whiteboardid: string, except?: Membership) {
-		return [...this.sessions.values()].find(
-			(member) =>
+		const room = this.roomMembers(whiteboardid)
+		if (!room) return undefined
+		for (const member of room) {
+			if (
 				member !== except &&
-				member.whiteboardid === whiteboardid &&
 				member.member.sharer &&
-				(member.socket || member.reservedUntil > Date.now()),
-		)
+				(member.socket || member.reservedUntil > Date.now())
+			) {
+				return member
+			}
+		}
+		return undefined
 	}
 
 	async join(body: unknown, owner: string): Promise<WhiteboardSession> {
@@ -68,21 +103,20 @@ export class Whiteboards {
 		const participantId = createHash('sha256')
 			.update(input.participantKey ?? input.clientId)
 			.digest('hex')
+		const roomId = `${owner}:${input.whiteboardid}`
 		this.prune()
-		const existing = [...this.sessions.values()].find(
-			(member) => member.owner === owner && member.clientId === input.clientId,
-		)
+		const room = this.roomMembers(roomId)
+		const existing = room
+			? [...room].find((member) => member.owner === owner && member.clientId === input.clientId)
+			: undefined
 		if (existing) {
-			if (
-				existing.whiteboardid !== input.whiteboardid ||
-				existing.member.participantId !== participantId
-			)
+			if (existing.whiteboardid !== roomId || existing.member.participantId !== participantId)
 				throw new OperationError(
 					409,
 					'SESSION_CONFLICT',
 					'Join details changed; open a new session.',
 				)
-			if (input.sharer && this.presenter(input.whiteboardid, existing)) {
+			if (input.sharer && this.presenter(roomId, existing)) {
 				throw new OperationError(
 					409,
 					'PRESENTER_EXISTS',
@@ -93,10 +127,10 @@ export class Whiteboards {
 			existing.member.username = input.username
 			existing.member.sharer = input.sharer
 			if (input.sharer) {
-				this.requests.get(input.whiteboardid)?.delete(existing.member.id)
+				this.requests.get(roomId)?.delete(existing.member.id)
 			}
 			if (wasSharer && !input.sharer) {
-				this.views.delete(input.whiteboardid)
+				this.views.delete(roomId)
 				for (const voice of existing.voiceSockets) voice.close(1008, 'Presenter stepped down')
 				existing.voiceSockets.clear()
 			}
@@ -107,22 +141,21 @@ export class Whiteboards {
 			}
 			return this.publicSession(existing)
 		}
-		if (input.sharer && this.presenter(input.whiteboardid)) {
+		if (input.sharer && this.presenter(roomId)) {
 			throw new OperationError(409, 'PRESENTER_EXISTS', 'This whiteboard already has a presenter.')
 		}
 		if (this.sessions.size >= 512) {
 			throw new OperationError(503, 'ROOMS_FULL', 'Too many whiteboard sessions. Try again later.')
 		}
-		const count = [...this.sessions.values()].filter(
-			(member) => member.whiteboardid === input.whiteboardid,
-		).length
+		const count = room?.size ?? 0
 		if (count >= 64) {
 			throw new OperationError(409, 'ROOM_FULL', 'This whiteboard has reached its 64-person limit.')
 		}
 		const memberId = createHash('sha256').update(input.clientId).digest('hex')
 		const member: Membership = {
 			token: randomUUID(),
-			whiteboardid: input.whiteboardid,
+			whiteboardid: roomId,
+			publicWhiteboardid: input.whiteboardid,
 			member: {
 				id: memberId,
 				participantId,
@@ -141,15 +174,20 @@ export class Whiteboards {
 			lastViewAt: 0,
 		}
 		this.sessions.set(member.token, member)
+		this.addToRoom(member)
 		return this.publicSession(member)
 	}
 
 	private publicSession(member: Membership): WhiteboardSession {
-		return { token: member.token, whiteboardid: member.whiteboardid, member: { ...member.member } }
+		return {
+			token: member.token,
+			whiteboardid: member.publicWhiteboardid,
+			member: { ...member.member },
+		}
 	}
 
 	resolve(req: IncomingMessage, url: URL, owner: string): Membership | undefined {
-		const token = req.headers['x-mico-whiteboard'] ?? url.searchParams.get('whiteboardSession')
+		const token = req.headers['x-mico-whiteboard'] ?? url.searchParams.get('whiteboardsession')
 		if (token === null || token === undefined) return
 		this.prune()
 		const member = typeof token === 'string' ? this.sessions.get(token) : undefined
@@ -177,7 +215,7 @@ export class Whiteboards {
 
 	demoActor(member: Membership | undefined): DemoActor {
 		if (
-			member?.whiteboardid !== 'demo' ||
+			member?.publicWhiteboardid !== 'demo' ||
 			(member.socket?.readyState !== WebSocket.OPEN && member.reservedUntil <= Date.now())
 		) {
 			throw new OperationError(
@@ -228,52 +266,187 @@ export class Whiteboards {
 					if (member.member.sharer) return
 					if (!message.requested) {
 						this.requests.get(member.whiteboardid)?.delete(member.member.id)
+						if (!this.requests.get(member.whiteboardid)?.size) {
+							this.clearRequestTimer(member.whiteboardid)
+						}
 						this.emitPresence(member.whiteboardid)
 						return
 					}
 					if (!this.presenter(member.whiteboardid, member)) {
 						member.member.sharer = true
 						this.requests.get(member.whiteboardid)?.delete(member.member.id)
+						this.clearRequestTimer(member.whiteboardid)
 						this.emitPresence(member.whiteboardid)
 						return
 					}
 					this.requestsFor(member.whiteboardid).add(member.member.id)
+					this.scheduleAutoApprove(member.whiteboardid)
 					this.emitPresence(member.whiteboardid)
 				} else if (message.type === 'transfer-presenter') {
 					if (!member.member.sharer) {
 						socket.close(1008, 'Only the presenter can transfer presenter role')
 						return
 					}
-					const target = [...this.sessions.values()].find(
-						(candidate) =>
-							candidate !== member &&
-							candidate.whiteboardid === member.whiteboardid &&
-							candidate.socket?.readyState === WebSocket.OPEN &&
-							candidate.member.id === message.targetMemberId,
-					)
+					const target = this.findOnlineTarget(member, message.targetMemberId)
 					if (!target) return
-					member.member.sharer = false
-					for (const voice of member.voiceSockets) voice.close(1008, 'Presenter role transferred')
-					member.voiceSockets.clear()
-					target.member.sharer = true
-					this.views.delete(member.whiteboardid)
-					const requests = this.requests.get(member.whiteboardid)
-					requests?.delete(target.member.id)
-					requests?.delete(member.member.id)
-					this.emitPresence(member.whiteboardid)
+					this.commitTransfer(member, target)
 				} else if (message.type === 'decline-presenter') {
 					if (!member.member.sharer) {
 						socket.close(1008, 'Only the presenter can decline presenter requests')
 						return
 					}
 					this.requests.get(member.whiteboardid)?.delete(message.targetMemberId)
+					if (!this.requests.get(member.whiteboardid)?.size) {
+						this.clearRequestTimer(member.whiteboardid)
+					}
 					this.emitPresence(member.whiteboardid)
+				} else if (message.type === 'invite-presenter') {
+					if (!member.member.sharer) {
+						socket.close(1008, 'Only the presenter can invite another presenter')
+						return
+					}
+					const target = this.findOnlineTarget(member, message.targetMemberId)
+					if (!target) return
+					this.invites.set(member.whiteboardid, {
+						targetMemberId: target.member.id,
+						fromMemberId: member.member.id,
+					})
+					this.emitPresence(member.whiteboardid)
+				} else if (message.type === 'respond-presenter-invite') {
+					const invite = this.invites.get(member.whiteboardid)
+					if (!invite || invite.targetMemberId !== member.member.id) return
+					this.invites.delete(member.whiteboardid)
+					if (!message.accept) {
+						this.emitPresence(member.whiteboardid)
+						return
+					}
+					const currentPresenter = this.presenter(member.whiteboardid, member)
+					if (!currentPresenter || currentPresenter.member.id !== invite.fromMemberId) {
+						this.emitPresence(member.whiteboardid)
+						return
+					}
+					this.commitTransfer(currentPresenter, member)
+				} else if (message.type === 'live-transcript') {
+					if (!member.member.sharer) return
+					const previous = this.liveTranscripts.get(member.whiteboardid)
+					const startedAt = message.active
+						? previous?.active && previous.startedAt
+							? previous.startedAt
+							: Date.now()
+						: undefined
+					const nextState: LiveTranscriptState = {
+						memberId: member.member.id,
+						text: message.text,
+						active: message.active,
+						...(startedAt !== undefined ? { startedAt } : {}),
+					}
+					if (!message.active && !message.text) {
+						this.liveTranscripts.delete(member.whiteboardid)
+					} else {
+						this.liveTranscripts.set(member.whiteboardid, nextState)
+					}
+					this.emit(member.whiteboardid, {
+						type: 'live-transcript',
+						...nextState,
+					})
+				} else if (message.type === 'selection') {
+					const previous = member.member.selectedIds ?? []
+					const next = message.selectedIds
+					if (
+						previous.length === next.length &&
+						previous.every((id, index) => id === next[index])
+					) {
+						return
+					}
+					member.member.selectedIds = [...next]
+					this.emit(member.whiteboardid, {
+						type: 'selection',
+						memberId: member.member.id,
+						selectedIds: member.member.selectedIds,
+					})
 				}
 			} catch {
 				socket.close(1008, 'Invalid presence message')
 			}
 		})
 		this.emitPresence(member.whiteboardid)
+	}
+
+	private findOnlineTarget(member: Membership, targetMemberId: string): Membership | undefined {
+		const room = this.roomMembers(member.whiteboardid)
+		if (!room) return undefined
+		for (const candidate of room) {
+			if (
+				candidate !== member &&
+				candidate.socket?.readyState === WebSocket.OPEN &&
+				candidate.member.id === targetMemberId
+			) {
+				return candidate
+			}
+		}
+		return undefined
+	}
+
+	private commitTransfer(from: Membership, to: Membership) {
+		from.member.sharer = false
+		for (const voice of from.voiceSockets) voice.close(1008, 'Presenter role transferred')
+		from.voiceSockets.clear()
+		to.member.sharer = true
+		this.views.delete(from.whiteboardid)
+		this.invites.delete(from.whiteboardid)
+		this.liveTranscripts.delete(from.whiteboardid)
+		const requests = this.requests.get(from.whiteboardid)
+		requests?.delete(to.member.id)
+		requests?.delete(from.member.id)
+		if (!requests?.size) this.clearRequestTimer(from.whiteboardid)
+		this.emitPresence(from.whiteboardid)
+	}
+
+	private clearRequestTimer(whiteboardid: string) {
+		const timer = this.requestTimers.get(whiteboardid)
+		if (timer) {
+			clearTimeout(timer)
+			this.requestTimers.delete(whiteboardid)
+		}
+	}
+
+	private scheduleAutoApprove(whiteboardid: string) {
+		this.clearRequestTimer(whiteboardid)
+		const timer = setTimeout(() => {
+			this.requestTimers.delete(whiteboardid)
+			const requests = this.requests.get(whiteboardid)
+			if (!requests || requests.size === 0) return
+			let target: Membership | undefined
+			const room = this.roomMembers(whiteboardid)
+			if (room) {
+				for (const requesterId of requests) {
+					for (const candidate of room) {
+						if (
+							candidate.socket?.readyState === WebSocket.OPEN &&
+							candidate.member.id === requesterId
+						) {
+							target = candidate
+							break
+						}
+					}
+					if (target) break
+				}
+			}
+			if (!target) {
+				this.emitPresence(whiteboardid)
+				return
+			}
+			const currentPresenter = this.presenter(whiteboardid, target)
+			if (currentPresenter) {
+				this.commitTransfer(currentPresenter, target)
+			} else {
+				target.member.sharer = true
+				requests.delete(target.member.id)
+				this.emitPresence(whiteboardid)
+			}
+		}, 20_000)
+		timer.unref()
+		this.requestTimers.set(whiteboardid, timer)
 	}
 
 	private requestsFor(whiteboardid: string): Set<string> {
@@ -285,14 +458,47 @@ export class Whiteboards {
 		return set
 	}
 
+	private findNextPresenter(leaving: Membership): Membership | undefined {
+		const room = this.roomMembers(leaving.whiteboardid)
+		if (!room) return undefined
+		const online: Membership[] = []
+		for (const candidate of room) {
+			if (
+				candidate !== leaving &&
+				candidate.socket?.readyState === WebSocket.OPEN &&
+				!candidate.member.sharer
+			) {
+				online.push(candidate)
+			}
+		}
+		if (online.length === 0) return undefined
+		const requests = this.requests.get(leaving.whiteboardid)
+		if (requests) {
+			for (const requesterId of requests) {
+				const match = online.find((candidate) => candidate.member.id === requesterId)
+				if (match) return match
+			}
+		}
+		return online[0]
+	}
+
 	private disconnect(member: Membership) {
 		member.socket = undefined
 		for (const voice of member.voiceSockets) voice.close(1008, 'Presenter disconnected')
 		member.voiceSockets.clear()
 		member.member.cursor = null
+		member.member.selectedIds = []
 		this.requests.get(member.whiteboardid)?.delete(member.member.id)
 		if (member.member.sharer) {
 			this.views.delete(member.whiteboardid)
+			this.invites.delete(member.whiteboardid)
+			this.liveTranscripts.delete(member.whiteboardid)
+			const nextPresenter = this.findNextPresenter(member)
+			if (nextPresenter) {
+				member.member.sharer = false
+				nextPresenter.member.sharer = true
+				this.requests.get(member.whiteboardid)?.delete(nextPresenter.member.id)
+			}
 		}
 		member.reservedUntil = 0
 		member.expiresAt = Date.now() + 60000
@@ -300,9 +506,10 @@ export class Whiteboards {
 	}
 
 	private emitPresence(whiteboardid: string) {
-		const members = [...this.sessions.values()]
-			.filter((member) => member.whiteboardid === whiteboardid && member.socket)
-			.map((member) => ({ ...member.member }))
+		const room = this.roomMembers(whiteboardid)
+		const members = room
+			? [...room].filter((member) => member.socket).map((member) => ({ ...member.member }))
+			: []
 		const presenter = members.find((member) => member.sharer)
 		const eligible = new Set(members.filter((member) => !member.sharer).map((member) => member.id))
 		const requests = this.requests.get(whiteboardid)
@@ -314,21 +521,35 @@ export class Whiteboards {
 			}
 			if (requests.size === 0) this.requests.delete(whiteboardid)
 		}
+		let presenterInvite = this.invites.get(whiteboardid) ?? null
+		if (
+			presenterInvite &&
+			(!presenter ||
+				presenterInvite.fromMemberId !== presenter.id ||
+				!eligible.has(presenterInvite.targetMemberId))
+		) {
+			this.invites.delete(whiteboardid)
+			presenterInvite = null
+		}
 		this.emit(whiteboardid, {
 			type: 'presence',
 			members,
 			presenterId: presenter?.id ?? null,
 			viewport: presenter ? (this.views.get(whiteboardid) ?? null) : null,
 			requesterIds,
+			presenterInvite,
+			liveTranscript: presenter ? (this.liveTranscripts.get(whiteboardid) ?? null) : null,
 		})
 	}
 
 	emit(whiteboardid: string, event: unknown) {
-		const payload = JSON.stringify(event)
-		for (const member of this.sessions.values()) {
-			if (member.whiteboardid === whiteboardid && member.socket?.readyState === WebSocket.OPEN) {
-				member.socket.send(payload)
-			}
+		const room = this.roomMembers(whiteboardid)
+		if (!room || room.size === 0) return
+		let payload: string | undefined
+		for (const member of room) {
+			if (member.socket?.readyState !== WebSocket.OPEN) continue
+			payload ??= JSON.stringify(event)
+			member.socket.send(payload)
 		}
 	}
 
@@ -344,7 +565,12 @@ export class Whiteboards {
 			for (const voice of member.voiceSockets) voice.terminate()
 		}
 		this.sessions.clear()
+		this.rooms.clear()
 		this.views.clear()
 		this.requests.clear()
+		for (const timer of this.requestTimers.values()) clearTimeout(timer)
+		this.requestTimers.clear()
+		this.invites.clear()
+		this.liveTranscripts.clear()
 	}
 }

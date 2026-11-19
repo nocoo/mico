@@ -1,5 +1,10 @@
+import {
+	type AnchorPins,
+	getAnchors,
+	getConnectorAnchors,
+	type Point,
+} from '../../shared/anchors.ts'
 import type { CanvasShape, Connector } from '../../shared/types.ts'
-import { type AnchorPins, getAnchors, getConnectorAnchors, type Point } from '../anchors.ts'
 
 export interface ConnectorGeometry {
 	start: Point

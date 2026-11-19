@@ -168,7 +168,8 @@ test('frame uses real icons, hover-only shortcuts and keyboard toolbar navigatio
 	await expect(page.locator('.identity-panel .identity-ai-badge')).toHaveCount(0)
 	await expect(page.locator('.identity-panel img.brand-mark-icon')).toHaveCount(1)
 	await expect(page.locator('.status-dot')).toHaveCSS('animation-name', 'none')
-	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(18)
+	await expect(toolbar.locator('button > svg.lucide')).toHaveCount(17)
+	await expect(page.getByRole('button', { name: 'HTML card', exact: true })).toHaveCount(0)
 	await expect(page.getByRole('button', { name: 'Interface settings' })).toHaveCount(0)
 	for (const topbar of await page.locator('.topbar').all()) {
 		await expect(topbar.locator('.view-controls')).toHaveCount(0)

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { ISOLATED_ORIGIN, resetBoard } from './support'
+import { ISOLATED_ORIGIN, openAssistant, resetBoard } from './support'
 
 test('select controls avoid pointer focus rings while retaining keyboard focus', async ({
 	page,
@@ -10,6 +10,7 @@ test('select controls avoid pointer focus rings while retaining keyboard focus',
 	await resetBoard(request, [])
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+	await openAssistant(page, 'Audio')
 
 	const recording = page.locator('.lesson .select-trigger')
 	await recording.click()

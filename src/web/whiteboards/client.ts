@@ -1,4 +1,7 @@
 import type { WhiteboardJoin, WhiteboardSession } from '../../shared/whiteboards'
+import { meetingIdFromSearch, setMeetingScope, withMeetingScope } from './scope.ts'
+
+export { meetingAssetUrl, setMeetingScope } from './scope.ts'
 
 type PresenceJoin = WhiteboardJoin & { persistIdentity?: boolean }
 
@@ -22,11 +25,17 @@ function participantKey(): string {
 	}
 }
 
+export function currentMeetingId(): string | null {
+	if (typeof window === 'undefined') return null
+	return meetingIdFromSearch(window.location.search)
+}
+
 export async function joinWhiteboard(
 	{ persistIdentity, ...input }: PresenceJoin,
 	signal?: AbortSignal,
 ): Promise<WhiteboardSession> {
-	const response = await fetch('/api/whiteboards/join', {
+	const meetingId = currentMeetingId()
+	const response = await fetch(withMeetingScope('/api/whiteboards/join', meetingId), {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
 		body: JSON.stringify({
@@ -69,17 +78,23 @@ export async function reconnectWhiteboard() {
 }
 
 export function whiteboardUrl(path: string | URL): string {
-	if (!active) return path.toString()
+	const meetingId = currentMeetingId()
+	if (!active && !meetingId) return path.toString()
 	const url = new URL(path, window.location.href)
-	if (url.pathname === '/mai/realtime' || url.pathname === '/moss')
-		url.pathname = `/api/whiteboard-voice${url.pathname}`
-	url.searchParams.set('whiteboardSession', active.session.token)
+	if (active) {
+		if (url.pathname === '/mai/realtime' || url.pathname === '/moss')
+			url.pathname = `/api/whiteboard-voice${url.pathname}`
+		url.searchParams.set('whiteboardsession', active.session.token)
+	}
+	setMeetingScope(url, meetingId)
 	return url.toString()
 }
 
 export const canvasFetch: typeof fetch = (input, init) => {
-	if (!active) return fetch(input, init)
+	const meetingId = currentMeetingId()
+	if (!active && !meetingId) return fetch(input, init)
 	const url = new URL(input instanceof Request ? input.url : input.toString(), window.location.href)
+	if (url.origin !== window.location.origin) return fetch(input, init)
 	const isAiPath =
 		url.pathname.startsWith('/api/ai/') ||
 		url.pathname.startsWith('/api/moss/') ||
@@ -91,12 +106,19 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		(url.pathname === '/api/canvases' && method === 'POST') ||
 		(url.pathname === '/api/active-canvas' && method === 'PUT') ||
 		(/^\/api\/canvases\/[^/]+$/.test(url.pathname) && (method === 'PATCH' || method === 'DELETE'))
-	if ((!isAiPath && !isCanvasMutation) || url.origin !== window.location.origin)
-		return fetch(input, init)
+	const includeWhiteboard = Boolean(active && (isAiPath || isCanvasMutation))
+	if (!includeWhiteboard && !meetingId) return fetch(input, init)
 	const headers = new Headers(input instanceof Request ? input.headers : undefined)
 	new Headers(init?.headers).forEach((value, key) => {
 		headers.set(key, value)
 	})
-	headers.set('X-Mico-Whiteboard', active.session.token)
+	if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
+	if (meetingId) {
+		setMeetingScope(url, meetingId)
+		if (input instanceof Request) {
+			return fetch(new Request(url, input), { ...init, headers })
+		}
+		return fetch(url, { ...init, headers })
+	}
 	return fetch(input, { ...init, headers })
 }

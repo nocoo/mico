@@ -134,27 +134,80 @@ class MicoMicrophoneProcessor extends AudioWorkletProcessor {
 registerProcessor('mico-microphone', MicoMicrophoneProcessor)
 `
 
+export interface OpenMicrophoneOptions {
+	readonly includeMeetingAudio?: boolean
+}
+
+function stopMediaTracks(tracks: readonly MediaStreamTrack[]): void {
+	for (const track of tracks) {
+		try {
+			track.stop()
+		} catch {}
+	}
+}
+
 export async function openMicrophone(
 	onPcm: (pcm: Int16Array) => void,
 	onEnded: (error?: Error) => void,
+	options?: OpenMicrophoneOptions,
 ): Promise<{ stop(): Promise<void> }> {
 	const mediaDevices = typeof navigator === 'undefined' ? undefined : navigator.mediaDevices
 	if (!mediaDevices?.getUserMedia) throw new Error('Microphone capture is not supported')
 
-	const stream = await mediaDevices.getUserMedia({
-		video: false,
-		audio: {
-			channelCount: { ideal: 1 },
-			echoCancellation: true,
-			noiseSuppression: true,
-			autoGainControl: true,
-		},
-	})
+	const includeMeetingAudio = options?.includeMeetingAudio === true
+	let displayStream: MediaStream | null = null
+	let displayAudioTracks: MediaStreamTrack[] = []
+	if (includeMeetingAudio) {
+		if (mediaDevices.getDisplayMedia) {
+			try {
+				displayStream = await mediaDevices.getDisplayMedia({ video: true, audio: true })
+				const videoTracks =
+					typeof displayStream.getVideoTracks === 'function' ? displayStream.getVideoTracks() : []
+				stopMediaTracks(videoTracks)
+				displayAudioTracks =
+					typeof displayStream.getAudioTracks === 'function'
+						? displayStream.getAudioTracks()
+						: displayStream.getTracks()
+				if (displayAudioTracks.length === 0) {
+					stopMediaTracks(displayStream.getTracks())
+					throw new Error(
+						'No meeting audio was shared. Select a tab or screen and enable audio sharing.',
+					)
+				}
+			} catch (error) {
+				if (error instanceof DOMException && error.name === 'NotSupportedError') {
+					displayStream = null
+					displayAudioTracks = []
+				} else {
+					throw error
+				}
+			}
+		}
+	}
 
-	const tracks =
+	let stream: MediaStream
+	try {
+		stream = await mediaDevices.getUserMedia({
+			video: false,
+			audio: {
+				channelCount: { ideal: 1 },
+				echoCancellation: true,
+				noiseSuppression: true,
+				autoGainControl: true,
+			},
+		})
+	} catch (error) {
+		if (displayStream) stopMediaTracks(displayStream.getTracks())
+		throw error
+	}
+
+	const micTracks =
 		typeof stream.getAudioTracks === 'function' ? stream.getAudioTracks() : stream.getTracks()
+	const tracks = [...micTracks, ...displayAudioTracks]
 	let context: AudioContext | null = null
 	let source: MediaStreamAudioSourceNode | null = null
+	let meetingSource: MediaStreamAudioSourceNode | null = null
+	let mixer: GainNode | null = null
 	let worklet: AudioWorkletNode | null = null
 	let gain: GainNode | null = null
 	let stopped = false
@@ -198,10 +251,14 @@ export async function openMicrophone(
 		}
 		try {
 			source?.disconnect()
+			meetingSource?.disconnect()
+			mixer?.disconnect()
 			worklet?.disconnect()
 			gain?.disconnect()
 		} catch {}
 		source = null
+		meetingSource = null
+		mixer = null
 		worklet = null
 		gain = null
 		stopTracks()
@@ -332,6 +389,11 @@ export async function openMicrophone(
 		context.addEventListener('statechange', contextStateListener)
 
 		source = context.createMediaStreamSource(stream)
+		if (displayStream && displayAudioTracks.length > 0) {
+			const meetingStream =
+				typeof MediaStream === 'function' ? new MediaStream(displayAudioTracks) : displayStream
+			meetingSource = context.createMediaStreamSource(meetingStream)
+		}
 		resampler = new Pcm16Resampler(context.sampleRate || 48000)
 		const inputQueue: Float32Array[] = []
 		const appendPcm = (pcm: Int16Array) => {
@@ -413,7 +475,15 @@ export async function openMicrophone(
 				}
 				unexpectedEnd()
 			}
-			source.connect(worklet)
+			if (meetingSource) {
+				mixer = context.createGain()
+				mixer.gain.value = 1
+				source.connect(mixer)
+				meetingSource.connect(mixer)
+				mixer.connect(worklet)
+			} else {
+				source.connect(worklet)
+			}
 		} finally {
 			if (moduleUrl) URL.revokeObjectURL(moduleUrl)
 		}

@@ -11,10 +11,15 @@ if (!['plan', 'provision', 'build', 'deploy'].includes(command ?? '')) {
 }
 const target = azureTarget(process.env)
 
-function run(binary: string, args: string[], capture = true): string {
+function run(binary: string, args: string[], capture = true, input?: string): string {
 	const result = spawnSync(binary, args, {
 		encoding: 'utf8',
-		stdio: capture ? ['ignore', 'pipe', 'pipe'] : 'inherit',
+		input,
+		stdio: [
+			input === undefined ? 'ignore' : 'pipe',
+			capture ? 'pipe' : 'inherit',
+			capture ? 'pipe' : 'inherit',
+		],
 		maxBuffer: 16 * 1024 * 1024,
 		timeout: 30 * 60 * 1000,
 	})
@@ -23,6 +28,20 @@ function run(binary: string, args: string[], capture = true): string {
 		throw new Error(`${binary} ${args.slice(0, 2).join(' ')} failed`)
 	}
 	return result.stdout?.trim() ?? ''
+}
+
+type ContainerCli = 'container' | 'docker'
+
+function resolveContainerCli(): ContainerCli {
+	const requested = (process.env.MICO_CONTAINER_CLI ?? 'auto').trim().toLowerCase()
+	if (requested === 'container' || requested === 'docker') return requested
+	if (requested !== 'auto') {
+		throw new Error(
+			`Unsupported MICO_CONTAINER_CLI: ${requested} (expected auto, container, or docker)`,
+		)
+	}
+	const probe = spawnSync('container', ['ls'], { encoding: 'utf8', stdio: 'ignore', timeout: 5000 })
+	return probe.status === 0 ? 'container' : 'docker'
 }
 
 function az<T>(args: string[]): T {
@@ -162,6 +181,7 @@ function provision(): void {
 
 function build(): void {
 	const sha = revision()
+	const cli = resolveContainerCli()
 	const registry = az<{ loginServer: string }>([
 		'acr',
 		'show',
@@ -177,34 +197,107 @@ function build(): void {
 		run('git', ['archive', '--format=tar', `--output=${archive}`, sha])
 		run('tar', ['-xf', archive, '-C', directory])
 		rmSync(archive)
-		run(
-			'docker',
-			[
-				'build',
-				'--platform',
-				'linux/amd64',
-				'--build-arg',
-				`NPM_REGISTRY=${process.env.NPM_REGISTRY || 'https://packagefeedproxy.microsoft.io/npm/'}`,
-				'-t',
-				image,
-				directory,
-			],
-			false,
-		)
-		run(
-			'az',
-			[
+		const npmRegistry = process.env.NPM_REGISTRY || 'https://packagefeedproxy.microsoft.io/npm/'
+		if (cli === 'container') {
+			const dns = process.env.MICO_CONTAINER_DNS?.trim()
+			run(
+				'container',
+				[
+					'build',
+					'--platform',
+					'linux/amd64',
+					'--build-arg',
+					`NPM_REGISTRY=${npmRegistry}`,
+					...(dns ? ['--dns', dns] : []),
+					'-t',
+					image,
+					directory,
+				],
+				false,
+			)
+			const token = run('az', [
 				'acr',
 				'login',
 				'-n',
 				target.registry,
 				'--subscription',
 				target.subscriptionId,
+				'--expose-token',
 				'--only-show-errors',
-			],
-			false,
-		)
-		run('docker', ['push', image], false)
+				'--output',
+				'tsv',
+				'--query',
+				'accessToken',
+			])
+			const hasCrane =
+				spawnSync('crane', ['version'], { encoding: 'utf8', stdio: 'ignore', timeout: 5000 })
+					.status === 0
+			if (hasCrane) {
+				const ociTar = join(directory, 'image-oci.tar')
+				const ociDir = join(directory, 'image-oci')
+				run('container', ['image', 'save', '--platform', 'linux/amd64', '-o', ociTar, image], false)
+				run('mkdir', ['-p', ociDir])
+				run('tar', ['-xf', ociTar, '-C', ociDir])
+				run(
+					'crane',
+					[
+						'auth',
+						'login',
+						registry.loginServer,
+						'-u',
+						'00000000-0000-0000-0000-000000000000',
+						'--password-stdin',
+					],
+					false,
+					token,
+				)
+				run('crane', ['push', ociDir, image], false)
+			} else {
+				run(
+					'container',
+					[
+						'registry',
+						'login',
+						registry.loginServer,
+						'-u',
+						'00000000-0000-0000-0000-000000000000',
+						'--password-stdin',
+					],
+					false,
+					token,
+				)
+				run('container', ['image', 'push', image], false)
+			}
+		} else {
+			run(
+				'docker',
+				[
+					'build',
+					'--platform',
+					'linux/amd64',
+					'--build-arg',
+					`NPM_REGISTRY=${npmRegistry}`,
+					'-t',
+					image,
+					directory,
+				],
+				false,
+			)
+			run(
+				'az',
+				[
+					'acr',
+					'login',
+					'-n',
+					target.registry,
+					'--subscription',
+					target.subscriptionId,
+					'--only-show-errors',
+				],
+				false,
+			)
+			run('docker', ['push', image], false)
+		}
 		const result = az<{ digest: string }>([
 			'acr',
 			'repository',

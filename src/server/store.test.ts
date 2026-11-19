@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import test from 'node:test'
+import type { Sql, SqlTransaction, SqlTransactionOptions } from './sql.ts'
+import { createSqliteSql } from './sql.ts'
 import { BoardStore, LOCAL_TENANT, OperationError } from './store.ts'
 
 test('operations are atomic and delete cascades connectors', async () => {
@@ -1175,18 +1177,45 @@ test('legacy widget shapes and incompatible connectors are dropped on load', asy
 			"UPDATE canvases SET revision = ?, shapes = ? WHERE id = 'main' AND tenant_id = 'local'",
 			[7, JSON.stringify(legacy)],
 		)
+		// Reads normalize in memory without persisting: the returned board is
+		// clean immediately, the stored row keeps the legacy JSON until the
+		// next board write stores the normalized board.
 		assert.deepEqual(
 			(await store.getBoard()).shapes.map((shape) => shape.id),
 			['kept', 'legacy-frame'],
 		)
 		assert.equal((await store.getBoard()).revision, 7)
-		const row = await board.sql.get<{ shapes: string }>(
+		const beforeWrite = await board.sql.get<{ shapes: string }>(
 			"SELECT shapes FROM canvases WHERE id = 'main' AND tenant_id = 'local'",
 		)
-		assert.ok(row)
+		assert.ok(beforeWrite)
 		assert.deepEqual(
-			(JSON.parse(row.shapes) as { id: string }[]).map((shape) => shape.id),
-			['kept', 'legacy-frame'],
+			(JSON.parse(beforeWrite.shapes) as { id: string }[]).map((shape) => shape.id),
+			['legacy-widget', 'kept', 'legacy-edge', 'legacy-frame', 'mixed-edge'],
+		)
+		await store.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'after-legacy',
+						type: 'rectangle',
+						x: 800,
+						y: 0,
+						w: 60,
+						h: 60,
+						color: '#00a2e1',
+					},
+				},
+			],
+		})
+		const afterWrite = await board.sql.get<{ shapes: string }>(
+			"SELECT shapes FROM canvases WHERE id = 'main' AND tenant_id = 'local'",
+		)
+		assert.ok(afterWrite)
+		assert.deepEqual(
+			(JSON.parse(afterWrite.shapes) as { id: string }[]).map((shape) => shape.id),
+			['kept', 'legacy-frame', 'after-legacy'],
 		)
 	} finally {
 		await board.close()
@@ -1841,6 +1870,78 @@ test('concurrent delete across handles cannot remove the last canvas', async () 
 	} finally {
 		await firstBoard.close()
 		await secondBoard.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})
+
+test('read projections issue no writes while normalizing legacy shapes', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-store-'))
+	const dbPath = join(directory, 'board.sqlite')
+	const setup = new BoardStore(dbPath)
+	const legacy = [
+		{ id: 'legacy-widget', type: 'widget', x: 0, y: 0, w: 100, h: 100, color: '#5b5fc7' },
+		{ id: 'kept', type: 'rectangle', x: 240, y: 0, w: 100, h: 100, color: '#5b5fc7' },
+	]
+	const writes: string[] = []
+	let guarded = false
+	try {
+		const setupStore = setup.forTenant(LOCAL_TENANT)
+		await setupStore.getState()
+		await setup.sql.run(
+			"UPDATE canvases SET revision = ?, shapes = ? WHERE id = 'main' AND tenant_id = 'local'",
+			[5, JSON.stringify(legacy)],
+		)
+	} finally {
+		await setup.close()
+	}
+
+	const base = createSqliteSql(dbPath)
+	const counting: Sql = {
+		...base,
+		transaction<T>(
+			operation: (tx: SqlTransaction) => Promise<T>,
+			options?: SqlTransactionOptions,
+		): Promise<T> {
+			return base.transaction((tx) => {
+				const guardedTx: SqlTransaction = {
+					exec: (sql) => tx.exec(sql),
+					get: (sql, params) => tx.get(sql, params),
+					all: (sql, params) => tx.all(sql, params),
+					run: (sql, params) => {
+						if (guarded) writes.push(sql)
+						return tx.run(sql, params)
+					},
+					hasTable: (name) => tx.hasTable(name),
+				}
+				return operation(guardedTx)
+			}, options)
+		},
+	}
+	const boards = new BoardStore({ sql: counting })
+	const reader = boards.forTenant(LOCAL_TENANT)
+	try {
+		guarded = true
+		const state = await reader.getState()
+		const board = await reader.getBoard()
+		const detail = await reader.getCanvas('main')
+		guarded = false
+
+		assert.deepEqual(
+			board.shapes.map((shape) => shape.id),
+			['kept'],
+		)
+		assert.equal(board.revision, 5)
+		assert.deepEqual(
+			detail.board.shapes.map((shape) => shape.id),
+			['kept'],
+		)
+		assert.ok(state.canvases.some((canvas) => canvas.id === 'main'))
+		// The only tolerated write is the one-time tenant bootstrap insert.
+		assert.deepEqual(writes, [
+			'INSERT INTO tenants (id, active_canvas_id, state_version, created_at) VALUES (?, NULL, 0, ?) ON CONFLICT(id) DO NOTHING',
+		])
+	} finally {
+		await boards.close()
 		rmSync(directory, { recursive: true, force: true })
 	}
 })

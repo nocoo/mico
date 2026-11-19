@@ -1,11 +1,18 @@
 import { Check, Layers, Pencil, Plus, Trash2 } from 'lucide-react'
 import { IconButton } from '../../IconButton'
+import { useI18n } from '../../i18n'
 import type { IdentityActions, IdentityState } from '../contracts'
 import { DebugPanel, type DebugPanelProps } from '../debug/DebugPanel'
 import { shouldShowDebug } from '../debug/debugViewModel'
 import { DemoPanel, type DemoPanelProps } from '../demo/DemoPanel'
+import {
+	LiveModeFrame,
+	type LiveTopbarFollow,
+	type LiveTopbarModel,
+	type LiveTopbarRemote,
+} from '../live/LiveModeFrame'
 import { LocalModeMenu, type LocalModeMenuProps } from '../local/LocalModeMenu'
-import { MeetingFrame } from '../meeting/MeetingFrame'
+import type { MeetingFrameProps } from '../meeting/viewmodel'
 import { formatCanvasTime } from './identityViewModel'
 import { useIdentityViewModel } from './useIdentityViewModel'
 import './identity.css'
@@ -16,9 +23,24 @@ export interface IdentityFrameProps {
 	debug: DebugPanelProps
 	demo?: DemoPanelProps
 	localMode?: LocalModeMenuProps
+	meeting: MeetingFrameProps
+	live?: LiveTopbarModel | null
+	liveFollow?: LiveTopbarFollow | null
+	remoteLive?: LiveTopbarRemote | null
 }
 
-export function IdentityFrame({ state, actions, debug, demo, localMode }: IdentityFrameProps) {
+export function IdentityFrame({
+	state,
+	actions,
+	debug,
+	demo,
+	localMode,
+	meeting,
+	live,
+	liveFollow,
+	remoteLive,
+}: IdentityFrameProps) {
+	const { messages } = useI18n()
 	const identity = useIdentityViewModel({ state, actions })
 	const showDebug = !demo && shouldShowDebug(debug)
 	const showEntry = Boolean(demo) || Boolean(localMode) || showDebug
@@ -38,7 +60,7 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 					</div>
 					<IconButton
 						icon={Layers}
-						label="Canvases"
+						label={messages.identity.canvases}
 						active={identity.canvasesOpen}
 						aria-pressed={identity.canvasesOpen}
 						aria-expanded={identity.canvasesOpen}
@@ -49,17 +71,11 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 					{demo ? <DemoPanel {...demo} /> : showDebug ? <DebugPanel {...debug} /> : null}
 					{localMode && <LocalModeMenu {...localMode} />}
 				</div>
-				<MeetingFrame
-					presence={
-						demo
-							? {
-									members: demo.members,
-									presenterId: demo.presenterId,
-									selfId: demo.selfId,
-									canvasEditorIds: demo.canvasAccess?.editorIds,
-								}
-							: undefined
-					}
+				<LiveModeFrame
+					model={live ?? null}
+					meeting={meeting}
+					follow={liveFollow ?? null}
+					remoteLive={remoteLive ?? null}
 				/>
 			</header>
 			{identity.mounted && (
@@ -67,7 +83,7 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 					id="canvas-panel"
 					ref={identity.panelRef}
 					className="canvas-panel floating-panel frame-identity identity-surface"
-					aria-label="Canvases"
+					aria-label={messages.identity.canvases}
 					aria-hidden={!identity.canvasesOpen || undefined}
 					data-state={identity.canvasesOpen ? 'open' : 'closed'}
 					data-canvas-panel="true"
@@ -75,12 +91,12 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 				>
 					<header className="canvas-panel-header">
 						<div className="canvas-panel-heading">
-							<span className="canvas-panel-title">Canvases</span>
+							<span className="canvas-panel-title">{messages.identity.canvases}</span>
 							<span className="canvas-panel-count">{identity.canvases.length}</span>
 						</div>
 						<IconButton
 							icon={Plus}
-							label="New canvas"
+							label={messages.identity.newCanvas}
 							compact
 							tooltipSide="bottom"
 							onClick={identity.createCanvas}
@@ -128,7 +144,7 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 										<button
 											type="button"
 											className="canvas-switch"
-											aria-label={`Open canvas ${canvas.name}`}
+											aria-label={messages.identity.openCanvas(canvas.name)}
 											aria-current={active ? 'true' : undefined}
 											onClick={() => identity.switchCanvas(canvas.id)}
 										>
@@ -138,7 +154,7 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 									<div className="canvas-actions">
 										<IconButton
 											icon={Pencil}
-											label={`Rename ${canvas.name}`}
+											label={messages.identity.renameCanvas(canvas.name)}
 											compact
 											tooltipSide="bottom"
 											onClick={() => identity.beginRename(canvas.id, canvas.name)}
@@ -147,8 +163,8 @@ export function IdentityFrame({ state, actions, debug, demo, localMode }: Identi
 											icon={Trash2}
 											label={
 												identity.confirmDeleteId === canvas.id
-													? `Confirm delete ${canvas.name}`
-													: `Delete ${canvas.name}`
+													? messages.identity.confirmDeleteCanvas(canvas.name)
+													: messages.identity.deleteCanvas(canvas.name)
 											}
 											compact
 											tooltipSide="bottom"

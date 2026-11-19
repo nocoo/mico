@@ -17,6 +17,15 @@ export interface AzureTarget {
 	allowedObjectIds?: string
 	aiEnabled: boolean
 	aiIpAllowlist?: string
+	storage?: {
+		pgHost: string
+		pgDatabase: string
+		pgUser: string
+		pgPort: string
+		storageAccount: string
+		storageContainer: string
+		clientId: string
+	}
 	ai?: {
 		clientId: string
 		baseURL: string
@@ -95,6 +104,29 @@ export function azureTarget(env: NodeJS.ProcessEnv): AzureTarget {
 			lectureReasoning: config.lectureReasoning,
 		}
 	}
+	if (env.MICO_STORAGE_BACKEND?.trim().toLowerCase() === 'azure') {
+		const pgHost = env.MICO_PG_HOST?.trim()
+		const pgDatabase = env.MICO_PG_DATABASE?.trim() || 'mico'
+		const pgUser = env.MICO_PG_USER?.trim()
+		const pgPort = env.MICO_PG_PORT?.trim() || '5432'
+		const storageAccount = env.MICO_AZURE_STORAGE_ACCOUNT?.trim()
+		const storageContainer = env.MICO_AZURE_STORAGE_CONTAINER?.trim() || 'mico-assets'
+		const clientId = env.AZURE_CLIENT_ID?.trim()
+		if (!pgHost || !pgUser || !storageAccount || !clientId) {
+			throw new Error(
+				'Azure persistent storage requires MICO_PG_HOST, MICO_PG_USER, MICO_AZURE_STORAGE_ACCOUNT, and AZURE_CLIENT_ID',
+			)
+		}
+		target.storage = {
+			pgHost,
+			pgDatabase,
+			pgUser,
+			pgPort,
+			storageAccount,
+			storageContainer,
+			clientId,
+		}
+	}
 	return target
 }
 
@@ -125,8 +157,20 @@ export function containerApp(
 		MICO_PUBLIC_ORIGIN: input.origin,
 		MICO_AI_ENABLED: String(target.aiEnabled),
 		MICO_MOSS_ENABLED: 'false',
-		MICO_EPHEMERAL: 'true',
+		MICO_EPHEMERAL: target.storage ? 'false' : 'true',
 		MICO_AUTH_MODE: target.authMode,
+	}
+	if (target.storage) {
+		env.MICO_STORAGE_BACKEND = 'azure'
+		env.MICO_PG_AUTH_MODE = 'managed-identity'
+		env.MICO_PG_HOST = target.storage.pgHost
+		env.MICO_PG_PORT = target.storage.pgPort
+		env.MICO_PG_DATABASE = target.storage.pgDatabase
+		env.MICO_PG_USER = target.storage.pgUser
+		env.MICO_PG_SSL = 'true'
+		env.MICO_AZURE_STORAGE_ACCOUNT = target.storage.storageAccount
+		env.MICO_AZURE_STORAGE_CONTAINER = target.storage.storageContainer
+		env.AZURE_CLIENT_ID = target.storage.clientId
 	}
 	if (target.aiIpAllowlist) {
 		env.MICO_AI_IP_ALLOWLIST = target.aiIpAllowlist

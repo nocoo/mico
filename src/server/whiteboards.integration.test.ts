@@ -13,11 +13,11 @@ import { createDaemon } from './index.ts'
 
 type Event = ServerEvent | PresenceEvent
 
-function subscribe(url: string, session?: WhiteboardSession) {
-	const socket = new WebSocket(
-		`${url.replace('http:', 'ws:')}/api/events${session ? `?whiteboardSession=${session.token}` : ''}`,
-		{ headers: { origin: DEV_ORIGIN } },
-	)
+function subscribe(url: string, session?: WhiteboardSession, meetingId?: string) {
+	const target = new URL('/api/events', url.replace('http:', 'ws:'))
+	if (session) target.searchParams.set('whiteboardSession', session.token)
+	if (meetingId) target.searchParams.set('meetingId', meetingId)
+	const socket = new WebSocket(target, { headers: { origin: DEV_ORIGIN } })
 	const events: Event[] = []
 	socket.on('message', (data) => events.push(JSON.parse(data.toString()) as Event))
 	const next = async (predicate: (event: Event) => boolean): Promise<Event> => {
@@ -74,99 +74,113 @@ async function withDemoServer(
 async function joinDemo(
 	baseUrl: string,
 	input: { username: string; sharer: boolean; clientId: string; participantKey?: string },
+	meetingId?: string,
 ) {
 	return fetch(`${baseUrl}/api/whiteboards/join`, {
 		method: 'POST',
-		headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+		headers: {
+			origin: DEV_ORIGIN,
+			'Content-Type': 'application/json',
+			...(meetingId ? { 'X-Mico-Meeting': meetingId } : {}),
+		},
 		body: JSON.stringify({ whiteboardid: 'demo', ...input }),
 	})
 }
 
-test('demo object ownership follows participant identity and presenter grants reach connected guests', async () => {
-	await withDemoServer(async ({ baseUrl }) => {
-		const key = randomUUID()
-		const join = async (username: string, sharer: boolean, participantKey?: string) => {
-			const response = await joinDemo(baseUrl, {
-				username,
-				sharer,
-				clientId: randomUUID(),
-				participantKey,
-			})
-			assert.equal(response.status, 200)
-			return (await response.json()) as WhiteboardSession
-		}
-		const alice = await join('Alice', false, key)
-		const bob = await join('Bob', false)
-		const host = await join('Presenter', true)
-		const request = (path: string, method: string, body: unknown, session?: WhiteboardSession) =>
-			fetch(`${baseUrl}${path}`, {
-				method,
-				headers: {
-					origin: DEV_ORIGIN,
-					'Content-Type': 'application/json',
-					...(session ? { 'X-Mico-Whiteboard': session.token } : {}),
-				},
-				body: JSON.stringify(body),
-			})
-		const created = await request(
-			'/api/operations',
-			'POST',
-			{
-				operations: [
+for (const meetingId of [undefined, 'ownership-meeting']) {
+	test(`demo ownership and presenter grants reach connected guests (${meetingId ?? 'default room'})`, async () => {
+		await withDemoServer(async ({ baseUrl }) => {
+			const key = randomUUID()
+			const join = async (username: string, sharer: boolean, participantKey?: string) => {
+				const response = await joinDemo(
+					baseUrl,
 					{
-						type: 'create',
-						shape: {
-							id: 'alice-note',
-							type: 'note',
-							x: 10,
-							y: 10,
-							w: 80,
-							h: 80,
-							color: '#fff8d4',
-							text: 'Alice',
-						},
+						username,
+						sharer,
+						clientId: randomUUID(),
+						participantKey,
 					},
-				],
-			},
-			alice,
-		)
-		assert.equal(created.status, 200)
-		assert.deepEqual((await created.json()).objectOwners, {
-			'alice-note': alice.member.participantId,
-		})
-		const edit = { operations: [{ type: 'update', id: 'alice-note', patch: { text: 'Changed' } }] }
-		assert.equal((await request('/api/operations', 'POST', edit)).status, 403)
-		assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 403)
-		const returning = await join('Alice renamed', false, key)
-		assert.equal(returning.member.participantId, alice.member.participantId)
-		assert.notEqual(returning.member.id, alice.member.id)
-		assert.equal((await request('/api/operations', 'POST', edit, returning)).status, 200)
-		const subscriber = subscribe(baseUrl, bob)
-		try {
-			const snapshot = await subscriber.next((event) => event.type === 'snapshot')
-			assert.equal(snapshot.type, 'snapshot')
-			assert.deepEqual(snapshot.board.objectOwners, { 'alice-note': alice.member.participantId })
-			const path = `/api/canvases/${snapshot.activeCanvasId}/permissions`
-			const grant = { participantId: bob.member.participantId, allowed: true }
-			assert.equal((await request(path, 'PUT', grant, bob)).status, 403)
-			assert.equal((await request(path, 'PUT', grant, host)).status, 200)
-			await subscriber.next(
-				(event) =>
-					event.type === 'snapshot' &&
-					Boolean(event.canvasEditorIds?.includes(bob.member.participantId ?? '')),
+					meetingId,
+				)
+				assert.equal(response.status, 200)
+				return (await response.json()) as WhiteboardSession
+			}
+			const alice = await join('Alice', false, key)
+			const bob = await join('Bob', false)
+			const host = await join('Presenter', true)
+			const request = (path: string, method: string, body: unknown, session?: WhiteboardSession) =>
+				fetch(`${baseUrl}${path}`, {
+					method,
+					headers: {
+						origin: DEV_ORIGIN,
+						'Content-Type': 'application/json',
+						...(session ? { 'X-Mico-Whiteboard': session.token } : {}),
+						...(meetingId ? { 'X-Mico-Meeting': meetingId } : {}),
+					},
+					body: JSON.stringify(body),
+				})
+			const created = await request(
+				'/api/operations',
+				'POST',
+				{
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'alice-note',
+								type: 'note',
+								x: 10,
+								y: 10,
+								w: 80,
+								h: 80,
+								color: '#fff8d4',
+								text: 'Alice',
+							},
+						},
+					],
+				},
+				alice,
 			)
-			assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 200)
-			assert.equal((await request(path, 'PUT', { ...grant, allowed: false }, host)).status, 200)
-			await subscriber.next(
-				(event) => event.type === 'snapshot' && event.canvasEditorIds?.length === 0,
-			)
+			assert.equal(created.status, 200)
+			assert.deepEqual((await created.json()).objectOwners, {
+				'alice-note': alice.member.participantId,
+			})
+			const edit = {
+				operations: [{ type: 'update', id: 'alice-note', patch: { text: 'Changed' } }],
+			}
+			assert.equal((await request('/api/operations', 'POST', edit)).status, 403)
 			assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 403)
+			const returning = await join('Alice renamed', false, key)
+			assert.equal(returning.member.participantId, alice.member.participantId)
+			assert.notEqual(returning.member.id, alice.member.id)
 			assert.equal((await request('/api/operations', 'POST', edit, returning)).status, 200)
-		} finally {
-			subscriber.socket.terminate()
-		}
+			const subscriber = subscribe(baseUrl, bob, meetingId)
+			try {
+				const snapshot = await subscriber.next((event) => event.type === 'snapshot')
+				assert.equal(snapshot.type, 'snapshot')
+				assert.deepEqual(snapshot.board.objectOwners, { 'alice-note': alice.member.participantId })
+				const path = `/api/canvases/${snapshot.activeCanvasId}/permissions`
+				const grant = { participantId: bob.member.participantId, allowed: true }
+				assert.equal((await request(path, 'PUT', grant, bob)).status, 403)
+				assert.equal((await request(path, 'PUT', grant, host)).status, 200)
+				await subscriber.next(
+					(event) =>
+						event.type === 'snapshot' &&
+						Boolean(event.canvasEditorIds?.includes(bob.member.participantId ?? '')),
+				)
+				assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 200)
+				assert.equal((await request(path, 'PUT', { ...grant, allowed: false }, host)).status, 200)
+				await subscriber.next(
+					(event) => event.type === 'snapshot' && event.canvasEditorIds?.length === 0,
+				)
+				assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 403)
+				assert.equal((await request('/api/operations', 'POST', edit, returning)).status, 200)
+			} finally {
+				subscriber.socket.terminate()
+			}
+		})
 	})
-})
+}
 
 test('demo presenters manage canvases and broadcast active-canvas snapshots', async () => {
 	await withDemoServer(async ({ baseUrl }) => {
@@ -354,7 +368,9 @@ function nextPresence(
 			if (
 				(parsed.type === 'presence' ||
 					parsed.type === 'cursor' ||
-					parsed.type === 'presenter-view') &&
+					parsed.type === 'presenter-view' ||
+					parsed.type === 'live-transcript' ||
+					parsed.type === 'selection') &&
 				predicate(parsed as PresenceEvent)
 			) {
 				clearTimeout(timeout)
@@ -418,6 +434,31 @@ test('demo presence tracks cursors, presenter view, profile updates, and allows 
 			const viewEvent = await viewPromise
 			assert.equal(viewEvent.type, 'presenter-view')
 			assert.deepEqual(viewEvent.viewport, { centerX: 50, centerY: 60, zoom: 1.5 })
+
+			const livePromise = nextPresence(vSocket, (event) => event.type === 'live-transcript')
+			pSocket.send(
+				JSON.stringify({
+					type: 'live-transcript',
+					text: 'Hello everyone',
+					active: true,
+				}),
+			)
+			const liveEvent = await livePromise
+			assert.equal(liveEvent.type, 'live-transcript')
+			assert.equal(liveEvent.text, 'Hello everyone')
+			assert.equal(liveEvent.active, true)
+
+			const selectionPromise = nextPresence(pSocket, (event) => event.type === 'selection')
+			vSocket.send(
+				JSON.stringify({
+					type: 'selection',
+					selectedIds: ['viewer-note'],
+				}),
+			)
+			const selectionEvent = await selectionPromise
+			assert.equal(selectionEvent.type, 'selection')
+			assert.equal(selectionEvent.memberId, viewer.member.id)
+			assert.deepEqual(selectionEvent.selectedIds, ['viewer-note'])
 
 			// Non-presenter in demo mode can still draw
 			const opRes = await fetch(`${baseUrl}/api/operations?whiteboardSession=${viewer.token}`, {
@@ -702,15 +743,58 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 					})
 					assert.equal(adaNowAllowed.status, 200)
 
-					// Direct transfer back without prior request
-					const returned = nextPresence(
+					// Invite transfer: recipient must confirm before presenter role moves
+					const invited = nextPresence(
 						jasonSocket,
-						(event) => event.type === 'presence' && event.presenterId === jason.member.id,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterInvite?.targetMemberId === jason.member.id,
 					)
 					adaSocket.send(
-						JSON.stringify({ type: 'transfer-presenter', targetMemberId: jason.member.id }),
+						JSON.stringify({ type: 'invite-presenter', targetMemberId: jason.member.id }),
 					)
+					await invited
+
+					// Declining keeps Ada as presenter
+					const inviteDeclined = nextPresence(
+						adaSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterId === ada.member.id &&
+							event.presenterInvite === null,
+					)
+					jasonSocket.send(JSON.stringify({ type: 'respond-presenter-invite', accept: false }))
+					await inviteDeclined
+
+					// Re-invite and accept transfers presenter to Jason
+					const reinvited = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterInvite?.targetMemberId === jason.member.id,
+					)
+					adaSocket.send(
+						JSON.stringify({ type: 'invite-presenter', targetMemberId: jason.member.id }),
+					)
+					await reinvited
+
+					const returned = nextPresence(
+						jasonSocket,
+						(event) =>
+							event.type === 'presence' &&
+							event.presenterId === jason.member.id &&
+							event.presenterInvite === null,
+					)
+					jasonSocket.send(JSON.stringify({ type: 'respond-presenter-invite', accept: true }))
 					await returned
+
+					// Disconnecting the active presenter automatically promotes the next online member
+					const autoPromoted = nextPresence(
+						adaSocket,
+						(event) => event.type === 'presence' && event.presenterId === ada.member.id,
+					)
+					jasonSocket.terminate()
+					await autoPromoted
 				} finally {
 					for (const socket of sockets) socket.terminate()
 				}
@@ -732,4 +816,104 @@ test('demo mode gates AI to presenter and handles presenter request, decline, an
 		for (const client of upstream.clients) client.terminate()
 		await new Promise<void>((resolve) => upstream.close(() => resolve()))
 	}
+})
+
+test('separate meetingIds isolate presenters, board events, and presence broadcasts', async () => {
+	await withDemoServer(async ({ baseUrl, wsUrl }) => {
+		const alphaJoin = await fetch(`${baseUrl}/api/whiteboards/join`, {
+			method: 'POST',
+			headers: {
+				origin: DEV_ORIGIN,
+				'Content-Type': 'application/json',
+				'X-Mico-Meeting': 'room-alpha',
+			},
+			body: JSON.stringify({
+				username: 'Alpha Host',
+				sharer: true,
+				clientId: randomUUID(),
+			}),
+		})
+		assert.equal(alphaJoin.status, 200)
+		const alphaSession = (await alphaJoin.json()) as WhiteboardSession
+
+		const betaJoin = await fetch(`${baseUrl}/api/whiteboards/join`, {
+			method: 'POST',
+			headers: {
+				origin: DEV_ORIGIN,
+				'Content-Type': 'application/json',
+				'X-Mico-Meeting': 'room-beta',
+			},
+			body: JSON.stringify({
+				username: 'Beta Host',
+				sharer: true,
+				clientId: randomUUID(),
+			}),
+		})
+		assert.equal(betaJoin.status, 200)
+		const betaSession = (await betaJoin.json()) as WhiteboardSession
+
+		const alphaSocket = new WebSocket(
+			`${wsUrl}/api/events?whiteboardSession=${alphaSession.token}&meetingId=room-alpha`,
+			{ headers: { origin: DEV_ORIGIN } },
+		)
+		const betaSocket = new WebSocket(
+			`${wsUrl}/api/events?whiteboardSession=${betaSession.token}&meetingId=room-beta`,
+			{ headers: { origin: DEV_ORIGIN } },
+		)
+		const betaEvents: string[] = []
+		betaSocket.on('message', (raw) => betaEvents.push(raw.toString()))
+
+		try {
+			const alphaPresence = nextPresence(
+				alphaSocket,
+				(event) => event.type === 'presence' && event.members.length === 1,
+			)
+			await Promise.all([
+				once(alphaSocket, 'open', { signal: AbortSignal.timeout(4000) }),
+				once(betaSocket, 'open', { signal: AbortSignal.timeout(4000) }),
+			])
+			await alphaPresence
+
+			// Board operation in alpha must stay isolated from beta
+			const opRes = await fetch(`${baseUrl}/api/operations`, {
+				method: 'POST',
+				headers: {
+					origin: DEV_ORIGIN,
+					'Content-Type': 'application/json',
+					'X-Mico-Meeting': 'room-alpha',
+					'X-Mico-Whiteboard': alphaSession.token,
+				},
+				body: JSON.stringify({
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'alpha-only',
+								type: 'rectangle',
+								x: 0,
+								y: 0,
+								w: 80,
+								h: 60,
+								color: '#00a2e1',
+							},
+						},
+					],
+				}),
+			})
+			assert.equal(opRes.status, 200)
+
+			// Presence event in alpha must stay isolated from beta
+			alphaSocket.send(
+				JSON.stringify({ type: 'live-transcript', text: 'Alpha secret', active: true }),
+			)
+			await nextPresence(alphaSocket, (event) => event.type === 'live-transcript')
+			await new Promise((resolve) => setTimeout(resolve, 120))
+			assert.ok(
+				betaEvents.every((raw) => !raw.includes('alpha-only') && !raw.includes('Alpha secret')),
+			)
+		} finally {
+			alphaSocket.terminate()
+			betaSocket.terminate()
+		}
+	})
 })

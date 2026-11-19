@@ -22,12 +22,15 @@ import {
 	connectionCompatible,
 	OBJECT_EDIT_FORBIDDEN_MESSAGE,
 } from '../shared/types.ts'
+import { type BlobStore, imageBlobKey } from './blob.ts'
 import { canvasPreview } from './preview.ts'
 import {
 	createMutex,
 	createSqliteSql,
 	type Sql,
+	type SqlDialect,
 	type SqlTransaction,
+	type SqlTransactionOptions,
 	type SqlValue,
 } from './sql.ts'
 
@@ -763,17 +766,23 @@ const TABLE_CANVASES = `CREATE TABLE IF NOT EXISTS canvases (
 		PRIMARY KEY (tenant_id, id)
 	)`
 
-const TABLE_IMAGE_ASSETS = `CREATE TABLE IF NOT EXISTS image_assets (
+function imageAssetsTable(dialect: SqlDialect): string {
+	const binaryType = dialect === 'postgres' ? 'BYTEA' : 'BLOB'
+	return `CREATE TABLE IF NOT EXISTS image_assets (
 		tenant_id TEXT NOT NULL,
 		id TEXT NOT NULL,
 		content_type TEXT NOT NULL,
-		bytes BLOB NOT NULL,
+		bytes ${binaryType},
 		size INTEGER NOT NULL,
 		created_at TEXT NOT NULL,
 		PRIMARY KEY (tenant_id, id)
 	)`
+}
 
-const SCHEMA = `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${TABLE_IMAGE_ASSETS};
+const TABLE_IMAGE_ASSETS = imageAssetsTable('sqlite')
+
+function schemaFor(dialect: SqlDialect): string {
+	return `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${imageAssetsTable(dialect)};
 	CREATE TABLE IF NOT EXISTS demo_object_owners (
 		tenant_id TEXT NOT NULL, canvas_id TEXT NOT NULL, object_id TEXT NOT NULL,
 		participant_id TEXT NOT NULL, PRIMARY KEY (tenant_id, canvas_id, object_id)
@@ -782,6 +791,7 @@ const SCHEMA = `${TABLE_TENANTS}; ${TABLE_CANVASES}; ${TABLE_IMAGE_ASSETS};
 		tenant_id TEXT NOT NULL, canvas_id TEXT NOT NULL, participant_id TEXT NOT NULL,
 		PRIMARY KEY (tenant_id, canvas_id, participant_id)
 	);`
+}
 
 const STATEMENTS = {
 	findCanvas: 'SELECT * FROM canvases WHERE id = ? AND tenant_id = ?',
@@ -796,11 +806,8 @@ const STATEMENTS = {
 		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
 	updateBoard:
 		'UPDATE canvases SET revision = ?, shapes = ?, updated_at = ? WHERE id = ? AND revision = ? AND tenant_id = ?',
-	rewriteShapes: 'UPDATE canvases SET shapes = ? WHERE id = ? AND tenant_id = ?',
 	renameCanvas: 'UPDATE canvases SET name = ? WHERE id = ? AND tenant_id = ?',
 	deleteCanvas: 'DELETE FROM canvases WHERE id = ? AND tenant_id = ?',
-	ensureDefaultCanvas:
-		'INSERT INTO canvases (id, name, revision, shapes, created_at, updated_at, tenant_id) VALUES (?, ?, 0, ?, ?, ?, ?) ON CONFLICT DO NOTHING',
 	findTenant: 'SELECT active_canvas_id, state_version FROM tenants WHERE id = ?',
 	createTenant:
 		'INSERT INTO tenants (id, active_canvas_id, state_version, created_at) VALUES (?, NULL, 0, ?) ON CONFLICT(id) DO NOTHING',
@@ -845,17 +852,34 @@ function validTenantId(value: unknown): string {
 	return value
 }
 
+export interface BoardStoreOptions {
+	readonly sql: Sql
+	readonly blobs?: BlobStore
+	readonly ownsSql?: boolean
+}
+
 export class BoardStore {
 	private readonly driver: Sql
+	private readonly blobs: BlobStore | undefined
+	private readonly ownsSql: boolean
 	private readonly ready: Promise<void>
 	private readonly serialize: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
 	private readonly tenants = new Map<string, TenantStore>()
+	private readonly inFlight = new Set<Promise<unknown>>()
 	private closing = false
 	private closePromise: Promise<void> | undefined
 
-	constructor(dbPath: string) {
-		this.driver = createSqliteSql(dbPath)
+	constructor(source: string | BoardStoreOptions) {
+		if (typeof source === 'string') {
+			this.driver = createSqliteSql(source)
+			this.blobs = undefined
+			this.ownsSql = true
+		} else {
+			this.driver = source.sql
+			this.blobs = source.blobs
+			this.ownsSql = source.ownsSql ?? true
+		}
 		this.serialize = createMutex()
 		this.ready = this.initialize()
 		void this.ready.catch(() => undefined)
@@ -863,32 +887,56 @@ export class BoardStore {
 			if (this.closing) {
 				return Promise.reject(new Error('BoardStore is closing'))
 			}
+			if (this.driver.concurrent) {
+				// Concurrent drivers bypass the mutex, so admitted operations must
+				// be tracked for close() to drain them before the pool ends.
+				const admitted = (async () => {
+					await this.ready
+					return operation()
+				})()
+				this.track(admitted)
+				return admitted
+			}
 			return this.serialize(async () => {
 				await this.ready
-				return operation()
+				const admitted = operation()
+				this.track(admitted)
+				return admitted
 			})
 		}
+	}
+
+	private track(admitted: Promise<unknown>): void {
+		this.inFlight.add(admitted)
+		void admitted.then(
+			() => this.inFlight.delete(admitted),
+			() => this.inFlight.delete(admitted),
+		)
 	}
 
 	forTenant(scope: TenantScope): TenantStore {
 		const tenantId = validTenantId(scope.tenantId)
 		const existing = this.tenants.get(tenantId)
 		if (existing) return existing
-		const created = new TenantStore(this.exclusive, this.driver, tenantId)
+		const created = new TenantStore(this.exclusive, this.driver, tenantId, this.blobs)
 		this.tenants.set(tenantId, created)
 		return created
 	}
 
 	get sql(): Sql {
 		return {
+			dialect: this.driver.dialect,
+			concurrent: this.driver.concurrent,
 			exec: (sql) => this.exclusive(() => this.driver.exec(sql)),
 			get: <T>(sql: string, params?: readonly SqlValue[]) =>
 				this.exclusive(() => this.driver.get<T>(sql, params)),
 			all: <T>(sql: string, params?: readonly SqlValue[]) =>
 				this.exclusive(() => this.driver.all<T>(sql, params)),
 			run: (sql, params) => this.exclusive(() => this.driver.run(sql, params)),
-			transaction: <T>(operation: (tx: SqlTransaction) => Promise<T>) =>
-				this.exclusive(() => this.driver.transaction(operation)),
+			transaction: <T>(
+				operation: (tx: SqlTransaction) => Promise<T>,
+				options?: SqlTransactionOptions,
+			) => this.exclusive(() => this.driver.transaction(operation, options)),
 			hasTable: (name) => this.exclusive(() => this.driver.hasTable(name)),
 			close: () => this.close(),
 		}
@@ -901,18 +949,26 @@ export class BoardStore {
 	close(): Promise<void> {
 		if (this.closePromise) return this.closePromise
 		this.closing = true
+		const admitted = [...this.inFlight]
 		this.closePromise = this.serialize(async () => {
 			await this.ready.catch(() => undefined)
-			await this.driver.close()
+			if (admitted.length > 0) await Promise.allSettled(admitted)
+			await this.blobs?.close?.()
+			if (this.ownsSql) {
+				await this.driver.close()
+			}
 		})
 		return this.closePromise
 	}
 
 	private async initialize(): Promise<void> {
+		const ddl = schemaFor(this.driver.dialect)
 		await this.driver.transaction(async (tx) => {
-			await tx.exec(SCHEMA)
-			await this.migrateLocalTenant(tx)
-			await this.migrateLegacyBoard(tx)
+			await tx.exec(ddl)
+			if (this.driver.dialect === 'sqlite') {
+				await this.migrateLocalTenant(tx)
+				await this.migrateLegacyBoard(tx)
+			}
 		})
 	}
 
@@ -962,6 +1018,7 @@ export class TenantStore {
 	readonly tenantId: string
 	private readonly sql: Sql
 	private readonly exclusive: <T>(operation: () => Promise<T>) => Promise<T>
+	private readonly blobs: BlobStore | undefined
 	private bootstrap: Promise<void> | undefined
 	private readonly demoActor?: () => DemoActor
 
@@ -969,16 +1026,18 @@ export class TenantStore {
 		exclusive: <T>(operation: () => Promise<T>) => Promise<T>,
 		sql: Sql,
 		tenantId: string,
+		blobs?: BlobStore,
 		demoActor?: () => DemoActor,
 	) {
 		this.exclusive = exclusive
 		this.sql = sql
 		this.tenantId = tenantId
 		this.demoActor = demoActor
+		this.blobs = blobs
 	}
 
 	forDemoParticipant(actor: () => DemoActor): TenantStore {
-		const scoped = new TenantStore(this.exclusive, this.sql, this.tenantId, actor)
+		const scoped = new TenantStore(this.exclusive, this.sql, this.tenantId, this.blobs, actor)
 		scoped.bootstrap = this.bootstrap
 		return scoped
 	}
@@ -993,19 +1052,30 @@ export class TenantStore {
 		return this.bootstrap
 	}
 
-	private run<T>(body: (tx: SqlTransaction) => Promise<T>): Promise<T> {
+	// Read projections are pure - no UPDATE/INSERT/DELETE - so asking the
+	// driver for one stable snapshot (repeatable read where supported) cannot
+	// hit a write serialization failure. Mutations keep the default isolation
+	// and rely on their revision/CAS guards; the driver never replays them.
+	private static readonly SNAPSHOT: SqlTransactionOptions = { repeatableRead: true }
+
+	private run<T>(
+		body: (tx: SqlTransaction) => Promise<T>,
+		options?: SqlTransactionOptions,
+	): Promise<T> {
 		return this.exclusive(async () => {
 			await this.ensure()
-			return this.sql.transaction((tx) =>
-				body({
-					exec: (sql) => tx.exec(sql),
-					get: <U>(sql: string, params: readonly SqlValue[] = []) =>
-						tx.get<U>(sql, [...params, this.tenantId]),
-					all: <U>(sql: string, params: readonly SqlValue[] = []) =>
-						tx.all<U>(sql, [...params, this.tenantId]),
-					run: (sql, params: readonly SqlValue[] = []) => tx.run(sql, [...params, this.tenantId]),
-					hasTable: (name) => tx.hasTable(name),
-				}),
+			return this.sql.transaction(
+				(tx) =>
+					body({
+						exec: (sql) => tx.exec(sql),
+						get: <U>(sql: string, params: readonly SqlValue[] = []) =>
+							tx.get<U>(sql, [...params, this.tenantId]),
+						all: <U>(sql: string, params: readonly SqlValue[] = []) =>
+							tx.all<U>(sql, [...params, this.tenantId]),
+						run: (sql, params: readonly SqlValue[] = []) => tx.run(sql, [...params, this.tenantId]),
+						hasTable: (name) => tx.hasTable(name),
+					}),
+				options,
 			)
 		})
 	}
@@ -1014,8 +1084,10 @@ export class TenantStore {
 		const now = new Date().toISOString()
 		await this.sql.transaction(async (tx) => {
 			await tx.run(STATEMENTS.createTenant, [this.tenantId, now])
-			const existing = await tx.get<{ count: number }>(STATEMENTS.countCanvases, [this.tenantId])
-			if ((existing?.count ?? 0) === 0) {
+			const existing = await tx.get<{ count: number | string }>(STATEMENTS.countCanvases, [
+				this.tenantId,
+			])
+			if (Number(existing?.count ?? 0) === 0) {
 				await tx.run(STATEMENTS.insertCanvas, [
 					this.tenantId === LOCAL_TENANT.tenantId ? DEFAULT_CANVAS_ID : randomUUID(),
 					DEFAULT_CANVAS_NAME,
@@ -1044,7 +1116,7 @@ export class TenantStore {
 	}
 
 	getActiveCanvasId(): Promise<string> {
-		return this.run(async (tx) => this.activeCanvasId(tx))
+		return this.run(async (tx) => this.activeCanvasId(tx), TenantStore.SNAPSHOT)
 	}
 
 	private findRow(tx: SqlTransaction, id: string): Promise<CanvasRow | undefined> {
@@ -1057,13 +1129,15 @@ export class TenantStore {
 		return row
 	}
 
+	// Read-only resolution: the persisted active id wins when its row exists,
+	// otherwise fall back to the first canvas without repairing it here. The
+	// create/activate/delete paths and the tenant bootstrap own that repair.
 	private async activeCanvasId(tx: SqlTransaction): Promise<string> {
 		const tenant = await tx.get<{ active_canvas_id: string | null }>(STATEMENTS.findTenant)
 		const active = tenant?.active_canvas_id ?? undefined
 		if (active && (await this.findRow(tx, active))) return active
 		const first = await tx.get<{ id: string }>(STATEMENTS.firstCanvas)
 		if (!first) throw new Error('Tenant has no canvas')
-		await tx.run(STATEMENTS.saveActiveCanvas, [first.id])
 		return first.id
 	}
 
@@ -1072,11 +1146,10 @@ export class TenantStore {
 		return new Set(rows.map((row) => row.id))
 	}
 
-	private async parseRow(
-		tx: SqlTransaction,
-		row: CanvasRow,
-		persistMigration = false,
-	): Promise<Board> {
+	// Reads never persist their normalization; the next board write stores the
+	// normalized board, which is also what keeps repeatable-read snapshots free
+	// of write serialization failures.
+	private async parseRow(tx: SqlTransaction, row: CanvasRow): Promise<Board> {
 		let parsed: unknown
 		try {
 			parsed = JSON.parse(row.shapes)
@@ -1085,17 +1158,10 @@ export class TenantStore {
 		}
 		const migrated = migrateLegacyShapes(parsed)
 		const board = { revision: row.revision, shapes: migrated.shapes } as Board
-		const beforeValidation = persistMigration ? JSON.stringify(migrated.shapes) : undefined
 		const hasImages =
 			Array.isArray(migrated.shapes) &&
 			migrated.shapes.some((shape) => isObject(shape) && shape.type === 'image')
 		validateBoardState(board, hasImages ? await this.listImageAssetIds(tx) : undefined)
-		if (
-			persistMigration &&
-			(migrated.changed || beforeValidation !== JSON.stringify(migrated.shapes))
-		) {
-			await tx.run(STATEMENTS.rewriteShapes, [JSON.stringify(migrated.shapes), row.id])
-		}
 		await this.includeObjectOwners(tx, row.id, board)
 		return board
 	}
@@ -1105,7 +1171,7 @@ export class TenantStore {
 		canvasId: string,
 		board: Board,
 	): Promise<void> {
-		if (this.tenantId !== DEMO_TENANT.tenantId) return
+		if (!this.demoActor && this.tenantId !== DEMO_TENANT.tenantId) return
 		const ids = new Set(board.shapes.map((shape) => shape.id))
 		const owners = await tx.all<{ object_id: string; participant_id: string }>(
 			STATEMENTS.objectOwners,
@@ -1139,7 +1205,7 @@ export class TenantStore {
 		const stateVersion = tenant?.state_version ?? 0
 		const active = await this.activeCanvasId(tx)
 		const permissions =
-			this.tenantId === DEMO_TENANT.tenantId
+			this.demoActor || this.tenantId === DEMO_TENANT.tenantId
 				? { canvasEditorIds: await this.canvasEditors(tx, active) }
 				: {}
 		if (includePreviews) {
@@ -1234,11 +1300,14 @@ export class TenantStore {
 	}
 
 	private async boardOf(tx: SqlTransaction, id: string): Promise<Board> {
-		return cloneBoard(await this.parseRow(tx, await this.requireRow(tx, id), true))
+		return cloneBoard(await this.parseRow(tx, await this.requireRow(tx, id)))
 	}
 
 	listCanvases(includePreviews = true): Promise<CanvasSummary[]> {
-		return this.run(async (tx) => (await this.readState(tx, includePreviews)).canvases)
+		return this.run(
+			async (tx) => (await this.readState(tx, includePreviews)).canvases,
+			TenantStore.SNAPSHOT,
+		)
 	}
 
 	getCanvasList(includePreviews = true): Promise<{
@@ -1249,23 +1318,28 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const { stateVersion, activeCanvasId, canvases } = await this.readState(tx, includePreviews)
 			return { stateVersion, activeCanvasId, canvases }
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	getCanvasSummary(id: string): Promise<CanvasSummary> {
-		return this.run(async (tx) => this.summaryOf(tx, await this.requireRow(tx, validCanvasId(id))))
+		return this.run(
+			async (tx) => this.summaryOf(tx, await this.requireRow(tx, validCanvasId(id))),
+			TenantStore.SNAPSHOT,
+		)
 	}
 
 	getState(includePreviews = true): Promise<CanvasSnapshot> {
-		return this.run((tx) => this.readState(tx, includePreviews))
+		return this.run((tx) => this.readState(tx, includePreviews), TenantStore.SNAPSHOT)
 	}
 
 	getBoard(canvasId?: string): Promise<Board> {
-		return this.run(async (tx) =>
-			this.boardOf(
-				tx,
-				canvasId === undefined ? await this.activeCanvasId(tx) : validCanvasId(canvasId),
-			),
+		return this.run(
+			async (tx) =>
+				this.boardOf(
+					tx,
+					canvasId === undefined ? await this.activeCanvasId(tx) : validCanvasId(canvasId),
+				),
+			TenantStore.SNAPSHOT,
 		)
 	}
 
@@ -1273,14 +1347,14 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const board = await this.boardOf(tx, validCanvasId(canvasId))
 			return board.shapes.filter((shape) => shape.type === 'image').length
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	isPlacementClear(canvasId: string, x: number, y: number, w: number, h: number): Promise<boolean> {
 		return this.run(async (tx) => {
 			const board = await this.boardOf(tx, validCanvasId(canvasId))
 			return !occupiedPlacement(board.shapes, x, y, w, h)
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	placeGeneratedImage(request: GeneratedImagePlacement): Promise<{
@@ -1372,35 +1446,49 @@ export class TenantStore {
 			await this.authorizeObjectChanges(tx, canvasId, board, next, new Set(), new Set([shape.id]))
 			await this.includeObjectOwners(tx, canvasId, next)
 			next.revision += 1
-			await tx.run(STATEMENTS.insertImage, [
-				imageId,
-				'image/png',
-				request.bytes,
-				request.bytes.byteLength,
-				now,
-			])
-			const changes = await tx.run(STATEMENTS.updateBoard, [
-				next.revision,
-				JSON.stringify(next.shapes),
-				now,
-				canvasId,
-				board.revision,
-			])
-			if (changes !== 1) {
-				throw new OperationError(
-					409,
-					'REVISION_CONFLICT',
-					'Canvas revision changed during image insertion',
-				)
+			// Generated bytes take the same asset path as uploads: with a BlobStore
+			// configured, bytes live in the blob backend and SQL keeps metadata only,
+			// otherwise getImage (blob-only when configured) cannot return them.
+			const blobKey = this.blobs ? imageBlobKey(this.tenantId, imageId) : undefined
+			if (this.blobs && blobKey) {
+				await this.blobs.put(blobKey, request.bytes, 'image/png')
 			}
-			const updatedRow = await this.requireRow(tx, canvasId)
-			return {
-				canvasId,
-				canvas: await this.summaryOf(tx, updatedRow),
-				board: cloneBoard(next),
-				imageId,
-				position,
-				backgroundApplied,
+			try {
+				await tx.run(STATEMENTS.insertImage, [
+					imageId,
+					'image/png',
+					blobKey ? null : request.bytes,
+					request.bytes.byteLength,
+					now,
+				])
+				const changes = await tx.run(STATEMENTS.updateBoard, [
+					next.revision,
+					JSON.stringify(next.shapes),
+					now,
+					canvasId,
+					board.revision,
+				])
+				if (changes !== 1) {
+					throw new OperationError(
+						409,
+						'REVISION_CONFLICT',
+						'Canvas revision changed during image insertion',
+					)
+				}
+				const updatedRow = await this.requireRow(tx, canvasId)
+				return {
+					canvasId,
+					canvas: await this.summaryOf(tx, updatedRow),
+					board: cloneBoard(next),
+					imageId,
+					position,
+					backgroundApplied,
+				}
+			} catch (error) {
+				if (this.blobs && blobKey) {
+					await this.blobs.delete(blobKey).catch(() => undefined)
+				}
+				throw error
 			}
 		})
 	}
@@ -1409,7 +1497,7 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const row = await this.requireRow(tx, validCanvasId(canvasId))
 			return { canvas: await this.summaryOf(tx, row), board: await this.parseRow(tx, row) }
-		})
+		}, TenantStore.SNAPSHOT)
 	}
 
 	private validImageId(value: unknown): string {
@@ -1422,32 +1510,55 @@ export class TenantStore {
 		return value
 	}
 
-	saveImage(
+	async saveImage(
 		bytes: Uint8Array,
 		contentType: 'image/png' | 'image/jpeg' | 'image/webp' | 'image/gif',
 	): Promise<string> {
-		return this.run(async (tx) => {
-			const id = randomUUID()
-			await tx.run(STATEMENTS.insertImage, [
-				id,
-				contentType,
-				bytes,
-				bytes.byteLength,
-				new Date().toISOString(),
-			])
-			return id
-		})
+		const id = randomUUID()
+		if (!this.blobs) {
+			return this.run(async (tx) => {
+				await tx.run(STATEMENTS.insertImage, [
+					id,
+					contentType,
+					bytes,
+					bytes.byteLength,
+					new Date().toISOString(),
+				])
+				return id
+			})
+		}
+		const key = imageBlobKey(this.tenantId, id)
+		await this.blobs.put(key, bytes, contentType)
+		try {
+			return await this.run(async (tx) => {
+				await tx.run(STATEMENTS.insertImage, [
+					id,
+					contentType,
+					null,
+					bytes.byteLength,
+					new Date().toISOString(),
+				])
+				return id
+			})
+		} catch (error) {
+			await this.blobs.delete(key).catch(() => undefined)
+			throw error
+		}
 	}
 
-	getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
-		return this.run(async (tx) => {
-			const assetId = this.validImageId(id)
-			const row = await tx.get<{ content_type: string; bytes: Uint8Array }>(STATEMENTS.findImage, [
-				assetId,
-			])
-			if (!row) return undefined
+	async getImage(id: unknown): Promise<{ bytes: Uint8Array; contentType: string } | undefined> {
+		const assetId = this.validImageId(id)
+		const row = await this.run((tx) =>
+			tx.get<{ content_type: string; bytes: Uint8Array | null }>(STATEMENTS.findImage, [assetId]),
+		)
+		if (!row) return undefined
+		if (!this.blobs) {
+			if (!row.bytes) return undefined
 			return { bytes: Buffer.from(row.bytes), contentType: row.content_type }
-		})
+		}
+		const object = await this.blobs.get(imageBlobKey(this.tenantId, assetId))
+		if (!object) return undefined
+		return { bytes: object.bytes, contentType: row.content_type || object.contentType }
 	}
 
 	apply(request: unknown): Promise<Board> {
@@ -1768,8 +1879,8 @@ export class TenantStore {
 		return this.run(async (tx) => {
 			const id = validCanvasId(canvasId)
 			await this.requireRow(tx, id)
-			const count = await tx.get<{ count: number }>(STATEMENTS.countCanvases)
-			if ((count?.count ?? 0) <= 1) {
+			const count = await tx.get<{ count: number | string }>(STATEMENTS.countCanvases)
+			if (Number(count?.count ?? 0) <= 1) {
 				throw new OperationError(400, 'LAST_CANVAS', 'A board must keep at least one canvas')
 			}
 			await tx.run(STATEMENTS.deleteCanvas, [id])

@@ -64,7 +64,10 @@
 .frame-identity,
 .toolbar-module,
 .ai-assistant,
-.meeting-frame {
+.selection-panel,
+.meeting-frame,
+.live-topbar-frame,
+.live-topbar-popover {
 	font-family:
 		"Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, "PingFang SC",
 		"Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;

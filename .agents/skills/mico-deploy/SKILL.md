@@ -100,6 +100,8 @@ When push is authorized, push from the clean parent shell through normal hooks. 
 ```
 
 - `build` archives the committed SHA into its own temporary directory, builds `linux/amd64`, authenticates to ACR through Azure CLI and pushes `mico:<full-sha>`. Untracked files, local environment and the daily database are excluded.
+  - When Docker Desktop is absent, `scripts/deploy-azure.ts` automatically uses `apple/container` (`MICO_CONTAINER_CLI=auto|container|docker`). Ensure `container system start --enable-kernel-install` is running and `crane` is installed (so ACR push exports an OCI layout via `container image save` and pushes with `az acr login --expose-token` + `crane`, avoiding `container-core-images` Keychain XPC stalls in non-GUI sessions).
+  - Behind corporate fake-ip proxies, pass `MICO_CONTAINER_DNS=<reachable-dns-ip>` (and `NPM_REGISTRY=https://registry.npmmirror.com/` if the default internal mirror is unreachable); reset stale `buildkit` containers with `container stop buildkit && container rm buildkit` before rebuilding if DNS changed.
 - `deploy` resolves that SHA's image and pins its **digest**, not a mutable tag, on the selected app. It requires a clean tracked tree and updates the existing app when present.
 - Long-running build/deploy commands belong in a dedicated named terminal. Wait with a bounded timeout and inspect actual logs; a command echo is not completion. Do not interrupt a shared daemon or delete another process's lock to make progress.
 - Do not retry an uncertain cloud mutation blindly. Query the selected resource first, then resume only the missing step. Do not delete the RG as cleanup.
@@ -137,7 +139,7 @@ Then verify:
 
 With authorized provider usage, run `node scripts/verify-managed-ai.ts --confirm-provider-usage --audio <pcm16-file>` inside the actual managed-identity container. It creates a separate loopback-only daemon and temporary database, invokes the real SDK-backed Chat/MAI paths and checks MOSS denial, then removes only its test data. Input is at most 20 seconds of 16 kHz mono PCM16. The script is not a public endpoint and never disables authentication on the production daemon. A developer's Azure CLI token or a successful bare provider request does not replace this integrated managed-identity check. Use short console startup commands and stream large inputs through stdin, not Azure exec command URLs.
 
-A local check of the final production image should also prove manual drawing and reload without provider credentials. Keep that container's database/ports isolated and remove only its own resources afterward.
+A local check of the final production image should also prove manual drawing and reload without provider credentials. Keep that container's database/ports isolated and remove only its own resources afterward. When using `apple/container`, run `node scripts/container-smoke.ts` (with `MICO_CONTAINER_DNS` / `NPM_REGISTRY` as needed); when using Docker Compose, run `node scripts/docker-smoke.ts`.
 
 ## Report and recover
 

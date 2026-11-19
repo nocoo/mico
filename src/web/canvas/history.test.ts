@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
+import { CanvasHistory, HISTORY_LIMIT, HistoryConflict } from '../../shared/history.ts'
 import type { Board, CanvasShape, Shape } from '../../shared/types.ts'
-import { CanvasHistory, HISTORY_LIMIT, HistoryConflict } from './history.ts'
 
 const note = (id: string, text = id): CanvasShape => ({
 	id,
