@@ -47,7 +47,7 @@
 		"@ai-sdk/provider": "4.0.34",
 		"@biomejs/biome": "^2.6.8",
 		"@playwright/test": "1.65.1",
-		"@types/node": "^26.6.5",
+		"@types/node": "^26.6.6",
 		"@types/pg": "^8.23.1",
 		"@types/react": "^19.3.0",
 		"@types/react-dom": "^19.3.0",
