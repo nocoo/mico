@@ -8,6 +8,8 @@ description: Evaluate Mico's AI canvas using independent coding agents, isolated
 
 The fixture was retained after updating to the 0.6.5 UI branch and has not been revalidated against it. Check fixture compatibility before starting a new evaluation.
 
+Use this skill for independent coding-agent canvas drawing benchmarks, geometry inspections, and screenshot reviews. For Mico's layered AI prompt, tool-schema, KV-cache, conversation compaction, VAD/queue, and multi-topic summary pipeline evaluation (`pnpm eval:ai`), use `.agents/skills/mico-ai-eval/SKILL.md`.
+
 Run this workflow from the Mico repository root as the coordinator. The cases in `evals/` are frozen inputs: each `prompt.md` is given to the drawing agent; `rubric.md` is for the coordinator only. Compare the same prompts, model, tools, viewport and scoring rules across revisions. Record any deviation rather than implying a controlled comparison.
 
 ## Safety and isolation

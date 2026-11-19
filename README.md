@@ -57,7 +57,7 @@ Logo 旁的 Canvases 按钮打开面板，列出每个画布的名称、最后�
 
 Frame titles use the purple region heading. Sticky notes support an optional editable label; AI tools can create and update it. Adding a label reserves body space and rejects collisions atomically.
 
-HTML 卡片工具（W）先创建空卡片，再由 Agent 通过批量 API 填入内容。卡片里的 sandbox iframe 内联了 Bootstrap 5 的 CSS 和 JavaScript，可渲染内联 HTML、CSS、脚本和 data-URI 图片。沙箱不授予同源权限，内容安全策略会阻止外部资源。这个原型开启了脚本执行，不受信任的脚本仍可能占用浏览器资源。通过左上角的标题选中卡片才能操作控件，也可以拖标题移动它。卡片是叶子节点：可以放进框，但不能包含其他对象。界面上只能改标题，标记内容要通过 API 修改。 The rounded shell does not clip the sandboxed iframe, so saved content remains visible at its corners.
+HTML 卡片工具（W）先创建空卡片，再由 Agent 通过批量 API 填入内容。卡片里的 sandbox iframe 会自动注入 Bootstrap 5 CSS/JS 与共享的 `.mico-*` 卡片设计样式，可渲染内联 HTML、CSS、脚本和 data-URI 图片。沙箱不授予同源权限，内容安全策略会阻止外部资源。这个原型开启了脚本执行，不受信任的脚本仍可能占用浏览器资源。通过左上角的标题选中卡片才能操作控件，也可以拖标题移动它。卡片是叶子节点：可以放进框，但不能包含其他对象。界面上只能改标题，标记内容要通过 API 修改。 The rounded shell does not clip the sandboxed iframe, so saved content remains visible at its corners.
 
 选中笔刷工具（P）后拖动即可绘制。工具栏提供铅笔、马克笔和收尖笔刷三种笔触，以及 2/4/8px 三种宽度。 The default is a 4px grape pencil stroke.笔画保存为 `path` 形状，选中后仍能改笔触、宽度和颜色。AI Agent 通过批量 API 创建同样的形状；[`examples/sketch.ts`](examples/sketch.ts) 用 23 笔收尖笔触画出房子、火柴人、太阳和山丘。选中手形工具或按住空格拖动可平移画布。画连接线时选连接线工具，从源节点拖向目标节点。框只连框，普通对象只连普通对象；靠近时兼容节点会显示锚点，高亮的锚点就是实际保存的附着点。选中连接线后可以拖动任一端点到另一个兼容节点；落在空白处、取消指针操作或按 Escape 都保持原状。属性面板里的 Source 和 Target 控件提供键盘操作方式。提交一次拖动前会检查并发的 Agent 编辑。
 
@@ -65,7 +65,7 @@ Dragging an object snaps its origin to a 16px world-space grid and aligns left/r
 
 Canvas objects retain the candy palette in [`src/web/design.ts`](src/web/design.ts); the surrounding frame uses the glass and jelly tokens in [`src/web/frame/tokens.css`](src/web/frame/tokens.css). The canvas has an animated aurora, subtle grain and a world-aligned dot grid: its visual spacing is 24 world units at 100% zoom and adapts to stay legible while zooming. This visual grid is distinct from the 16-unit snapping grid. Reduced-motion preferences stop the aurora animation.
 
-身份面板放 Logo 和 Canvases 按钮。右上角单独的 AI 按钮带呼吸状态灯，点开是停靠在右上角的助手面板，图标分页为 Chat、Live、Audio 和 Settings。Chat 通过 Vercel AI SDK 从本地 Magpie 网关流式读取回复；每条消息都是一次画布回合：助手读取画板和当前框选，调用绘图工具，回复流式输出的同时画板实时更新。指令要求增量工作——先写标题和核心对象，查看画板，再调整和扩展，而不是一次倾倒整个批次——所以一堂科学课会一步步出现。空画板提供快速课程提示，`?ai=<prompt>` 会打开面板并立即提交该提示，便于脚本化测试。Audio 播放预录会话。Live 采集麦克风语音，默认 MOSS Live，也可选 MAI 转写。底部工具栏固定在屏幕空间，选中对象的属性在右侧面板；窄视口会把属性面板移到工具栏上方并让控件换行，而不是裁掉。画布平移和缩放不会改变这些面板的尺寸或位置。控件固定 40px 高、20px 图标、14px 文字，间隔按四像素栅格：工具栏内边距、间隙、分隔线、属性列和选择内缩都是四的倍数。工具栏按内容定宽，按钮之间留四像素。功能图标统一用 Lucide，快捷键提示只在悬停时出现；工具栏支持方向键移动焦点、Enter 选中工具。浏览器页面缩放由 viewport 锁和键盘/手势拦截禁用，画布缩放独立保留。
+身份面板放 Logo 和 Canvases 按钮。右上角单独的 AI 按钮带呼吸状态灯，点开是停靠在右上角的助手面板，图标分页为 Chat、Live、Audio 和 Settings。Chat 通过 Vercel AI SDK 从本地 Magpie 网关流式读取回复；每条消息都是一次画布回合：助手保持系统提示静态稳定，仅在最后一轮用户消息附带锚点保留的紧凑画布上下文与按能力裁剪的工具列表，并支持长会话分块压缩（最高 1200 条消息），回复流式输出的同时画板实时更新。指令要求增量工作——先写标题和核心对象，查看画板，再调整和扩展，而不是一次倾倒整个批次——适合会议、评审、规划与教学等多种会话。空画板提供快速示例提示，`?ai=<prompt>` 会打开面板并立即提交该提示，便于脚本化测试。Audio 播放预录会话。Live 采集麦克风语音，默认 MOSS Live，也可选 MAI 转写。底部工具栏固定在屏幕空间，选中对象的属性在右侧面板；窄视口会把属性面板移到工具栏上方并让控件换行，而不是裁掉。画布平移和缩放不会改变这些面板的尺寸或位置。控件固定 40px 高、20px 图标、14px 文字，间隔按四像素栅格：工具栏内边距、间隙、分隔线、属性列和选择内缩都是四的倍数。工具栏按内容定宽，按钮之间留四像素。功能图标统一用 Lucide，快捷键提示只在悬停时出现；工具栏支持方向键移动焦点、Enter 选中工具。浏览器页面缩放由 viewport 锁和键盘/手势拦截禁用，画布缩放独立保留。
 
 ### AI 网关
 
@@ -91,14 +91,14 @@ Live 默认用 MOSS Live 全双工语音，也可以选 **MAI Transcribe**，走
 
 MOSS 接收麦克风音频和当前画布上下文，一边说话一边直接调用已有的画布工具。工具结果在执行完成后才返回给 MOSS；画布版本冲突时需要重新读取画板。MOSS 会话使用只在服务端的 `MOSS_API_KEY`（来自 `.env`），连接期间计费。Audio 分页通过 Azure `MAI-Transcribe-2-Streaming` 播放录音；MAI Live 同样把已确认的转写片段发给配置好的 AI 网关。
 
-- [`src/web/stt/`](src/web/stt/) 放 PCM 重采样、WebSocket 客户端和基于能量的静音切分。音频模式默认静音一秒，等一个停顿再切，而不是在 15 秒时硬切断连续语音；静音阈值可在面板调整。MAI 麦克风模式保留 500ms 默认值和 15 秒上限。
+- [`src/web/stt/`](src/web/stt/) 放 PCM 重采样、WebSocket 客户端和基于能量的静音切分。Audio 播放模式默认使用 500ms 停顿切分并可在面板调至 1000ms；Live MAI 麦克风模式默认使用 900ms 静音阈值、15 秒上限，并自动将“嗯/好的/收到”等低信息量口水词并入下一句实质发言再推送 AI。
 - [`src/server/mossProxy.ts`](src/server/mossProxy.ts) 把 `/moss` 代理到 MOSS，并在服务端完成授权；[`src/server/mossApi.ts`](src/server/mossApi.ts) 通过本地守护进程暴露经过校验、绑定画布的原生工具。密钥不会发到浏览器。
 - [`src/server/maiProxy.ts`](src/server/maiProxy.ts) 是 Vite 的 WebSocket 代理，负责附加 Azure `api-key` 头；它提供 `/mai/config` 并代理 `/mai/realtime`。
 - `.env` 为 MOSS 提供 `MOSS_API_KEY`，为 MAI 提供 `AZURE_MAI_HOST`、`AZURE_OPENAI_API_KEY` 和 `AZURE_OPENAI_DEPLOYMENT`。把 [`.env.example`](.env.example) 复制成 `.env` 后填入这些值；`.env` 已被 Git 忽略。
-- [`public/evals/`](public/evals/) contains generated session MP3s and `manifest.json`: ten school lessons, ten meeting/planning cases, and a Microsoft earnings outlook briefing. Scripts, catalog, and the briefing's sources are in [`evals/cases/`](evals/cases/).
-- Live 面板包含带提交标记的波形、实时确认/假设文本、VAD 能量表、播放速度、静音阈值、每段延迟、`New canvas` 按钮和 `Create session summary` 操作。讲者进入收尾时，AI 可以生成可视化 HTML 摘要；会话结束、队列排空后会再次要求创建或更新同一张卡片。AI 生成的 HTML 可以内联支持的 Lucide 图标 SVG，沙箱策略不变。
+- [`public/evals/`](public/evals/) contains generated session MP3s and `manifest.json`: ten school lessons, ten meeting/planning cases, and a Microsoft earnings outlook briefing. Additional multi-topic transcript fixtures (`c14-quarterly-product-review.zh.txt`, `c15-architecture-tradeoffs.en.txt`) and [`evals/cases/layered-eval-suite.json`](evals/cases/layered-eval-suite.json) cover multi-topic meetings.
+- Live 面板包含带提交标记的波形、实时确认/假设文本、VAD 能量表、播放速度、静音阈值、每段延迟、`New canvas` 按钮和 `Create session summary` 操作。画布按垂直堆叠的水平**议题泳道（Topic Swimlanes）**组织：`证据便签 → 综合逻辑 → 议题卡片（topic-card-<slug>）`。切换议题时立即生成或更新前一个议题的 HTML 卡片；回溯旧议题时在原泳道与原卡片上就地更新；会话结束且队列排空后自动补齐未收口议题，若覆盖 >=2 个实质议题则额外创建/更新全局 `executive-summary` 与待办清单。AI 生成的 HTML 可直接使用内置 Lucide 图标占位符与 `.mico-*` 样式类，沙箱策略不变。
 - AI 会把已有的相关对象分组进框，成员变大时扩展框边界，并拒绝与无关内容重叠的扩展。手动编辑框仍按原行为处理。实时内容可以延伸到画布之外，不受初始视口限制。
-- `New canvas` 创建并激活一个命名画布，让一堂课从空画板开始。AI 队列保持串行：一次只处理一个课堂请求，落后时最多合并三个待处理片段。片段不完整或没有新的可视化事实时可以只返回 `WAIT`；这类回复渲染成一个小的等待标记，不绘图。
+- `New canvas` 创建并激活一个命名画布，让一次会议或课程从空画板开始。AI 队列保持串行（工具调用也在同回合内部 FIFO 串行化以消除并发版本冲突），并在积压时自适应扩批（3 → 6 → 8 段，会话结束全量刷出），且在实时发言阶段遇到偶发错误后仍能在结束时自动恢复生成会后总结。片段不完整或没有新的可视化事实时返回 `WAIT`；这类回复渲染成一个小的等待标记，不绘图。
 - `?ai=<prompt>` 仍会打开聊天并立即提交，供脚本化测试使用。
 
 ## 使用
@@ -205,9 +205,9 @@ Vite 会热更新前端改动；`pnpm daemon` 监视守护进程源码并自动�
 
 端口分配：开发 `7063`、E2E `17063`、浏览器/BDD `27063`、内部守护进程 `37063`。自动化测试必须使用隔离的数据库和回环端点，不能指向日常画板。共用的 Caddy 映射在 `workflow/caddy/Caddyfile` 和当前机器的 `/opt/homebrew/etc/Caddyfile`；已有的 `*.dev.hexly.ai` 证书覆盖这个主机名。
 
-After a recorded or MAI session ends, the summary request asks AI to create or update a separate action card after the HTML summary. Action items have stable IDs and persisted completion state; checkbox changes support undo. Empty sessions produce an empty card rather than invented tasks. AI-generated HTML can reuse the card, list, tile and table fragments in `src/shared/htmlCardDesign.ts`. MOSS Live has the same tools and instructions, but stopping MOSS does not automatically request a post-session summary.
+After a recorded or MAI session ends, the summary request asks AI to backfill any unclosed `topic-card-<slug>`, create/update `executive-summary` when >=2 topics exist, and update one global action card via `upsert_action_card`. Action items have stable IDs and persisted completion state; checkbox changes support undo. Empty sessions produce an empty card rather than invented tasks. [`src/web/htmlCard.ts`](src/web/htmlCard.ts) injects the shared `.mico-*` CSS from `src/shared/htmlCardDesign.ts` at render time so card HTML stays compact. MOSS Live has the same tools and multi-topic swimlane instructions, but stopping MOSS does not automatically request a post-session summary.
 
-评估脚本 [`scripts/run-ai-cases.ts`](scripts/run-ai-cases.ts) 把案例脚本逐句喂给守护进程，然后请求会后摘要。轮次产物、画板快照和截图放在 [`evals/runs/`](evals/runs/)。经明确授权的实时案例运行器使用固定虚构稿 `evals/cases/c11-er-handover.zh.txt` 或 `evals/cases/c12-service-incident.zh.txt`：`pnpm eval:live-case 4 --case incident --confirm-live-canvas` 会为 incident 轮次创建并激活新画布，不会删除或恢复其他画布。
+分层 AI 管线评估脚本 [`scripts/ai-pipeline-eval.ts`](scripts/ai-pipeline-eval.ts)（`pnpm eval:ai --json`）可离线测量 L1–L5 工具 schema、并发串行化、KV 前缀稳定性、180 形状锚点压缩、120 轮长会话压缩、VAD/队列延迟及多议题 Prompt 指标；案例回放脚本 [`scripts/run-ai-cases.ts`](scripts/run-ai-cases.ts) 把案例脚本逐句喂给守护进程，然后请求会后摘要。轮次产物、画板快照和截图放在 [`evals/runs/`](evals/runs/)。经明确授权的实时案例运行器支持单议题与多议题转录稿：`pnpm eval:live-case 4 --case incident --confirm-live-canvas` 或 `node scripts/ai-pipeline-eval.ts --live --case c14-quarterly-product-review --confirm-provider-usage`。
 
 Development uses the Vite adapters for MOSS and MAI. The [Docker runtime](docs/docker.md) serves the built frontend and reuses the same server-side proxies without Vite.
 
@@ -218,6 +218,7 @@ pnpm check            # Biome（零警告）+ TypeScript
 pnpm test             # 全部 Node 测试，自动发现 src/ 与 scripts/ 下的 *.test.ts
 pnpm test:unit        # L1：纯逻辑、存储、STT 与组件逻辑
 pnpm test:integration # L3：真实守护进程的 HTTP/WebSocket、CLI 与 Agent 示例
+pnpm eval:ai          # 离线 L1–L5 AI 管线指标评估与阈值校验
 pnpm test:e2e         # L4：CI 跑的浏览器子集
 pnpm test:browser     # L4：全部 Playwright 用例
 pnpm build
