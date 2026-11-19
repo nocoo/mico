@@ -3,7 +3,27 @@ import { meetingIdFromSearch, setMeetingScope, withMeetingScope } from './scope.
 
 export { meetingAssetUrl, setMeetingScope } from './scope.ts'
 
-let active: { input: WhiteboardJoin; session: WhiteboardSession } | null = null
+type PresenceJoin = WhiteboardJoin & { persistIdentity?: boolean }
+
+let active: { input: PresenceJoin; session: WhiteboardSession } | null = null
+
+function participantKey(): string {
+	try {
+		const stored = localStorage.getItem('mico.demo.participantKey')
+		if (stored) {
+			if (!/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(stored))
+				throw new Error('Saved demo participant key is invalid')
+			return stored
+		}
+		const key = crypto.randomUUID()
+		localStorage.setItem('mico.demo.participantKey', key)
+		return key
+	} catch (error) {
+		throw new Error('Demo ownership needs browser storage. Enable storage and reload to join.', {
+			cause: error,
+		})
+	}
+}
 
 export function currentMeetingId(): string | null {
 	if (typeof window === 'undefined') return null
@@ -11,14 +31,17 @@ export function currentMeetingId(): string | null {
 }
 
 export async function joinWhiteboard(
-	input: WhiteboardJoin,
+	{ persistIdentity, ...input }: PresenceJoin,
 	signal?: AbortSignal,
 ): Promise<WhiteboardSession> {
 	const meetingId = currentMeetingId()
 	const response = await fetch(withMeetingScope('/api/whiteboards/join', meetingId), {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify(input),
+		body: JSON.stringify({
+			...input,
+			participantKey: input.participantKey ?? (persistIdentity ? participantKey() : undefined),
+		}),
 		signal: signal
 			? AbortSignal.any([signal, AbortSignal.timeout(10000)])
 			: AbortSignal.timeout(10000),
@@ -30,7 +53,7 @@ export async function joinWhiteboard(
 	return response.json() as Promise<WhiteboardSession>
 }
 
-export function configurePresence(input: WhiteboardJoin, session: WhiteboardSession) {
+export function configurePresence(input: PresenceJoin, session: WhiteboardSession) {
 	active = { input, session }
 }
 
@@ -78,24 +101,24 @@ export const canvasFetch: typeof fetch = (input, init) => {
 		url.pathname === '/mai/config'
 	const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase()
 	const isCanvasMutation =
+		(url.pathname === '/api/operations' && method === 'POST') ||
+		(/^\/api\/canvases\/[^/]+\/permissions$/.test(url.pathname) && method === 'PUT') ||
 		(url.pathname === '/api/canvases' && method === 'POST') ||
 		(url.pathname === '/api/active-canvas' && method === 'PUT') ||
 		(/^\/api\/canvases\/[^/]+$/.test(url.pathname) && (method === 'PATCH' || method === 'DELETE'))
 	const includeWhiteboard = Boolean(active && (isAiPath || isCanvasMutation))
 	if (!includeWhiteboard && !meetingId) return fetch(input, init)
-	if (meetingId) setMeetingScope(url, meetingId)
-	if (input instanceof Request) {
-		const scoped = meetingId ? new Request(url, input) : input
-		if (!includeWhiteboard && !init?.headers) return fetch(scoped)
-		const headers = new Headers(scoped.headers)
-		new Headers(init?.headers).forEach((value, key) => {
-			headers.set(key, value)
-		})
-		if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
-		return fetch(scoped, { ...init, headers })
+	const headers = new Headers(input instanceof Request ? input.headers : undefined)
+	new Headers(init?.headers).forEach((value, key) => {
+		headers.set(key, value)
+	})
+	if (includeWhiteboard && active) headers.set('X-Mico-Whiteboard', active.session.token)
+	if (meetingId) {
+		setMeetingScope(url, meetingId)
+		if (input instanceof Request) {
+			return fetch(new Request(url, input), { ...init, headers })
+		}
+		return fetch(url, { ...init, headers })
 	}
-	if (!includeWhiteboard) return fetch(url, init)
-	const headers = new Headers(init?.headers)
-	if (active) headers.set('X-Mico-Whiteboard', active.session.token)
-	return fetch(url, { ...init, headers })
+	return fetch(input, { ...init, headers })
 }

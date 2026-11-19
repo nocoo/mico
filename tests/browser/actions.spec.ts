@@ -133,7 +133,7 @@ test('click and keyboard toggle controlled items without optimistic state or dra
 	const card = page.locator('[data-shape-id="actions"]')
 	const initialPosition = await board(request)
 	await actionButton(page, 'demo').click()
-	await expect(page.locator('.notice')).toContainText('Operation failed: HTTP 500')
+	await expect(page.locator('.notice')).toHaveText('forced failure')
 	await expect(actionButton(page, 'demo')).toHaveAttribute('aria-checked', 'false')
 	await expect.poll(() => itemDone(request, 'actions', 'demo')).toBe(false)
 
@@ -376,7 +376,9 @@ test('action conflict retry stops after switching to another canvas with the sam
 	await expect.poll(async () => (await state(request)).activeCanvasId).toBe(duplicate.id)
 	await expect(actionButton(page, 'demo')).toHaveAttribute('aria-checked', 'false')
 	releaseToggle?.()
-	await expect(page.locator('.notice')).toContainText('Operation failed: HTTP 409')
+	await expect(page.locator('.notice')).toHaveText(
+		'Canvas revision does not match expectedRevision',
+	)
 	await expect.poll(() => actionWrites).toBe(1)
 
 	const originalDetail = await request.get(`/api/canvases/${original.activeCanvasId}`)

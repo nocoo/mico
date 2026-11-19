@@ -49,6 +49,15 @@ export const zh: I18nMessages = {
 		aiNotConfigured: '请在环境变量中配置 AI 服务。',
 	},
 	demo: {
+		grantEdit: '授予编辑权限',
+		revokeEdit: '撤销编辑权限',
+		grantEditAria: (name: string) => `授予 ${name} 编辑权限`,
+		revokeEditAria: (name: string) => `撤销 ${name} 的编辑权限`,
+		canvasEditAccess: '画布编辑权限',
+		editAllObjects: '可编辑所有对象',
+		ownObjectsOnly: '仅限自己的对象',
+		canvasGrantHint: 'Presenter 授予的权限仅适用于此画布，直到被撤销。',
+		revokeOfflineEditor: (id: string) => `撤销编辑权限：离线参与者 ${id}`,
 		profileTitle: '演示资料',
 		yourName: '你的昵称',
 		enterName: '输入昵称',
@@ -91,6 +100,7 @@ export const zh: I18nMessages = {
 		openPresenterWindow: '打开 Presenter 新窗口',
 	},
 	meeting: {
+		canvasEditor: '画布编辑者',
 		participantsSr: '在线成员',
 		localTitle: '工作区',
 		localDetail: '本地会话',

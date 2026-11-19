@@ -774,16 +774,19 @@ export async function createCanvasTools(
 			execute: ({ prompt, aspect, x, y, width, shapeId, frameId }) =>
 				serialize(async () => {
 					try {
-						return await context.imageGeneration.start({
-							prompt,
-							aspect,
-							canvasId,
-							x,
-							y,
-							width,
-							shapeId,
-							frameId,
-						})
+						return await context.imageGeneration.start(
+							{
+								prompt,
+								aspect,
+								canvasId,
+								x,
+								y,
+								width,
+								shapeId,
+								frameId,
+							},
+							context.store,
+						)
 					} catch (error) {
 						if (error instanceof OperationError) {
 							return { ok: false, error: error.code, message: error.message }

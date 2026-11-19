@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto'
 import type { AuthMode } from '../shared/runtime.ts'
-import { LOCAL_TENANT, type TenantScope } from './store.ts'
+import { DEMO_TENANT, LOCAL_TENANT, type TenantScope } from './store.ts'
 
-export const DEMO_TENANT: TenantScope = { tenantId: 'demo' }
+export { DEMO_TENANT } from './store.ts'
 
 export function tenantScopeFor(
 	session: { identity: string } | undefined,
