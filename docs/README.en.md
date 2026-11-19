@@ -78,7 +78,7 @@ Until settings are saved, the daemon uses these environment variables and defaul
 | Variable          | Default                    | Purpose                                               |
 | ----------------- | -------------------------- | ----------------------------------------------------- |
 | `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | Gateway URL, including `/v1`.                         |
-| `MAGPIE_MODEL`    | `auto/gpt-6-luna`          | Model id sent to the gateway.                         |
+| `MAGPIE_MODEL`    | `auto/gpt-6-sol`           | Model id sent to the gateway.                         |
 | `MAGPIE_API_KEY`  | `magpie`                   | Bearer token; set it to an empty string to send none. |
 
 Saved settings take precedence over the environment. If the gateway is unreachable, the panel shows an actionable error and a Continue button. The assistant can only operate the canvas; it is not a general chat endpoint.

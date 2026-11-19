@@ -10,7 +10,13 @@ import WebSocket, { WebSocketServer } from 'ws'
 import manifest from '../../package.json' with { type: 'json' }
 import { ALLOWED_ORIGINS, DAEMON_PORT } from '../shared/config.ts'
 import { loadRuntimeConfig, publicRuntimeContract, type RuntimeConfig } from '../shared/runtime.ts'
-import { createMagpieModel, fetchAiModels, parseAiChatRequest, streamAiChat } from './ai.ts'
+import {
+	createMagpieModel,
+	fetchAiModels,
+	isPostSessionSummaryRequest,
+	parseAiChatRequest,
+	streamAiChat,
+} from './ai.ts'
 import { type ChatSettings, loadAiConfig, loadRuntimeEnv } from './aiConfig.ts'
 import { AI_SETTINGS_PATH, AiSettingsStore } from './aiSettings.ts'
 import { AuthManager } from './auth.ts'
@@ -1065,8 +1071,16 @@ export function createDaemon(
 				}
 				if (runtimeConfig.auth.mode === 'demo' || membership)
 					whiteboards.requirePresenter(membership)
-				const request = await parseAiChatRequest(await readCanvasRequest())
-				const model = aiModel ? aiModel : modelFactory(aiSettings.getEffective())
+				const request = await parseAiChatRequest(await readCanvasRequest(), {
+					hotMin: config.lectureHotMin,
+					chunkSize: config.lectureChunkSize,
+				})
+				const effectiveSettings = aiSettings.getEffective()
+				const routedSettings =
+					isPostSessionSummaryRequest(request) && config.summaryModel
+						? { ...effectiveSettings, model: config.summaryModel }
+						: effectiveSettings
+				const model = aiModel ? aiModel : modelFactory(routedSettings)
 				await streamAiChat({
 					res,
 					store,
@@ -1076,6 +1090,7 @@ export function createDaemon(
 					origin,
 					imageGeneration: images(),
 					lectureReasoning: config.lectureReasoning,
+					summaryReasoning: config.summaryReasoning,
 				})
 				return
 			}

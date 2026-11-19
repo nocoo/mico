@@ -199,7 +199,7 @@ test('AI settings expose only public fields and preserve the existing key contra
 		assert.equal(get.status, 200)
 		assert.deepEqual(await get.json(), {
 			baseURL: 'http://127.0.0.1:3425/v1',
-			model: 'auto/gpt-6-luna',
+			model: 'auto/gpt-6-sol',
 			hasApiKey: true,
 			authMode: 'api-key',
 			readOnly: false,

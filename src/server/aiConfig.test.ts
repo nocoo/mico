@@ -56,6 +56,10 @@ test('laptop and local production builds keep the existing provider defaults', (
 	assert.deepEqual(config.image, { endpoint: '', apiKey: '', model: DEFAULT_IMAGE_MODEL })
 	assert.deepEqual(config.moss, { url: DEFAULT_MOSS_URL, apiKey: '' })
 	assert.equal(config.lectureReasoning, 'none')
+	assert.equal(config.summaryModel, undefined)
+	assert.equal(config.summaryReasoning, 'none')
+	assert.equal(config.lectureHotMin, 8)
+	assert.equal(config.lectureChunkSize, 12)
 	assert.deepEqual(loadAiConfig({ NODE_ENV: 'production' }), config)
 	assert.equal(loadAiConfig({ MAGPIE_API_KEY: '' }).chat.apiKey, '')
 })
@@ -93,6 +97,10 @@ test('one environment snapshot configures all four AI paths', () => {
 		MAGPIE_MODEL: ' cloud-chat ',
 		MAGPIE_API_KEY: 'chat-test-secret',
 		MAGPIE_LECTURE_REASONING: 'medium',
+		MAGPIE_SUMMARY_MODEL: ' summary-chat ',
+		MAGPIE_SUMMARY_REASONING: 'low',
+		MICO_LECTURE_HOT_MIN: '6',
+		MICO_LECTURE_CHUNK_SIZE: '8',
 		AZURE_MAI_HOST: 'resource.services.ai.azure.com',
 		AZURE_OPENAI_DEPLOYMENT: 'custom-transcription',
 		AZURE_OPENAI_ENDPOINT: 'https://resource.openai.azure.com/openai/v1/',
@@ -112,6 +120,10 @@ test('one environment snapshot configures all four AI paths', () => {
 			authMode: 'api-key',
 		},
 		lectureReasoning: 'medium',
+		summaryModel: 'summary-chat',
+		summaryReasoning: 'low',
+		lectureHotMin: 6,
+		lectureChunkSize: 8,
 		mai: {
 			host: 'resource.services.ai.azure.com',
 			apiKey: 'azure-test-secret',
@@ -124,6 +136,8 @@ test('one environment snapshot configures all four AI paths', () => {
 		},
 		moss: { url: 'wss://voice.example/realtime?model=custom-voice', apiKey: 'voice-test-secret' },
 	})
+	assert.throws(() => loadAiConfig({ MICO_LECTURE_HOT_MIN: '2' }), /MICO_LECTURE_HOT_MIN/)
+	assert.throws(() => loadAiConfig({ MICO_LECTURE_CHUNK_SIZE: '99' }), /MICO_LECTURE_CHUNK_SIZE/)
 })
 
 test('managed identity uses Azure hosts and removes provider keys', () => {

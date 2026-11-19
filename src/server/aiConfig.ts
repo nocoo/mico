@@ -25,13 +25,17 @@ export interface AiConfig {
 	azureClientId?: string
 	chat: ChatSettings
 	lectureReasoning: string
+	summaryModel?: string
+	summaryReasoning: string
+	lectureHotMin: number
+	lectureChunkSize: number
 	mai: { host: string; apiKey: string; deployment: string }
 	image: ImageProviderConfig
 	moss: { url: string; apiKey: string }
 }
 
 export const DEFAULT_CHAT_BASE_URL = 'http://127.0.0.1:3425/v1'
-export const DEFAULT_CHAT_MODEL = 'auto/gpt-6-luna'
+export const DEFAULT_CHAT_MODEL = 'auto/gpt-6-sol'
 export const DEFAULT_CHAT_API_KEY = 'magpie'
 export const DEFAULT_IMAGE_MODEL = 'gpt-image-2.5-flare'
 export const DEFAULT_MOSS_URL = 'wss://api.mosi.cn/v1/realtime?model=moss-live-1.0'
@@ -72,6 +76,29 @@ function apiKey(env: NodeJS.ProcessEnv, name: string, defaultValue = ''): string
 	const value = env[name] ?? defaultValue
 	if (value.length > 4096 || /[\r\n]/.test(value)) throw new Error(`Invalid ${name}`)
 	return value
+}
+
+function optionalModel(env: NodeJS.ProcessEnv, name: string): string | undefined {
+	const raw = env[name]?.trim()
+	if (!raw) return undefined
+	if (raw.length > 256 || /[\r\n]/.test(raw)) throw new Error(`Invalid ${name}`)
+	return raw
+}
+
+function boundedInt(
+	env: NodeJS.ProcessEnv,
+	name: string,
+	fallback: number,
+	min: number,
+	max: number,
+): number {
+	const raw = env[name]?.trim()
+	if (!raw) return fallback
+	const parsed = Number(raw)
+	if (!Number.isInteger(parsed) || parsed < min || parsed > max) {
+		throw new Error(`${name} must be an integer between ${min} and ${max}`)
+	}
+	return parsed
 }
 
 export function loadImageConfig(env: NodeJS.ProcessEnv = process.env): ImageProviderConfig {
@@ -135,6 +162,10 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 			azureClientId,
 			chat: { baseURL: '', model: '', apiKey: '', authMode: aiAuthMode },
 			lectureReasoning: 'none',
+			summaryModel: undefined,
+			summaryReasoning: 'none',
+			lectureHotMin: 8,
+			lectureChunkSize: 12,
 			mai: { host: '', apiKey: '', deployment: '' },
 			image: { endpoint: '', apiKey: '', model: DEFAULT_IMAGE_MODEL },
 			moss: { url: '', apiKey: '' },
@@ -177,6 +208,7 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 	}
 	const image = loadImageConfig(env)
 	const maiApiKey = aiAuthMode === 'managed-identity' ? '' : image.apiKey
+	const lectureReasoning = env.MAGPIE_LECTURE_REASONING?.trim() || 'none'
 	return {
 		runtime,
 		authMode: aiAuthMode,
@@ -190,7 +222,11 @@ export function loadAiConfig(env: NodeJS.ProcessEnv = process.env): AiConfig {
 					: apiKey(env, 'MAGPIE_API_KEY', local ? DEFAULT_CHAT_API_KEY : ''),
 			authMode: aiAuthMode,
 		},
-		lectureReasoning: env.MAGPIE_LECTURE_REASONING?.trim() || 'none',
+		lectureReasoning,
+		summaryModel: optionalModel(env, 'MAGPIE_SUMMARY_MODEL'),
+		summaryReasoning: env.MAGPIE_SUMMARY_REASONING?.trim() || lectureReasoning,
+		lectureHotMin: boundedInt(env, 'MICO_LECTURE_HOT_MIN', 8, 4, 64),
+		lectureChunkSize: boundedInt(env, 'MICO_LECTURE_CHUNK_SIZE', 12, 4, 64),
 		mai: {
 			host,
 			apiKey: maiApiKey,

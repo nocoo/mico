@@ -12,6 +12,7 @@ import { dedupeHypothesis, type LessonClip } from '../../stt/transcript'
 import { SilenceSegmenter } from '../../stt/vad'
 import { drawWave, observeWaveformCanvas } from '../../waveform.ts'
 import { canvasFetch as fetch } from '../../whiteboards/client'
+import { appendCompletedTranscript, isLowSignalSegment } from './protocol'
 
 export interface LessonSegment {
 	id: number
@@ -77,6 +78,8 @@ interface Runtime {
 	generation: number
 	timer: number | null
 	nextSegmentId: number
+	bufferedFiller: LessonSegment | null
+	activeClip: LessonClip | null
 }
 
 const PHASE_LABEL: Record<Phase, string> = {
@@ -128,6 +131,8 @@ function newRuntime(): Runtime {
 		generation: 0,
 		timer: null,
 		nextSegmentId: 1,
+		bufferedFiller: null,
+		activeClip: null,
 	}
 }
 
@@ -293,6 +298,7 @@ export function useLessonViewModel({
 		rt.starting = false
 		rt.generation++
 		rt.nextSegmentId = 1
+		rt.bufferedFiller = null
 		endedNotified.current = false
 		rt.segmenter.reset()
 		setLive({ confirmed: '', hypothesis: '' })
@@ -331,6 +337,15 @@ export function useLessonViewModel({
 		rt.client = null
 		if (rt.timer !== null) window.clearInterval(rt.timer)
 		rt.timer = null
+		const flushClip = rt.activeClip ?? selected
+		rt.activeClip = null
+		if (rt.bufferedFiller && flushClip) {
+			const pendingFiller = rt.bufferedFiller
+			rt.bufferedFiller = null
+			onSegmentRef.current(pendingFiller, flushClip)
+		} else {
+			rt.bufferedFiller = null
+		}
 		setPhase('done')
 		setVad({ db: -90, speaking: false })
 		if (!endedNotified.current) {
@@ -346,6 +361,8 @@ export function useLessonViewModel({
 		if (rt.timer !== null) window.clearTimeout(rt.timer)
 		rt.timer = null
 		rt.pendingCommits = []
+		rt.bufferedFiller = null
+		rt.activeClip = null
 		rt.stopping = false
 		rt.starting = false
 		rt.client?.close()
@@ -364,6 +381,7 @@ export function useLessonViewModel({
 			language: clip.lang === 'zh' ? 'zh' : clip.lang === 'ja' ? 'ja' : 'en',
 		})
 		rt.client = client
+		rt.activeClip = clip
 		rt.closing = false
 		const current = () => rt.client === client && rt.generation === generation
 		const publishCompleted = (pending: PendingCommit) => {
@@ -373,10 +391,29 @@ export function useLessonViewModel({
 				start: pending.start,
 				end: pending.end,
 			}
-			if (segment.text.trim()) {
-				setSegments((currentSegments) => [...currentSegments, segment])
-				onSegmentRef.current(segment, clip)
+			if (!segment.text.trim()) return
+			setSegments((currentSegments) => [...currentSegments, segment])
+			if (isLowSignalSegment(segment.text) && !rt.stopping && !rt.closing) {
+				rt.bufferedFiller = rt.bufferedFiller
+					? {
+							id: segment.id,
+							start: rt.bufferedFiller.start,
+							end: segment.end,
+							text: appendCompletedTranscript(rt.bufferedFiller.text, segment.text),
+						}
+					: segment
+				return
 			}
+			const dispatchSegment = rt.bufferedFiller
+				? {
+						id: segment.id,
+						start: rt.bufferedFiller.start,
+						end: segment.end,
+						text: appendCompletedTranscript(rt.bufferedFiller.text, segment.text),
+					}
+				: segment
+			rt.bufferedFiller = null
+			onSegmentRef.current(dispatchSegment, clip)
 		}
 		const flushCompleted = () => {
 			while (rt.pendingCommits[0]?.transcript !== undefined) {

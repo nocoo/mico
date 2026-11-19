@@ -89,7 +89,7 @@ export function nextAssistantTab(
 }
 
 const LOW_SIGNAL_FILLER_CLAUSE =
-	/^(?:嗯+|啊+|哦+|唉+|诶+|呃+|好的|好哒|好吧|好呀|好|收到|明白|了解|知道了|没问题|没啥问题|行|对|对的|对对|是的|可以|那行|谢谢|多谢|感谢|uh-huh|uh huh|uh|um+|hmm+|ah+|oh+|yeah|yep|yup|ok|okay|got it|makes sense|sure|right|alright|all right|sounds good|thank you|thanks)$/i
+	/^(?:嗯+|啊+|哦+|唉+|诶+|呃+|好的|好哒|好吧|好呀|好|收到|明白|了解|知道了|没问题|没啥问题|行|对|对的|对对|是的|可以|那行|谢谢|多谢|感谢|はい|ええ|うん|なるほど|そうですね|わかりました|uh-huh|uh huh|uh|um+|hmm+|ah+|oh+|yeah|yep|yup|ok|okay|got it|makes sense|sure|right|alright|all right|sounds good|thank you|thanks)$/i
 
 export function isLowSignalSegment(text: string): boolean {
 	const trimmed = text.trim()

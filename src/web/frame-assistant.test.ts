@@ -175,6 +175,9 @@ test('Live microphone defaults to 900 ms silence cut and detects standalone fill
 		'嗯。',
 		'好的，收到。',
 		'行，没问题。',
+		'はい。',
+		'ええ、そうですね。',
+		'なるほど。',
 		'Uh-huh.',
 		'Okay, got it.',
 		'All right, makes sense.',
@@ -184,6 +187,7 @@ test('Live microphone defaults to 900 ms silence cut and detects standalone fill
 	for (const substantive of [
 		'Q3 DAU 涨到了 184 万。',
 		'We should switch to pooled connections.',
+		'案Aは1200円です。',
 		'接下来看第二个议题。',
 		'Now let us move to the next topic.',
 	]) {

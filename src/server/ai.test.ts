@@ -1769,3 +1769,120 @@ test('AI add_html_cards defaults width and auto-estimates height when omitted', 
 		assert.ok(expanded.h > shortCard.h + 180)
 	})
 })
+
+test('post-session summary keeps lecture KV prefix, uses summary model/reasoning, and supports omit', async () => {
+	const textStream = async () => ({
+		stream: simulateReadableStream({
+			chunks: [
+				{ type: 'stream-start' as const, warnings: [] },
+				{ type: 'text-start' as const, id: 't1' },
+				{ type: 'text-delta' as const, id: 't1', delta: 'WAIT' },
+				{ type: 'text-end' as const, id: 't1' },
+				{
+					type: 'finish' as const,
+					finishReason: { unified: 'stop' as const, raw: undefined },
+					usage: {
+						inputTokens: { total: 10, noCache: 10, cacheRead: undefined, cacheWrite: undefined },
+						outputTokens: { total: 4, text: 4, reasoning: undefined },
+					},
+				},
+			],
+		}),
+	})
+	const lectureModel = new MockLanguageModelV4({ doStream: textStream })
+	const summaryModel = new MockLanguageModelV4({ doStream: textStream })
+	const directory = mkdtempSync(join(tmpdir(), 'mico-summary-routing-'))
+	const seenModels: string[] = []
+	const daemon = createDaemon({
+		port: 0,
+		dbPath: join(directory, 'board.sqlite'),
+		settingsPath: join(directory, 'ai-settings', 'settings.json'),
+		env: {
+			MAGPIE_MODEL: 'lecture-fast',
+			MAGPIE_SUMMARY_MODEL: 'summary-strong',
+			MAGPIE_LECTURE_REASONING: 'omit',
+			MAGPIE_SUMMARY_REASONING: 'low',
+		},
+		createAiModel: (settings) => {
+			seenModels.push(settings.model)
+			return settings.model === 'summary-strong' ? summaryModel : lectureModel
+		},
+	})
+	daemon.server.listen(0, '127.0.0.1')
+	await new Promise<void>((resolve) => daemon.server.once('listening', resolve))
+	const address = daemon.server.address()
+	if (!address || typeof address === 'string') throw new Error('Expected tcp port')
+	const url = `http://127.0.0.1:${address.port}`
+
+	try {
+		const r1 = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'lecture',
+				messages: [
+					{ id: 'u1', role: 'user', parts: [{ type: 'text', text: '[00:00] Segment 1.' }] },
+				],
+			}),
+		})
+		assert.equal(r1.status, 200)
+		await r1.text()
+
+		const r2 = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'chat',
+				messages: [
+					{ id: 'u1', role: 'user', parts: [{ type: 'text', text: '[00:00] Segment 1.' }] },
+					{ id: 'a1', role: 'assistant', parts: [{ type: 'text', text: 'WAIT' }] },
+					{
+						id: 'u2',
+						role: 'user',
+						parts: [{ type: 'text', text: '[Post-session summary] Wrap up.' }],
+					},
+				],
+			}),
+		})
+		assert.equal(r2.status, 200)
+		await r2.text()
+
+		const r3 = await fetch(`${url}/api/ai/chat`, {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({
+				mode: 'chat',
+				messages: [
+					{ id: 'u3', role: 'user', parts: [{ type: 'text', text: 'Explain photosynthesis' }] },
+				],
+			}),
+		})
+		assert.equal(r3.status, 200)
+		await r3.text()
+
+		assert.deepEqual(seenModels, ['lecture-fast', 'summary-strong', 'lecture-fast'])
+		const sysOf = (call: (typeof lectureModel.doStreamCalls)[number] | undefined) =>
+			(call?.prompt ?? [])
+				.filter((part) => part.role === 'system')
+				.map((part) =>
+					typeof part.content === 'string' ? part.content : JSON.stringify(part.content),
+				)
+				.join('\n')
+		const toolsOf = (call: (typeof lectureModel.doStreamCalls)[number] | undefined) =>
+			(call?.tools ?? []).map((tool) => tool.name).sort()
+
+		assert.equal(sysOf(lectureModel.doStreamCalls[0]), sysOf(summaryModel.doStreamCalls[0]))
+		assert.deepEqual(toolsOf(lectureModel.doStreamCalls[0]), toolsOf(summaryModel.doStreamCalls[0]))
+		assert.notEqual(sysOf(lectureModel.doStreamCalls[0]), sysOf(lectureModel.doStreamCalls[1]))
+		assert.deepEqual(lectureModel.doStreamCalls[0]?.providerOptions, { magpie: {} })
+		assert.deepEqual(summaryModel.doStreamCalls[0]?.providerOptions, {
+			magpie: { reasoningEffort: 'low' },
+		})
+		assert.deepEqual(lectureModel.doStreamCalls[1]?.providerOptions, {
+			magpie: { reasoningEffort: 'low' },
+		})
+	} finally {
+		await daemon.close()
+		rmSync(directory, { recursive: true, force: true })
+	}
+})

@@ -127,7 +127,10 @@ export interface AiChatRequest {
 	canvasId?: string
 }
 
-export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> {
+export async function parseAiChatRequest(
+	body: unknown,
+	compactOptions?: { hotMin?: number; chunkSize?: number },
+): Promise<AiChatRequest> {
 	if (typeof body !== 'object' || body === null || Array.isArray(body)) {
 		throw new OperationError(400, 'INVALID_REQUEST', 'request must be an object')
 	}
@@ -156,13 +159,28 @@ export async function parseAiChatRequest(body: unknown): Promise<AiChatRequest> 
 		throw new OperationError(400, 'INVALID_REQUEST', 'messages are not valid UI messages')
 	}
 	return {
-		messages: compactUiMessages(sanitizeInterruptedMessages(validated.data)),
+		messages: compactUiMessages(sanitizeInterruptedMessages(validated.data), compactOptions),
 		mode,
 		canvasId,
 		selection: selection
 			.filter((id): id is string => typeof id === 'string' && id.length > 0 && id.length <= 64)
 			.slice(0, 200),
 	}
+}
+
+export function isPostSessionSummaryRequest(request: AiChatRequest): boolean {
+	if (request.mode !== 'chat') return false
+	for (let index = request.messages.length - 1; index >= 0; index--) {
+		const message = request.messages[index]
+		if (message.role !== 'user') continue
+		const text = message.parts
+			.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+			.map((part) => part.text)
+			.join(' ')
+			.trimStart()
+		return text.startsWith('[Post-session summary]')
+	}
+	return false
 }
 
 interface AiResponseOptions {
@@ -174,6 +192,7 @@ interface AiResponseOptions {
 	origin?: string
 	imageGeneration?: ImageGenerationService
 	lectureReasoning: string
+	summaryReasoning?: string
 }
 
 function appendBoardContextToLastUserMessage(
@@ -202,6 +221,7 @@ export async function streamAiChat({
 	origin,
 	imageGeneration,
 	lectureReasoning,
+	summaryReasoning,
 }: AiResponseOptions): Promise<void> {
 	const canvasId = request.canvasId ?? (await store.getActiveCanvasId())
 	const board = await store.getBoard(canvasId)
@@ -212,6 +232,14 @@ export async function streamAiChat({
 		headers['Access-Control-Allow-Origin'] = origin
 		headers.Vary = 'Origin'
 	}
+	const isSummary = isPostSessionSummaryRequest(request)
+	const promptMode: AiChatMode = request.mode === 'lecture' || isSummary ? 'lecture' : 'chat'
+	const reasoningEffort =
+		request.mode === 'lecture'
+			? lectureReasoning
+			: isSummary
+				? (summaryReasoning ?? lectureReasoning)
+				: 'low'
 	const imageGenerationAvailable = imageGeneration?.isAvailable() ?? false
 	const allTools = await createCanvasTools({
 		store,
@@ -222,7 +250,7 @@ export async function streamAiChat({
 		imageGeneration,
 	})
 	const tools = selectToolsForTurn(allTools, {
-		mode: request.mode,
+		mode: promptMode,
 		imageGenerationAvailable,
 		hasBoardImages: board.shapes.some((shape) => shape.type === 'image'),
 	})
@@ -230,9 +258,11 @@ export async function streamAiChat({
 		await convertToModelMessages(request.messages),
 		formatBoardContext(board, request.selection),
 	)
+	const isAzureResponses = typeof model === 'object' && model.provider === 'azure.responses'
+	const effortField = reasoningEffort === 'omit' ? {} : { reasoningEffort }
 	const result = streamText({
 		model,
-		instructions: buildStaticInstructions(request.mode, { imageGenerationAvailable }),
+		instructions: buildStaticInstructions(promptMode, { imageGenerationAvailable }),
 		messages: modelMessages,
 		tools,
 		stopWhen:
@@ -240,23 +270,24 @@ export async function streamAiChat({
 				? [
 						(options) =>
 							options.steps.reduce((count, step) => count + step.toolCalls.length, 0) >= 8,
-						isStepCount(16),
+						isStepCount(6),
 					]
-				: isStepCount(40),
+				: isSummary
+					? isStepCount(8)
+					: isStepCount(40),
 		maxRetries: 1,
 		abortSignal: abort.signal,
-		providerOptions:
-			typeof model === 'object' && model.provider === 'azure.responses'
-				? {
-						azure: {
-							reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low',
-							store: false,
-							strictJsonSchema: false,
-						},
-					}
-				: { magpie: { reasoningEffort: request.mode === 'lecture' ? lectureReasoning : 'low' } },
+		providerOptions: isAzureResponses
+			? {
+					azure: {
+						...effortField,
+						store: false,
+						strictJsonSchema: false,
+					},
+				}
+			: { magpie: effortField },
 		prepareStep:
-			request.mode === 'lecture'
+			promptMode === 'lecture'
 				? undefined
 				: ({ stepNumber }) => (stepNumber === 0 ? { toolChoice: 'required' } : undefined),
 		onError: () => {

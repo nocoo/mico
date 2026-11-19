@@ -75,8 +75,8 @@ test('short conversations without bulky history pass through at exact length', (
 test('chunk-aligned compaction keeps archived prefix and shared hot turns byte-identical across nearby turns', () => {
 	const turn119 = compactUiMessages(makeConversation(119))
 	const turn120 = compactUiMessages(makeConversation(120))
-	assert.equal(turn119[0]?.id, 'compact-archive-224')
-	assert.equal(turn120[0]?.id, 'compact-archive-224')
+	assert.equal(turn119[0]?.id, 'compact-archive-228')
+	assert.equal(turn120[0]?.id, 'compact-archive-228')
 	assert.equal(JSON.stringify(turn119[0]), JSON.stringify(turn120[0]))
 	assert.equal(JSON.stringify(turn119[1]), JSON.stringify(turn120[1]))
 

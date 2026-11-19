@@ -1,7 +1,7 @@
 import { isToolUIPart, type UIMessage } from 'ai'
 
-const DEFAULT_HOT_MIN = 12
-const DEFAULT_CHUNK_SIZE = 16
+const DEFAULT_HOT_MIN = 8
+const DEFAULT_CHUNK_SIZE = 12
 const MAX_ARCHIVE_CHUNK_LINES = 12
 const MAX_ARCHIVE_BYTES = 2400
 const COMPACT_HTML_THRESHOLD = 300
