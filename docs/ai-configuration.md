@@ -70,7 +70,7 @@ Provisioning a resource/model, changing quota allocation or deleting an old acco
 
 ## Prompt caching, compaction and HTML cards
 
-`POST /api/ai/chat` keeps system instructions byte-static across board revisions and keeps `[Post-session summary]` on the lecture prompt and tool surface so prefix KV caches stay warm across the whole session; `# Current canvas` (anchor-preserving compact shape digests) attaches exclusively to the final user message. Long sessions (up to `1200` UI messages) are compacted client- and server-side via `compactUiMessages` using chunk-aligned archive prefixes (default `hotMin = 8`, `chunkSize = 12`). Generated HTML cards do not embed `.mico-*` stylesheet boilerplate: [`src/web/htmlCard.ts`](../src/web/htmlCard.ts) injects `HTML_CARD_CSS` at render time alongside Bootstrap 5.
+`POST /api/ai/chat` keeps system instructions byte-static across board revisions and keeps `[Post-session summary]` on the lecture prompt and tool surface so prefix KV caches stay warm across the whole session; `# Current canvas` (anchor-preserving compact shape digests) attaches exclusively to the final user message. Long sessions (up to `1200` UI messages) are compacted client- and server-side via `compactUiMessages` using chunk-aligned archive prefixes (default `hotMin = 8`, `chunkSize = 12`). See [ai-performance-tuning.md](ai-performance-tuning.md) for the reproducible 3-tier latency methodology and ablation measurements behind these defaults. Generated HTML cards do not embed `.mico-*` stylesheet boilerplate: [`src/web/htmlCard.ts`](../src/web/htmlCard.ts) injects `HTML_CARD_CSS` at render time alongside Bootstrap 5.
 
 ## Verification
 

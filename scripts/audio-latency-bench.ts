@@ -122,7 +122,7 @@ function parsePositiveInt(value: string, flag: string): number {
 	return parsed
 }
 
-function parseBenchArgs(argv: readonly string[]): BenchArgs {
+export function parseBenchArgs(argv: readonly string[]): BenchArgs {
 	let confirmProviderUsage = false
 	let caseId = 'c15-architecture-tradeoffs'
 	let model: string | undefined

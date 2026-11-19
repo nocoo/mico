@@ -78,7 +78,7 @@ Local API-key gateways use OpenAI-compatible Chat Completions; managed Azure use
 | 变量              | 默认值                     | 用途                                 |
 | ----------------- | -------------------------- | ------------------------------------ |
 | `MAGPIE_BASE_URL` | `http://127.0.0.1:3425/v1` | 网关地址，包含 `/v1`。               |
-| `MAGPIE_MODEL`    | `auto/gpt-6-luna`          | 发给网关的模型 ID。                  |
+| `MAGPIE_MODEL`    | `auto/gpt-6-sol`           | 发给网关的模型 ID。                  |
 | `MAGPIE_API_KEY`  | `magpie`                   | Bearer token；设为空字符串则不发送。 |
 
 已保存的设置优先于环境变量。网关不可达时，面板会给出可操作的错误信息和 Continue 按钮。助手只能操作画布，不是通用聊天端点。
@@ -249,6 +249,7 @@ pnpm hooks:install    # 一次性：把 core.hooksPath 指向 .githooks
 ## 文档
 
 - [`docs/docker.md`](docs/docker.md) — Local Docker deployment, persistence and acceptance checks.
+- [`docs/ai-performance-tuning.md`](docs/ai-performance-tuning.md) — AI 延迟调优、KV 缓存压缩与可复现三层 Audio 压测方法。
 - [`docs/testing.md`](docs/testing.md) — 测试分层、隔离与 Agent API 契约。
 - [`docs/prototypes/`](docs/prototypes/) — 独立界面原型。
 - [`examples/`](examples/) — Agent 批量示例和 TypeScript 生成器。

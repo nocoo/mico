@@ -207,7 +207,7 @@ Port allocation: development `7063`, E2E `17063`, browser/BDD `27063`, internal 
 
 After a recorded or MAI session ends, the summary request asks AI to backfill any unclosed `topic-card-<slug>`, create/update `executive-summary` when `>= 2` topics exist, and update one global action card via `upsert_action_card`. Action items have stable IDs and persisted completion state; checkbox changes support undo. Empty sessions produce an empty card rather than invented tasks. [`../src/web/htmlCard.ts`](../src/web/htmlCard.ts) injects the `.mico-*` design CSS from `src/shared/htmlCardDesign.ts` at render time so generated card markup stays small. MOSS Live has the same tools and multi-topic swimlane instructions, but stopping MOSS does not automatically request a post-session summary.
 
-The layered AI pipeline evaluator [`../scripts/ai-pipeline-eval.ts`](../scripts/ai-pipeline-eval.ts) (`pnpm eval:ai --json`) measures offline L1–L5 metrics (tool schema size, parallel serialization, KV-cache stability, 180-shape anchor retention, 120-turn compaction, VAD/queue lag and recovery, multi-topic prompt checks). The replay harness [`../scripts/run-ai-cases.ts`](../scripts/run-ai-cases.ts) feeds case transcripts sentence by sentence to the daemon and requests the post-session summary. Round artifacts, board snapshots and screenshots live under [`../evals/runs/`](../evals/runs/). Explicitly authorized live-provider evaluations support single-topic and multi-topic fixtures: `pnpm eval:live-case 4 --case incident --confirm-live-canvas` or `node scripts/ai-pipeline-eval.ts --live --case c14-quarterly-product-review --confirm-provider-usage`.
+The layered AI pipeline evaluator [`../scripts/ai-pipeline-eval.ts`](../scripts/ai-pipeline-eval.ts) (`pnpm eval:ai --json`) measures offline L1–L5 metrics (tool schema size, parallel serialization, KV-cache stability, 180-shape anchor retention, 120-turn compaction, VAD/queue lag and recovery, multi-topic prompt checks). The replay harness [`../scripts/run-ai-cases.ts`](../scripts/run-ai-cases.ts) feeds case transcripts sentence by sentence to the daemon and requests the post-session summary. Round artifacts, board snapshots and screenshots live under [`../evals/runs/`](../evals/runs/). Explicitly authorized live-provider evaluations support single-topic and multi-topic fixtures, virtual-clock audio catch-up benchmarking (`scripts/audio-latency-bench.ts`), and real-browser MAI playback (`scripts/verify-real-audio.ts`); see [`ai-performance-tuning.md`](ai-performance-tuning.md).
 
 Development uses the Vite adapters for MOSS and MAI. The [Docker runtime](docker.md) serves the built frontend and reuses the same server-side proxies without Vite.
 
@@ -249,7 +249,7 @@ Browser checks require installed Google Chrome and run sequentially on `127.0.0.
 ## Documentation
 
 - [`docker.md`](docker.md) — Local Docker deployment, persistence and acceptance checks.
-
+- [`ai-performance-tuning.md`](ai-performance-tuning.md) — AI latency tuning, KV-cache compaction and reproducible 3-tier Audio benchmarks.
 - [`testing.md`](testing.md) — testing layers, isolation and the agent API contract.
 - [`prototypes/`](prototypes/) — standalone interface prototypes.
 - [`../examples/`](../examples/) — agent batch examples and TypeScript generators.

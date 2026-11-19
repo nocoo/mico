@@ -40,7 +40,12 @@ node scripts/ai-pipeline-eval.ts --live --case c14-quarterly-product-review --co
 
 # Authorized live Audio-mode arrival-queue & post-meeting catch-up benchmark (30s catchUpAfterEndMs budget)
 node scripts/audio-latency-bench.ts --confirm-provider-usage --case c15-architecture-tradeoffs --model auto/gpt-6-sol --lecture-reasoning none --summary-reasoning none --hot-min 8 --chunk-size 12
+
+# Authorized real-browser Audio playback + Azure MAI streaming end-to-end verification (E2E_PORT 17063 + ephemeral daemon)
+node scripts/verify-real-audio.ts --confirm-provider-usage --clip c13-microsoft-outlook --model auto/gpt-6-sol --lecture-reasoning none --summary-reasoning none --hot-min 8 --chunk-size 12 --screenshot /tmp/mico-real-audio.png --out /tmp/mico-real-audio.json
 ```
+
+See [`docs/ai-performance-tuning.md`](../../../docs/ai-performance-tuning.md) for the full 3-tier benchmark methodology, ablation tables, and isolation rules.
 
 ## Layered metric contract
 
