@@ -57,9 +57,11 @@ export function AiSettings({ active }: { active: boolean }) {
 							</TextField.Root>
 							<Select.Content
 								position="popper"
-								sideOffset={6}
+								align="end"
+								alignOffset={-4}
+								sideOffset={10}
 								collisionPadding={8}
-								className="select-content"
+								className="select-content ai-model-menu"
 							>
 								{model.models.map((name) => (
 									<Select.Item className="select-item" key={name} value={name}>

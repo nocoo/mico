@@ -530,7 +530,7 @@ test('toolbar text selectors keep plain values and preview only in the menu', as
 	}
 })
 
-test('toolbar text selectors keep chevrons small and selection checks clear of previews', async ({
+test('toolbar text selectors keep chevrons small, hide duplicate checks, and fit previews', async ({
 	page,
 }) => {
 	await page.getByRole('button', { name: 'Text', exact: true }).click()
@@ -542,17 +542,20 @@ test('toolbar text selectors keep chevrons small and selection checks clear of p
 		await trigger.click()
 		const selected = page.locator('.select-item[data-state="checked"]')
 		await expect(selected).toBeVisible()
-		const check = await selected.locator('.rt-SelectItemIndicatorIcon').boundingBox()
-		const text = await selected.locator('span[style]').boundingBox()
-		if (!check || !text) throw new Error(`Missing selected option content for ${label}`)
-		expect(check.x + check.width + 2).toBeLessThanOrEqual(text.x)
+		await expect(selected.locator('.rt-SelectItemIndicator')).toBeHidden()
+		await expect(selected.locator('span[style]')).toBeVisible()
 		const overflow = await page.locator('.select-item').evaluateAll((items) =>
 			items.flatMap((item) => {
 				const preview = item.querySelector('span[style]')
 				if (!preview) return []
 				const row = item.getBoundingClientRect()
 				const text = preview.getBoundingClientRect()
-				return text.top < row.top - 1 || text.bottom > row.bottom + 1 ? [item.textContent] : []
+				return text.top < row.top - 1 ||
+					text.bottom > row.bottom + 1 ||
+					text.left < row.left - 1 ||
+					text.right > row.right + 1
+					? [item.textContent]
+					: []
 			}),
 		)
 		expect(overflow).toEqual([])
@@ -562,10 +565,12 @@ test('toolbar text selectors keep chevrons small and selection checks clear of p
 			await page.getByRole('option', { name: '48', exact: true }).click()
 			await trigger.click()
 			const large = page.locator('.select-item[data-state="checked"]')
-			const largeCheck = await large.locator('.rt-SelectItemIndicatorIcon').boundingBox()
-			const largeText = await large.locator('span[style]').boundingBox()
-			if (!largeCheck || !largeText) throw new Error('Missing selected 48px option')
-			expect(largeCheck.x + largeCheck.width + 2).toBeLessThanOrEqual(largeText.x)
+			await expect(large.locator('.rt-SelectItemIndicator')).toBeHidden()
+			const rowBox = await large.boundingBox()
+			const textBox = await large.locator('span[style]').boundingBox()
+			if (!rowBox || !textBox) throw new Error('Missing selected 48px option')
+			expect(textBox.y).toBeGreaterThanOrEqual(rowBox.y - 1)
+			expect(textBox.y + textBox.height).toBeLessThanOrEqual(rowBox.y + rowBox.height + 1)
 			await large.click()
 		}
 	}

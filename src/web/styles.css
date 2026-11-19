@@ -570,16 +570,16 @@ svg {
 	translate: 0;
 }
 .select-content {
-	--select-item-indicator-width: 30px;
+	--select-content-padding: 0px;
 	z-index: 60;
 	isolation: isolate;
-	min-width: min(208px, calc(100vw - var(--space-2)));
+	min-width: max(var(--radix-select-trigger-width, 0px), 112px);
 	max-width: calc(100vw - var(--space-2));
 	max-height: min(var(--radix-select-content-available-height), 65vh, 480px);
 	padding: var(--space-05);
 	overflow: hidden;
 	border: var(--hairline) solid var(--ui-glass-edge, var(--border));
-	border-radius: 16px;
+	border-radius: 12px;
 	background: var(--ui-glass-strong, var(--surface));
 	-webkit-backdrop-filter: blur(22px) saturate(1.7);
 	backdrop-filter: blur(22px) saturate(1.7);
@@ -594,6 +594,7 @@ svg {
 .select-content .rt-ScrollAreaViewport,
 .select-content .rt-SelectViewport {
 	max-width: 100%;
+	padding: 0;
 }
 .select-content .rt-ScrollAreaScrollbar[data-orientation="vertical"] {
 	width: 6px;
@@ -648,95 +649,71 @@ svg {
 		transform: translateY(var(--space-05)) scale(0.98);
 	}
 }
-.select-item {
+.select-content .select-item {
 	display: flex;
 	align-items: center;
 	width: 100%;
 	min-width: 0;
-	min-height: 34px;
+	min-height: 32px;
 	height: auto;
-	padding: 6px var(--space-1);
-	padding-inline-start: var(--select-item-indicator-width);
-	border-radius: 12px;
+	padding: 5px 8px;
+	border-radius: 8px;
 	color: var(--ui-ink, var(--ink));
-	font-size: var(--type-caption);
+	font-size: 13px;
 	font-weight: var(--weight-medium);
 	line-height: 1.35;
 	outline: none;
 	cursor: default;
 	transition:
-		background 160ms var(--ui-ease, ease),
-		color 160ms var(--ui-ease, ease),
-		box-shadow 160ms var(--ui-ease, ease),
-		scale 350ms var(--ui-spring, ease);
+		background 140ms var(--ui-ease, ease),
+		color 140ms var(--ui-ease, ease),
+		box-shadow 140ms var(--ui-ease, ease);
 }
-.select-item + .select-item {
-	margin-top: 3px;
+.select-content .select-item + .select-item {
+	margin-top: 2px;
 }
-.select-item > span:not(.rt-SelectItemIndicator) {
+.select-content .select-item > span:not(.rt-SelectItemIndicator) {
 	min-width: 0;
 	max-width: 100%;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-.select-item[data-highlighted] {
+.select-content .select-item[data-highlighted] {
 	background: var(--ui-well-2, var(--surface-hover));
-	box-shadow: inset 0 0 0 1px var(--ui-hair, var(--border));
+	box-shadow: none;
 	color: var(--ui-ink, var(--ink));
-	scale: 0.99;
 }
-.select-item[data-state="checked"] {
-	background: linear-gradient(
-		145deg,
-		var(--ui-glass-strong, var(--surface)),
-		var(--ui-accent-soft, var(--accent-tint))
-	);
-	box-shadow:
-		inset 0 1px 0 var(--ui-gloss, transparent),
-		inset 0 0 0 1px color-mix(in oklch, var(--ui-accent, var(--accent)) 42%, transparent);
+.select-content .select-item[data-state="checked"] {
+	background: var(--ui-accent-soft, var(--accent-tint));
+	box-shadow: none;
 	color: var(--ui-accent-ink, var(--candy-blue-stroke));
 	font-weight: var(--weight-semibold);
 }
-.select-item[data-highlighted][data-state="checked"] {
-	box-shadow:
-		inset 0 1px 0 var(--ui-gloss, transparent),
-		inset 0 0 0 1.5px color-mix(in oklch, var(--ui-accent, var(--accent)) 62%, transparent),
-		0 8px 14px -12px var(--ui-accent, var(--accent));
+.select-content .select-item[data-highlighted][data-state="checked"] {
+	background: color-mix(in oklch, var(--ui-accent, var(--accent)) 18%, transparent);
+	box-shadow: none;
 }
-.select-item .rt-SelectItemIndicator {
-	left: 3px;
-	width: 22px;
-	height: 22px;
-	border-radius: 8px;
-	background: var(--ui-accent-soft, var(--accent-tint));
-	box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--ui-accent, var(--accent)) 34%, transparent);
-	color: var(--ui-accent-ink, var(--accent));
-	animation: select-indicator-in 350ms var(--ui-spring, ease) both;
-}
-@keyframes select-indicator-in {
-	from {
-		opacity: 0;
-		scale: 0.65;
+@media (forced-colors: active) {
+	.select-content .select-item[data-state="checked"] {
+		outline: 2px solid Highlight;
+		outline-offset: -2px;
 	}
 }
-.select-item .rt-SelectItemIndicatorIcon {
-	width: 10px;
-	height: 10px;
-	stroke-width: 2.4;
+.select-content .select-item .rt-SelectItemIndicator {
+	display: none;
 }
-.select-item[data-disabled] {
+.select-content .select-item[data-disabled] {
 	opacity: 0.45;
 }
 @media (prefers-reduced-motion: reduce) {
 	.select-trigger,
-	.select-item,
+	.select-content .select-item,
 	.select-content .rt-ScrollAreaThumb {
 		transition-duration: 1ms;
 	}
 	.select-content[data-state="open"],
-	.select-content[data-state="closed"],
-	.select-item .rt-SelectItemIndicator {
+	.select-content[data-state="closed"] {
 		animation: none;
 	}
 }
