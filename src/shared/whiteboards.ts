@@ -71,6 +71,7 @@ export const joinWhiteboardSchema = z
 			),
 		sharer: z.boolean(),
 		clientId: z.uuid(),
+		participantKey: z.uuid().optional(),
 	})
 	.strict()
 
@@ -80,6 +81,7 @@ export type PresenceMessage = z.infer<typeof presenceMessageSchema>
 
 export interface WhiteboardMember {
 	id: string
+	participantId?: string
 	username: string
 	sharer: boolean
 	color: string

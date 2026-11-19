@@ -10,6 +10,7 @@ export interface MeetingFrameProps {
 	readonly presenterId: string | null
 	readonly selfId: string | null
 	readonly selfName?: string
+	readonly canvasEditorIds?: readonly string[]
 }
 
 export interface MeetingParticipant {
@@ -20,12 +21,14 @@ export interface MeetingParticipant {
 	readonly isSelf: boolean
 	readonly self: boolean
 	readonly presenter: boolean
+	readonly editor: boolean
 }
 
 export interface MeetingPresence {
 	readonly members: readonly WhiteboardMember[]
 	readonly presenterId: string | null
 	readonly selfId: string | null
+	readonly canvasEditorIds?: readonly string[]
 }
 
 export interface MeetingViewModel {
@@ -46,6 +49,7 @@ export interface MeetingStateInput {
 	readonly presenterId: string | null
 	readonly selfId: string | null
 	readonly selfName?: string
+	readonly canvasEditorIds?: readonly string[]
 	readonly elapsedSeconds?: number
 	readonly messages?: I18nMessages
 }
@@ -86,6 +90,7 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 					isSelf: true,
 					self: true,
 					presenter: false,
+					editor: false,
 				},
 			],
 			overflowCount: 0,
@@ -121,6 +126,11 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 						isSelf,
 						self: isSelf,
 						presenter: member.id === input.presenterId,
+						editor:
+							member.id !== input.presenterId &&
+							Boolean(
+								member.participantId && input.canvasEditorIds?.includes(member.participantId),
+							),
 					}
 				})
 			: [
@@ -132,6 +142,7 @@ export function buildMeetingViewModel(input: MeetingStateInput): MeetingViewMode
 						isSelf: true,
 						self: true,
 						presenter: false,
+						editor: false,
 					},
 				]
 
@@ -155,6 +166,7 @@ export function meetingPreview(presence?: MeetingPresence): MeetingViewModel {
 			members: presence.members,
 			presenterId: presence.presenterId,
 			selfId: presence.selfId,
+			canvasEditorIds: presence.canvasEditorIds,
 		})
 		return presence.members.length === 0 ? { ...model, participants: [] } : model
 	}

@@ -47,6 +47,15 @@ export const en = {
 		aiNotConfigured: 'Manual drawing is available',
 	},
 	demo: {
+		grantEdit: 'Grant edit',
+		revokeEdit: 'Revoke edit',
+		grantEditAria: (name: string) => `Grant edit access to ${name}`,
+		revokeEditAria: (name: string) => `Revoke edit access from ${name}`,
+		canvasEditAccess: 'Canvas edit access',
+		editAllObjects: 'Edit all objects',
+		ownObjectsOnly: 'Own objects only',
+		canvasGrantHint: 'Presenter grants apply only to this canvas, until revoked.',
+		revokeOfflineEditor: (id: string) => `Revoke edit: offline participant ${id}`,
 		profileTitle: 'Demo profile',
 		yourName: 'Your name',
 		enterName: 'Enter your name',
@@ -89,6 +98,7 @@ export const en = {
 		openPresenterWindow: 'Open Presenter window',
 	},
 	meeting: {
+		canvasEditor: 'canvas editor',
 		participantsSr: 'Online participants',
 		localTitle: 'Workspace',
 		localDetail: 'Local session',

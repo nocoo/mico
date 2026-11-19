@@ -9,7 +9,7 @@ import { loadImageConfig } from './aiConfig.ts'
 import { createCanvasTools } from './aiTools.ts'
 import { ImageGenerationService } from './imageGeneration.ts'
 import { createMossSession, executeMossTool } from './mossApi.ts'
-import { BoardStore, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
+import { BoardStore, DEMO_TENANT, LOCAL_TENANT, OperationError, type TenantStore } from './store.ts'
 
 const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
@@ -104,6 +104,89 @@ test('the real script inserts a generated image using a local mock provider', as
 	} finally {
 		provider.close()
 		await once(provider, 'close')
+	}
+})
+
+test('generated images retain the initiating demo owner and recheck permissions at completion', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-image-owner-'))
+	const boards = new BoardStore(join(directory, 'board.sqlite'))
+	const store = boards.forTenant(DEMO_TENANT)
+	let presenter = true
+	const owner = store.forDemoParticipant(() => ({ participantId: 'a'.repeat(64), presenter }))
+	const guest = store.forDemoParticipant(() => ({
+		participantId: 'b'.repeat(64),
+		presenter: false,
+	}))
+	let resolveGenerator: ((bytes: Uint8Array) => void) | undefined
+	const service = new ImageGenerationService(store, () => {}, {
+		generator: () =>
+			new Promise<Uint8Array>((resolve) => {
+				resolveGenerator = resolve
+			}),
+	})
+	try {
+		const canvasId = await store.getActiveCanvasId()
+		const started = await service.start(
+			{
+				prompt: 'Owned image',
+				aspect: '1:1',
+				canvasId,
+				x: 500,
+				y: 500,
+				width: 100,
+			},
+			owner,
+		)
+		resolveGenerator?.(PNG)
+		assert.equal((await waitForStatus(service, started.jobId)).status, 'completed')
+		assert.equal((await store.getBoard()).objectOwners?.[started.shapeId], 'a'.repeat(64))
+		presenter = false
+		await owner.apply({ operations: [{ type: 'update', id: started.shapeId, patch: { x: 600 } }] })
+		await assert.rejects(
+			guest.apply({ operations: [{ type: 'delete', id: started.shapeId }] }),
+			(error: unknown) => error instanceof OperationError && error.code === 'OBJECT_EDIT_FORBIDDEN',
+		)
+		await guest.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: {
+						id: 'foreign-frame',
+						type: 'frame',
+						title: 'Guest frame',
+						x: 0,
+						y: 0,
+						w: 200,
+						h: 200,
+						color: '#123456',
+					},
+				},
+			],
+		})
+		presenter = true
+		const framed = await service.start(
+			{
+				prompt: 'Frame background',
+				aspect: '1:1',
+				canvasId,
+				x: 1000,
+				y: 1000,
+				width: 100,
+				frameId: 'foreign-frame',
+			},
+			owner,
+		)
+		const before = await store.getBoard()
+		presenter = false
+		resolveGenerator?.(PNG)
+		const failed = await waitForStatus(service, framed.jobId)
+		assert.equal(failed.status, 'failed')
+		assert.equal(failed.code, 'OBJECT_EDIT_FORBIDDEN')
+		assert.deepEqual(await store.getBoard(), before)
+	} finally {
+		service.close()
+		await boards.close()
+		rmSync(directory, { recursive: true, force: true })
 	}
 })
 

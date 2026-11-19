@@ -214,6 +214,7 @@ function knownPath(pathname: string): boolean {
 			(segments[1] === 'ai' && ['chat', 'models', 'settings'].includes(segments[2]))
 		)
 	}
+	if (segments.length === 4) return segments[1] === 'canvases' && segments[3] === 'permissions'
 	return false
 }
 
@@ -683,7 +684,11 @@ export function createDaemon(
 				return
 			}
 			const tenantId = owner
-			const store = boards.forTenant({ tenantId })
+			const tenantStore = boards.forTenant({ tenantId })
+			const store =
+				runtimeConfig.auth.mode === 'demo'
+					? tenantStore.forDemoParticipant(() => whiteboards.demoActor(membership))
+					: tenantStore
 			const send = (event: unknown): void => broadcast(event, tenantId)
 			const readCanvasRequest = (allowRestore = false) => readJson(req, allowRestore)
 			let tenantImages: ImageGenerationService | undefined
@@ -872,6 +877,35 @@ export function createDaemon(
 					'Cross-Origin-Resource-Policy': 'same-origin',
 				})
 				res.end(asset.bytes)
+				return
+			}
+
+			if (
+				segments.length === 4 &&
+				segments[0] === 'api' &&
+				segments[1] === 'canvases' &&
+				segments[3] === 'permissions'
+			) {
+				if (runtimeConfig.auth.mode !== 'demo') {
+					sendError(res, 404, 'NOT_FOUND', 'Canvas grants are only available in demo mode', origin)
+					return
+				}
+				if (req.method !== 'PUT') {
+					res.setHeader('Allow', 'PUT, OPTIONS')
+					sendError(res, 405, 'METHOD_NOT_ALLOWED', 'Use PUT', origin)
+					return
+				}
+				const body = await readJson(req)
+				if (
+					!isRecord(body) ||
+					!exactKeys(body, ['participantId', 'allowed']) ||
+					typeof body.participantId !== 'string' ||
+					typeof body.allowed !== 'boolean'
+				)
+					invalid('Expected participantId and allowed')
+				const state = await store.setCanvasEditor(segments[2], body.participantId, body.allowed)
+				send({ type: 'snapshot', ...state })
+				sendJson(res, 200, state, origin)
 				return
 			}
 
@@ -1092,8 +1126,12 @@ export function createDaemon(
 			whiteboards.attach(member, socket)
 		}
 		const socketScope = { tenantId: socketTenant.get(socket) ?? LOCAL_TENANT.tenantId }
-		boards
-			.forTenant(socketScope)
+		const tenantStore = boards.forTenant(socketScope)
+		const snapshotStore =
+			runtimeConfig.auth.mode === 'demo'
+				? tenantStore.forDemoParticipant(() => whiteboards.demoActor(member))
+				: tenantStore
+		snapshotStore
 			.getState()
 			.then((state) => socket.send(JSON.stringify({ type: 'snapshot', ...state })))
 			.catch((error: unknown) => {

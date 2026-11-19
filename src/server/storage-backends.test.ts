@@ -201,6 +201,42 @@ test('PostgreSQL + Azure BlobStore supports full BoardStore lifecycle and tenant
 	assert.equal(fakePg.closed(), true)
 })
 
+test('demo actor scopes retain PostgreSQL grants, ownership metadata, and the blob backend', async () => {
+	const fakePg = createFakePgPool()
+	const sql = createPostgresSql({ pool: fakePg.pool })
+	const blobs = createMemoryBlobStore()
+	const boards = new BoardStore({ sql, blobs })
+	try {
+		const tenant = boards.forTenant({ tenantId: 'mtg-ownership' })
+		const presenterId = 'a'.repeat(64)
+		const guestId = 'b'.repeat(64)
+		const host = tenant.forDemoParticipant(() => ({ participantId: presenterId, presenter: true }))
+		const guest = tenant.forDemoParticipant(() => ({ participantId: guestId, presenter: false }))
+		const imageId = await host.saveImage(new Uint8Array([1, 2, 3]), 'image/png')
+		assert.ok(await blobs.get(imageBlobKey(tenant.tenantId, imageId)))
+		assert.deepEqual((await guest.getImage(imageId))?.bytes, new Uint8Array([1, 2, 3]))
+		const created = await host.apply({
+			operations: [
+				{
+					type: 'create',
+					shape: { id: 'owned', type: 'rectangle', x: 0, y: 0, w: 80, h: 60, color: '#123456' },
+				},
+			],
+		})
+		assert.deepEqual(created.objectOwners, { owned: presenterId })
+		const update = { operations: [{ type: 'update' as const, id: 'owned', patch: { x: 20 } }] }
+		await assert.rejects(guest.apply(update), { code: 'OBJECT_EDIT_FORBIDDEN' })
+		const canvasId = (await host.getState()).activeCanvasId
+		await host.setCanvasEditor(canvasId, guestId, true)
+		assert.deepEqual((await guest.getState()).canvasEditorIds, [guestId])
+		assert.deepEqual((await guest.apply(update)).objectOwners, { owned: presenterId })
+		await host.setCanvasEditor(canvasId, guestId, false)
+		await assert.rejects(guest.apply(update), { code: 'OBJECT_EDIT_FORBIDDEN' })
+	} finally {
+		await boards.close()
+	}
+})
+
 test('BoardStore cleans up uploaded blob if SQL metadata insert fails', async () => {
 	const blobs = createMemoryBlobStore()
 	const fakePg = createFakePgPool()

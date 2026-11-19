@@ -6,6 +6,7 @@ import {
 	MonitorSpeaker,
 	Navigation,
 	PanelRightOpen,
+	Pencil,
 	Presentation,
 	Square,
 } from 'lucide-react'
@@ -129,19 +130,25 @@ export function LiveModeFrame({
 							role="img"
 							style={{ background: participant.hexColor }}
 							data-presenter={participant.presenter || undefined}
+							data-editor={participant.editor || undefined}
 							title={
-								participant.isSelf
+								(participant.isSelf
 									? `${participant.name} (${messages.common.you})`
-									: participant.name
+									: participant.name) +
+								(participant.editor ? ` · ${messages.meeting.canvasEditor}` : '')
 							}
-							aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${participant.presenter ? 'presenter' : 'participant'}`}
+							aria-label={`${participant.name}, ${participant.self ? 'you, ' : ''}${participant.presenter ? 'presenter' : participant.editor ? messages.meeting.canvasEditor : 'participant'}`}
 						>
 							{participant.initial}
-							{participant.presenter && (
+							{participant.presenter ? (
 								<span className="meeting-presenter-badge" aria-hidden="true">
 									<Presentation />
 								</span>
-							)}
+							) : participant.editor ? (
+								<span className="meeting-editor-badge" aria-hidden="true">
+									<Pencil />
+								</span>
+							) : null}
 						</span>
 					))}
 					{meetingModel.overflowCount > 0 && (

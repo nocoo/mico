@@ -96,7 +96,11 @@ export type Shape = CanvasShape | Connector
 export interface Board {
 	revision: number
 	shapes: Shape[]
+	objectOwners?: Record<string, string>
 }
+
+export const OBJECT_EDIT_FORBIDDEN_MESSAGE =
+	'You can only edit or delete your own objects. Ask the presenter for edit access to this canvas.'
 
 export interface CanvasSummary {
 	id: string
@@ -112,6 +116,7 @@ export interface CanvasSnapshot {
 	activeCanvasId: string
 	canvases: CanvasSummary[]
 	board: Board
+	canvasEditorIds?: string[]
 }
 
 export interface CanvasDetail {

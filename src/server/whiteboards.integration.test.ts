@@ -13,11 +13,11 @@ import { createDaemon } from './index.ts'
 
 type Event = ServerEvent | PresenceEvent
 
-function subscribe(url: string, session?: WhiteboardSession) {
-	const socket = new WebSocket(
-		`${url.replace('http:', 'ws:')}/api/events${session ? `?whiteboardSession=${session.token}` : ''}`,
-		{ headers: { origin: DEV_ORIGIN } },
-	)
+function subscribe(url: string, session?: WhiteboardSession, meetingId?: string) {
+	const target = new URL('/api/events', url.replace('http:', 'ws:'))
+	if (session) target.searchParams.set('whiteboardSession', session.token)
+	if (meetingId) target.searchParams.set('meetingId', meetingId)
+	const socket = new WebSocket(target, { headers: { origin: DEV_ORIGIN } })
 	const events: Event[] = []
 	socket.on('message', (data) => events.push(JSON.parse(data.toString()) as Event))
 	const next = async (predicate: (event: Event) => boolean): Promise<Event> => {
@@ -73,12 +73,112 @@ async function withDemoServer(
 
 async function joinDemo(
 	baseUrl: string,
-	input: { username: string; sharer: boolean; clientId: string },
+	input: { username: string; sharer: boolean; clientId: string; participantKey?: string },
+	meetingId?: string,
 ) {
 	return fetch(`${baseUrl}/api/whiteboards/join`, {
 		method: 'POST',
-		headers: { origin: DEV_ORIGIN, 'Content-Type': 'application/json' },
+		headers: {
+			origin: DEV_ORIGIN,
+			'Content-Type': 'application/json',
+			...(meetingId ? { 'X-Mico-Meeting': meetingId } : {}),
+		},
 		body: JSON.stringify({ whiteboardid: 'demo', ...input }),
+	})
+}
+
+for (const meetingId of [undefined, 'ownership-meeting']) {
+	test(`demo ownership and presenter grants reach connected guests (${meetingId ?? 'default room'})`, async () => {
+		await withDemoServer(async ({ baseUrl }) => {
+			const key = randomUUID()
+			const join = async (username: string, sharer: boolean, participantKey?: string) => {
+				const response = await joinDemo(
+					baseUrl,
+					{
+						username,
+						sharer,
+						clientId: randomUUID(),
+						participantKey,
+					},
+					meetingId,
+				)
+				assert.equal(response.status, 200)
+				return (await response.json()) as WhiteboardSession
+			}
+			const alice = await join('Alice', false, key)
+			const bob = await join('Bob', false)
+			const host = await join('Presenter', true)
+			const request = (path: string, method: string, body: unknown, session?: WhiteboardSession) =>
+				fetch(`${baseUrl}${path}`, {
+					method,
+					headers: {
+						origin: DEV_ORIGIN,
+						'Content-Type': 'application/json',
+						...(session ? { 'X-Mico-Whiteboard': session.token } : {}),
+						...(meetingId ? { 'X-Mico-Meeting': meetingId } : {}),
+					},
+					body: JSON.stringify(body),
+				})
+			const created = await request(
+				'/api/operations',
+				'POST',
+				{
+					operations: [
+						{
+							type: 'create',
+							shape: {
+								id: 'alice-note',
+								type: 'note',
+								x: 10,
+								y: 10,
+								w: 80,
+								h: 80,
+								color: '#fff8d4',
+								text: 'Alice',
+							},
+						},
+					],
+				},
+				alice,
+			)
+			assert.equal(created.status, 200)
+			assert.deepEqual((await created.json()).objectOwners, {
+				'alice-note': alice.member.participantId,
+			})
+			const edit = {
+				operations: [{ type: 'update', id: 'alice-note', patch: { text: 'Changed' } }],
+			}
+			assert.equal((await request('/api/operations', 'POST', edit)).status, 403)
+			assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 403)
+			const returning = await join('Alice renamed', false, key)
+			assert.equal(returning.member.participantId, alice.member.participantId)
+			assert.notEqual(returning.member.id, alice.member.id)
+			assert.equal((await request('/api/operations', 'POST', edit, returning)).status, 200)
+			const subscriber = subscribe(baseUrl, bob, meetingId)
+			try {
+				const snapshot = await subscriber.next((event) => event.type === 'snapshot')
+				assert.equal(snapshot.type, 'snapshot')
+				assert.deepEqual(snapshot.board.objectOwners, { 'alice-note': alice.member.participantId })
+				const path = `/api/canvases/${snapshot.activeCanvasId}/permissions`
+				const grant = { participantId: bob.member.participantId, allowed: true }
+				assert.equal((await request(path, 'PUT', grant, bob)).status, 403)
+				assert.equal((await request(path, 'PUT', grant, host)).status, 200)
+				await subscriber.next(
+					(event) =>
+						event.type === 'snapshot' &&
+						Boolean(event.canvasEditorIds?.includes(bob.member.participantId ?? '')),
+				)
+				assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 200)
+				assert.equal((await request(path, 'PUT', { ...grant, allowed: false }, host)).status, 200)
+				await subscriber.next(
+					(event) => event.type === 'snapshot' && event.canvasEditorIds?.length === 0,
+				)
+				assert.equal((await request('/api/operations', 'POST', edit, bob)).status, 403)
+				assert.equal((await request('/api/operations', 'POST', edit, returning)).status, 200)
+			} finally {
+				subscriber.socket.terminate()
+			}
+		})
 	})
 }
 
@@ -781,6 +881,7 @@ test('separate meetingIds isolate presenters, board events, and presence broadca
 					origin: DEV_ORIGIN,
 					'Content-Type': 'application/json',
 					'X-Mico-Meeting': 'room-alpha',
+					'X-Mico-Whiteboard': alphaSession.token,
 				},
 				body: JSON.stringify({
 					operations: [
