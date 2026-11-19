@@ -100,7 +100,7 @@ export function useCanvasSessionViewModel({
 	const [pendingOperations, setPendingOperations] = useState(0)
 	const [, refreshHistory] = useState(0)
 	const activeCanvasIdRef = useRef('')
-	const requestedCanvasIdRef = useRef('')
+	const pendingSwitchTargetRef = useRef<string | null>(null)
 	const initialFetchRef = useRef<Promise<void> | null>(null)
 	const stateVersionRef = useRef(-1)
 	const boardCacheRef = useRef<Map<string, Board>>(new Map())
@@ -164,7 +164,6 @@ export function useCanvasSessionViewModel({
 			const initialLoad = activeCanvasIdRef.current === ''
 			const switching = snapshot.activeCanvasId !== activeCanvasIdRef.current
 			activeCanvasIdRef.current = snapshot.activeCanvasId
-			if (!requestedCanvasIdRef.current) requestedCanvasIdRef.current = snapshot.activeCanvasId
 			setActiveCanvasId(snapshot.activeCanvasId)
 			setCanvasEditorIds(snapshot.canvasEditorIds ?? [])
 			setCanvases((current) => mergeSnapshotCanvases(current, snapshot.canvases))
@@ -308,8 +307,18 @@ export function useCanvasSessionViewModel({
 							return { status: 'rejected', message }
 						}
 						const next = (await response.json()) as Board
-						if (typeof command === 'string') history.complete(command)
-						else history.record(targetBoard, next)
+						if (typeof command === 'string') {
+							history.complete(command)
+						} else {
+							const baseline =
+								independent && options.verifyShapeId
+									? {
+											...next,
+											shapes: next.shapes.filter((shape) => shape.id !== options.verifyShapeId),
+										}
+									: targetBoard
+							history.record(baseline, next)
+						}
 						refreshHistory((version) => version + 1)
 						cacheBoard(resolvedCanvasId, next)
 						if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(next)
@@ -356,7 +365,13 @@ export function useCanvasSessionViewModel({
 					if (independent && options.verifyShapeId && resolvedCanvasId) {
 						const verified = await verifyCreateCommitted(resolvedCanvasId, options.verifyShapeId)
 						if (verified) {
-							if (preSubmitBoard && history) history.record(preSubmitBoard, verified)
+							if (preSubmitBoard && history) {
+								const baseline = {
+									...verified,
+									shapes: verified.shapes.filter((shape) => shape.id !== options.verifyShapeId),
+								}
+								history.record(baseline, verified)
+							}
 							refreshHistory((version) => version + 1)
 							cacheBoard(resolvedCanvasId, verified)
 							if (resolvedCanvasId === activeCanvasIdRef.current) applyBoard(verified)
@@ -548,7 +563,7 @@ export function useCanvasSessionViewModel({
 
 	const requestCanvas = useCallback(
 		async (path: string, init: RequestInit, targetCanvasId?: string) => {
-			if (targetCanvasId) requestedCanvasIdRef.current = targetCanvasId
+			if (targetCanvasId) pendingSwitchTargetRef.current = targetCanvasId
 			try {
 				const response = await fetch(path, {
 					...init,
@@ -567,13 +582,8 @@ export function useCanvasSessionViewModel({
 				setApiConnected(false)
 				announceRef.current(error instanceof Error ? error.message : 'Canvas request failed')
 			} finally {
-				if (targetCanvasId) {
-					if (requestedCanvasIdRef.current === targetCanvasId)
-						requestedCanvasIdRef.current = activeCanvasIdRef.current
-				} else {
-					// A metadata request can change the active canvas (for example a
-					// delete); with no switch intent, follow the confirmed snapshot.
-					requestedCanvasIdRef.current = activeCanvasIdRef.current
+				if (targetCanvasId && pendingSwitchTargetRef.current === targetCanvasId) {
+					pendingSwitchTargetRef.current = null
 				}
 			}
 		},
@@ -649,7 +659,8 @@ export function useCanvasSessionViewModel({
 	const getActiveCanvasId = useCallback(() => activeCanvasIdRef.current, [])
 	const isCanvasTargetCurrent = useCallback(
 		(canvasId: string) =>
-			activeCanvasIdRef.current === canvasId && requestedCanvasIdRef.current === canvasId,
+			activeCanvasIdRef.current === canvasId &&
+			(pendingSwitchTargetRef.current === null || pendingSwitchTargetRef.current === canvasId),
 		[],
 	)
 

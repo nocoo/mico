@@ -34,13 +34,16 @@ export function updateDraft(draft: CanvasShape, start: Point, pointer: Point): C
 	}
 }
 
+export function finalizeCurrentDraft(draft: CanvasShape): CanvasShape | null {
+	if (Math.abs(draft.w) < MIN_SIZE && Math.abs(draft.h) < MIN_SIZE) return null
+	if (draft.type === 'line') return draft
+	return { ...draft, w: Math.max(MIN_SIZE, draft.w), h: Math.max(MIN_SIZE, draft.h) }
+}
+
 export function finalizeDraft(
 	draft: CanvasShape,
 	start: Point,
 	pointer: Point,
 ): CanvasShape | null {
-	const finalized = updateDraft(draft, start, pointer)
-	if (Math.abs(finalized.w) < MIN_SIZE && Math.abs(finalized.h) < MIN_SIZE) return null
-	if (finalized.type === 'line') return finalized
-	return { ...finalized, w: Math.max(MIN_SIZE, finalized.w), h: Math.max(MIN_SIZE, finalized.h) }
+	return finalizeCurrentDraft(updateDraft(draft, start, pointer))
 }

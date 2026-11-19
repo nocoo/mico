@@ -322,3 +322,19 @@ test('the state poll stays single-flight while a response is slow', async ({ pag
 		.poll(async () => (await request.get(`/api/canvases/${firstId}`)).ok(), POLL)
 		.toBe(true)
 })
+
+test('uploading on a canvas activated remotely succeeds', async ({ page, request }) => {
+	const { firstId, secondId } = await createRaceCanvases(request)
+	await openCanvas(page)
+	await expect(page).toHaveTitle('mico · Race A')
+
+	const activated = await request.put('/api/active-canvas', { data: { id: secondId } })
+	expect(activated.ok()).toBe(true)
+	await expect(page).toHaveTitle('mico · Race B')
+
+	await uploadTinyPng(page)
+	await expect.poll(() => imageShapeCount(request, [secondId]), POLL).toBe(1)
+	await expect.poll(() => imageShapeCount(request, [firstId]), POLL).toBe(0)
+	await expect(page.locator('.canvas-image')).toHaveCount(1)
+	await expect(page.locator('.notice')).toHaveCount(0)
+})
