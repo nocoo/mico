@@ -11,3 +11,7 @@ test-results/
 
 # macOS
 .DS_Store
+apps/macos/.mygo/
+apps/macos/build/
+apps/macos/dist/
+apps/macos/modules/**/swift/.build/

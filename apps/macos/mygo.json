@@ -1,0 +1,17 @@
+{
+	"name": "Mico Helper",
+	"slug": "mico-helper",
+	"identifier": "com.nocoo.mico.helper",
+	"version": "0.1.0",
+	"icon": "resources/icon.png",
+	"out": "build",
+	"macos": {
+		"minimumSystemVersion": "15.0",
+		"infoPlist": {
+			"LSUIElement": true,
+			"NSMicrophoneUsageDescription": "Mico Helper needs microphone access to capture your voice for live meeting notes in Mico.",
+			"NSAudioCaptureUsageDescription": "Mico Helper needs system audio access to capture other meeting participants' voices on this Mac.",
+			"NSScreenCaptureUsageDescription": "Mico Helper uses macOS Screen & System Audio Recording to capture meeting audio only. No video or screenshots are saved."
+		}
+	}
+}
