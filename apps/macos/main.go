@@ -18,6 +18,7 @@ import (
 	"github.com/nocoo/mico/apps/macos/internal/theme"
 	"github.com/nocoo/mico/apps/macos/internal/view"
 	"github.com/nocoo/mico/apps/macos/modules/audiocapture"
+	"github.com/nocoo/mico/apps/macos/resources"
 )
 
 const appVersion = "0.1.0"
@@ -230,10 +231,12 @@ func (a *helperApp) syncTrayAppearance() {
 		_ = a.tray.SetIcon(a.streamingIcon, false)
 		a.tray.SetTitle("Live")
 		a.tray.SetToolTip("Mico Helper — Streaming to Mico Live")
+		mygo.App.Dock.SetBadge("LIVE")
 		return
 	}
 	_ = a.tray.SetIcon(a.idleIcon, true)
 	a.tray.SetTitle("")
+	mygo.App.Dock.SetBadge("")
 	if needsSetup {
 		a.tray.SetToolTip("Mico Helper — Audio permissions needed")
 	} else {
@@ -424,6 +427,7 @@ func (a *helperApp) ready() {
 		log.Fatalf("create tray: %v", err)
 	}
 	a.tray = tray
+	_ = mygo.App.Dock.SetIcon(resources.LogoPNG)
 	a.syncTrayAppearance()
 
 	menu := mygo.NewMenu([]*mygo.MenuItem{
@@ -432,6 +436,11 @@ func (a *helperApp) ready() {
 		mygo.Separator(),
 		{Role: mygo.RoleQuit},
 	})
+	dockMenu := mygo.NewMenu([]*mygo.MenuItem{
+		{Label: "Open Mico Helper", Click: func(*mygo.MenuItem, *mygo.Window) { a.showFromDock() }},
+		{Label: "Audio Permissions...", Click: func(*mygo.MenuItem, *mygo.Window) { a.openPermissionGuide() }},
+	})
+	mygo.App.Dock.SetMenu(dockMenu)
 	a.tray.OnClick(a.toggleFlyout)
 	a.tray.OnRightClick(func() {
 		if a.flyout != nil && !a.flyout.IsDestroyed() {
@@ -498,28 +507,43 @@ func (a *helperApp) shutdown() {
 	}
 }
 
+func (a *helperApp) showFromDock() {
+	if a.guideWin != nil && !a.guideWin.IsDestroyed() {
+		a.guideWin.Show()
+		a.guideWin.Focus()
+		return
+	}
+	if a.perms.Snapshot().NeedsSetup() {
+		a.openPermissionGuide()
+		return
+	}
+	if a.flyout == nil || a.flyout.IsDestroyed() {
+		a.toggleFlyout()
+		return
+	}
+	a.flyout.Show()
+	a.flyout.Focus()
+}
+
 func main() {
 	app := newHelperApp()
 
 	mygo.App.SetName("Mico Helper")
 	mygo.App.SetVersion(appVersion)
-	mygo.App.SetActivationPolicy(mygo.ActivationPolicyAccessory)
+	mygo.App.SetActivationPolicy(mygo.ActivationPolicyRegular)
 
 	if !mygo.App.RequestSingleInstanceLock() {
 		fmt.Fprintln(os.Stderr, "Mico Helper is already running.")
 		return
 	}
 	mygo.App.OnSecondInstance(func(_ []string, _ string) {
-		mygo.RunOnMain(func() {
-			if app.perms.Snapshot().NeedsSetup() {
-				app.openPermissionGuide()
-			} else {
-				app.toggleFlyout()
-			}
-		})
+		mygo.RunOnMain(app.showFromDock)
+	})
+	mygo.App.OnActivate(func(_ bool) {
+		app.showFromDock()
 	})
 
-	// Menu bar utility: stay alive after flyout or setup window closes.
+	// Stay resident in the menu bar and Dock after windows close.
 	mygo.App.OnWindowAllClosed(func() {})
 	mygo.App.OnWillQuit(func(*mygo.QuitEvent) {
 		app.shutdown()

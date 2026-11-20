@@ -134,7 +134,7 @@ func TestFlyoutStatesAndActions(t *testing.T) {
 		}
 	})
 
-	t.Run("ready-light", func(t *testing.T) {
+	t.Run("ready-light-and-dark", func(t *testing.T) {
 		state := FlyoutState{
 			ThemeMode:  theme.ModeLight,
 			SystemDark: false,
@@ -146,12 +146,17 @@ func TestFlyoutStatesAndActions(t *testing.T) {
 		}
 		tester := ui.NewTester(func(c *ui.Context) {
 			RenderFlyout(c, state, FlyoutActions{})
-		}, FlyoutWidth, 390)
+		}, FlyoutWidth, 430)
 
 		if !tester.HasText("Ready for Mico Live") {
 			t.Fatalf("expected Ready heading, got: %v", tester.Texts())
 		}
 		saveSnapshotIfRequested(t, "flyout-ready-light", tester)
+
+		state.ThemeMode = theme.ModeDark
+		state.SystemDark = true
+		tester.Frame()
+		saveSnapshotIfRequested(t, "flyout-ready-dark", tester)
 	})
 }
 

@@ -6,8 +6,10 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"sync"
 
 	"github.com/egoist/mygo/ui"
+	"github.com/nocoo/mico/apps/macos/resources"
 )
 
 var (
@@ -28,69 +30,100 @@ var (
 	IconStop = ui.MustParseSVG([]byte(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>`))
 )
 
-// TrayIconIdlePNG renders a crisp 36x36 (@2x 18pt) monochrome template waveform icon
-// for the macOS menu bar. macOS tints template images automatically for light/dark bars.
+var (
+	logoOnce   sync.Once
+	logoBitmap *ui.Bitmap
+)
+
+func MicoLogoBitmap() *ui.Bitmap {
+	logoOnce.Do(func() {
+		if bmp, err := ui.DecodeBitmapScaled(resources.LogoPNG, 160); err == nil {
+			logoBitmap = bmp
+		}
+	})
+	return logoBitmap
+}
+
+// TrayIconIdlePNG renders a crisp 36x36 (@2x 18pt) monochrome template icon
+// shaped like the Mico logo (rounded frame + header bar + two eyes).
 func TrayIconIdlePNG() []byte {
-	return renderTrayWaveformPNG(color.NRGBA{R: 0, G: 0, B: 0, A: 255}, false)
+	ink := color.NRGBA{R: 0, G: 0, B: 0, A: 255}
+	return renderMicoTrayPNG(ink, ink, ink, false)
 }
 
-// TrayIconStreamingPNG renders an active Mico indigo waveform with an emerald live dot.
+// TrayIconStreamingPNG renders the Mico logo mark with its signature pink & sky-blue
+// eyes plus an emerald live indicator dot while audio is streaming.
 func TrayIconStreamingPNG() []byte {
-	return renderTrayWaveformPNG(color.NRGBA{R: 120, G: 108, B: 248, A: 255}, true)
+	frame := color.NRGBA{R: 118, G: 102, B: 244, A: 255}
+	leftEye := color.NRGBA{R: 248, G: 158, B: 174, A: 255}
+	rightEye := color.NRGBA{R: 116, G: 180, B: 255, A: 255}
+	return renderMicoTrayPNG(frame, leftEye, rightEye, true)
 }
 
-func renderTrayWaveformPNG(barColor color.NRGBA, withLiveDot bool) []byte {
+func renderMicoTrayPNG(frameColor, leftEyeColor, rightEyeColor color.NRGBA, withLiveDot bool) []byte {
 	const size = 36
 	img := image.NewNRGBA(image.Rect(0, 0, size, size))
 
-	type bar struct {
-		cx float64
-		h  float64
-	}
-	bars := []bar{
-		{cx: 7.0, h: 10.0},
-		{cx: 12.5, h: 18.0},
-		{cx: 18.0, h: 24.0},
-		{cx: 23.5, h: 16.0},
-		{cx: 29.0, h: 9.0},
-	}
-
-	const barHalfW = 1.65
-	const cy = 18.0
+	const cx, cy = 18.0, 18.0
+	const halfW, halfH, cornerR = 13.0, 13.0, 6.2
+	const strokeHalf = 1.35
 
 	for y := 0; y < size; y++ {
 		for x := 0; x < size; x++ {
 			px := float64(x) + 0.5
 			py := float64(y) + 0.5
-			maxCov := 0.0
-			for _, b := range bars {
-				halfH := b.h / 2.0
-				d := sdCapsuleVertical(px-b.cx, py-cy, halfH-barHalfW, barHalfW)
-				cov := clamp01(0.5 - d)
-				if cov > maxCov {
-					maxCov = cov
+
+			// Outer rounded squircle ring
+			dBox := sdRoundedBox(px-cx, py-cy, halfW, halfH, cornerR)
+			dRing := math.Abs(dBox) - strokeHalf
+			frameCov := clamp01(0.5 - dRing)
+
+			// Signature top header bar inside the frame
+			if dBox <= 0 {
+				dBar := sdCapsuleHorizontal(px-cx, py-11.2, 10.5, 1.0)
+				barCov := clamp01(0.5 - dBar)
+				if barCov > frameCov {
+					frameCov = barCov
 				}
 			}
-			if maxCov > 0 {
-				a := uint8(math.Round(float64(barColor.A) * maxCov))
-				img.SetNRGBA(x, y, color.NRGBA{R: barColor.R, G: barColor.G, B: barColor.B, A: a})
+
+			if frameCov > 0 {
+				a := uint8(math.Round(float64(frameColor.A) * frameCov))
+				img.SetNRGBA(x, y, color.NRGBA{R: frameColor.R, G: frameColor.G, B: frameColor.B, A: a})
+			}
+
+			// Mico's signature left & right eyes
+			dLeft := math.Hypot(px-13.2, py-21.2) - 3.0
+			if cov := clamp01(0.5 - dLeft); cov > 0 {
+				a := uint8(math.Round(float64(leftEyeColor.A) * cov))
+				img.SetNRGBA(x, y, blendOver(img.NRGBAAt(x, y), color.NRGBA{
+					R: leftEyeColor.R, G: leftEyeColor.G, B: leftEyeColor.B, A: a,
+				}))
+			}
+
+			dRight := math.Hypot(px-22.8, py-21.2) - 3.0
+			if cov := clamp01(0.5 - dRight); cov > 0 {
+				a := uint8(math.Round(float64(rightEyeColor.A) * cov))
+				img.SetNRGBA(x, y, blendOver(img.NRGBAAt(x, y), color.NRGBA{
+					R: rightEyeColor.R, G: rightEyeColor.G, B: rightEyeColor.B, A: a,
+				}))
 			}
 		}
 	}
 
 	if withLiveDot {
-		dotColor := color.NRGBA{R: 47, G: 196, B: 112, A: 255}
-		const dx, dy, r = 29.0, 8.5, 4.0
+		dotColor := color.NRGBA{R: 47, G: 204, B: 118, A: 255}
+		const dx, dy, r = 29.0, 7.5, 4.2
 		for y := 0; y < size; y++ {
 			for x := 0; x < size; x++ {
 				px := float64(x) + 0.5
 				py := float64(y) + 0.5
 				dist := math.Hypot(px-dx, py-dy) - r
-				cov := clamp01(0.5 - dist)
-				if cov > 0 {
+				if cov := clamp01(0.5 - dist); cov > 0 {
 					a := uint8(math.Round(255 * cov))
-					dst := img.NRGBAAt(x, y)
-					img.SetNRGBA(x, y, blendOver(dst, color.NRGBA{R: dotColor.R, G: dotColor.G, B: dotColor.B, A: a}))
+					img.SetNRGBA(x, y, blendOver(img.NRGBAAt(x, y), color.NRGBA{
+						R: dotColor.R, G: dotColor.G, B: dotColor.B, A: a,
+					}))
 				}
 			}
 		}
@@ -101,9 +134,17 @@ func renderTrayWaveformPNG(barColor color.NRGBA, withLiveDot bool) []byte {
 	return buf.Bytes()
 }
 
-func sdCapsuleVertical(px, py, halfSpan, radius float64) float64 {
-	clampedY := math.Max(-halfSpan, math.Min(halfSpan, py))
-	return math.Hypot(px, py-clampedY) - radius
+func sdRoundedBox(px, py, bx, by, r float64) float64 {
+	qx := math.Abs(px) - bx + r
+	qy := math.Abs(py) - by + r
+	outside := math.Hypot(math.Max(qx, 0), math.Max(qy, 0))
+	inside := math.Min(math.Max(qx, qy), 0)
+	return outside + inside - r
+}
+
+func sdCapsuleHorizontal(px, py, halfSpan, radius float64) float64 {
+	clampedX := math.Max(-halfSpan, math.Min(halfSpan, px))
+	return math.Hypot(px-clampedX, py) - radius
 }
 
 func clamp01(v float64) float64 {

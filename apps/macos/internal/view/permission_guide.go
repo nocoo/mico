@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	GuideWidth  = 496
-	GuideHeight = 648
+	GuideWidth  = 512
+	GuideHeight = 668
 )
 
 type GuideState struct {
@@ -37,14 +37,14 @@ func RenderPermissionGuide(c *ui.Context, state GuideState, actions GuideActions
 
 	ui.Column(c).
 		Fill().
-		Background(tokens.Theme.Background).
-		Padding(18, 22).
-		Gap(12).
+		LinearGradient(tokens.BgGradient).
+		Padding(20, 22).
+		Gap(13).
 		Children(func() {
 			renderGuideHeader(c, tokens)
 
 			ui.Scroll(c).FillWidth().Grow(1).Children(func() {
-				ui.Column(c).FillWidth().Gap(11).Padding(0, 2, 4, 0).Children(func() {
+				ui.Column(c).FillWidth().Gap(12).Padding(0, 2, 6, 0).Children(func() {
 					renderReadinessBanner(c, state.Permissions, tokens)
 					renderMicrophoneStep(c, state.Permissions, actions, tokens)
 					renderSystemAudioStep(c, state.Permissions, actions, tokens)
@@ -60,11 +60,11 @@ func RenderPermissionGuide(c *ui.Context, state GuideState, actions GuideActions
 }
 
 func renderGuideHeader(c *ui.Context, tokens theme.Tokens) {
-	ui.Row(c).FillWidth().AlignItems(ui.Start).Gap(12).Children(func() {
-		renderBrandBadge(c, 38, tokens)
+	ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(13).Children(func() {
+		renderBrandBadge(c, 46, tokens)
 		ui.Column(c).Grow(1).Gap(3).Children(func() {
-			ui.Text(c, "Mico Helper Audio Setup").FontSize(17).Bold().TextColor(tokens.Theme.Text)
-			ui.Text(c, "Grant local access once so Mico Live captures both your voice and meeting audio without browser screen-sharing prompts.").
+			ui.Text(c, "Mico Helper Audio Setup").FontSize(18).Bold().TextColor(tokens.Theme.Text)
+			ui.Text(c, "Grant local access once so Mico Live captures both your voice and meeting audio with zero browser prompts.").
 				FontSize(12.5).
 				LineHeight(1.4).
 				TextColor(tokens.Theme.TextMuted)
@@ -77,18 +77,26 @@ func renderReadinessBanner(c *ui.Context, snap permissions.Snapshot, tokens them
 		ui.Row(c).
 			FillWidth().
 			AlignItems(ui.Center).
-			Gap(10).
-			Padding(11, 13).
-			Radius(11).
-			Background(tokens.SuccessSoft).
-			Border(1, tokens.SuccessBorder).
+			Gap(11).
+			Padding(13, 14).
+			Radius(14).
+			LinearGradient(tokens.HeroLive).
+			Border(1, tokens.HeroChipBorder).
+			Shadow(0, 10, 22, -10, tokens.HeroShadow).
 			Children(func() {
-				ui.Icon(c, IconCheck).Size(17, 17).TextColor(tokens.Theme.Success)
+				ui.Box(c).
+					Size(30, 30).
+					Radius(999).
+					Background(tokens.HeroChipBg).
+					Center().
+					Children(func() {
+						ui.Icon(c, IconCheck).Size(16, 16).TextColor(tokens.HeroText)
+					})
 				ui.Column(c).Grow(1).Gap(2).Children(func() {
-					ui.Text(c, "All set — ready for Mico Live").FontSize(13).Bold().TextColor(tokens.Theme.Text)
+					ui.Text(c, "All set — ready for Mico Live").FontSize(13.5).Bold().TextColor(tokens.HeroText)
 					ui.Text(c, "Return to Mico in your browser. Live mode connects to Mico Helper automatically.").
 						FontSize(12).
-						TextColor(tokens.Theme.TextMuted)
+						TextColor(tokens.HeroSubtext)
 				})
 			})
 		return
@@ -99,22 +107,40 @@ func renderReadinessBanner(c *ui.Context, snap permissions.Snapshot, tokens them
 	if missing > 1 {
 		title = fmt.Sprintf("%d permissions needed", missing)
 	}
+	granted := 2 - missing
+
 	ui.Row(c).
 		FillWidth().
 		AlignItems(ui.Center).
-		Gap(10).
-		Padding(11, 13).
-		Radius(11).
-		Background(tokens.AccentSoft).
-		Border(1, tokens.CardBorder).
+		Gap(11).
+		Padding(13, 14).
+		Radius(14).
+		LinearGradient(tokens.HeroReady).
+		Border(1, tokens.HeroChipBorder).
+		Shadow(0, 10, 22, -10, tokens.HeroShadow).
 		Children(func() {
-			ui.Icon(c, IconShield).Size(17, 17).TextColor(tokens.Theme.Accent)
+			ui.Box(c).
+				Size(30, 30).
+				Radius(999).
+				Background(tokens.HeroChipBg).
+				Center().
+				Children(func() {
+					ui.Icon(c, IconShield).Size(15, 15).TextColor(tokens.HeroText)
+				})
 			ui.Column(c).Grow(1).Gap(2).Children(func() {
-				ui.Text(c, title).FontSize(13).Bold().TextColor(tokens.Theme.Text)
+				ui.Text(c, title).FontSize(13.5).Bold().TextColor(tokens.HeroText)
 				ui.Text(c, "Audio stays on this Mac and streams only while you run Live in Mico.").
 					FontSize(12).
-					TextColor(tokens.Theme.TextMuted)
+					TextColor(tokens.HeroSubtext)
 			})
+			ui.Box(c).
+				Padding(4, 9).
+				Radius(999).
+				Background(tokens.HeroChipBg).
+				Border(1, tokens.HeroChipBorder).
+				Children(func() {
+					ui.Text(c, fmt.Sprintf("%d / 2", granted)).FontSize(11).FontWeight(600).TextColor(tokens.HeroText)
+				})
 		})
 }
 
@@ -123,11 +149,12 @@ func renderMicrophoneStep(c *ui.Context, snap permissions.Snapshot, actions Guid
 		FillWidth().
 		Background(tokens.CardBg).
 		Border(1, tokens.CardBorder).
-		Radius(12).
+		Radius(14).
 		Padding(14).
-		Gap(10).
+		Gap(11).
+		Shadow(0, 6, 18, -8, tokens.CardShadow).
 		Children(func() {
-			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(10).Children(func() {
+			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(11).Children(func() {
 				renderStepIcon(c, IconMic, snap.Microphone == permissions.StatusGranted, tokens)
 				ui.Column(c).Grow(1).Gap(2).Children(func() {
 					ui.Text(c, "1. Microphone").FontSize(13.5).Bold().TextColor(tokens.Theme.Text)
@@ -167,11 +194,12 @@ func renderSystemAudioStep(c *ui.Context, snap permissions.Snapshot, actions Gui
 		FillWidth().
 		Background(tokens.CardBg).
 		Border(1, tokens.CardBorder).
-		Radius(12).
+		Radius(14).
 		Padding(14).
-		Gap(10).
+		Gap(11).
+		Shadow(0, 6, 18, -8, tokens.CardShadow).
 		Children(func() {
-			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(10).Children(func() {
+			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(11).Children(func() {
 				renderStepIcon(c, IconSpeaker, snap.SystemAudio == permissions.StatusGranted, tokens)
 				ui.Column(c).Grow(1).Gap(2).Children(func() {
 					ui.Text(c, "2. System Audio").FontSize(13.5).Bold().TextColor(tokens.Theme.Text)
@@ -220,13 +248,14 @@ func renderSystemAudioStep(c *ui.Context, snap permissions.Snapshot, actions Gui
 func renderReopenRecoveryCard(c *ui.Context, snap permissions.Snapshot, actions GuideActions, tokens theme.Tokens) {
 	ui.Column(c).
 		FillWidth().
-		Background(tokens.WarningSoft).
+		LinearGradient(tokens.HeroSetup).
 		Border(1, tokens.WarningBorder).
-		Radius(12).
-		Padding(12).
-		Gap(8).
+		Radius(14).
+		Padding(13).
+		Gap(9).
+		Shadow(0, 6, 16, -8, tokens.CardShadow).
 		Children(func() {
-			ui.Row(c).AlignItems(ui.Center).Gap(7).Children(func() {
+			ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
 				ui.Icon(c, IconAlert).Size(15, 15).TextColor(tokens.Theme.Warning)
 				ui.Text(c, "Already enabled in System Settings?").FontSize(13).Bold().TextColor(tokens.Theme.Text)
 			})
@@ -276,8 +305,8 @@ func renderStepIcon(c *ui.Context, icon *ui.SVG, granted bool, tokens theme.Toke
 		fg = tokens.Theme.Success
 	}
 	ui.Box(c).
-		Size(32, 32).
-		Radius(9).
+		Size(34, 34).
+		Radius(10).
 		Background(bg).
 		Center().
 		Children(func() {

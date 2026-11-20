@@ -4,7 +4,7 @@ Native macOS menu bar audio capture helper for Mico Live, built with [MyGo](http
 
 ## What it does
 
-- Lives quietly in the macOS menu bar (`LSUIElement: true`) with Light, Dark, and System Auto themes matching Mico.
+- Shows Mico's icon in both the macOS **Dock** and **menu bar** (`ActivationPolicyRegular` + `NewTray` popover) and stays resident in the menu bar after windows close, with Light, Dark, and System Auto themes matching Mico.
 - Captures both your **microphone** and **system meeting audio** simultaneously via macOS 15+ `ScreenCaptureKit` (`SCStream` `.audio` + `.microphone`) and mixes them into `16 kHz`, mono, `Int16LE` PCM frames.
 - Serves a loopback-only HTTP + WebSocket bridge on `http://127.0.0.1:47065` (`/health`, `/open-permissions`, `/stream`) with strict Origin validation (`localhost`, `127.0.0.1`, `::1`, `https://*.azurecontainerapps.io`, plus optional `MICO_HELPER_ALLOWED_ORIGINS`).
 - Provides a guided **Audio Setup** window powered by `permissionflow.Guide` (opens macOS System Settings with a floating drag-in panel) plus direct `ScreenCaptureKit` verification and one-click app reopen for stale macOS TCC states.

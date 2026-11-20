@@ -2,6 +2,7 @@ package view
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/egoist/mygo/ui"
@@ -11,7 +12,7 @@ import (
 	"github.com/nocoo/mico/apps/macos/modules/audiocapture"
 )
 
-const FlyoutWidth = 328
+const FlyoutWidth = 344
 
 type FlyoutState struct {
 	ThemeMode        theme.Mode
@@ -39,11 +40,11 @@ func RenderFlyout(c *ui.Context, state FlyoutState, actions FlyoutActions) {
 
 	ui.Column(c).
 		Width(FlyoutWidth).
-		Background(tokens.Theme.Background).
+		LinearGradient(tokens.BgGradient).
 		Border(1, tokens.CardBorder).
-		Radius(14).
-		Padding(14).
-		Gap(12).
+		Radius(16).
+		Padding(16).
+		Gap(13).
 		Children(func() {
 			renderFlyoutHeader(c, state, tokens)
 			renderFlyoutHero(c, state, actions, tokens)
@@ -53,12 +54,12 @@ func RenderFlyout(c *ui.Context, state FlyoutState, actions FlyoutActions) {
 }
 
 func renderFlyoutHeader(c *ui.Context, state FlyoutState, tokens theme.Tokens) {
-	ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(10).Children(func() {
-		renderBrandBadge(c, 30, tokens)
+	ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(11).Children(func() {
+		renderBrandBadge(c, 34, tokens)
 
 		ui.Column(c).Grow(1).Gap(1).Children(func() {
-			ui.Text(c, "Mico Helper").FontSize(13.5).Bold().TextColor(tokens.Theme.Text)
-			ui.Text(c, "Local meeting audio").FontSize(11).TextColor(tokens.Theme.TextMuted)
+			ui.Text(c, "Mico Helper").FontSize(14.5).Bold().TextColor(tokens.Theme.Text)
+			ui.Text(c, "Meeting audio bridge").FontSize(11.5).TextColor(tokens.Theme.TextMuted)
 		})
 
 		label, fg, bg := statusPillStyle(state, tokens)
@@ -67,9 +68,21 @@ func renderFlyoutHeader(c *ui.Context, state FlyoutState, tokens theme.Tokens) {
 }
 
 func renderBrandBadge(c *ui.Context, size float32, tokens theme.Tokens) {
+	radius := size * 0.26
+	if bmp := MicoLogoBitmap(); bmp != nil {
+		ui.Box(c).
+			Size(size, size).
+			Radius(radius).
+			Shadow(0, 4, 12, -3, tokens.CardShadow).
+			Center().
+			Children(func() {
+				ui.Image(c, bmp).Size(size, size).Radius(radius)
+			})
+		return
+	}
 	ui.Box(c).
 		Size(size, size).
-		Radius(size * 0.28).
+		Radius(radius).
 		Gradient(tokens.AccentHi, tokens.AccentLo, 135).
 		Center().
 		Children(func() {
@@ -104,19 +117,27 @@ func renderFlyoutHero(c *ui.Context, state FlyoutState, actions FlyoutActions, t
 	if state.Permissions.NeedsSetup() {
 		ui.Column(c).
 			FillWidth().
-			Background(tokens.CardBg).
-			Border(1, tokens.CardBorder).
-			Radius(12).
-			Padding(12).
+			LinearGradient(tokens.HeroSetup).
+			Border(1, tokens.WarningBorder).
+			Radius(14).
+			Padding(14).
 			Gap(10).
+			Shadow(0, 8, 20, -10, tokens.CardShadow).
 			Children(func() {
-				ui.Row(c).AlignItems(ui.Center).Gap(7).Children(func() {
-					ui.Icon(c, IconShield).Size(15, 15).TextColor(tokens.Theme.Warning)
-					ui.Text(c, "Finish audio setup").FontSize(13).Bold().TextColor(tokens.Theme.Text)
+				ui.Row(c).AlignItems(ui.Center).Gap(8).Children(func() {
+					ui.Box(c).
+						Size(26, 26).
+						Radius(8).
+						Background(tokens.WarningSoft).
+						Center().
+						Children(func() {
+							ui.Icon(c, IconShield).Size(14, 14).TextColor(tokens.Theme.Warning)
+						})
+					ui.Text(c, "Finish audio setup").FontSize(13.5).Bold().TextColor(tokens.Theme.Text)
 				})
 				ui.Text(c, "Allow Microphone and System Audio so Mico Live captures both sides of meetings.").
 					FontSize(12).
-					LineHeight(1.4).
+					LineHeight(1.42).
 					TextColor(tokens.Theme.TextMuted)
 
 				ui.Row(c).FillWidth().Gap(8).Children(func() {
@@ -143,42 +164,41 @@ func renderFlyoutHero(c *ui.Context, state FlyoutState, actions FlyoutActions, t
 
 		ui.Column(c).
 			FillWidth().
-			Background(tokens.CardBg).
-			Border(1, tokens.SuccessBorder).
-			Radius(12).
-			Padding(12).
-			Gap(10).
+			LinearGradient(tokens.HeroLive).
+			Border(1, tokens.HeroChipBorder).
+			Radius(14).
+			Padding(14).
+			Gap(11).
+			Shadow(0, 10, 24, -10, tokens.HeroShadow).
 			Children(func() {
 				ui.Row(c).FillWidth().AlignItems(ui.Center).Children(func() {
 					ui.Row(c).AlignItems(ui.Center).Gap(7).Grow(1).Children(func() {
-						ui.Box(c).Size(8, 8).Radius(999).Background(tokens.Theme.Success)
-						ui.Text(c, "Streaming to Mico Live").FontSize(13).Bold().TextColor(tokens.Theme.Text)
+						ui.Box(c).Size(8, 8).Radius(999).Background(ui.Hex("#86f7bc"))
+						ui.Text(c, "Streaming to Mico Live").FontSize(13.5).Bold().TextColor(tokens.HeroText)
 					})
-					ui.Text(c, formatElapsed(elapsed)).FontSize(12).FontWeight(600).TextColor(tokens.Theme.Success)
+					ui.Box(c).
+						Padding(3, 8).
+						Radius(999).
+						Background(tokens.HeroChipBg).
+						Children(func() {
+							ui.Text(c, formatElapsed(elapsed)).FontSize(11.5).FontWeight(600).TextColor(tokens.HeroText)
+						})
 				})
 
-				ui.Meter(c, state.Bridge.AudioLevel, 0, 1, &ui.MeterLevels{
-					NormalColor:   tokens.Theme.Accent,
-					Warning:       0.78,
-					Critical:      0.94,
-					WarningColor:  tokens.Theme.Warning,
-					CriticalColor: tokens.Theme.Danger,
-				}).
-					FillWidth().
-					Height(7).
-					Background(tokens.MeterTrack).
-					Radius(4).
-					Label("Live audio level")
+				renderEqualizerBars(c, state.Bridge.AudioLevel, elapsed, tokens)
 
-				ui.Text(c, "Mic + System audio · 16 kHz PCM").
-					FontSize(11.5).
-					TextColor(tokens.Theme.TextMuted)
+				ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(6).Children(func() {
+					renderHeroChip(c, IconMic, "Mic", tokens)
+					renderHeroChip(c, IconSpeaker, "System audio", tokens)
+					ui.Spacer(c)
+					ui.Text(c, "16 kHz").FontSize(11).FontWeight(600).TextColor(tokens.HeroSubtext)
+				})
 
 				stopBtn := ui.Button(c, "Stop streaming").
 					FillWidth().
-					Background(tokens.DangerSoft).
-					Border(1, tokens.DangerBorder).
-					TextColor(tokens.Theme.Danger)
+					Background(ui.RGBA(255, 255, 255, 0.16)).
+					Border(1, ui.RGBA(255, 255, 255, 0.34)).
+					TextColor(tokens.HeroText)
 				if stopBtn.Clicked() && actions.OnStopStreaming != nil {
 					actions.OnStopStreaming()
 				}
@@ -188,25 +208,83 @@ func renderFlyoutHero(c *ui.Context, state FlyoutState, actions FlyoutActions, t
 
 	ui.Column(c).
 		FillWidth().
-		Background(tokens.CardBg).
-		Border(1, tokens.CardBorder).
-		Radius(12).
-		Padding(12).
-		Gap(8).
+		LinearGradient(tokens.HeroReady).
+		Border(1, tokens.HeroChipBorder).
+		Radius(14).
+		Padding(14).
+		Gap(10).
+		Shadow(0, 10, 24, -10, tokens.HeroShadow).
 		Children(func() {
-			ui.Row(c).AlignItems(ui.Center).Gap(7).Children(func() {
-				ui.Icon(c, IconCheck).Size(14, 14).TextColor(tokens.Theme.Success)
-				ui.Text(c, "Ready for Mico Live").FontSize(13).Bold().TextColor(tokens.Theme.Text)
+			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(8).Children(func() {
+				ui.Box(c).
+					Size(24, 24).
+					Radius(999).
+					Background(tokens.HeroChipBg).
+					Center().
+					Children(func() {
+						ui.Icon(c, IconCheck).Size(13, 13).TextColor(tokens.HeroText)
+					})
+				ui.Text(c, "Ready for Mico Live").FontSize(14).Bold().TextColor(tokens.HeroText)
 			})
 			ui.Text(c, "Start Live in Mico — your microphone and meeting audio connect automatically.").
 				FontSize(12).
-				LineHeight(1.4).
-				TextColor(tokens.Theme.TextMuted)
-			ui.Row(c).AlignItems(ui.Center).Gap(6).Padding(4, 8).Radius(7).Background(tokens.WellBg).Children(func() {
-				ui.Text(c, "Mic + System audio").FontSize(11).FontWeight(600).TextColor(tokens.Theme.Accent)
-				ui.Text(c, "·").FontSize(11).TextColor(tokens.Theme.TextMuted)
-				ui.Text(c, "Local loopback").FontSize(11).TextColor(tokens.Theme.TextMuted)
+				LineHeight(1.42).
+				TextColor(tokens.HeroSubtext)
+			ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(6).Children(func() {
+				renderHeroChip(c, IconMic, "Mic", tokens)
+				renderHeroChip(c, IconSpeaker, "System audio", tokens)
+				ui.Spacer(c)
+				ui.Text(c, "Local").FontSize(11).FontWeight(600).TextColor(tokens.HeroSubtext)
 			})
+		})
+}
+
+func renderHeroChip(c *ui.Context, icon *ui.SVG, label string, tokens theme.Tokens) {
+	ui.Row(c).
+		AlignItems(ui.Center).
+		Gap(5).
+		Padding(4, 8).
+		Radius(999).
+		Background(tokens.HeroChipBg).
+		Border(1, tokens.HeroChipBorder).
+		Children(func() {
+			ui.Icon(c, icon).Size(11.5, 11.5).TextColor(tokens.HeroText)
+			ui.Text(c, label).FontSize(11).FontWeight(600).TextColor(tokens.HeroText)
+		})
+}
+
+func renderEqualizerBars(c *ui.Context, level float64, elapsed time.Duration, tokens theme.Tokens) {
+	const barCount = 16
+	const maxH = 26.0
+	const minH = 5.0
+	phase := elapsed.Seconds() * 5.2
+
+	ui.Row(c).
+		FillWidth().
+		Height(maxH+4).
+		AlignItems(ui.Center).
+		Justify(ui.SpaceBetween).
+		Padding(2, 6).
+		Radius(10).
+		Background(ui.RGBA(0, 0, 0, 0.14)).
+		Children(func() {
+			for i := range barCount {
+				// Bell-shaped harmonic envelope so center bars respond expressively.
+				pos := float64(i)/float64(barCount-1)*2.0 - 1.0
+				envelope := 0.45 + 0.55*math.Cos(pos*math.Pi*0.48)
+				wave := 0.72 + 0.28*math.Sin(phase+float64(i)*0.75)
+				energy := clamp01(level * envelope * wave)
+				h := float32(minH + energy*(maxH-minH))
+				barColor := tokens.HeroText
+				if energy < 0.12 {
+					barColor = ui.RGBA(255, 255, 255, 0.42)
+				}
+				ui.Box(c).
+					Width(4).
+					Height(h).
+					Radius(999).
+					Background(barColor)
+			}
 		})
 }
 
@@ -222,8 +300,8 @@ func renderMiniPermChip(c *ui.Context, label string, granted bool, tokens theme.
 		AlignItems(ui.Center).
 		Justify(ui.Center).
 		Gap(5).
-		Padding(5, 8).
-		Radius(8).
+		Padding(6, 8).
+		Radius(9).
 		Background(bg).
 		Children(func() {
 			if granted {
@@ -231,7 +309,7 @@ func renderMiniPermChip(c *ui.Context, label string, granted bool, tokens theme.
 			} else {
 				ui.Box(c).Size(6, 6).Radius(999).Background(fg)
 			}
-			ui.Text(c, label).FontSize(11).FontWeight(600).TextColor(fg)
+			ui.Text(c, label).FontSize(11.5).FontWeight(600).TextColor(fg)
 		})
 }
 
@@ -242,18 +320,26 @@ func renderMicrophoneCard(c *ui.Context, state FlyoutState, actions FlyoutAction
 		FillWidth().
 		Background(tokens.CardBg).
 		Border(1, tokens.CardBorder).
-		Radius(12).
-		Padding(11, 12).
-		Gap(8).
+		Radius(13).
+		Padding(12).
+		Gap(9).
+		Shadow(0, 6, 16, -8, tokens.CardShadow).
 		Children(func() {
 			ui.Row(c).FillWidth().AlignItems(ui.Center).Children(func() {
-				ui.Row(c).AlignItems(ui.Center).Gap(6).Grow(1).Children(func() {
-					ui.Icon(c, IconMic).Size(13, 13).TextColor(tokens.Theme.TextMuted)
-					ui.Text(c, "Microphone").FontSize(11.5).FontWeight(600).TextColor(tokens.Theme.TextMuted)
+				ui.Row(c).AlignItems(ui.Center).Gap(7).Grow(1).Children(func() {
+					ui.Box(c).
+						Size(22, 22).
+						Radius(7).
+						Background(tokens.AccentSoft).
+						Center().
+						Children(func() {
+							ui.Icon(c, IconMic).Size(12, 12).TextColor(tokens.Theme.Accent)
+						})
+					ui.Text(c, "Microphone").FontSize(12).FontWeight(600).TextColor(tokens.Theme.Text)
 				})
 				refresh := ui.Button(c, "").
 					Padding(4, 6).
-					Radius(6).
+					Radius(7).
 					Tooltip("Refresh audio devices").
 					Label("Refresh audio devices").
 					Children(func() {
