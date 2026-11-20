@@ -280,11 +280,28 @@ test.describe('microphone mode', () => {
 
 		const panel = await openLive(page)
 		const live = panel.getByRole('tabpanel', { name: 'Live' })
-		await expect(live.locator('.call-helper-card')).toBeVisible()
+		const helperCard = live.locator('.call-helper-card')
+		await expect(helperCard).toBeVisible()
+		await expect(helperCard).toContainText('Mico Helper')
+		await expect(helperCard).toContainText('Active')
+		await expect(helperCard).toContainText('MacBook Pro Microphone')
+		await expect(live.getByRole('switch', { name: 'Include meeting audio' })).toHaveCount(0)
+		// Idle state stays clean: no premature "Mico is listening" or "0:00" timer before recording starts.
+		await expect(live.locator('.call-ai-status')).toHaveCount(0)
+		await expect(live.locator('.call-timer')).toHaveCount(0)
+
+		// Helper card aligns edge-to-edge with the provider segmented control above it.
+		const providerBox = await live.locator('.live-provider').boundingBox()
+		const cardBox = await helperCard.boundingBox()
+		if (!providerBox || !cardBox) throw new Error('Missing Live panel alignment boxes')
+		expect(Math.abs(cardBox.x - providerBox.x)).toBeLessThanOrEqual(1)
+		expect(Math.abs(cardBox.width - providerBox.width)).toBeLessThanOrEqual(1)
+
+		// MOSS Live shares the same helper card without falling back to browser mic.
+		await panel.getByRole('radio', { name: 'MOSS Live' }).click()
 		await expect(live.locator('.call-helper-card')).toContainText('Mico Helper')
 		await expect(live.locator('.call-helper-card')).toContainText('Active')
-		await expect(live.locator('.call-helper-card')).toContainText('MacBook Pro Microphone')
-		await expect(live.getByRole('switch', { name: 'Include meeting audio' })).toHaveCount(0)
+		await panel.getByRole('radio', { name: 'MAI Transcribe' }).click()
 
 		// Topbar popover must also hide browser meeting audio toggle and display helper status.
 		await page.getByRole('button', { name: 'Live mode options' }).click()
@@ -304,6 +321,13 @@ test.describe('microphone mode', () => {
 		await expect.poll(() => streamStarted).toBe(1)
 		await expect.poll(() => mai.appends).toBeGreaterThanOrEqual(2)
 		expect((await microphoneState(page)).requested).toBe(0)
+
+		// Waveform and transcript card align edge-to-edge with the helper card.
+		const waveBox = await live.locator('.call-wave').boundingBox()
+		const captionBox = await live.locator('.call-caption').boundingBox()
+		if (!waveBox || !captionBox) throw new Error('Missing active Live output boxes')
+		expect(Math.abs(waveBox.width - providerBox.width)).toBeLessThanOrEqual(1)
+		expect(Math.abs(captionBox.width - providerBox.width)).toBeLessThanOrEqual(1)
 
 		await live.getByRole('button', { name: 'Stop recording' }).click()
 		await expect.poll(() => stopMessages).toBe(1)

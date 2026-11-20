@@ -5,6 +5,7 @@ import type { LiveTopbarModel } from '../live/LiveModeFrame'
 import { AssistantView } from './AssistantView'
 import type { LessonSegment } from './LessonPanel'
 import { useAssistantSession } from './useAssistantSession'
+import { useAudioHelper } from './useAudioHelper'
 import { useMicrophoneViewModel } from './useMicrophoneViewModel'
 import {
 	type MossAssistantStatus,
@@ -57,6 +58,11 @@ export function AssistantFrame({
 	onLiveStateChange,
 }: AssistantFrameProps) {
 	const model = useAssistantSession({ state, actions })
+	const [helperCapturing, setHelperCapturing] = useState(false)
+	const audioHelper = useAudioHelper({
+		active: state.open && model.tab === 'live',
+		capturing: helperCapturing,
+	})
 	const isMossLive = state.mossEnabled && model.liveProvider === 'moss'
 	const moss = useAssistantMossStatus({
 		enabled: isMossLive && state.open && model.tab === 'live',
@@ -68,6 +74,7 @@ export function AssistantFrame({
 		canvasId: state.canvasId,
 		selectedIds: state.selectedIds,
 		onStatusChange: moss.onStatusChange,
+		audioHelper,
 	})
 	const micModel = useMicrophoneViewModel({
 		active: !isMossLive && state.open && model.tab === 'live',
@@ -80,7 +87,11 @@ export function AssistantFrame({
 			model.enqueueLecture(segment, { subject: 'Live speech', title: 'Microphone' }),
 		onSessionEnd: model.endSession,
 		summaryRequesting: model.summaryRequesting,
+		audioHelper,
 	})
+	useEffect(() => {
+		setHelperCapturing(micModel.running || mossModel.running)
+	}, [micModel.running, mossModel.running])
 
 	const lastLiveSignal = useRef(openLiveSignal ?? 0)
 	useEffect(() => {

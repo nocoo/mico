@@ -465,4 +465,79 @@ test.describe('MOSS Live browser integration', () => {
 		await expect(panel.getByRole('alert')).toContainText('Could not connect to MOSS Live.')
 		await expect.poll(() => moss.connections).toBe(1)
 	})
+
+	test('MOSS Live uses Mico Helper audio stream without calling browser getUserMedia', async ({
+		context,
+		page,
+	}) => {
+		await installMicrophoneMock(context)
+		const moss = await mockMoss(page)
+		let helperStarted = 0
+		let helperStopped = 0
+		await page.route('http://127.0.0.1:47065/health', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				headers: { 'access-control-allow-origin': '*' },
+				body: JSON.stringify({
+					app: 'mico-helper',
+					version: '0.1.0',
+					platform: 'darwin',
+					ready: true,
+					capturing: false,
+					permissions: { microphone: 'granted', systemAudio: 'granted' },
+					activeDevice: 'MacBook Pro Microphone',
+					sampleRate: 16000,
+					channels: 1,
+					encoding: 'pcm_s16le',
+				}),
+			}),
+		)
+		await page.routeWebSocket('ws://127.0.0.1:47065/stream', (socket) => {
+			helperStarted++
+			socket.send(
+				JSON.stringify({
+					type: 'started',
+					sampleRate: 16000,
+					channels: 1,
+					encoding: 'pcm_s16le',
+					device: 'MacBook Pro Microphone',
+				}),
+			)
+			const pcm = Buffer.alloc(3200)
+			for (let i = 0; i < 1600; i++) {
+				pcm.writeInt16LE(Math.round(Math.sin((i / 16000) * Math.PI * 2 * 440) * 5000), i * 2)
+			}
+			const interval = setInterval(() => {
+				socket.send(pcm)
+			}, 90)
+			socket.onMessage((message) => {
+				const parsed = JSON.parse(String(message)) as { type?: string }
+				if (parsed.type === 'stop') {
+					helperStopped++
+					clearInterval(interval)
+					socket.send(JSON.stringify({ type: 'stopped' }))
+					socket.close({ code: 1000, reason: 'stopped' })
+				}
+			})
+			socket.onClose(() => clearInterval(interval))
+		})
+
+		await page.goto('/')
+		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+		const panel = await openLive(page)
+		await expect(panel.locator('.call-helper-card')).toContainText('Mico Helper')
+		await expect(panel.locator('.call-helper-card')).toContainText('Active')
+
+		await panel.getByRole('button', { name: 'Start recording' }).click()
+		await waitForLive(panel)
+		await expect.poll(() => helperStarted).toBe(1)
+		await expect.poll(() => moss.binaryPackets).toBeGreaterThan(0)
+		expect((await microphoneState(page)).requested).toBe(0)
+
+		await panel.getByRole('button', { name: 'Stop recording' }).click()
+		await expect.poll(() => helperStopped).toBe(1)
+		await expect.poll(() => moss.closed).toBe(true)
+		expect((await microphoneState(page)).requested).toBe(0)
+	})
 })

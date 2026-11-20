@@ -1,7 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../i18n/index.ts'
+import {
+	AudioHelperError,
+	openAudioHelperPermissions,
+	openAudioHelperStream,
+} from '../../stt/audioHelper.ts'
 import { type MossLiveEvent, MossLiveSession } from '../../stt/mossLive.ts'
 import { formatClock } from '../../stt/transcript.ts'
 import { drawWave, observeWaveformCanvas } from '../../waveform.ts'
+import { type AudioHelperController, useAudioHelper } from './useAudioHelper.ts'
 
 export type MossPhase = 'idle' | 'connecting' | 'listening' | 'error'
 
@@ -10,6 +17,7 @@ export interface UseMossViewModelProps {
 	canvasId: string
 	selectedIds: string[]
 	onStatusChange?: (status: MossAssistantStatus | null) => void
+	audioHelper?: AudioHelperController
 }
 
 export interface MossAssistantStatus {
@@ -72,8 +80,11 @@ export function useMossViewModel({
 	canvasId,
 	selectedIds,
 	onStatusChange,
+	audioHelper: injectedAudioHelper,
 }: UseMossViewModelProps) {
+	const { messages } = useI18n()
 	const sessionRef = useRef<MossLiveSession | null>(null)
+	const startGenerationRef = useRef(0)
 	const waveRef = useRef<HTMLCanvasElement>(null)
 	const peaks = useRef<number[]>([])
 	const pendingTools = useRef(0)
@@ -84,6 +95,21 @@ export function useMossViewModel({
 	const [elapsed, setElapsed] = useState(0)
 	const [transcript, setTranscript] = useState({ user: '', assistant: '' })
 	const [activity, setActivity] = useState('Ready to draw')
+	const helperPromptRef = useRef(messages.assistant.live.helperPermissionsPrompt)
+	helperPromptRef.current = messages.assistant.live.helperPermissionsPrompt
+	const clearPermissionPrompt = useCallback(() => {
+		setDetail((currentDetail) => (currentDetail === helperPromptRef.current ? '' : currentDetail))
+	}, [])
+	const ownHelper = useAudioHelper({
+		active,
+		capturing: phase === 'connecting' || phase === 'listening',
+		enabled: !injectedAudioHelper,
+		onReady: clearPermissionPrompt,
+	})
+	const helper = injectedAudioHelper ?? ownHelper
+	useEffect(() => {
+		if (helper.helperStatus === 'ready') clearPermissionPrompt()
+	}, [clearPermissionPrompt, helper.helperStatus])
 
 	useEffect(() => {
 		onStatusChange?.({ phase, activity, detail })
@@ -92,6 +118,7 @@ export function useMossViewModel({
 	useEffect(() => () => onStatusChange?.(null), [onStatusChange])
 
 	const stop = () => {
+		startGenerationRef.current++
 		const session = sessionRef.current
 		sessionRef.current = null
 		session?.stop()
@@ -102,6 +129,7 @@ export function useMossViewModel({
 		if (lastCanvasIdRef.current !== canvasId) {
 			lastCanvasIdRef.current = canvasId
 			keepAliveRef.current = false
+			startGenerationRef.current++
 			const session = sessionRef.current
 			sessionRef.current = null
 			session?.stop()
@@ -111,6 +139,7 @@ export function useMossViewModel({
 
 	useEffect(() => {
 		if (active || keepAliveRef.current) return
+		startGenerationRef.current++
 		const session = sessionRef.current
 		sessionRef.current = null
 		session?.stop()
@@ -119,6 +148,7 @@ export function useMossViewModel({
 
 	useEffect(
 		() => () => {
+			startGenerationRef.current++
 			const session = sessionRef.current
 			sessionRef.current = null
 			session?.stop()
@@ -138,8 +168,9 @@ export function useMossViewModel({
 		return observeWaveformCanvas(canvas, () => canvas && drawWave(canvas, peaks.current, 1, [], 1))
 	}, [active])
 
-	const start = () => {
+	const start = async () => {
 		if (sessionRef.current) return
+		const generation = ++startGenerationRef.current
 		setDetail('')
 		setElapsed(0)
 		setTranscript({ user: '', assistant: '' })
@@ -147,6 +178,38 @@ export function useMossViewModel({
 		pendingTools.current = 0
 		peaks.current = []
 		if (waveRef.current) drawWave(waveRef.current, null, 0, [], 0)
+		setPhase('connecting')
+
+		const probe = await helper.refreshHelper()
+		if (startGenerationRef.current !== generation) return
+
+		// Strict mutual exclusion: whenever Mico Helper is reachable, never fall back
+		// to browser getUserMedia.
+		if (probe.status === 'needs-permission') {
+			setPhase('idle')
+			setDetail(helperPromptRef.current)
+			void openAudioHelperPermissions()
+			return
+		}
+
+		const helperCapture =
+			probe.status === 'ready'
+				? (onPcm: (pcm: Int16Array) => void, onEnded: (error?: Error) => void) =>
+						openAudioHelperStream(onPcm, (error) => {
+							if (error instanceof AudioHelperError && error.code === 'permissions_required') {
+								helper.applyProbe('needs-permission', probe.health?.activeDevice ?? '')
+								void openAudioHelperPermissions()
+							}
+							onEnded(error)
+						}).catch((error: unknown) => {
+							if (error instanceof AudioHelperError && error.code === 'permissions_required') {
+								helper.applyProbe('needs-permission', probe.health?.activeDevice ?? '')
+								void openAudioHelperPermissions()
+							}
+							throw error
+						})
+				: undefined
+
 		let session: MossLiveSession
 		const onEvent = (event: MossLiveEvent) => {
 			if (sessionRef.current !== session) return
@@ -175,9 +238,13 @@ export function useMossViewModel({
 				if (waveRef.current) drawWave(waveRef.current, peaks.current, 1, [], 1)
 			}
 		}
-		session = new MossLiveSession({ canvasId, selection: [...selectedIds], onEvent })
+		session = new MossLiveSession({
+			canvasId,
+			selection: [...selectedIds],
+			onEvent,
+			captureFactory: helperCapture,
+		})
 		sessionRef.current = session
-		setPhase('connecting')
 		void session.start().catch((error: unknown) => {
 			if (sessionRef.current !== session) return
 			sessionRef.current = null
@@ -195,22 +262,27 @@ export function useMossViewModel({
 		phaseKind: phase === 'listening' ? 'live' : phase === 'error' ? 'error' : 'ok',
 		phaseLabel:
 			phase === 'listening'
-				? 'Listening…'
+				? messages.assistant.live.phaseListening
 				: phase === 'connecting'
-					? 'Connecting…'
+					? messages.assistant.live.phaseConnecting
 					: phase === 'error'
-						? 'Connection error'
-						: 'Ready',
+						? messages.assistant.live.mossPhaseError
+						: messages.assistant.live.phaseReady,
 		detail,
 		elapsed: formatClock(elapsed),
 		transcript,
 		activity,
+		showActivity: phase === 'listening' || activity !== 'Ready to draw',
 		running,
 		hasTranscript,
 		hasOutput: running || hasTranscript,
+		audioSource: helper.audioSource,
+		helperStatus: helper.helperStatus,
+		helperDevice: helper.helperDevice,
+		openHelperPermissions: helper.openHelperPermissions,
 		start: () => {
 			keepAliveRef.current = false
-			start()
+			void start()
 		},
 		stop: () => {
 			keepAliveRef.current = false
@@ -222,7 +294,7 @@ export function useMossViewModel({
 				stop()
 			} else {
 				keepAliveRef.current = true
-				start()
+				void start()
 			}
 		},
 	}

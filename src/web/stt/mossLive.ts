@@ -47,7 +47,7 @@ interface MossToolResponseGroup {
 	scheduled: boolean
 }
 
-type CaptureFactory = (
+export type CaptureFactory = (
 	onPcm: (pcm: Int16Array) => void,
 	onEnded: (error?: Error) => void,
 ) => Promise<CaptureHandle>
@@ -92,12 +92,14 @@ export class MossLiveSession {
 		canvasId: string
 		selection: string[]
 		onEvent: (event: MossLiveEvent) => void
+		captureFactory?: CaptureFactory
 	}
 
 	constructor(options: {
 		canvasId: string
 		selection: string[]
 		onEvent: (event: MossLiveEvent) => void
+		captureFactory?: CaptureFactory
 	}) {
 		this.options = options
 	}
@@ -181,9 +183,10 @@ export class MossLiveSession {
 		}
 
 		const sessionPromise = this.fetchSession(generation)
+		const activeCaptureFactory = this.options.captureFactory ?? captureFactory
 		let capturePromise: Promise<CaptureHandle>
 		try {
-			capturePromise = captureFactory(
+			capturePromise = activeCaptureFactory(
 				(pcm) => this.handlePcm(generation, pcm),
 				(error) => {
 					if (!this.isActive(generation)) return
