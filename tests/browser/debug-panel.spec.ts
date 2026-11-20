@@ -167,6 +167,8 @@ test('debug entry is adjacent, focused, exclusive with Canvases, and dismisses o
 	await debug.click()
 	await expect(panel).toBeVisible()
 	await expect(canvasPanel).toHaveCount(0)
+	await expect(page.getByRole('button', { name: 'Close Debug' })).toBeFocused()
+	await page.evaluate(() => new Promise((resolve) => window.setTimeout(resolve, 0)))
 
 	await page.mouse.click(900, 700)
 	await expect(panel).toHaveCount(0)
