@@ -1,55 +1,56 @@
 # Mico
 
-A visual canvas workspace with three interfaces: the browser canvas (React/Vite), the HTTP/WebSocket daemon, and the `mico` agent CLI backed by `node:sqlite`. Human overview: [README.md](README.md). Testing architecture & API contracts: [docs/testing.md](docs/testing.md). Historical mistakes: [Retrospective.md](Retrospective.md).
-
-## Invariants
-
-- Install dependencies only with `pnpm install --frozen-lockfile` (a plain install through a local mirror rewrites `pnpm-lock.yaml`, failing supply-chain checks in CI).
-- Never point automated tests at the daily board (`.mico/board.sqlite`) or daily ports. Store/API/CLI/example tests use `mkdtempSync` databases and port `0`; the Playwright fixture (`scripts/browser-server.ts`) owns `127.0.0.1:27063` with an isolated daemon and `MICO_AI_MOCK=1`.
-- Never start a dev server before running Playwright; `playwright.config.ts` starts and stops its own fixture. Keep real AI gateway calls out of CI.
-- Agent examples under `examples/` are executable specifications covered by `scripts/examples.test.ts`; update examples alongside API changes.
-- `docs/prototypes/` contains frozen visual references compared by the browser suite and is excluded from Biome.
-- Do not publish, deploy, or alter branch protection without explicit authorization.
-- Containerized builds and deployments support `apple/container` (`MICO_CONTAINER_CLI=auto|container|docker`, optional `MICO_CONTAINER_DNS` behind fake-ip proxies, and `crane` for ACR pushes) without requiring Docker Desktop; see [docs/docker.md](docs/docker.md) and [docs/deployment-azure.md](docs/deployment-azure.md).
+A visual canvas workspace with three interfaces: the browser canvas (React/Vite), the HTTP/WebSocket daemon, and the `mico` agent CLI backed by `node:sqlite`.
+Docs: [README.md](README.md) · [Testing & API](docs/testing.md) · [Deployment](docs/deployment.md) · [Retrospective](Retrospective.md)
 
 ## Commands
 
-Run in the repository root with Node 26.13.0 and pnpm 11.6.0.
+Run from root with Node 26.13.0 and pnpm 11.6.0. Local variable names live in `.env.example`.
 
 ```sh
-pnpm hooks:install        # point core.hooksPath to .githooks/ once per clone
-pnpm check                # Biome check-only (zero warnings) + tsc --noEmit
-pnpm test:unit            # L1: discovered pure-logic and store tests
-pnpm test:integration     # L3: real daemon HTTP/WebSocket, CLI, examples
-pnpm test:e2e             # L4: CI Playwright browser subset (Chromium)
-pnpm test:browser         # L4: full Playwright suite
-pnpm build                # tsc --noEmit && vite build
+pnpm install --frozen-lockfile   # preserve pnpm-lock.yaml tarball URLs for CI supply-chain checks
+pnpm hooks:install               # point core.hooksPath to .githooks/ once per clone
+pnpm dev                         # https://mico.dev.hexly.ai -> 127.0.0.1:7063
+pnpm daemon                      # HTTP/WebSocket daemon on 127.0.0.1:37063
+pnpm check                       # S2 Biome (0 warnings) + S1 tsc --noEmit
+pnpm test:unit                   # L1: discovered pure-logic and store tests
+pnpm test:integration            # L3: real daemon HTTP/WebSocket, CLI, examples
+pnpm test:e2e                    # L4: CI Playwright browser subset (Chromium)
+pnpm test:browser                # L4: full Playwright suite
+pnpm build                       # B1: tsc --noEmit && vite build
 node scripts/container-smoke.ts  # Isolated apple/container production image smoke check
 git diff --check
 ```
 
-## Quality Slots
+## Invariants
 
-System1 quality definitions come from `system1-quality` (v1.3.0); CI runs in native mode via `.github/workflows/ci.yml` → `./.github/workflows/quality-slots.yml` with `nocoo/base-ci` composite actions pinned to `v2026.15` (`777bbe4f9bacab8a91d8c01974480a6ee23d28e0`). Branch protection (`main quality gate`) requires `quality / Z1: Gate`.
+- Install dependencies only with `pnpm install --frozen-lockfile` (a plain install through a local mirror rewrites `pnpm-lock.yaml`, failing supply-chain checks in CI).
+- Never point automated tests at `.mico/board.sqlite` or daily ports; Node suites use `mkdtempSync` DBs on port `0`, and Playwright (`scripts/browser-server.ts`) uses `127.0.0.1:27063` with `MICO_AI_MOCK=1`.
+- Never start a dev server before running Playwright; `playwright.config.ts` starts and stops its own fixture. Keep real AI gateway calls out of CI.
+- `MICO_RUNTIME=deploy` must come from process env (never `.env`) and keeps AI Settings read-only; invalid `MICO_AUTH_MODE` / Entra config fails closed, and deployment IDs/secrets stay out of Git.
+- Agent examples under `examples/` are executable specifications covered by `scripts/examples.test.ts`; update examples alongside API changes.
+- `docs/prototypes/` contains frozen visual references compared by the browser suite and is excluded from Biome.
+- Container builds/deploys support `apple/container` without Docker Desktop (`MICO_CONTAINER_CLI`, `MICO_CONTAINER_DNS`, `crane` for ACR); see [Docker](docs/docker.md) and [Azure](docs/deployment-azure.md).
+- Do not publish, deploy, or alter branch protection without explicit authorization.
 
-| Slot            | Stage                               | Command and Scope                                                                                                     | Status   |
-| --------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
-| S1 Types        | pre-commit, pre-push, CI            | `tsc --noEmit` across `tsconfig.json`                                                                                 | enforced |
-| S2 Lint         | pre-commit, pre-push, CI            | `biome check --error-on-warnings .` (zero diagnostics)                                                                | enforced |
-| S3 Workflow     | CI                                  | `actionlint` + immutable 40-char SHA pin verification across `.github/workflows/*.yml`                                | enforced |
-| G1 Secrets      | pre-commit (staged), CI (checkout)  | `gitleaks` redacted scan                                                                                              | enforced |
-| G2 Dependencies | pre-push, CI                        | `osv-scanner scan --lockfile=pnpm-lock.yaml`                                                                          | enforced |
-| B1 Build        | pre-push, CI                        | `vite build` (plus `tsc --noEmit`)                                                                                    | enforced |
-| L1 Unit         | pre-commit, pre-push, CI            | `pnpm run test:unit` (all non-integration `*.test.ts` under `src/` and `scripts/`; no coverage bar enforced)          | enforced |
-| L2 Runtime      | —                                   | Plain Node runtime; `node:sqlite` is exercised in L1 and L3                                                           | na       |
-| L3 Integration  | pre-push, CI                        | `pnpm run test:integration` (real daemon HTTP/WebSocket, CLI, examples)                                               | enforced |
-| L4 E2E          | CI (subset), local (`test:browser`) | `pnpm run test:e2e` (Chromium browser specs; ~3–7m, kept in CI)                                                       | enforced |
-| P1 Package      | —                                   | Private package; nothing is published or installed downstream                                                         | na       |
-| Z1 Gate         | CI                                  | `z1-gate` validator in `quality-slots.yml` requiring all `impl` slots on matching `github.sha` and `na` slots skipped | enforced |
+## Quality & Local Gates
 
-## Local Gates
+Follows `system1-quality`; CI runs in native mode via `.github/workflows/ci.yml` → `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main` via `main quality gate`). All remaining slots are `enforced`; status vocabulary: `enforced`, `planned`, `manual`, `N/A`.
 
-`pnpm hooks:install` points Git at `.githooks/`. Never bypass hooks with `--no-verify`.
+- **Exceptions / gaps**: `L2 Runtime` is `N/A` (plain Node; `node:sqlite` in L1/L3), `P1 Package` is `N/A` (private), `L1 Unit` coverage bar is `planned`, and non-CI `test:browser` specs are `manual`.
+- **Local hooks**: `pnpm hooks:install` points `core.hooksPath` to `.githooks/`; never bypass with `--no-verify`.
+- **pre-commit**: exports staged index via `git checkout-index` (symlinked `node_modules`) to run S2 lint, S1 types, and L1 unit, then G1 `gitleaks git --staged`.
+- **pre-push**: validates pushed OIDs in detached worktrees (verifying installed lockfile match), running B1 build, L3 integration, and G2 `osv-scanner` (deletions skipped).
 
-- `pre-commit`: exports the Git index via `git checkout-index` to a temporary snapshot with `node_modules` symlinked, runs S2 lint, S1 types, and L1 unit tests, then runs G1 `gitleaks git --staged`.
-- `pre-push`: inspects every pushed OID from stdin in a detached worktree, verifies the installed lockfile matches the OID, and runs B1 build, L3 integration, and G2 `osv-scanner` (deletions skipped).
+## Resources & Isolation
+
+| Lane          | Endpoint / State                                                                                      | Boundary                                                                 |
+| ------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Dev           | `https://mico.dev.hexly.ai` → `127.0.0.1:7063`, daemon `127.0.0.1:37063`, `.mico/board.sqlite`        | Daily local board; never target from automated tests                     |
+| Tests         | Node: port `0` + `mkdtempSync` DB; Playwright: `127.0.0.1:27063` + isolated daemon (`MICO_AI_MOCK=1`) | Isolated fixtures only; Playwright manages its own server                |
+| Container     | `127.0.0.1:47063`, isolated named volumes / temp dirs                                                 | Local Docker Compose or `container-smoke.ts`; stop daily container first |
+| Cloud Preview | Azure Container Apps (ephemeral SQLite, single replica)                                               | Read-only checks unless deployment is authorized                         |
+
+## Retrospective
+
+Record incident narratives in [Retrospective.md](Retrospective.md); promote recurring project constraints to `Invariants` above and enforceable safeguards to tests/hooks.
