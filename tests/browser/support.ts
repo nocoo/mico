@@ -70,6 +70,8 @@ export async function installMicrophoneMock(
 	context: BrowserContext,
 	mode: MicrophoneMockMode = 'allowed',
 ): Promise<void> {
+	// Keep browser-microphone tests isolated from any real local Mico Helper on port 47065.
+	await context.route('http://127.0.0.1:47065/**', (route) => route.abort())
 	if (mode !== 'denied') {
 		await context.grantPermissions(['microphone'], { origin: ISOLATED_ORIGIN })
 	}

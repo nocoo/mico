@@ -210,4 +210,172 @@ test.describe('microphone mode', () => {
 		await expect.poll(() => mai.appends).toBe(0)
 		await expect.poll(async () => (await microphoneState(page)).activeTracks).toBe(0)
 	})
+
+	test('local audio helper auto-connects, hides browser meeting audio toggle, and streams PCM16', async ({
+		context,
+		page,
+		request,
+	}) => {
+		await resetBoard(request, [])
+		await installMicrophoneMock(context)
+		const mai = await mockMaiTranscription(page, 'Helper meeting summary')
+
+		let streamStarted = 0
+		let stopMessages = 0
+		await page.route('http://127.0.0.1:47065/health', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				headers: { 'access-control-allow-origin': '*' },
+				body: JSON.stringify({
+					app: 'mico-helper',
+					version: '0.1.0',
+					platform: 'darwin',
+					ready: true,
+					capturing: false,
+					permissions: { microphone: 'granted', systemAudio: 'granted' },
+					activeDevice: 'MacBook Pro Microphone',
+					sampleRate: 16000,
+					channels: 1,
+					encoding: 'pcm_s16le',
+				}),
+			}),
+		)
+		await page.routeWebSocket('ws://127.0.0.1:47065/stream', (socket) => {
+			streamStarted++
+			socket.send(
+				JSON.stringify({
+					type: 'started',
+					sampleRate: 16000,
+					channels: 1,
+					encoding: 'pcm_s16le',
+					device: 'MacBook Pro Microphone',
+				}),
+			)
+			const pcm = Buffer.alloc(3200)
+			for (let i = 0; i < 1600; i++) {
+				const sample = Math.round(Math.sin((i / 16000) * Math.PI * 2 * 440) * 6000)
+				pcm.writeInt16LE(sample, i * 2)
+			}
+			const interval = setInterval(() => {
+				socket.send(pcm)
+			}, 90)
+			socket.onMessage((message) => {
+				const parsed = JSON.parse(String(message)) as { type?: string }
+				if (parsed.type === 'stop') {
+					stopMessages++
+					clearInterval(interval)
+					socket.send(pcm.subarray(0, 800))
+					socket.send(JSON.stringify({ type: 'stopped' }))
+					socket.close({ code: 1000, reason: 'stopped' })
+				}
+			})
+			socket.onClose(() => {
+				clearInterval(interval)
+			})
+		})
+
+		await page.goto('/')
+		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+
+		const panel = await openLive(page)
+		const live = panel.getByRole('tabpanel', { name: 'Live' })
+		await expect(live.locator('.call-helper-card')).toBeVisible()
+		await expect(live.locator('.call-helper-card')).toContainText('Mico Helper')
+		await expect(live.locator('.call-helper-card')).toContainText('Active')
+		await expect(live.locator('.call-helper-card')).toContainText('MacBook Pro Microphone')
+		await expect(live.getByRole('switch', { name: 'Include meeting audio' })).toHaveCount(0)
+
+		// Topbar popover must also hide browser meeting audio toggle and display helper status.
+		await page.getByRole('button', { name: 'Live mode options' }).click()
+		const popover = page.locator('.live-topbar-popover')
+		await expect(popover).toBeVisible()
+		await expect(popover.locator('.live-topbar-helper-row')).toContainText('Mico Helper')
+		await expect(popover.locator('.live-topbar-helper-row')).toContainText('Active')
+		await expect(popover.getByRole('switch', { name: 'Include meeting audio' })).toHaveCount(0)
+		await page.keyboard.press('Escape')
+
+		// Starting Live uses helper WS and never touches browser getUserMedia.
+		await live.getByRole('button', { name: 'Start recording' }).click()
+		await expect(live.getByRole('button', { name: 'Stop recording' })).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		)
+		await expect.poll(() => streamStarted).toBe(1)
+		await expect.poll(() => mai.appends).toBeGreaterThanOrEqual(2)
+		expect((await microphoneState(page)).requested).toBe(0)
+
+		await live.getByRole('button', { name: 'Stop recording' }).click()
+		await expect.poll(() => stopMessages).toBe(1)
+		await expect.poll(() => mai.commits).toBeGreaterThan(0)
+		await expect(live.getByText('Helper meeting summary', { exact: true }).first()).toBeVisible()
+		await expect.poll(() => mai.closed).toBe(true)
+		expect((await microphoneState(page)).requested).toBe(0)
+	})
+
+	test('helper needing permissions stays mutually exclusive and opens macOS guide', async ({
+		context,
+		page,
+		request,
+	}) => {
+		await resetBoard(request, [])
+		await installMicrophoneMock(context)
+		await mockMaiTranscription(page)
+
+		let openPermissionsCalls = 0
+		await page.route('http://127.0.0.1:47065/health', (route) =>
+			route.fulfill({
+				status: 200,
+				contentType: 'application/json',
+				headers: { 'access-control-allow-origin': '*' },
+				body: JSON.stringify({
+					app: 'mico-helper',
+					version: '0.1.0',
+					platform: 'darwin',
+					ready: false,
+					capturing: false,
+					permissions: { microphone: 'granted', systemAudio: 'denied' },
+					activeDevice: 'MacBook Pro Microphone',
+					sampleRate: 16000,
+					channels: 1,
+					encoding: 'pcm_s16le',
+				}),
+			}),
+		)
+		await page.route('http://127.0.0.1:47065/open-permissions', (route) => {
+			openPermissionsCalls++
+			return route.fulfill({
+				status: 204,
+				headers: { 'access-control-allow-origin': '*' },
+			})
+		})
+
+		await page.goto('/')
+		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
+
+		const panel = await openLive(page)
+		const live = panel.getByRole('tabpanel', { name: 'Live' })
+		await expect(live.locator('.call-helper-card')).toContainText('Setup')
+		await expect(live.getByRole('switch', { name: 'Include meeting audio' })).toHaveCount(0)
+
+		await live.getByRole('button', { name: 'Grant access' }).click()
+		await expect.poll(() => openPermissionsCalls).toBe(1)
+
+		// Pressing Start recording still must NOT fall back to browser getUserMedia.
+		await live.getByRole('button', { name: 'Start recording' }).click()
+		await expect.poll(() => openPermissionsCalls).toBe(2)
+		await expect(live.getByRole('button', { name: 'Start recording' })).toHaveAttribute(
+			'aria-pressed',
+			'false',
+		)
+		expect((await microphoneState(page)).requested).toBe(0)
+
+		// Topbar popover mirrors setup status and hides browser toggle.
+		await page.getByRole('button', { name: 'Live mode options' }).click()
+		const popover = page.locator('.live-topbar-popover')
+		await expect(popover.locator('.live-topbar-helper-row')).toContainText('Setup')
+		await expect(popover.getByRole('switch', { name: 'Include meeting audio' })).toHaveCount(0)
+		await popover.getByRole('button', { name: 'Grant access' }).click()
+		await expect.poll(() => openPermissionsCalls).toBe(3)
+	})
 })

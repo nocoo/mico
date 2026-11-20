@@ -1,4 +1,4 @@
-import { Mic, MonitorSpeaker, Square } from 'lucide-react'
+import { AudioLines, Mic, MonitorSpeaker, ShieldAlert, Square } from 'lucide-react'
 import { useI18n } from '../../i18n'
 import type { LessonSegment } from './LessonPanel'
 import { type MicrophoneViewModel, useMicrophoneViewModel } from './useMicrophoneViewModel'
@@ -27,6 +27,21 @@ function StandaloneMicrophonePanel(props: MicrophonePanelProps) {
 
 function MicrophonePanelView({ model }: { readonly model: MicrophoneViewModel }) {
 	const { messages } = useI18n()
+	const usingHelper = model.audioSource === 'helper'
+	const helperNeedsPermission = usingHelper && model.helperStatus === 'needs-permission'
+	const helperSummary = model.helperDevice
+		? `${messages.assistant.live.helperReadySummary} · ${model.helperDevice}`
+		: messages.assistant.live.helperReadySummary
+
+	const actionLabel = model.running
+		? messages.assistant.live.tapToStop
+		: usingHelper
+			? helperNeedsPermission
+				? messages.assistant.live.tapToGrantHelper
+				: messages.assistant.live.tapToStartHelper
+			: model.includeMeetingAudio
+				? messages.assistant.live.tapToShareAndStart
+				: messages.assistant.live.tapToStart
 
 	return (
 		<div className="microphone-panel">
@@ -61,32 +76,64 @@ function MicrophonePanelView({ model }: { readonly model: MicrophoneViewModel })
 						</div>
 						<span className="call-timer">{model.elapsed}</span>
 					</div>
-					<span className="call-action-label">
-						{model.running
-							? messages.assistant.live.tapToStop
-							: model.includeMeetingAudio
-								? messages.assistant.live.tapToShareAndStart
-								: messages.assistant.live.tapToStart}
-					</span>
+					<span className="call-action-label">{actionLabel}</span>
 					<span className="call-ai-status">{model.aiLabel}</span>
-					{model.meetingAudioSupported && (
-						<div className="call-meeting-row">
-							<span className="call-meeting-label">
-								<MonitorSpeaker size={14} aria-hidden="true" />
-								<span>{messages.assistant.live.includeMeetingAudio}</span>
+					{usingHelper ? (
+						<div
+							className="call-helper-card"
+							data-state={helperNeedsPermission ? 'setup' : 'ready'}
+						>
+							<div className="call-helper-head">
+								<span className="call-helper-title">
+									{helperNeedsPermission ? (
+										<ShieldAlert size={14} aria-hidden="true" />
+									) : (
+										<AudioLines size={14} aria-hidden="true" />
+									)}
+									<span>{messages.assistant.live.helperTitle}</span>
+								</span>
+								<span
+									className="call-helper-pill"
+									data-state={helperNeedsPermission ? 'setup' : 'ready'}
+								>
+									{helperNeedsPermission
+										? messages.assistant.live.helperSetupBadge
+										: messages.assistant.live.helperActiveBadge}
+								</span>
+							</div>
+							<span className="call-helper-summary">
+								{helperNeedsPermission ? messages.assistant.live.helperSetupSummary : helperSummary}
 							</span>
-							<button
-								type="button"
-								role="switch"
-								aria-label={messages.assistant.live.includeMeetingAudio}
-								aria-checked={model.includeMeetingAudio}
-								className="demo-switch"
-								disabled={model.running || model.disabled}
-								onClick={model.toggleMeetingAudio}
-							>
-								<span className="demo-switch-thumb" aria-hidden="true" />
-							</button>
+							{helperNeedsPermission && (
+								<button
+									type="button"
+									className="call-helper-action"
+									onClick={model.openHelperPermissions}
+								>
+									{messages.assistant.live.helperGrantAction}
+								</button>
+							)}
 						</div>
+					) : (
+						model.meetingAudioSupported && (
+							<div className="call-meeting-row">
+								<span className="call-meeting-label">
+									<MonitorSpeaker size={14} aria-hidden="true" />
+									<span>{messages.assistant.live.includeMeetingAudio}</span>
+								</span>
+								<button
+									type="button"
+									role="switch"
+									aria-label={messages.assistant.live.includeMeetingAudio}
+									aria-checked={model.includeMeetingAudio}
+									className="demo-switch"
+									disabled={model.running || model.disabled}
+									onClick={model.toggleMeetingAudio}
+								>
+									<span className="demo-switch-thumb" aria-hidden="true" />
+								</button>
+							</div>
+						)
 					)}
 				</div>
 				<div className="call-output" aria-hidden={!model.hasOutput}>

@@ -1,5 +1,6 @@
 import { Popover } from '@radix-ui/themes'
 import {
+	AudioLines,
 	ChevronDown,
 	Lock,
 	Mic,
@@ -8,11 +9,14 @@ import {
 	PanelRightOpen,
 	Pencil,
 	Presentation,
+	ShieldAlert,
 	Square,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useI18n } from '../../i18n'
+import type { AudioHelperStatus } from '../../stt/audioHelper'
 import { formatClock } from '../../stt/transcript'
+import type { LiveAudioSource } from '../assistant/useMicrophoneViewModel'
 import type { MeetingFrameProps } from '../meeting/viewmodel'
 import { buildMeetingViewModel } from '../meeting/viewmodel'
 import '../meeting/meeting.css'
@@ -25,10 +29,15 @@ export interface LiveTopbarModel {
 	readonly transcript: string
 	readonly detail: string
 	readonly disabled: boolean
+	readonly audioSource?: LiveAudioSource
+	readonly helperStatus?: AudioHelperStatus
+	readonly helperDevice?: string
 	readonly includeMeetingAudio: boolean
 	readonly meetingAudioSupported: boolean
 	readonly onToggleRecording: () => void
 	readonly onToggleMeetingAudio: () => void
+	readonly onOpenHelperPermissions?: () => void
+	readonly onRefreshHelper?: () => void
 	readonly onOpenLivePanel?: () => void
 }
 
@@ -98,8 +107,19 @@ export function LiveModeFrame({
 					? messages.liveTopbar.listeningEmpty
 					: '')
 
+	const usingHelper = model?.audioSource === 'helper'
+	const helperNeedsPermission = usingHelper && model?.helperStatus === 'needs-permission'
+	const helperReadyHint = model?.helperDevice
+		? `${messages.liveTopbar.helperReadyHint} · ${model.helperDevice}`
+		: messages.liveTopbar.helperReadyHint
+
+	const handleOpenChange = (nextOpen: boolean) => {
+		setOpen(nextOpen)
+		if (nextOpen) model?.onRefreshHelper?.()
+	}
+
 	return (
-		<Popover.Root open={open} onOpenChange={setOpen}>
+		<Popover.Root open={open} onOpenChange={handleOpenChange}>
 			<section
 				className="live-topbar-frame"
 				data-running={running ? 'true' : undefined}
@@ -208,6 +228,7 @@ export function LiveModeFrame({
 						<button
 							type="button"
 							className="live-topbar-more"
+							data-attention={helperNeedsPermission ? 'true' : undefined}
 							aria-label={messages.liveTopbar.toggleOptions}
 							aria-expanded={open}
 						>
@@ -236,29 +257,67 @@ export function LiveModeFrame({
 						</p>
 					)}
 
-					{model.meetingAudioSupported && (
-						<div className="live-topbar-popover-row">
-							<div className="live-topbar-popover-copy">
+					{usingHelper ? (
+						<div
+							className="live-topbar-helper-row"
+							data-state={helperNeedsPermission ? 'setup' : 'ready'}
+						>
+							<div className="live-topbar-helper-head">
 								<span className="live-topbar-popover-label">
-									<MonitorSpeaker size={14} aria-hidden="true" />
-									<span>{messages.liveTopbar.includeMeetingAudio}</span>
+									{helperNeedsPermission ? (
+										<ShieldAlert size={14} aria-hidden="true" />
+									) : (
+										<AudioLines size={14} aria-hidden="true" />
+									)}
+									<span>{messages.liveTopbar.helperTitle}</span>
 								</span>
-								<span className="live-topbar-popover-hint">
-									{messages.liveTopbar.includeMeetingHint}
+								<span
+									className="live-helper-pill"
+									data-state={helperNeedsPermission ? 'setup' : 'ready'}
+								>
+									{helperNeedsPermission
+										? messages.liveTopbar.helperSetupBadge
+										: messages.liveTopbar.helperActiveBadge}
 								</span>
 							</div>
-							<button
-								type="button"
-								role="switch"
-								aria-label={messages.liveTopbar.includeMeetingAudio}
-								aria-checked={model.includeMeetingAudio}
-								className="demo-switch"
-								disabled={model.running || model.disabled}
-								onClick={model.onToggleMeetingAudio}
-							>
-								<span className="demo-switch-thumb" aria-hidden="true" />
-							</button>
+							<span className="live-topbar-popover-hint">
+								{helperNeedsPermission ? messages.liveTopbar.helperSetupHint : helperReadyHint}
+							</span>
+							{helperNeedsPermission && model.onOpenHelperPermissions && (
+								<button
+									type="button"
+									className="live-helper-action"
+									onClick={model.onOpenHelperPermissions}
+								>
+									{messages.liveTopbar.helperGrantAction}
+								</button>
+							)}
 						</div>
+					) : (
+						model.meetingAudioSupported && (
+							<div className="live-topbar-popover-row">
+								<div className="live-topbar-popover-copy">
+									<span className="live-topbar-popover-label">
+										<MonitorSpeaker size={14} aria-hidden="true" />
+										<span>{messages.liveTopbar.includeMeetingAudio}</span>
+									</span>
+									<span className="live-topbar-popover-hint">
+										{messages.liveTopbar.includeMeetingHint}
+									</span>
+								</div>
+								<button
+									type="button"
+									role="switch"
+									aria-label={messages.liveTopbar.includeMeetingAudio}
+									aria-checked={model.includeMeetingAudio}
+									className="demo-switch"
+									disabled={model.running || model.disabled}
+									onClick={model.onToggleMeetingAudio}
+								>
+									<span className="demo-switch-thumb" aria-hidden="true" />
+								</button>
+							</div>
+						)
 					)}
 
 					{model.onOpenLivePanel && (

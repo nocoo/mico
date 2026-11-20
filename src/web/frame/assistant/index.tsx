@@ -105,10 +105,15 @@ export function AssistantFrame({
 			transcript,
 			detail: micModel.detail,
 			disabled: micModel.disabled,
+			audioSource: micModel.audioSource,
+			helperStatus: micModel.helperStatus,
+			helperDevice: micModel.helperDevice,
 			includeMeetingAudio: micModel.includeMeetingAudio,
 			meetingAudioSupported: micModel.meetingAudioSupported,
 			onToggleRecording: micModel.toggleFromTopbar,
 			onToggleMeetingAudio: micModel.toggleMeetingAudio,
+			onOpenHelperPermissions: micModel.openHelperPermissions,
+			onRefreshHelper: micModel.refreshHelper,
 		}
 		latestLivePayload.current = payload
 		const meta = [
@@ -116,6 +121,9 @@ export function AssistantFrame({
 			micModel.phase,
 			micModel.detail,
 			micModel.disabled,
+			micModel.audioSource,
+			micModel.helperStatus,
+			micModel.helperDevice,
 			micModel.includeMeetingAudio,
 			micModel.meetingAudioSupported,
 		].join('|')
@@ -143,10 +151,15 @@ export function AssistantFrame({
 		micModel.live.hypothesis,
 		micModel.detail,
 		micModel.disabled,
+		micModel.audioSource,
+		micModel.helperStatus,
+		micModel.helperDevice,
 		micModel.includeMeetingAudio,
 		micModel.meetingAudioSupported,
 		micModel.toggleFromTopbar,
 		micModel.toggleMeetingAudio,
+		micModel.openHelperPermissions,
+		micModel.refreshHelper,
 	])
 
 	useEffect(

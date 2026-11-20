@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { type I18nMessages, useI18n } from '../../i18n/index.ts'
+import {
+	AudioHelperError,
+	type AudioHelperStatus,
+	openAudioHelperPermissions,
+	openAudioHelperStream,
+	probeAudioHelper,
+} from '../../stt/audioHelper.ts'
 import { TARGET_RATE } from '../../stt/audioSource.ts'
 import { MaiClient, type MaiConfig } from '../../stt/maiClient.ts'
 import { openMicrophone } from '../../stt/microphone.ts'
@@ -13,6 +20,7 @@ import { appendCompletedTranscript, isLowSignalSegment } from './protocol.ts'
 export const LIVE_MICROPHONE_SILENCE_MS = 900
 
 export type MicrophonePhase = 'idle' | 'connecting' | 'listening' | 'stopping' | 'done' | 'error'
+export type LiveAudioSource = 'helper' | 'browser'
 
 export interface UseMicrophoneViewModelProps {
 	active: boolean
@@ -150,8 +158,68 @@ export function useMicrophoneViewModel({
 	const [detail, setDetail] = useState('')
 	const [elapsed, setElapsed] = useState(0)
 	const [includeMeetingAudio, setIncludeMeetingAudio] = useState(false)
+	const [helperStatus, setHelperStatus] = useState<AudioHelperStatus>('unavailable')
+	const [helperDevice, setHelperDevice] = useState('')
 	const [live, setLive] = useState({ confirmed: '', hypothesis: '' })
 	const [segments, setSegments] = useState<LessonSegment[]>([])
+	const mountedRef = useRef(true)
+	const probeInFlightRef = useRef(false)
+	const helperPromptRef = useRef(messages.assistant.live.helperPermissionsPrompt)
+	helperPromptRef.current = messages.assistant.live.helperPermissionsPrompt
+
+	const applyHelperProbe = useCallback((status: AudioHelperStatus, device: string) => {
+		if (!mountedRef.current) return
+		setHelperStatus(status)
+		setHelperDevice(device)
+		if (status === 'ready') {
+			setDetail((currentDetail) => (currentDetail === helperPromptRef.current ? '' : currentDetail))
+		}
+	}, [])
+
+	const refreshHelper = useCallback(async () => {
+		if (probeInFlightRef.current) return
+		probeInFlightRef.current = true
+		try {
+			const result = await probeAudioHelper()
+			applyHelperProbe(result.status, result.health?.activeDevice ?? '')
+		} finally {
+			probeInFlightRef.current = false
+		}
+	}, [applyHelperProbe])
+
+	const openHelperPermissions = useCallback(() => {
+		void openAudioHelperPermissions().then(() => {
+			void refreshHelper()
+		})
+	}, [refreshHelper])
+
+	useEffect(() => {
+		mountedRef.current = true
+		void refreshHelper()
+		const handleFocus = () => {
+			void refreshHelper()
+		}
+		const handleVisibility = () => {
+			if (document.visibilityState === 'visible') void refreshHelper()
+		}
+		window.addEventListener('focus', handleFocus)
+		document.addEventListener('visibilitychange', handleVisibility)
+		return () => {
+			mountedRef.current = false
+			window.removeEventListener('focus', handleFocus)
+			document.removeEventListener('visibilitychange', handleVisibility)
+		}
+	}, [refreshHelper])
+
+	useEffect(() => {
+		if (phase === 'connecting' || phase === 'listening') return
+		if (helperStatus === 'unavailable' && !active) return
+		const intervalMs = helperStatus === 'unavailable' ? 5000 : 3000
+		const timer = window.setInterval(() => {
+			void refreshHelper()
+		}, intervalMs)
+		return () => window.clearInterval(timer)
+	}, [active, helperStatus, phase, refreshHelper])
 
 	const fail = (rt: Recording, message: string) => {
 		rt.generation++
@@ -295,31 +363,62 @@ export function useMicrophoneViewModel({
 		setElapsed(0)
 		setSegments([])
 		setLive({ confirmed: '', hypothesis: '' })
-		callbacks.current.onStart()
 
 		try {
-			const mic = await openMicrophone(
-				(pcm) => {
-					if (!current()) return
-					if (rt.connected) {
-						send(rt, pcm)
-						return
-					}
-					rt.buffer.push(pcm)
-					rt.buffered += pcm.length
-					if (rt.buffered > TARGET_RATE * 30) fail(rt, 'Transcription connection took too long.')
-				},
-				(error) => {
-					if (!current()) return
-					if (error) {
-						fail(rt, error.message)
-						return
-					}
-					setDetail('Microphone disconnected.')
-					stopRef.current()
-				},
-				{ includeMeetingAudio: meetingAudioSupported && includeMeetingAudio },
-			)
+			const probe = await probeAudioHelper()
+			if (!current()) return
+			applyHelperProbe(probe.status, probe.health?.activeDevice ?? '')
+
+			// Strict mutual exclusion: whenever Mico Helper is reachable, never fall back
+			// to browser getUserMedia/getDisplayMedia.
+			if (probe.status === 'needs-permission') {
+				rt.generation++
+				cleanup(rt)
+				setPhase('idle')
+				setDetail(helperPromptRef.current)
+				void openAudioHelperPermissions()
+				return
+			}
+
+			callbacks.current.onStart()
+
+			const onPcm = (pcm: Int16Array) => {
+				if (!current()) return
+				if (rt.connected) {
+					send(rt, pcm)
+					return
+				}
+				rt.buffer.push(pcm)
+				rt.buffered += pcm.length
+				if (rt.buffered > TARGET_RATE * 30) fail(rt, 'Transcription connection took too long.')
+			}
+
+			const mic =
+				probe.status === 'ready'
+					? await openAudioHelperStream(onPcm, (error) => {
+							if (!current()) return
+							if (error) {
+								if (error instanceof AudioHelperError && error.code === 'permissions_required') {
+									applyHelperProbe('needs-permission', probe.health?.activeDevice ?? '')
+								}
+								fail(rt, error.message)
+								return
+							}
+							stopRef.current()
+						})
+					: await openMicrophone(
+							onPcm,
+							(error) => {
+								if (!current()) return
+								if (error) {
+									fail(rt, error.message)
+									return
+								}
+								setDetail('Microphone disconnected.')
+								stopRef.current()
+							},
+							{ includeMeetingAudio: meetingAudioSupported && includeMeetingAudio },
+						)
 			if (!current()) {
 				void mic.stop().catch(() => {})
 				return
@@ -400,6 +499,10 @@ export function useMicrophoneViewModel({
 				if (rt.stopComplete) drain(rt)
 			} else setPhase('listening')
 		} catch (error) {
+			if (error instanceof AudioHelperError && error.code === 'permissions_required') {
+				applyHelperProbe('needs-permission', helperDevice)
+				void openAudioHelperPermissions()
+			}
 			if (current())
 				fail(rt, error instanceof Error ? error.message : 'Could not start microphone.')
 		}
@@ -409,7 +512,9 @@ export function useMicrophoneViewModel({
 	runningRef.current = running
 	togglesRef.current = { stop, start }
 	const hasOutput = Boolean(running || live.confirmed || live.hypothesis || segments.length > 0)
+	const audioSource: LiveAudioSource = helperStatus === 'unavailable' ? 'browser' : 'helper'
 	const meetingAudioSupported =
+		audioSource === 'browser' &&
 		typeof navigator !== 'undefined' &&
 		typeof navigator.mediaDevices?.getDisplayMedia === 'function'
 	const phaseLabel = microphonePhaseLabel(phase, messages.assistant.live)
@@ -425,6 +530,11 @@ export function useMicrophoneViewModel({
 		live,
 		running,
 		hasOutput,
+		audioSource,
+		helperStatus,
+		helperDevice,
+		openHelperPermissions,
+		refreshHelper,
 		includeMeetingAudio,
 		meetingAudioSupported,
 		toggleMeetingAudio: useCallback(() => setIncludeMeetingAudio((value) => !value), []),
