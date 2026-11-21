@@ -178,6 +178,8 @@ func TestPermissionGuideStatesAndActions(t *testing.T) {
 			OnRelaunch:         func() { relaunched = true },
 		})
 	}, GuideWidth, GuideHeight)
+	tester.SetTitleBar(ui.TitleBar{Height: 38, Left: 78, Bottom: 28})
+	tester.Frame()
 
 	if !tester.HasText("2 permissions needed") || !tester.HasText("Already enabled in System Settings?") {
 		t.Fatalf("expected setup + recovery card, got: %v", tester.Texts())

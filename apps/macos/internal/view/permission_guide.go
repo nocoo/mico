@@ -10,7 +10,7 @@ import (
 
 const (
 	GuideWidth  = 512
-	GuideHeight = 668
+	GuideHeight = 696
 )
 
 type GuideState struct {
@@ -35,32 +35,50 @@ func RenderPermissionGuide(c *ui.Context, state GuideState, actions GuideActions
 	c.SetTheme(tokens.Theme)
 	c.Root().Background(tokens.Theme.Background)
 
+	tb := c.TitleBar()
+	topInset := float32(18)
+	if tb.Bottom > 0 {
+		topInset = max(tb.Bottom+12, 40)
+	}
+
 	ui.Column(c).
 		Fill().
 		LinearGradient(tokens.BgGradient).
-		Padding(20, 22).
-		Gap(13).
 		Children(func() {
-			renderGuideHeader(c, tokens)
+			if tb.Bottom > 0 {
+				ui.Box(c).FillWidth().Height(topInset).DragWindow()
+			}
 
-			ui.Scroll(c).FillWidth().Grow(1).Children(func() {
-				ui.Column(c).FillWidth().Gap(12).Padding(0, 2, 6, 0).Children(func() {
-					renderReadinessBanner(c, state.Permissions, tokens)
-					renderMicrophoneStep(c, state.Permissions, actions, tokens)
-					renderSystemAudioStep(c, state.Permissions, actions, tokens)
-					if state.Permissions.SystemAudio != permissions.StatusGranted && state.Permissions.NeedsReopenHint {
-						renderReopenRecoveryCard(c, state.Permissions, actions, tokens)
+			ui.Column(c).
+				FillWidth().
+				Grow(1).
+				Padding(0, 22, 18, 22).
+				Gap(13).
+				Children(func() {
+					if tb.Bottom <= 0 {
+						ui.Box(c).Height(18)
 					}
-				})
-			})
+					renderGuideHeader(c, tokens)
 
-			ui.Box(c).FillWidth().Height(1).Background(tokens.Hairline)
-			renderGuideFooter(c, state.Permissions, actions, tokens)
+					ui.Scroll(c).FillWidth().Grow(1).Children(func() {
+						ui.Column(c).FillWidth().Gap(12).Padding(0, 2, 6, 0).Children(func() {
+							renderReadinessBanner(c, state.Permissions, tokens)
+							renderMicrophoneStep(c, state.Permissions, actions, tokens)
+							renderSystemAudioStep(c, state.Permissions, actions, tokens)
+							if state.Permissions.SystemAudio != permissions.StatusGranted && state.Permissions.NeedsReopenHint {
+								renderReopenRecoveryCard(c, state.Permissions, actions, tokens)
+							}
+						})
+					})
+
+					ui.Box(c).FillWidth().Height(1).Background(tokens.Hairline)
+					renderGuideFooter(c, state.Permissions, actions, tokens)
+				})
 		})
 }
 
 func renderGuideHeader(c *ui.Context, tokens theme.Tokens) {
-	ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(13).Children(func() {
+	ui.Row(c).FillWidth().AlignItems(ui.Center).Gap(13).DragWindow().Children(func() {
 		renderBrandBadge(c, 46, tokens)
 		ui.Column(c).Grow(1).Gap(3).Children(func() {
 			ui.Text(c, "Mico Helper Audio Setup").FontSize(18).Bold().TextColor(tokens.Theme.Text)

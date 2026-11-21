@@ -284,12 +284,14 @@ func (a *helperApp) openPermissionGuide() {
 		return
 	}
 	a.guideWin = mygo.NewWindow(mygo.WindowOptions{
-		Title:     "Mico Helper — Audio Setup",
-		Width:     view.GuideWidth,
-		Height:    view.GuideHeight,
-		MinWidth:  460,
-		MinHeight: 540,
-		Content:   ui.View(a.renderGuide),
+		Title:                "Mico Helper",
+		Width:                view.GuideWidth,
+		Height:               view.GuideHeight,
+		MinWidth:             460,
+		MinHeight:            560,
+		TitleBarStyle:        mygo.TitleBarHiddenInset,
+		TrafficLightPosition: &mygo.Point{X: 18, Y: 16},
+		Content:              ui.View(a.renderGuide),
 	})
 	a.guideWin.Center()
 	a.guideWin.OnClosed(func() {
