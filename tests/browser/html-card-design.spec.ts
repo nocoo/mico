@@ -3,7 +3,7 @@ import { HTML_CARD_CSS, HTML_CARD_FRAGMENTS } from '../../src/shared/htmlCardDes
 import { CANDY_COLORS } from '../../src/shared/palette'
 import { ISOLATED_ORIGIN, resetBoard } from './support'
 
-test('jelly HTML card fragments and auto-height render cleanly inside isolated frames', async ({
+test('jelly HTML card fragments and auto-height render cleanly inside isolated frames @smoke', async ({
 	page,
 	request,
 }, testInfo) => {

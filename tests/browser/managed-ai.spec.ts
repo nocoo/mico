@@ -44,7 +44,7 @@ test.describe('managed AI runtime', () => {
 		await resetBoard(request, [])
 	})
 
-	test('managed identity is readonly and disables MOSS for pointer and keyboard', async ({
+	test('managed identity is readonly and disables MOSS for pointer and keyboard @smoke', async ({
 		page,
 	}) => {
 		await mockRuntime(page, false)
@@ -122,7 +122,7 @@ test.describe('managed AI runtime', () => {
 		expect(mossSockets).toBe(0)
 	})
 
-	test('deployment hides Settings and keeps keyboard navigation on visible tabs', async ({
+	test('deployment hides Settings and keeps keyboard navigation on visible tabs @smoke', async ({
 		page,
 	}, testInfo) => {
 		await mockRuntime(page, false, false)

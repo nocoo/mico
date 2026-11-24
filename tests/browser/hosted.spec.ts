@@ -115,7 +115,7 @@ test('callback failure is retryable and never renders the app', async ({ page })
 	await expect(page.locator('.app')).toHaveCount(0)
 })
 
-test('successful callback posts the ID token once and mounts only after session verification', async ({
+test('successful callback posts the ID token once and mounts only after session verification @smoke', async ({
 	page,
 }) => {
 	await mockRuntime(page, runtime('entra'))
@@ -259,7 +259,7 @@ test('AI disabled preview supports manual drawing with no assistant or provider 
 	expect(providerRequests).toBe(0)
 })
 
-test('logout clears the server view and returns to login', async ({ page }) => {
+test('logout clears the server view and returns to login @smoke', async ({ page }) => {
 	await mockRuntime(page, runtime('entra'))
 	await mockMsal(page, null)
 	let authenticated = true
@@ -340,7 +340,7 @@ test('gate query parameter previews loading and status screens without bypassing
 	await expect(page.locator('.app')).toHaveCount(0)
 })
 
-test('theme follows OS preference, honors URL overrides, and persists Settings choices', async ({
+test('theme follows OS preference, honors URL overrides, and persists Settings choices @smoke', async ({
 	page,
 }) => {
 	await mockRuntime(page, runtime('none'))

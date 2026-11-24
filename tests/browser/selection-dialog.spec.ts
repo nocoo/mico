@@ -40,7 +40,7 @@ test.beforeEach(async ({ page, request, baseURL }) => {
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
 })
 
-test('selection dialog follows AI and viewport edges without clipping', async ({
+test('selection dialog follows AI and viewport edges without clipping @smoke', async ({
 	page,
 }, testInfo) => {
 	const panel = await selectFixture(page)

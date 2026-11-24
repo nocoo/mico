@@ -6,7 +6,7 @@ test.beforeEach(({ baseURL }) => {
 	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to use a non-isolated whiteboard')
 })
 
-test('demo presenters can draw, create and switch canvases while retaining their profile', async ({
+test('demo presenters can draw, create and switch canvases while retaining their profile @smoke', async ({
 	page,
 	request,
 }) => {
@@ -151,7 +151,7 @@ test('meeting-scoped demo presenters keep their whiteboard token on canvas manag
 	await expect(page).toHaveTitle('mico · Scoped token check')
 })
 
-test('demo guests see the server hint when canvas creation or switching is rejected', async ({
+test('demo guests see the server hint when canvas creation or switching is rejected @smoke', async ({
 	page,
 	request,
 }) => {

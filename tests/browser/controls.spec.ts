@@ -373,7 +373,7 @@ test('image tool uploads a raster and frame background uses image shape identity
 	await expect(page.locator('.frame-background-image')).toHaveCount(0)
 })
 
-test('rectangle, ellipse and line tools draw by dragging', async ({ page, request }) => {
+test('rectangle, ellipse and line tools draw by dragging @smoke', async ({ page, request }) => {
 	await page.getByRole('button', { name: 'Rectangle', exact: true }).click()
 	await dragWorld(page, { x: 160, y: 160 }, { x: 340, y: 260 })
 	await expect.poll(async () => countOf(request, 'rectangle')).toBe(1)
@@ -607,7 +607,7 @@ test('tool focus follows keyboard mode changes without stealing unrelated focus'
 	await expect(canvases).toBeFocused()
 })
 
-test('keyboard shortcuts switch tools and control delete, zoom and fit', async ({
+test('keyboard shortcuts switch tools and control delete, zoom and fit @smoke', async ({
 	page,
 	request,
 }) => {
@@ -770,7 +770,7 @@ test('tiny drags and Escape never create partial shapes', async ({ page, request
 	)
 })
 
-test('properties panel edits text, colors, path brushes and typography', async ({
+test('properties panel edits text, colors, path brushes and typography @smoke', async ({
 	page,
 	request,
 }) => {

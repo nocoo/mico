@@ -427,7 +427,10 @@ test('dragging snaps to the grid and aligns with nearby objects using guides', a
 	expect(moved && moved.type !== 'connector' ? moved.y : NaN).toBe(496)
 })
 
-test('marquee selects several objects and deletes them atomically', async ({ page, request }) => {
+test('marquee selects several objects and deletes them atomically @smoke', async ({
+	page,
+	request,
+}) => {
 	await page.getByRole('button', { name: 'Select', exact: true }).click()
 	await page.mouse.move(120, 160)
 	await page.mouse.down()
@@ -448,7 +451,10 @@ test('marquee selects several objects and deletes them atomically', async ({ pag
 	expect(remaining).not.toContain('b')
 })
 
-test('sticky note text edits inline and in the properties panel', async ({ page, request }) => {
+test('sticky note text edits inline and in the properties panel @smoke', async ({
+	page,
+	request,
+}) => {
 	await page.getByRole('button', { name: 'Sticky note', exact: true }).click()
 	await page.getByRole('button', { name: 'Pink sticky' }).click()
 	await page.mouse.click(500, 400)
@@ -1156,7 +1162,7 @@ test('html cards render generated markup and expose only their title', async ({
 	}
 })
 
-test('freehand brush draws a persisted tapered path and API sketches render', async ({
+test('freehand brush draws a persisted tapered path and API sketches render @smoke', async ({
 	page,
 	request,
 }) => {
@@ -1329,7 +1335,7 @@ test('connector hover starts a drag outside the source using the highlighted anc
 	).toMatchObject({ from: 'a', to: 'c', fromAnchor, toAnchor })
 })
 
-test('drag creates a connector with exactly the highlighted target anchor', async ({
+test('drag creates a connector with exactly the highlighted target anchor @smoke', async ({
 	page,
 	request,
 }) => {

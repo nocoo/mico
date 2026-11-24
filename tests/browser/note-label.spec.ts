@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { closeAssistant, ISOLATED_ORIGIN, resetBoard, resetView, shapeOf } from './support'
 
-test('adding a label preserves existing note text and is one undo step', async ({
+test('adding a label preserves existing note text and is one undo step @smoke', async ({
 	page,
 	request,
 	baseURL,

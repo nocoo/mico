@@ -166,7 +166,7 @@ test('Audio defaults to a 500 ms silence cut and accepts 1000 in the range', asy
 	await expect(silence).toHaveValue('1000')
 })
 
-test('post-session recovery repeats both summary writes after a partial failure', async ({
+test('post-session recovery repeats both summary writes after a partial failure @smoke', async ({
 	page,
 }) => {
 	let summaries = 0
