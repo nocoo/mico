@@ -15,8 +15,7 @@ pnpm daemon                      # HTTP/WebSocket daemon on 127.0.0.1:37063
 pnpm check                       # S2 Biome (0 warnings) + S1 tsc --noEmit
 pnpm test:unit                   # L1: discovered pure-logic and store tests
 pnpm test:integration            # L3: real daemon HTTP/WebSocket, CLI, examples
-pnpm test:e2e                    # L4: CI Playwright browser subset (Chromium)
-pnpm test:browser                # L4: full Playwright suite
+pnpm test:e2e                    # L4: core Playwright smoke suite (Desktop Chromium)
 pnpm build                       # B1: tsc --noEmit && vite build
 node scripts/container-smoke.ts  # Isolated apple/container production image smoke check
 git diff --check
@@ -37,7 +36,7 @@ git diff --check
 
 Follows `system1-quality`; CI runs in native mode via `.github/workflows/ci.yml` → `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main` via `main quality gate`). All remaining slots are `enforced`; status vocabulary: `enforced`, `planned`, `manual`, `N/A`.
 
-- **Exceptions / gaps**: `L2 Runtime` is `N/A` (plain Node; `node:sqlite` in L1/L3), `P1 Package` is `N/A` (private), `L1 Unit` coverage bar is `planned`, and non-CI `test:browser` specs are `manual`.
+- **Exceptions / gaps**: `L2 Runtime` is `N/A` (plain Node; `node:sqlite` in L1/L3) and `L1 Unit` coverage bar is `planned`. `P1 Package` is `enforced` (production Docker build + container smoke check).
 - **Local hooks**: `pnpm hooks:install` points `core.hooksPath` to `.githooks/`; never bypass with `--no-verify`.
 - **pre-commit**: exports staged index via `git checkout-index` (symlinked `node_modules`) to run S2 lint, S1 types, and L1 unit, then G1 `gitleaks git --staged`.
 - **pre-push**: validates pushed OIDs in detached worktrees (verifying installed lockfile match), running B1 build, L3 integration, and G2 `osv-scanner` (deletions skipped).

@@ -19,6 +19,14 @@ export default defineConfig({
 		trace: 'retain-on-failure',
 		screenshot: 'only-on-failure',
 	},
+	projects: [
+		{
+			name: 'chromium',
+			use: {
+				viewport: { width: 1440, height: 960 },
+			},
+		},
+	],
 	webServer: {
 		command: 'node scripts/browser-server.ts',
 		url: `${baseURL}/api/live`,

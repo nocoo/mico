@@ -221,8 +221,7 @@ pnpm test             # 全部 Node 测试，自动发现 src/ 与 scripts/ 下�
 pnpm test:unit        # L1：纯逻辑、存储、STT 与组件逻辑
 pnpm test:integration # L3：真实守护进程的 HTTP/WebSocket、CLI 与 Agent 示例
 pnpm eval:ai          # 离线 L1–L5 AI 管线指标评估与阈值校验
-pnpm test:e2e         # L4：CI 跑的浏览器子集
-pnpm test:browser     # L4：全部 Playwright 用例
+pnpm test:e2e         # L4：核心 Playwright 冒烟测试（Desktop Chromium）
 pnpm build
 pnpm hooks:install    # 一次性：把 core.hooksPath 指向 .githooks
 ```

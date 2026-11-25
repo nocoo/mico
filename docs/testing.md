@@ -14,7 +14,7 @@ The Node layers feed L1 (pure logic, store, STT) or L3 (HTTP API, CLI, agent exa
 | CLI                 | `src/cli/index.test.ts`                                                                                                                                                                                               | Every `mico` command against a real daemon on an ephemeral port, canvas CRUD/switching, `--canvas` targeting, generated ids, stdin/file batches, conflict and usage failures.                                                                                                                                                                                                                         |
 | Agent examples      | `scripts/examples.test.ts`                                                                                                                                                                                            | The JSON/TypeScript batches shipped for agents still validate and apply, including the frame + HTML dashboard example. Duplicate application fails explicitly.                                                                                                                                                                                                                                        |
 | AI pipeline eval    | `scripts/ai-pipeline-eval.ts`, `scripts/ai-pipeline-eval.test.ts`, `scripts/audio-latency-bench.ts`, `scripts/verify-real-audio.ts`, `evals/cases/layered-eval-suite.json`                                            | Offline deterministic L1–L5 checks for tool schema size, parallel serialization, static KV prefix, 180-shape anchor retention, 120-turn compaction, VAD/queue lag recovery, multi-topic swimlanes, plus `--confirm-provider-usage` rubric grading (`c12`–`c15`), virtual-clock catch-up benchmarking, and real-browser MAI audio verification ([ai-performance-tuning.md](ai-performance-tuning.md)). |
-| Browser interaction | `tests/browser/canvas.spec.ts`, `tests/browser/canvases.spec.ts`, `tests/browser/controls.spec.ts`, `tests/browser/ai.spec.ts`, `tests/browser/canvas-regressions.spec.ts`                                            | Canvas panel switching/rename/delete/previews, AI streaming/tool loop/selection/URL trigger, session catalogue/controls, audio tab, real pointer and keyboard input, panels, selection, dragging, membership, connectors, HTML rendering, zoom and fit, independent-create resilience and meeting-scoped drawing/images.                                                                              |
+| Browser interaction | `tests/browser/{canvas,controls,canvases,ai,history,hosted,whiteboards,managed-ai}.spec.ts`                                                                                                                           | Core user-journey smoke suite: canvas shapes/selection/brush/connectors, shortcuts & properties panel, canvas CRUD/switching, AI tool loop/audio/settings, undo/redo history, hosted auth & theming, demo presenter/guest whiteboards, and managed-AI readonly settings.                                                                                                                              |
 | Ops fixtures        | `scripts/eval-fixture.test.ts`                                                                                                                                                                                        | Eval capture paths, identities, locks and artifact retention.                                                                                                                                                                                                                                                                                                                                         |
 
 ## Commands
@@ -25,8 +25,7 @@ pnpm test               # every Node test file under src/ and scripts/
 pnpm test:unit          # L1: pure logic, store, STT and component logic
 pnpm test:integration   # L3: real daemon over HTTP/WebSocket, CLI, agent examples
 pnpm eval:ai            # Offline L1-L5 AI pipeline metrics & threshold check
-pnpm test:e2e           # L4: canvas, overview, cards, audio and dialog geometry
-pnpm test:browser       # L4: every Playwright spec
+pnpm test:e2e           # L4: core Playwright smoke suite (Desktop Chromium)
 pnpm build
 ```
 
@@ -36,21 +35,22 @@ pnpm build
 
 `.github/workflows/ci.yml` delegates to `./.github/workflows/quality-slots.yml` in System1 native mode (using `nocoo/base-ci` composite actions pinned to a full commit SHA). Only one check needs branch protection: `quality / Z1: Gate`.
 
-| Slot                   | Command                                 | Scope                                                       |
-| ---------------------- | --------------------------------------- | ----------------------------------------------------------- |
-| S1 Types               | `pnpm typecheck`                        | every file in `tsconfig.json`                               |
-| S2 Lint                | `pnpm lint`                             | `biome check --error-on-warnings`, zero diagnostics allowed |
-| S3 Workflow            | actionlint 1.7.12 + immutable pin check | `.github/workflows`                                         |
-| G1 Secrets             | gitleaks 8.30.1 over the checkout       | tracked files                                               |
-| G2 Dependencies        | OSV Scanner over `pnpm-lock.yaml`       | single lockfile                                             |
-| B1 Build               | `pnpm build`                            | Vite production bundle                                      |
-| L1 Unit                | `pnpm test:unit`                        | discovered non-integration tests                            |
-| L3 Integration         | `pnpm test:integration`                 | real daemon and CLI                                         |
-| L4 E2E                 | `pnpm test:e2e`                         | canvas, overview, cards, audio and dialog geometry          |
-| L2 Runtime, P1 Package | —                                       | `na`: plain Node runtime, private package                   |
-| Z1 Gate                | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
+| Slot            | Command                                 | Scope                                                       |
+| --------------- | --------------------------------------- | ----------------------------------------------------------- |
+| S1 Types        | `pnpm typecheck`                        | every file in `tsconfig.json`                               |
+| S2 Lint         | `pnpm lint`                             | `biome check --error-on-warnings`, zero diagnostics allowed |
+| S3 Workflow     | actionlint 1.7.12 + immutable pin check | `.github/workflows`                                         |
+| G1 Secrets      | gitleaks 8.30.1 over the checkout       | tracked files                                               |
+| G2 Dependencies | OSV Scanner over `pnpm-lock.yaml`       | single lockfile                                             |
+| B1 Build        | `pnpm build`                            | Vite production bundle                                      |
+| L1 Unit         | `pnpm test:unit`                        | discovered non-integration tests                            |
+| L3 Integration  | `pnpm test:integration`                 | real daemon and CLI                                         |
+| L4 E2E          | `pnpm test:e2e`                         | 8 core user-journey specs on Desktop Chromium               |
+| P1 Package      | `docker build` + container smoke        | production Dockerfile image, non-root runtime, API & CLI    |
+| L2 Runtime      | —                                       | `na`: plain Node runtime                                    |
+| Z1 Gate         | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
 
-No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). The first gated run took 7m15s end to end: L4 used 421s and every other slot stayed between 7s and 29s, so L4 is the only slot above the 5-minute target. Known gaps: L1 declares no coverage target or percentage, L4 runs a subset in CI while the remaining specs run locally, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references that the browser suite compares against.
+No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). Known gaps: L1 declares no coverage target or percentage, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references.
 
 ## Local gates
 
@@ -59,7 +59,7 @@ No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). T
 - `pre-commit` runs S2, S1 and L1 inside a snapshot of the index (`git checkout-index` into a temporary directory with `node_modules` symlinked), then G1 with `gitleaks git --staged`. An unstaged fix cannot hide a staged defect.
 - `pre-push` walks the refs on stdin, creates a detached worktree for each pushed OID, and runs B1 build, L3 integration and G2 `osv-scanner` against that OID's lockfile. It verifies that the installed lockfile matches the pushed OID, then invokes the installed build binaries directly so pnpm cannot relink the shared `node_modules` from the temporary worktree. Deletions are skipped.
 
-L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minute pre-push target. Missing build binaries, `gitleaks` or `osv-scanner` fail the gate; never bypass it with `--no-verify`.
+L4 runs in CI via `pnpm test:e2e`. Missing build binaries, `gitleaks` or `osv-scanner` fail the gate; never bypass it with `--no-verify`.
 
 ## Isolation
 
@@ -68,7 +68,7 @@ L4 stays in CI: the browser subset takes about three minutes, above the 2.5-minu
 - Never point an automated test at the daily board (`.mico/board.sqlite`) or the daily ports.
 - Store/API/CLI/example tests use `mkdtempSync` databases and port `0`.
 - The browser fixture (`scripts/browser-server.ts`) owns `127.0.0.1:27063`, an ephemeral daemon, a temporary SQLite file and a separate Vite cache. Every spec refuses to run against another origin.
-- `pnpm test:browser` runs one worker at a time; tests reset the board through the API at the start of each case.
+- `pnpm test:e2e` runs one worker at a time; tests reset the board through the API at the start of each case.
 - Do not run a dev server for tests. The Playwright config starts and stops its own fixture.
 - The browser fixture sets `MICO_AI_MOCK=1`, so AI specs use `src/server/aiMock.ts` and never call the Magpie gateway. Keep the real gateway out of CI. Real-session evaluation is run explicitly against the daily daemon and writes only new `R<n>-…` canvases.
 - Audio and microphone browser tests use isolated mock providers and synthetic audio. Real MAI transcription is a manual acceptance check because it depends on the Azure deployment and network.

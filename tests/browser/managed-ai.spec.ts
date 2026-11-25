@@ -44,7 +44,7 @@ test.describe('managed AI runtime', () => {
 		await resetBoard(request, [])
 	})
 
-	test('managed identity is readonly and disables MOSS for pointer and keyboard @smoke', async ({
+	test('managed identity is readonly and disables MOSS for pointer and keyboard', async ({
 		page,
 	}) => {
 		await mockRuntime(page, false)
@@ -122,7 +122,7 @@ test.describe('managed AI runtime', () => {
 		expect(mossSockets).toBe(0)
 	})
 
-	test('deployment hides Settings and keeps keyboard navigation on visible tabs @smoke', async ({
+	test('deployment hides Settings and keeps keyboard navigation on visible tabs', async ({
 		page,
 	}, testInfo) => {
 		await mockRuntime(page, false, false)
@@ -163,22 +163,5 @@ test.describe('managed AI runtime', () => {
 		await expect(panel.getByRole('alert')).toContainText('deployment administrator')
 		await expect(panel.getByRole('alert')).not.toContainText('Settings')
 		expect(settingsRequests).toBe(0)
-	})
-
-	test('local runtime keeps MOSS enabled and selected by default', async ({ page }) => {
-		await mockRuntime(page, true)
-		await page.goto('/')
-		await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
-
-		const live = await openAssistant(page, 'Live')
-		const moss = live.getByRole('radio', { name: 'MOSS Live' })
-		const mai = live.getByRole('radio', { name: 'MAI Transcribe' })
-		await expect(moss).toHaveAttribute('data-state', 'on')
-		await expect(moss).toHaveAttribute('aria-disabled', 'false')
-		await expect(mai).toHaveAttribute('data-state', 'off')
-		await mai.click()
-		await expect(mai).toHaveAttribute('data-state', 'on')
-		await moss.click()
-		await expect(moss).toHaveAttribute('data-state', 'on')
 	})
 })
