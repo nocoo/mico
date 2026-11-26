@@ -1,4 +1,4 @@
-import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
+import { type APIRequestContext, expect, type Page } from '@playwright/test'
 import type { Board, CanvasShape, Shape } from '../../src/shared/types'
 import { JELLY_COLORS } from '../../src/web/canvas/jelly'
 import { CANDY_COLORS, CANDY_TINTS } from '../../src/web/design'
@@ -9,10 +9,11 @@ import {
 	clickWorld,
 	closeAssistant,
 	dragWorld,
-	ISOLATED_ORIGIN,
+	isIsolatedOrigin,
 	resetBoard,
 	resetView,
 	shapeOf,
+	test,
 	worldPoint,
 	worldScale,
 	worldView,
@@ -40,7 +41,7 @@ async function seed(page: Page, request: APIRequestContext, shapes: Shape[]): Pr
 }
 
 test.beforeEach(async ({ page, request, baseURL }) => {
-	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	if (!isIsolatedOrigin(baseURL)) throw new Error('Refusing to mutate a non-isolated canvas')
 	await resetBoard(request, [])
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')

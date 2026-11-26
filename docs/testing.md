@@ -67,8 +67,8 @@ L4 runs in CI via `pnpm test:e2e`. Missing build binaries, `gitleaks` or `osv-sc
 
 - Never point an automated test at the daily board (`.mico/board.sqlite`) or the daily ports.
 - Store/API/CLI/example tests use `mkdtempSync` databases and port `0`.
-- The browser fixture (`scripts/browser-server.ts`) owns `127.0.0.1:27063`, an ephemeral daemon, a temporary SQLite file and a separate Vite cache. Every spec refuses to run against another origin.
-- `pnpm test:e2e` runs one worker at a time; tests reset the board through the API at the start of each case.
+- The browser fixture (`scripts/browser-server.ts`) isolates each Playwright worker on `127.0.0.1:27063+` with an ephemeral daemon and temporary SQLite file, serving built `dist/` when available. Every spec refuses to run against another origin.
+- `pnpm test:e2e` runs workers against isolated servers; tests reset the board through the API at the start of each case.
 - Do not run a dev server for tests. The Playwright config starts and stops its own fixture.
 - The browser fixture sets `MICO_AI_MOCK=1`, so AI specs use `src/server/aiMock.ts` and never call the Magpie gateway. Keep the real gateway out of CI. Real-session evaluation is run explicitly against the daily daemon and writes only new `R<n>-…` canvases.
 - Audio and microphone browser tests use isolated mock providers and synthetic audio. Real MAI transcription is a manual acceptance check because it depends on the Azure deployment and network.

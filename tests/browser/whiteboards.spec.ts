@@ -1,8 +1,8 @@
-import { expect, test } from '@playwright/test'
-import { board, ISOLATED_ORIGIN, resetBoard } from './support'
+import { expect } from '@playwright/test'
+import { board, isIsolatedOrigin, resetBoard, test } from './support'
 
 test.beforeEach(({ baseURL }) => {
-	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to use a non-isolated whiteboard')
+	if (!isIsolatedOrigin(baseURL)) throw new Error('Refusing to use a non-isolated whiteboard')
 })
 
 test('demo presenters can draw, create and switch canvases while retaining their profile', async ({

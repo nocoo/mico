@@ -1,7 +1,7 @@
-import { type APIRequestContext, expect, type Page, test } from '@playwright/test'
+import { type APIRequestContext, expect, type Page } from '@playwright/test'
 import type { Board, CanvasShape, Connector } from '../../src/shared/types'
 import { CANDY_TINTS } from '../../src/web/design'
-import { closeAssistant } from './support'
+import { closeAssistant, isIsolatedOrigin, test } from './support'
 
 async function board(request: APIRequestContext): Promise<Board> {
 	const response = await request.get('/api/board')
@@ -30,8 +30,7 @@ async function targetPoint(page: Page, id: string, side: 'left' | 'right' = 'lef
 }
 
 test.beforeEach(async ({ request, page, baseURL }) => {
-	if (baseURL !== 'http://127.0.0.1:27063')
-		throw new Error('Refusing to mutate a non-isolated canvas')
+	if (!isIsolatedOrigin(baseURL)) throw new Error('Refusing to mutate a non-isolated canvas')
 	const current = await board(request)
 	const nodes: CanvasShape[] = [
 		{

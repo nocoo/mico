@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test'
-import { openAssistant, resetBoard } from './support'
+import { expect } from '@playwright/test'
+import { openAssistant, resetBoard, test } from './support'
 
 async function mockRuntime(
 	page: Parameters<typeof openAssistant>[0],
@@ -124,7 +124,7 @@ test.describe('managed AI runtime', () => {
 
 	test('deployment hides Settings and keeps keyboard navigation on visible tabs', async ({
 		page,
-	}, testInfo) => {
+	}) => {
 		await mockRuntime(page, false, false)
 		let settingsRequests = 0
 		page.on('request', (request) => {
@@ -150,10 +150,6 @@ test.describe('managed AI runtime', () => {
 		await expect(live).toBeFocused()
 		await page.keyboard.press('Home')
 		await expect(chat).toBeFocused()
-		await page.screenshot({
-			path: testInfo.outputPath('deployment-tabs.png'),
-			animations: 'disabled',
-		})
 		await page.route('**/api/ai/chat', (route) =>
 			route.fulfill({ status: 503, json: { error: 'PROVIDER_UNAVAILABLE' } }),
 		)

@@ -1,9 +1,10 @@
-import { expect, test } from '@playwright/test'
-import { openAssistant } from './support'
+import { expect } from '@playwright/test'
+import { ISOLATED_ORIGIN, openAssistant, test } from './support'
 
 const runtime = (
 	mode: 'none' | 'entra' = 'none',
 	options: { aiEnabled?: boolean; mossEnabled?: boolean; ephemeral?: boolean } = {},
+	origin = ISOLATED_ORIGIN,
 ) => ({
 	auth:
 		mode === 'entra'
@@ -12,7 +13,7 @@ const runtime = (
 					clientId: 'browser-test-client',
 					tenantId: 'browser-test-tenant',
 					authority: 'https://login.microsoftonline.com/browser-test-tenant',
-					redirectUri: 'http://127.0.0.1:27063/auth/callback',
+					redirectUri: `${origin}/auth/callback`,
 				}
 			: { mode },
 	aiEnabled: options.aiEnabled ?? true,
@@ -48,7 +49,7 @@ async function mockMsal(
 	page: import('@playwright/test').Page,
 	redirectResult: { idToken?: string; account?: { homeAccountId: string } } | null,
 ) {
-	await page.route(/\/@azure_msal-browser\.js(?:\?|$)/, (route) =>
+	await page.route(/\/(@azure_msal-browser|assets\/dist-[^/]+)\.js(?:\?|$)/, (route) =>
 		route.fulfill({
 			contentType: 'application/javascript',
 			body: `
@@ -74,8 +75,8 @@ async function mockMsal(
 	)
 }
 
-test('auth required shows explicit login and never mounts the app', async ({ page }) => {
-	await mockRuntime(page, runtime('entra'))
+test('auth required shows explicit login and never mounts the app', async ({ page, baseURL }) => {
+	await mockRuntime(page, runtime('entra', {}, baseURL))
 	await mockSession(page, 401)
 	await page.goto('/')
 	await expect(page.getByRole('heading', { name: 'Sign in to Mico' })).toBeVisible()
@@ -87,8 +88,9 @@ test('auth required shows explicit login and never mounts the app', async ({ pag
 
 test('successful callback posts the ID token once and mounts only after session verification', async ({
 	page,
+	baseURL,
 }) => {
-	await mockRuntime(page, runtime('entra'))
+	await mockRuntime(page, runtime('entra', {}, baseURL))
 	await mockMsal(page, {
 		idToken: 'mock-id-token',
 		account: { homeAccountId: 'browser-account' },
@@ -126,8 +128,8 @@ test('successful callback posts the ID token once and mounts only after session 
 	await expect(page.locator('.app')).toBeVisible()
 })
 
-test('logout clears the server view and returns to login', async ({ page }) => {
-	await mockRuntime(page, runtime('entra'))
+test('logout clears the server view and returns to login', async ({ page, baseURL }) => {
+	await mockRuntime(page, runtime('entra', {}, baseURL))
 	await mockMsal(page, null)
 	let authenticated = true
 	await page.route('**/api/auth/session', (route) =>

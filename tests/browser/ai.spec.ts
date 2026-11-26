@@ -1,5 +1,5 @@
-import { expect, test } from '@playwright/test'
-import { board, openAssistant, resetBoard } from './support'
+import { expect } from '@playwright/test'
+import { board, openAssistant, resetBoard, test } from './support'
 
 const OPEN_AI = 'Open AI assistant'
 const COMPOSER = 'Message the assistant'

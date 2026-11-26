@@ -1,13 +1,35 @@
 import {
 	type APIRequestContext,
 	type BrowserContext,
+	test as base,
 	expect,
 	type Locator,
 	type Page,
 } from '@playwright/test'
+import { startBrowserServer } from '../../scripts/browser-server'
+import { BROWSER_PORT } from '../../src/shared/config'
 import type { Board, CanvasShape, Shape } from '../../src/shared/types'
 
-export const ISOLATED_ORIGIN = 'http://127.0.0.1:27063'
+export const ISOLATED_ORIGIN = `http://127.0.0.1:${BROWSER_PORT}`
+
+export function isIsolatedOrigin(origin: string | undefined): boolean {
+	return /^http:\/\/127\.0\.0\.1:2706[3-9]$/.test(origin ?? '')
+}
+
+export const test = base.extend<object, { workerOrigin: string }>({
+	workerOrigin: [
+		// biome-ignore lint/correctness/noEmptyPattern: Playwright requires object destructuring on fixture functions
+		async ({}, use, workerInfo) => {
+			const server = await startBrowserServer(BROWSER_PORT + workerInfo.workerIndex, true)
+			await use(server.origin)
+			await server.close()
+		},
+		{ scope: 'worker', auto: true },
+	],
+	baseURL: async ({ workerOrigin }, use) => {
+		await use(workerOrigin)
+	},
+})
 
 export type AssistantTab = 'Chat' | 'Audio' | 'Live' | 'Settings'
 

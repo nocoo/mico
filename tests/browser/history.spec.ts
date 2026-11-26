@@ -1,5 +1,13 @@
-import { expect, test } from '@playwright/test'
-import { board, closeAssistant, dragWorld, ISOLATED_ORIGIN, resetBoard, resetView } from './support'
+import { expect } from '@playwright/test'
+import {
+	board,
+	closeAssistant,
+	dragWorld,
+	isIsolatedOrigin,
+	resetBoard,
+	resetView,
+	test,
+} from './support'
 
 const note = {
 	id: 'history-note',
@@ -13,7 +21,7 @@ const note = {
 } as const
 
 test.beforeEach(async ({ request, page, baseURL }) => {
-	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	if (!isIsolatedOrigin(baseURL)) throw new Error('Refusing to mutate a non-isolated canvas')
 	await resetBoard(request, [note])
 	await page.emulateMedia({ reducedMotion: 'reduce' })
 	await page.goto('/')

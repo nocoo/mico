@@ -1,6 +1,13 @@
-import { type APIRequestContext, expect, test } from '@playwright/test'
+import { type APIRequestContext, expect } from '@playwright/test'
 import type { CanvasSnapshot } from '../../src/shared/types'
-import { clickWorld, closeAssistant, ISOLATED_ORIGIN, resetBoard, resetView } from './support'
+import {
+	clickWorld,
+	closeAssistant,
+	isIsolatedOrigin,
+	resetBoard,
+	resetView,
+	test,
+} from './support'
 
 async function state(request: APIRequestContext): Promise<CanvasSnapshot> {
 	const response = await request.get('/api/state')
@@ -26,7 +33,7 @@ async function resetCanvases(request: APIRequestContext): Promise<CanvasSnapshot
 }
 
 test.beforeEach(async ({ page, request, baseURL }) => {
-	if (baseURL !== ISOLATED_ORIGIN) throw new Error('Refusing to mutate a non-isolated canvas')
+	if (!isIsolatedOrigin(baseURL)) throw new Error('Refusing to mutate a non-isolated canvas')
 	await resetCanvases(request)
 	await page.goto('/')
 	await expect(page.locator('.status')).toHaveAttribute('aria-label', 'Live')
