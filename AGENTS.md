@@ -34,7 +34,7 @@ git diff --check
 
 ## Quality & Local Gates
 
-Follows `system1-quality`; CI runs in native mode via `.github/workflows/ci.yml` → `.github/workflows/quality-slots.yml` (`quality / Z1: Gate` required on `main` via `main quality gate`). All remaining slots are `enforced`; status vocabulary: `enforced`, `planned`, `manual`, `N/A`.
+Follows `system1-quality`; `.github/workflows/pipeline.yml` runs `quality` (`S1`–`Z1` in `.github/workflows/quality-slots.yml` pinned to `base-ci` `v2026.21`, `quality / Z1: Gate` required on `main` via `main quality gate`) followed by `deploy` (`D1`–`D5` GitHub Pages deploy of `docs/architecture` via `deploy-pages.yml` on `main` push or `workflow_dispatch` with `deploy=true`; `pull_request` runs skip `deploy`). Status vocabulary: `enforced`, `planned`, `manual`, `N/A`.
 
 - **Exceptions / gaps**: `L2 Runtime` is `N/A` (plain Node; `node:sqlite` in L1/L3) and `L1 Unit` coverage bar is `planned`. `P1 Package` is `enforced` (production Docker build + container smoke check).
 - **Local hooks**: `pnpm hooks:install` points `core.hooksPath` to `.githooks/`; never bypass with `--no-verify`.
