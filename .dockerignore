@@ -13,4 +13,13 @@ scripts/**
 !scripts/verify-managed-ai.ts
 !public/
 !public/**
-**/*.test.ts
+**/node_modules
+**/dist
+**/coverage
+**/playwright-report
+**/test-results
+**/*.tsbuildinfo
+**/*.test.*
+**/*.spec.*
+**/.DS_Store
+**/.env*
