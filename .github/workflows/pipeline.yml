@@ -36,7 +36,7 @@ jobs:
     if: >-
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy == true)
-    uses: nocoo/base-ci/.github/workflows/deploy-pages.yml@694f53c3b36256e96e464716b6b8d239e3f5f159 # v2026.23
+    uses: nocoo/base-ci/.github/workflows/deploy-pages.yml@3703a073693d598159e87f77f99587e586c14cfe # v2026.24
     with:
       environment: github-pages
       source-path: docs/architecture
