@@ -1,0 +1,43 @@
+# System1 native mode: `pipeline.yml` orchestrates `quality` (S1-Z1) -> `deploy` (D1-D5 Pages).
+name: Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy after quality gate passes
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pipeline-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  quality:
+    permissions:
+      contents: read
+      actions: read
+    uses: ./.github/workflows/quality-slots.yml
+
+  deploy:
+    name: deploy
+    needs: [quality]
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.deploy == true)
+    uses: nocoo/base-ci/.github/workflows/deploy-pages.yml@1bf0b015de41d57d6a620773b955b5c386c387de # v2026.21
+    with:
+      environment: github-pages
+      source-path: docs/architecture
+      verify-url: https://nocoo.github.io/mico/
