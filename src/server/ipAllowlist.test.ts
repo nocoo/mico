@@ -59,4 +59,22 @@ test('extractClientIp prefers x-envoy-external-address, then rightmost x-forward
 	)
 
 	assert.equal(extractClientIp(fakeReq({}, '::ffff:127.0.0.1')), '127.0.0.1')
+	assert.equal(
+		extractClientIp(fakeReq({ 'x-forwarded-for': ['10.0.0.1', '198.51.100.7, 203.0.113.9'] })),
+		'203.0.113.9',
+	)
+})
+
+test('parseCidrList and isIpAllowed support IPv6 CIDRs, embedded IPv4, zones and validation', () => {
+	const ranges = parseCidrList('2001:db8:abcd::/48, ::1')
+	assert.equal(isIpAllowed('2001:db8:abcd:0012::42', ranges), true)
+	assert.equal(isIpAllowed('2001:db8:abcd::192.0.2.1%eth0', ranges), true)
+	assert.equal(isIpAllowed('::1', ranges), true)
+	assert.equal(isIpAllowed('2001:db8:ffff::1', ranges), false)
+	assert.equal(isIpAllowed('167.220.0.1', ranges), false)
+
+	assert.equal(isIpAllowed('2606:4700::1', parseCidrList('::/0')), true)
+	assert.throws(() => parseCidrList('2001:db8::/129'), /Invalid IPv6 CIDR/)
+	assert.throws(() => parseCidrList('2001:db8::/'), /Invalid IPv6 CIDR/)
+	assert.throws(() => parseCidrList('10.0.0.1,  '), /cannot be empty/)
 })

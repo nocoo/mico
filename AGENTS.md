@@ -36,7 +36,7 @@ git diff --check
 
 Follows `system1-quality`; `.github/workflows/pipeline.yml` runs `quality` (`S1`–`Z1` in `.github/workflows/quality-slots.yml` pinned to `base-ci` `v2026.21`, `quality / Z1: Gate` required on `main` via `main quality gate`) followed by `deploy` (`D1`–`D5` GitHub Pages deploy of `docs/architecture` via `deploy-pages.yml` on `main` push or `workflow_dispatch` with `deploy=true`; `pull_request` runs skip `deploy`). Status vocabulary: `enforced`, `planned`, `manual`, `N/A`.
 
-- **Exceptions / gaps**: `L2 Runtime` is `N/A` (plain Node; `node:sqlite` in L1/L3) and `L1 Unit` coverage bar is `planned`. `P1 Package` is `enforced` (production Docker build + container smoke check).
+- **Exceptions / gaps**: `L2 Runtime` is `N/A` (plain Node; `node:sqlite` in L1/L3). `L1 Unit` enforces 90% lines / 85% branches / 90% functions across non-view pure logic, store, and client helpers (excluding React `.tsx` components, `use*` hooks, static locale catalogs, and L3 daemon/CLI routes). `P1 Package` is `enforced` (production Docker build + container smoke check).
 - **Local hooks**: `pnpm hooks:install` points `core.hooksPath` to `.githooks/`; never bypass with `--no-verify`.
 - **pre-commit**: exports staged index via `git checkout-index` (symlinked `node_modules`) to run S2 lint, S1 types, and L1 unit, then G1 `gitleaks git --staged`.
 - **pre-push**: validates pushed OIDs in detached worktrees (verifying installed lockfile match), running B1 build, L3 integration, and G2 `osv-scanner` (deletions skipped).

@@ -2,10 +2,14 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { JELLY_COLORS } from './canvas/jelly.ts'
 import {
+	adaptiveCanvasTextColor,
+	adaptiveInkEdge,
+	adaptiveJellyStyle,
 	CANDY_COLORS,
 	CANDY_LAYOUT,
 	CANDY_TINTS,
 	candyInk,
+	candyLine,
 	candyWash,
 	canvasTextColor,
 	NOTE_COLORS,
@@ -51,4 +55,21 @@ test('the candy palette is vivid for surfaces and readable for text', () => {
 test('pale washes derive from the shared surface token', () => {
 	assert.equal(candyWash(CANDY_COLORS.blue), 'color-mix(in srgb, #00a2e1 10%, var(--surface))')
 	assert.equal(candyWash(CANDY_COLORS.pink, 5), 'color-mix(in srgb, #ff7fa3 5%, var(--surface))')
+	assert.equal(candyLine(CANDY_COLORS.blue), 'color-mix(in srgb, #00a2e1 35%, var(--border))')
+})
+
+test('adaptive canvas color helpers handle light/dark tokens and ink edges', () => {
+	assert.equal(adaptiveCanvasTextColor(CANDY_COLORS.ink), 'var(--ui-ink)')
+	assert.match(adaptiveCanvasTextColor(CANDY_COLORS.blue), /^light-dark\(/)
+	assert.match(adaptiveCanvasTextColor(CANDY_COLORS.green), /^light-dark\(/)
+	assert.match(adaptiveCanvasTextColor(CANDY_COLORS.yellow), /^light-dark\(/)
+	assert.match(adaptiveCanvasTextColor(CANDY_COLORS.pink), /^light-dark\(/)
+	assert.equal(adaptiveCanvasTextColor('#123456'), '#123456')
+
+	assert.match(adaptiveInkEdge(CANDY_COLORS.ink) ?? '', /^light-dark\(/)
+	assert.equal(adaptiveInkEdge(CANDY_COLORS.blue), undefined)
+	const inkJelly = adaptiveJellyStyle(CANDY_COLORS.ink) as Record<string, string>
+	const blueJelly = adaptiveJellyStyle(CANDY_COLORS.blue) as Record<string, string>
+	assert.equal(inkJelly['--j-edge'], adaptiveInkEdge(CANDY_COLORS.ink))
+	assert.notEqual(blueJelly['--j-edge'], adaptiveInkEdge(CANDY_COLORS.ink))
 })

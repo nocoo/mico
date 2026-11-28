@@ -10,7 +10,12 @@ import {
 	SUMMARY_ACTION_INSTRUCTIONS,
 	SUMMARY_CARD_INSTRUCTIONS,
 } from '../shared/summaryPrompt.ts'
-import { AI_LECTURE_PROMPT, AI_SYSTEM_PROMPT } from './aiPrompt.ts'
+import {
+	AI_LECTURE_PROMPT,
+	AI_SYSTEM_PROMPT,
+	buildInstructions,
+	buildStaticInstructions,
+} from './aiPrompt.ts'
 
 test('live drawing instructions organize three semantic groups left to right', () => {
 	assert.match(AI_SYSTEM_PROMPT, /x=80, y=144/)
@@ -112,4 +117,19 @@ test('fixed 4-column master grid aligns topic swimlanes and stacks global outcom
 	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /w=760/)
 	assert.match(SUMMARY_ACTION_INSTRUCTIONS, /stacked vertically|below executive-summary/i)
 	assert.doesNotMatch(SUMMARY_ACTION_INSTRUCTIONS, /to the right of executive-summary/i)
+})
+
+test('buildStaticInstructions and buildInstructions vary by mode and image generation capability', () => {
+	const chatWithoutImg = buildStaticInstructions('chat', { imageGenerationAvailable: false })
+	assert.equal(chatWithoutImg.includes('# Optional images'), false)
+	assert.equal(chatWithoutImg.includes('add_strokes'), true)
+
+	const lectureWithImg = buildStaticInstructions('lecture', { imageGenerationAvailable: true })
+	assert.equal(lectureWithImg.includes('# Optional images'), true)
+	assert.equal(lectureWithImg.includes('add_strokes'), false)
+	assert.equal(lectureWithImg.includes('# Live session mode'), true)
+
+	const full = buildInstructions({ revision: 3, shapes: [] }, ['sel-1'], 'chat')
+	assert.match(full, /# Current canvas/)
+	assert.match(full, /sel-1/)
 })

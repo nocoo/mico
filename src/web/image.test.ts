@@ -24,3 +24,10 @@ test('frame image fit maps to SVG preserveAspectRatio modes', () => {
 	assert.equal(imagePreserveAspectRatio('stretch'), 'none')
 	assert.equal(imagePreserveAspectRatio(undefined), 'xMidYMid slice')
 })
+
+test('scaleImageDimensions rejects non-finite or non-positive inputs', () => {
+	assert.throws(() => scaleImageDimensions(Number.NaN, 100), RangeError)
+	assert.throws(() => scaleImageDimensions(0, 100), RangeError)
+	assert.throws(() => scaleImageDimensions(100, -5), RangeError)
+	assert.throws(() => scaleImageDimensions(100, 100, 0, 100), RangeError)
+})

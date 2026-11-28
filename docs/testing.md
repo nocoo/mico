@@ -50,7 +50,7 @@ pnpm build
 | L2 Runtime      | —                                       | `na`: plain Node runtime                                    |
 | Z1 Gate         | base-ci aggregate                       | every `impl` slot must succeed on one SHA                   |
 
-No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). Known gaps: L1 declares no coverage target or percentage, and `docs/prototypes/` is excluded from Biome because those files are frozen visual references.
+No Git hooks run in CI; `pnpm hooks:install` sets them up locally (see below). Known gaps: `docs/prototypes/` is excluded from Biome because those files are frozen visual references, and L1 coverage (`90% lines / 85% branches / 90% functions`) scopes to non-view core logic, store, and client modules (excluding `.tsx` UI components, `use*` hooks, static locale catalogs, and L3 daemon/CLI routes).
 
 ## Local gates
 

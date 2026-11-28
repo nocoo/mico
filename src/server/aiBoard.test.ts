@@ -132,3 +132,104 @@ test('anchor-preserving digest retains structural anchors at 180 shapes with com
 		`Expected compact board context < 15000 bytes, got ${Buffer.byteLength(context)}`,
 	)
 })
+
+test('boardDigest covers connectors, lines, sampled paths and layout warnings', () => {
+	const points = Array.from({ length: 40 }, (_, index) => ({ x: index * 4, y: index * 2 }))
+	const board: Board = {
+		revision: 9,
+		shapes: [
+			{
+				id: 'frame-1',
+				type: 'frame',
+				x: 100,
+				y: 100,
+				w: 200,
+				h: 200,
+				color: '#00a2e1',
+				title: 'Region',
+			},
+			{
+				id: 'escaped',
+				type: 'rectangle',
+				x: 400,
+				y: 120,
+				w: 120,
+				h: 80,
+				color: '#00a2e1',
+				frameId: 'frame-1',
+			},
+			{
+				id: 'overlap-a',
+				type: 'rectangle',
+				x: 500,
+				y: 500,
+				w: 120,
+				h: 80,
+				color: '#a6d94f',
+			},
+			{
+				id: 'overlap-b',
+				type: 'ellipse',
+				x: 510,
+				y: 510,
+				w: 120,
+				h: 80,
+				color: '#ff7fa3',
+			},
+			{
+				id: 'line-1',
+				type: 'line',
+				x: 10,
+				y: 20,
+				w: 100,
+				h: 40,
+				color: '#2b3038',
+			},
+			{
+				id: 'path-1',
+				type: 'path',
+				x: 50,
+				y: 60,
+				w: 160,
+				h: 80,
+				color: '#2b3038',
+				brush: 'marker',
+				strokeWidth: 4,
+				points,
+			},
+			{
+				id: 'conn-1',
+				type: 'connector',
+				from: 'overlap-a',
+				to: 'overlap-b',
+				fromAnchor: 1,
+				toAnchor: 3,
+				color: '#2b3038',
+			},
+		],
+	}
+	const digest = boardDigest(board, ['overlap-a'])
+	assert.deepEqual(digest.selection, ['overlap-a'])
+	assert.ok(digest.bounds)
+	assert.ok(
+		digest.warnings.some((warning) => warning.includes('escaped is outside its frame frame-1')),
+	)
+	assert.ok(digest.warnings.some((warning) => warning.includes('overlap-a overlaps overlap-b')))
+
+	const line = digest.shapes.find((shape) => shape.id === 'line-1')
+	assert.deepEqual(line?.start, { x: 10, y: 20 })
+	assert.deepEqual(line?.end, { x: 110, y: 60 })
+
+	const path = digest.shapes.find((shape) => shape.id === 'path-1')
+	assert.equal(path?.points, 40)
+	assert.ok(path?.samples && path.samples.length <= 8)
+
+	const conn = digest.shapes.find((shape) => shape.id === 'conn-1')
+	assert.equal(conn?.from, 'overlap-a')
+	assert.equal(conn?.to, 'overlap-b')
+	assert.equal(conn?.fromAnchor, 1)
+	assert.equal(conn?.toAnchor, 3)
+
+	const empty = boardDigest({ revision: 0, shapes: [] }, [])
+	assert.equal(empty.bounds, null)
+})

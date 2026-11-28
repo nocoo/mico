@@ -63,4 +63,33 @@ test('HTML cards embed Bootstrap, scripts and a restrictive CSP', () => {
 	const darkFragment = htmlCardDocument('<p>fragment</p>', bootstrapCss, bootstrapJs, 'dark')
 	assert.match(darkFragment, /^<!doctype html><html data-bs-theme="dark"><head>/)
 	assert.match(darkFragment, /color-scheme: dark/)
+
+	const headWithoutHtml = htmlCardDocument(
+		'<head><title>t</title></head><body>hi</body>',
+		bootstrapCss,
+		bootstrapJs,
+	)
+	assert.match(headWithoutHtml, /^<!doctype html><html><head>/)
+
+	const doctypeBodyOnly = htmlCardDocument(
+		'<!doctype html><body><p>Body</p></body>',
+		bootstrapCss,
+		bootstrapJs,
+	)
+	assert.match(
+		doctypeBodyOnly,
+		/^<!doctype html><html><head>[\s\S]*<\/head><body><p>Body<\/p><\/body><\/html>$/,
+	)
+
+	const doctypeFragment = htmlCardDocument('<!doctype html><p>Text</p>', bootstrapCss, bootstrapJs)
+	assert.match(
+		doctypeFragment,
+		/^<!doctype html><html><head>[\s\S]*<\/head><body><p>Text<\/p><\/body><\/html>$/,
+	)
+
+	const bodyOnly = htmlCardDocument('<body><p>Only body</p></body>', bootstrapCss, bootstrapJs)
+	assert.match(
+		bodyOnly,
+		/^<!doctype html><html><head>[\s\S]*<\/head><body><p>Only body<\/p><\/body><\/html>$/,
+	)
 })

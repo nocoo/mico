@@ -48,5 +48,34 @@ const files =
 			? [...INTEGRATION].sort()
 			: all
 
-const result = spawnSync(process.execPath, ['--test', ...files], { stdio: 'inherit' })
+const UNIT_COVERAGE_ARGS = [
+	'--experimental-test-coverage',
+	'--test-coverage-include-all',
+	'--test-coverage-include=src/**',
+	'--test-coverage-exclude=**/*.test.ts',
+	'--test-coverage-exclude=**/*.tsx',
+	'--test-coverage-exclude=**/use*.ts',
+	'--test-coverage-exclude=src/cli/**',
+	'--test-coverage-exclude=src/server/index.ts',
+	'--test-coverage-exclude=src/server/ai.ts',
+	'--test-coverage-exclude=src/server/aiMock.ts',
+	'--test-coverage-exclude=src/server/auth.ts',
+	'--test-coverage-exclude=src/server/imageGeneration.ts',
+	'--test-coverage-exclude=src/server/maiProxy.ts',
+	'--test-coverage-exclude=src/server/mossApi.ts',
+	'--test-coverage-exclude=src/server/mossProxy.ts',
+	'--test-coverage-exclude=src/server/whiteboards.ts',
+	'--test-coverage-exclude=src/web/frame/**/index.ts',
+	'--test-coverage-exclude=src/web/frame/contracts.ts',
+	'--test-coverage-exclude=src/shared/types.ts',
+	'--test-coverage-exclude=src/web/i18n/en.ts',
+	'--test-coverage-exclude=src/web/i18n/zh.ts',
+	'--test-coverage-lines=90',
+	'--test-coverage-branches=85',
+	'--test-coverage-functions=90',
+]
+
+const args =
+	selection === 'unit' ? [...UNIT_COVERAGE_ARGS, '--test', ...files] : ['--test', ...files]
+const result = spawnSync(process.execPath, args, { stdio: 'inherit' })
 process.exit(result.status ?? 1)

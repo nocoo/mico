@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { joinWhiteboardSchema } from '../../shared/whiteboards.ts'
 import { meetingAssetUrl, meetingIdFromSearch, withMeetingScope } from './scope.ts'
 
 test('meeting id parsing trims, bounds and accepts unicode search strings', () => {
@@ -49,4 +50,24 @@ test('meetingAssetUrl builds a scoped, encoded image asset path', () => {
 		'/api/images/asset%20id%2F1?meetingid=%E7%89%A9%E7%90%86%E8%AF%BE',
 	)
 	assert.equal(meetingAssetUrl('asset-1', null), '/api/images/asset-1')
+})
+
+test('joinWhiteboardSchema trims usernames and rejects control characters', () => {
+	const valid = joinWhiteboardSchema.parse({
+		username: '  Ada Lovelace  ',
+		sharer: false,
+		clientId: '11111111-1111-4111-8111-111111111111',
+	})
+	assert.equal(valid.username, 'Ada Lovelace')
+	assert.equal(valid.whiteboardid, 'demo')
+
+	assert.throws(
+		() =>
+			joinWhiteboardSchema.parse({
+				username: 'Ada\nLovelace',
+				sharer: false,
+				clientId: '11111111-1111-4111-8111-111111111111',
+			}),
+		/control characters/,
+	)
 })

@@ -554,3 +554,78 @@ test('a write transaction is never replayed on a serialization failure', async (
 		await boards.close()
 	}
 })
+
+test('createAzureBlobStore surfaces HTTP errors, missing tokens and 404 deletes cleanly', async () => {
+	const store = createAzureBlobStore({
+		accountName: 'micoacct',
+		containerName: 'assets',
+		tokenProvider: async () => 'tok',
+		fetch: async (_input, init) => {
+			if (init?.method === 'PUT') return new Response('forbidden', { status: 403 })
+			if (init?.method === 'GET') return new Response('boom', { status: 500 })
+			if (init?.method === 'DELETE') return new Response('unavailable', { status: 503 })
+			return new Response(null, { status: 404 })
+		},
+	})
+	await assert.rejects(
+		store.put('a/b', new Uint8Array([1, 2]), 'image/png'),
+		/Azure Blob PUT failed \(403\): forbidden/,
+	)
+	await assert.rejects(store.get('a/b'), /Azure Blob GET failed \(500\): boom/)
+	await assert.rejects(store.delete('a/b'), /Azure Blob DELETE failed \(503\): unavailable/)
+
+	const notFoundDelete = createAzureBlobStore({
+		accountName: 'micoacct',
+		containerName: 'assets',
+		credential: {
+			getToken: async () => null,
+		},
+		fetch: async () => new Response(null, { status: 404 }),
+	})
+	await assert.rejects(notFoundDelete.get('k'), /Failed to acquire Azure Storage access token/)
+
+	const okDelete = createAzureBlobStore({
+		accountName: 'micoacct',
+		containerName: 'assets',
+		credential: {
+			getToken: async () => ({ token: 'tok', expiresOnTimestamp: Date.now() + 60_000 }),
+		},
+		fetch: async () => new Response(null, { status: 404 }),
+	})
+	await okDelete.delete('missing')
+})
+
+test('createBoardStoreFromEnv validates azure settings and supports dbPath override', async () => {
+	const directory = mkdtempSync(join(tmpdir(), 'mico-storage-env-'))
+	try {
+		const direct = createBoardStoreFromEnv({}, { dbPath: join(directory, 'direct.sqlite') })
+		await direct.close()
+
+		assert.throws(() => createBoardStoreFromEnv({ MICO_STORAGE_BACKEND: 'azure' }), /MICO_PG_URL/)
+		assert.throws(
+			() =>
+				createBoardStoreFromEnv({
+					MICO_STORAGE_BACKEND: 'azure',
+					MICO_PG_HOST: 'pg.example.internal',
+				}),
+			/MICO_AZURE_STORAGE_ACCOUNT/,
+		)
+
+		const miStore = createBoardStoreFromEnv(
+			{
+				MICO_STORAGE_BACKEND: 'azure',
+				MICO_PG_HOST: 'pg.example.internal',
+				MICO_PG_AUTH_MODE: 'managed-identity',
+				MICO_AZURE_STORAGE_ACCOUNT: 'micoacct',
+			},
+			{
+				managedIdentityCredential: {
+					getToken: async () => ({ token: 'pg-token', expiresOnTimestamp: Date.now() + 60_000 }),
+				},
+			},
+		)
+		await miStore.close()
+	} finally {
+		rmSync(directory, { recursive: true, force: true })
+	}
+})

@@ -121,3 +121,23 @@ test('bounded playback rejects oversize and malformed PCM', () => {
 	player.enqueue(chunk, oversized)
 	assert.deepEqual(errors.at(-1), 'Playback audio buffer limit exceeded')
 })
+
+test('stop interrupts only the targeted turn and preserves other queued turns', () => {
+	const { player, context, sent, sources } = setup()
+	const second = { run_id: 'r2', turn_id: 't2', chunk_id: 'c2' }
+	player.enqueue(chunk, pcm())
+	player.enqueue(second, pcm())
+	context.currentTime = 0.01
+	player.stop(chunk)
+	assert.equal(sources[0].stopCalls, 1)
+	assert.equal(sources[1].stopCalls, 0)
+	assert.deepEqual(sent, [
+		{ action: 'playback.stopped', run_id: 'r', turn_id: 't', played_audio_ms: 10 },
+	])
+	sources[1].onended?.()
+	player.done(second)
+	assert.deepEqual(
+		sent.map((event) => event.action),
+		['playback.stopped', 'playback.chunk.completed', 'playback.completed'],
+	)
+})

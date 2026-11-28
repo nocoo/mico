@@ -802,3 +802,45 @@ test('permission denial closes the session', async () => {
 		cleanupGlobals()
 	}
 })
+
+test('protocol, audio-context and transcript messages surface structured errors and events', async () => {
+	setMossLiveCaptureFactoryForTests(async () => ({ stop: async () => {} }))
+	installGlobals(async () =>
+		jsonResponse({
+			canvasId: 'canvas-1',
+			revision: 1,
+			instructions: '',
+			tools: [{ name: 'add_notes' }],
+		}),
+	)
+	const events: MossLiveEvent[] = []
+	const session = new MossLiveSession({
+		canvasId: 'canvas-1',
+		selection: [],
+		onEvent: (event) => events.push(event),
+	})
+
+	try {
+		await session.start()
+		const socket = MockSocket.instances[0]
+		socket.dispatchJson({ action: 'proxy.ready' })
+		socket.dispatchJson({ action: 'session_attached', data: { delegation: 'none' } })
+		socket.dispatchJson({ action: 'session.updated', data: { tools: [{ name: 'add_notes' }] } })
+		socket.dispatchJson({ action: 'input.transcript.updated', data: { text: 'hi' } })
+		socket.dispatchJson({ action: 'input.transcript.done', data: { text: 'hi there' } })
+		socket.dispatchJson({
+			action: 'output.transcript.updated',
+			data: { text: 'ok', turn_id: 't1' },
+		})
+		socket.dispatchJson({ action: 'output.transcript.done', data: { text: 'ok!', turn_id: 't1' } })
+		socket.dispatchBinary(new ArrayBuffer(4))
+		assert.deepEqual(events.at(-2), {
+			type: 'error',
+			message: 'Received playback audio without an audio context.',
+		})
+		assert.deepEqual(events.at(-1), { type: 'status', phase: 'idle' })
+	} finally {
+		session.stop()
+		cleanupGlobals()
+	}
+})
